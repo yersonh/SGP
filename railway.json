@@ -5,9 +5,6 @@
     "buildCommand": "bash .platform/scripts/build-votaciones.sh"
   },
   "deploy": {
-    "startCommand": "bash .platform/scripts/start-votaciones.sh",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 10,
-    "restartPolicyType": "ON_FAILURE"
+    "startCommand": "bash .platform/scripts/start-votaciones.sh"
   }
 }

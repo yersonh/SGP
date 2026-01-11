@@ -241,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="logo">
                 <i class="fas fa-user-shield"></i>
             </div>
-            <h1>SGP</h1>
+            <h1>SGP-Sistema de Gestion de Politica</h1>
             <p>Acceso restringido al personal autorizado</p>
         </div>
         

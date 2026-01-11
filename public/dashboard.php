@@ -639,7 +639,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             <td>
                                 <div class="user-info">
                                     <span class="user-nickname"><?php echo htmlspecialchars($usuario['nickname']); ?></span>
-                                    <span class="text-muted" style="font-size: 0.8rem;">ID: #<?php echo $usuario['id_usuario']; ?></span>
                                 </div>
                             </td>
                             

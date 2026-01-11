@@ -317,11 +317,9 @@ $barrios = $barrioModel->getAll();
                                 <i class="fas fa-search"></i>
                             </span>
                         </div>
-                        <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;">
-                            Seleccione un puesto de votación para ver las mesas disponibles
-                        </div>
+                        <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
                     </div>
-                    
+                                    
                     <!-- Apoyo -->
                     <div class="form-group">
                         <label class="form-label" for="apoyo">

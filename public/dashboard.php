@@ -589,10 +589,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             </td>
                             
                             <td>
-                                <span class="password-display">•••••••••</span>
-                            </td>
-                            
-                            <td>
                                 <span class="user-type"><?php echo htmlspecialchars($usuario['tipo_usuario']); ?></span>
                             </td>
                             

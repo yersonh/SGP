@@ -14,11 +14,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($nickname) && !empty($password)) {
         try {
             // Buscar usuario por nickname
-            $stmt = $pdo->prepare("SELECT * FROM usuario WHERE nickname = ? AND activo = 1");
+            $stmt = $pdo->prepare("SELECT * FROM usuario WHERE nickname = ? AND activo = true");
             $stmt->execute([$nickname]);
             $usuario = $stmt->fetch();
             
-            if ($usuario && password_verify($password, $usuario['password'])) {
+            if ($usuario && password === $usuario['password']) {
                 // Login exitoso
                 $_SESSION['id_usuario'] = $usuario['id_usuario'];
                 $_SESSION['nickname'] = $usuario['nickname'];

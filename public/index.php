@@ -7,7 +7,9 @@ header('Content-Type: text/html; charset=utf-8');
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
 $error = '';
-
+if (isset($_GET['logout']) && $_GET['logout'] == 'success') {
+    $logout_message = "Sesión cerrada exitosamente";
+}
 // Procesar login si se envió el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nickname = trim($_POST['nickname'] ?? '');

@@ -2,12 +2,6 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
-require_once __DIR__ . '/../models/GrupoPoblacionalModel.php';
-require_once __DIR__ . '/../models/OfertaApoyoModel.php';
-require_once __DIR__ . '/../models/DepartamentoModel.php';
-require_once __DIR__ . '/../models/ZonaModel.php';
-require_once __DIR__ . '/../models/SectorModel.php';
-require_once __DIR__ . '/../models/PuestoVotacionModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
@@ -25,20 +19,6 @@ $usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
 // Actualizar último registro
 $fecha_actual = date('Y-m-d H:i:s');
 $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
-
-// Inicializar modelos para los combos
-$grupoPoblacionalModel = new GrupoPoblacionalModel($pdo);
-$ofertaApoyoModel = new OfertaApoyoModel($pdo);
-$departamentoModel = new DepartamentoModel($pdo);
-$zonaModel = new ZonaModel($pdo);
-$sectorModel = new SectorModel($pdo);
-$puestoVotacionModel = new PuestoVotacionModel($pdo);
-
-// Obtener datos para los combos
-$gruposPoblacionales = $grupoPoblacionalModel->getAll();
-$ofertasApoyo = $ofertaApoyoModel->getAll();
-$departamentos = $departamentoModel->getAll();
-$zonas = $zonaModel->getAll();
 ?>
 
 <!DOCTYPE html>
@@ -606,11 +586,7 @@ $zonas = $zonaModel->getAll();
                         </label>
                         <select id="zona" name="zona" class="form-select" data-progress="3">
                             <option value="">Seleccione una zona</option>
-                            <?php foreach ($zonas as $zona): ?>
-                            <option value="<?php echo $zona['id_zona']; ?>">
-                                <?php echo htmlspecialchars($zona['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
+                            <!-- Opciones vendrán de la base de datos -->
                         </select>
                     </div>
                     
@@ -619,8 +595,9 @@ $zonas = $zonaModel->getAll();
                         <label class="form-label" for="sector">
                             <i class="fas fa-th"></i> Sector
                         </label>
-                        <select id="sector" name="sector" class="form-select" data-progress="3" disabled>
-                            <option value="">Primero seleccione una zona</option>
+                        <select id="sector" name="sector" class="form-select" data-progress="3">
+                            <option value="">Seleccione un sector</option>
+                            <!-- Opciones vendrán de la base de datos -->
                         </select>
                     </div>
                     
@@ -629,8 +606,9 @@ $zonas = $zonaModel->getAll();
                         <label class="form-label" for="puesto_votacion">
                             <i class="fas fa-vote-yea"></i> Puesto de Votación
                         </label>
-                        <select id="puesto_votacion" name="puesto_votacion" class="form-select" data-progress="3" disabled>
-                            <option value="">Primero seleccione un sector</option>
+                        <select id="puesto_votacion" name="puesto_votacion" class="form-select" data-progress="3">
+                            <option value="">Seleccione un puesto</option>
+                            <!-- Opciones vendrán de la base de datos -->
                         </select>
                     </div>
                     
@@ -661,11 +639,7 @@ $zonas = $zonaModel->getAll();
                         </label>
                         <select id="departamento" name="departamento" class="form-select" data-progress="3">
                             <option value="">Seleccione un departamento</option>
-                            <?php foreach ($departamentos as $departamento): ?>
-                            <option value="<?php echo $departamento['id_departamento']; ?>">
-                                <?php echo htmlspecialchars($departamento['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
+                            <!-- Opciones vendrán de la base de datos -->
                         </select>
                     </div>
                     
@@ -674,8 +648,9 @@ $zonas = $zonaModel->getAll();
                         <label class="form-label" for="municipio">
                             <i class="fas fa-city"></i> Municipio
                         </label>
-                        <select id="municipio" name="municipio" class="form-select" data-progress="3" disabled>
-                            <option value="">Primero seleccione un departamento</option>
+                        <select id="municipio" name="municipio" class="form-select" data-progress="3">
+                            <option value="">Seleccione un municipio</option>
+                            <!-- Opciones vendrán de la base de datos -->
                         </select>
                     </div>
                     
@@ -686,11 +661,10 @@ $zonas = $zonaModel->getAll();
                         </label>
                         <select id="apoyo" name="apoyo" class="form-select" data-progress="3">
                             <option value="">Seleccione Oferta de apoyo</option>
-                            <?php foreach ($ofertasApoyo as $oferta): ?>
-                            <option value="<?php echo $oferta['id_oferta']; ?>">
-                                <?php echo htmlspecialchars($oferta['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
+                            <option value="Alto">Alto</option>
+                            <option value="Medio">Medio</option>
+                            <option value="Bajo">Bajo</option>
+                            <option value="Ninguno">Ninguno</option>
                         </select>
                     </div>
                     
@@ -701,15 +675,18 @@ $zonas = $zonaModel->getAll();
                         </label>
                         <select id="grupo_poblacional" name="grupo_poblacional" class="form-select" data-progress="3">
                             <option value="">Seleccione grupo</option>
-                            <?php foreach ($gruposPoblacionales as $grupo): ?>
-                            <option value="<?php echo $grupo['id_grupo']; ?>">
-                                <?php echo htmlspecialchars($grupo['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
+                            <option value="Jóvenes">Jóvenes</option>
+                            <option value="Adultos">Adultos</option>
+                            <option value="Adultos Mayores">Adultos Mayores</option>
+                            <option value="Mujeres">Mujeres</option>
+                            <option value="LGBTIQ+">LGBTIQ+</option>
+                            <option value="Afrodescendientes">Afrodescendientes</option>
+                            <option value="Indígenas">Indígenas</option>
+                            <option value="Personas con discapacidad">Personas con discapacidad</option>
                         </select>
                     </div>
                     
-                    <!-- Compromiso -->
+                    <!-- NUEVO: Compromiso -->
                     <div class="form-group full-width">
                         <label class="form-label" for="compromiso">
                             <i class="fas fa-handshake"></i> Compromiso del Referido
@@ -870,120 +847,6 @@ $zonas = $zonaModel->getAll();
             window.open('https://consultacenso.registraduria.gov.co/consultar/', '_blank');
         }
         
-        // Cargar sectores basados en zona seleccionada
-        document.getElementById('zona').addEventListener('change', function() {
-            const zonaId = this.value;
-            const sectorSelect = document.getElementById('sector');
-            const puestoSelect = document.getElementById('puesto_votacion');
-            
-            if (zonaId) {
-                sectorSelect.disabled = false;
-                sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
-                
-                // Llamada AJAX para obtener sectores
-                fetch(`ajax/cargar_sectores.php?zona_id=${zonaId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            sectorSelect.innerHTML = '<option value="">Seleccione un sector</option>';
-                            data.sectores.forEach(sector => {
-                                const option = document.createElement('option');
-                                option.value = sector.id_sector;
-                                option.textContent = sector.nombre;
-                                sectorSelect.appendChild(option);
-                            });
-                        } else {
-                            sectorSelect.innerHTML = '<option value="">Error al cargar sectores</option>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        sectorSelect.innerHTML = '<option value="">Error al cargar</option>';
-                    });
-            } else {
-                sectorSelect.disabled = true;
-                sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
-                puestoSelect.disabled = true;
-                puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-            }
-            
-            updateProgress();
-        });
-        
-        // Cargar puestos de votación basados en sector seleccionado
-        document.getElementById('sector').addEventListener('change', function() {
-            const sectorId = this.value;
-            const puestoSelect = document.getElementById('puesto_votacion');
-            
-            if (sectorId) {
-                puestoSelect.disabled = false;
-                puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
-                
-                // Llamada AJAX para obtener puestos
-                fetch(`ajax/cargar_puestos.php?sector_id=${sectorId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            puestoSelect.innerHTML = '<option value="">Seleccione un puesto</option>';
-                            data.puestos.forEach(puesto => {
-                                const option = document.createElement('option');
-                                option.value = puesto.id_puesto;
-                                option.textContent = puesto.nombre;
-                                puestoSelect.appendChild(option);
-                            });
-                        } else {
-                            puestoSelect.innerHTML = '<option value="">Error al cargar puestos</option>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        puestoSelect.innerHTML = '<option value="">Error al cargar</option>';
-                    });
-            } else {
-                puestoSelect.disabled = true;
-                puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-            }
-            
-            updateProgress();
-        });
-        
-        // Cargar municipios basados en departamento seleccionado
-        document.getElementById('departamento').addEventListener('change', function() {
-            const departamentoId = this.value;
-            const municipioSelect = document.getElementById('municipio');
-            
-            if (departamentoId) {
-                municipioSelect.disabled = false;
-                municipioSelect.innerHTML = '<option value="">Cargando municipios...</option>';
-                
-                // Llamada AJAX para obtener municipios
-                fetch(`ajax/cargar_municipios.php?departamento_id=${departamentoId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            municipioSelect.innerHTML = '<option value="">Seleccione un municipio</option>';
-                            data.municipios.forEach(municipio => {
-                                const option = document.createElement('option');
-                                option.value = municipio.id_municipio;
-                                option.textContent = municipio.nombre;
-                                municipioSelect.appendChild(option);
-                            });
-                        } else {
-                            municipioSelect.innerHTML = '<option value="">Error al cargar municipios</option>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        municipioSelect.innerHTML = '<option value="">Error al cargar</option>';
-                    });
-            } else {
-                municipioSelect.disabled = true;
-                municipioSelect.innerHTML = '<option value="">Primero seleccione un departamento</option>';
-            }
-            
-            updateProgress();
-        });
-        
         // Manejar envío del formulario
         document.getElementById('referenciacion-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -1036,57 +899,38 @@ $zonas = $zonaModel->getAll();
             submitBtn.disabled = true;
             
             try {
-                // Preparar datos para enviar
-                const formData = new FormData(this);
-                formData.append('id_referenciador', '<?php echo $id_usuario_logueado; ?>');
+                // Aquí iría la llamada AJAX para guardar en la base de datos
+                // Por ahora simulamos una respuesta exitosa
                 
-                // Enviar datos al servidor
-                const response = await fetch('ajax/guardar_referenciado.php', {
-                    method: 'POST',
-                    body: formData
+                // Simular tiempo de procesamiento
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Éxito
+                showNotification('Registro guardado exitosamente', 'success');
+                
+                // Resetear formulario
+                this.reset();
+                
+                // Resetear rating
+                currentRating = 0;
+                afinidadInput.value = '0';
+                ratingValue.textContent = '0/5';
+                stars.forEach(star => {
+                    star.innerHTML = '<i class="far fa-star"></i>';
+                    star.classList.remove('selected', 'hover');
                 });
                 
-                const data = await response.json();
+                // Resetear contador de caracteres
+                compromisoChars.textContent = '0';
+                compromisoCounter.classList.remove('limit-exceeded');
                 
-                if (data.success) {
-                    // Éxito
-                    showNotification(data.message || 'Registro guardado exitosamente', 'success');
-                    
-                    // Resetear formulario
-                    this.reset();
-                    
-                    // Resetear selects dependientes
-                    document.getElementById('sector').disabled = true;
-                    document.getElementById('sector').innerHTML = '<option value="">Primero seleccione una zona</option>';
-                    document.getElementById('puesto_votacion').disabled = true;
-                    document.getElementById('puesto_votacion').innerHTML = '<option value="">Primero seleccione un sector</option>';
-                    document.getElementById('municipio').disabled = true;
-                    document.getElementById('municipio').innerHTML = '<option value="">Primero seleccione un departamento</option>';
-                    
-                    // Resetear rating
-                    currentRating = 0;
-                    afinidadInput.value = '0';
-                    ratingValue.textContent = '0/5';
-                    stars.forEach(star => {
-                        star.innerHTML = '<i class="far fa-star"></i>';
-                        star.classList.remove('selected', 'hover');
-                    });
-                    
-                    // Resetear contador de caracteres
-                    compromisoChars.textContent = '0';
-                    compromisoCounter.classList.remove('limit-exceeded');
-                    
-                    // Resetear progreso
-                    totalProgress = 0;
-                    progressFill.style.width = '0%';
-                    progressPercentage.textContent = '0%';
-                    
-                } else {
-                    showNotification(data.message || 'Error al guardar el registro', 'error');
-                }
+                // Resetear progreso
+                totalProgress = 0;
+                progressFill.style.width = '0%';
+                progressPercentage.textContent = '0%';
                 
             } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
+                showNotification('Error al guardar el registro: ' + error.message, 'error');
             } finally {
                 // Restaurar botón
                 submitBtn.innerHTML = originalText;
@@ -1121,19 +965,55 @@ $zonas = $zonaModel->getAll();
             }, 5000);
         }
         
-        // Validar número de mesa
-        const mesaInput = document.getElementById('mesa');
-        if (mesaInput) {
-            mesaInput.addEventListener('change', function() {
-                const value = parseInt(this.value);
-                if (value < 1) this.value = 1;
-                if (value > 30) this.value = 30;
-            });
-        }
-        
-        // Inicializar contador de caracteres al cargar la página
+        // Cargar combos desde base de datos (simulación)
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar contador de caracteres
             updateCharCount();
+            
+            // Simular carga de datos para combos
+            const comboSelectors = ['#zona', '#sector', '#puesto_votacion', '#departamento', '#municipio'];
+            
+            comboSelectors.forEach(selector => {
+                const select = document.querySelector(selector);
+                if (select) {
+                    // Simular carga (en producción esto sería una llamada AJAX)
+                    setTimeout(() => {
+                        // Por ahora agregamos opciones de ejemplo
+                        if (selector === '#zona') {
+                            ['Zona Norte', 'Zona Sur', 'Zona Este', 'Zona Oeste', 'Zona Centro'].forEach(zona => {
+                                const option = document.createElement('option');
+                                option.value = zona;
+                                option.textContent = zona;
+                                select.appendChild(option);
+                            });
+                        } else if (selector === '#sector') {
+                            ['Sector A', 'Sector B', 'Sector C', 'Sector D', 'Sector E'].forEach(sector => {
+                                const option = document.createElement('option');
+                                option.value = sector;
+                                option.textContent = sector;
+                                select.appendChild(option);
+                            });
+                        } else if (selector === '#departamento') {
+                            ['Antioquia', 'Bogotá D.C.', 'Valle del Cauca', 'Cundinamarca', 'Santander'].forEach(depto => {
+                                const option = document.createElement('option');
+                                option.value = depto;
+                                option.textContent = depto;
+                                select.appendChild(option);
+                            });
+                        }
+                    }, 500);
+                }
+            });
+            
+            // Validar número de mesa
+            const mesaInput = document.getElementById('mesa');
+            if (mesaInput) {
+                mesaInput.addEventListener('change', function() {
+                    const value = parseInt(this.value);
+                    if (value < 1) this.value = 1;
+                    if (value > 30) this.value = 30;
+                });
+            }
         });
     </script>
 </body>

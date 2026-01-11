@@ -302,20 +302,23 @@ $barrios = $barrioModel->getAll();
                     <!-- Mesa -->
                     <div class="form-group">
                         <label class="form-label" for="mesa">
-                            <i class="fas fa-users"></i> Mesa (Máx. 30)
+                            <i class="fas fa-users"></i> Mesa
                         </label>
                         <div class="input-with-icon">
                             <input type="number" 
-                                   id="mesa" 
-                                   name="mesa" 
-                                   class="form-control" 
-                                   placeholder="Número de mesa"
-                                   min="1"
-                                   max="30"
-                                   data-progress="3">
+                                id="mesa" 
+                                name="mesa" 
+                                class="form-control" 
+                                placeholder="Número de mesa"
+                                min="1"
+                                data-progress="3"
+                                disabled>
                             <span class="input-suffix" onclick="abrirConsultaCenso()" title="Consultar censo electoral">
                                 <i class="fas fa-search"></i>
                             </span>
+                        </div>
+                        <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Seleccione un puesto de votación para ver las mesas disponibles
                         </div>
                     </div>
                     

@@ -1,5 +1,6 @@
 // Variables globales
 let currentRating = 0;
+let maxMesasPuestoActual = 0;
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', function() {
@@ -181,15 +182,22 @@ function updateProgress() {
 
 // ==================== SISTEMA DE MESAS DINÁMICAS ====================
 
-// Cargar mesas basadas en puesto de votación seleccionado
-function cargarMesasPorPuesto(puestoId) {
-    const mesaSelect = document.getElementById('mesa');
+// Configurar campo de mesa según puesto seleccionado
+function configurarCampoMesa(puestoId) {
+    const mesaInput = document.getElementById('mesa');
     const mesaInfo = document.getElementById('mesa-info');
     
     if (!puestoId) {
-        mesaSelect.disabled = true;
-        mesaSelect.innerHTML = '<option value="">Primero seleccione un puesto de votación</option>';
-        if (mesaInfo) mesaInfo.textContent = '';
+        mesaInput.disabled = true;
+        mesaInput.placeholder = "Número de mesa";
+        mesaInput.value = "";
+        mesaInput.max = "30";
+        maxMesasPuestoActual = 0;
+        
+        if (mesaInfo) {
+            mesaInfo.innerHTML = 'Seleccione un puesto de votación para ver las mesas disponibles';
+            mesaInfo.style.color = '#666';
+        }
         return;
     }
     
@@ -199,14 +207,15 @@ function cargarMesasPorPuesto(puestoId) {
     const numMesas = parseInt(selectedOption.getAttribute('data-mesas')) || 0;
     const puestoNombre = selectedOption.textContent.split(' (')[0]; // Remover texto entre paréntesis
     
-    // Habilitar y actualizar el select de mesas
-    mesaSelect.disabled = false;
-    mesaSelect.innerHTML = '<option value="">Seleccione una mesa</option>';
+    maxMesasPuestoActual = numMesas;
     
-    // Si el puesto tiene 0 mesas, mostrar mensaje especial
+    // Si el puesto tiene 0 mesas, deshabilitar campo
     if (numMesas === 0) {
-        mesaSelect.innerHTML = '<option value="">Este puesto no tiene mesas asignadas</option>';
-        mesaSelect.disabled = true;
+        mesaInput.disabled = true;
+        mesaInput.value = "";
+        mesaInput.placeholder = "Este puesto no tiene mesas";
+        mesaInput.max = "0";
+        
         if (mesaInfo) {
             mesaInfo.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>${puestoNombre}</strong> no tiene mesas disponibles para votación`;
             mesaInfo.style.color = '#e67e22';
@@ -215,13 +224,17 @@ function cargarMesasPorPuesto(puestoId) {
         return;
     }
     
-    // Crear opciones para cada mesa disponible
-    for (let i = 1; i <= numMesas; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `Mesa ${i}`;
-        mesaSelect.appendChild(option);
-    }
+    // Habilitar y configurar el campo de mesa
+    mesaInput.disabled = false;
+    mesaInput.placeholder = `Número de mesa (Máx. ${numMesas})`;
+    mesaInput.max = numMesas;
+    mesaInput.min = 1;
+    mesaInput.value = "";
+    
+    // Agregar validación en tiempo real
+    mesaInput.addEventListener('input', function() {
+        validarNumeroMesa(this);
+    });
     
     // Mostrar información sobre el total de mesas
     if (mesaInfo) {
@@ -231,6 +244,27 @@ function cargarMesasPorPuesto(puestoId) {
     }
     
     updateProgress();
+}
+
+// Validar número de mesa ingresado
+function validarNumeroMesa(input) {
+    const value = parseInt(input.value);
+    const mesaInfo = document.getElementById('mesa-info');
+    
+    if (isNaN(value) || value < 1) {
+        input.value = "";
+        if (mesaInfo) {
+            mesaInfo.innerHTML += ' <span style="color:#e74c3c">(Ingrese un número válido)</span>';
+        }
+        return;
+    }
+    
+    if (value > maxMesasPuestoActual) {
+        input.value = maxMesasPuestoActual;
+        if (mesaInfo) {
+            mesaInfo.innerHTML += ' <span style="color:#e74c3c">(Máximo permitido: ' + maxMesasPuestoActual + ')</span>';
+        }
+    }
 }
 
 // ==================== INSUMOS ====================
@@ -304,8 +338,7 @@ function setupDependentSelects() {
         const zonaId = this.value;
         const sectorSelect = document.getElementById('sector');
         const puestoSelect = document.getElementById('puesto_votacion');
-        const mesaSelect = document.getElementById('mesa');
-        const mesaInfo = document.getElementById('mesa-info');
+        const mesaInput = document.getElementById('mesa');
         
         if (zonaId) {
             sectorSelect.disabled = false;
@@ -335,9 +368,8 @@ function setupDependentSelects() {
             sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
             puestoSelect.disabled = true;
             puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-            mesaSelect.disabled = true;
-            mesaSelect.innerHTML = '<option value="">Primero seleccione un puesto</option>';
-            if (mesaInfo) mesaInfo.textContent = '';
+            mesaInput.disabled = true;
+            configurarCampoMesa(null);
         }
         
         updateProgress();
@@ -347,8 +379,7 @@ function setupDependentSelects() {
     document.getElementById('sector').addEventListener('change', function() {
         const sectorId = this.value;
         const puestoSelect = document.getElementById('puesto_votacion');
-        const mesaSelect = document.getElementById('mesa');
-        const mesaInfo = document.getElementById('mesa-info');
+        const mesaInput = document.getElementById('mesa');
         
         if (sectorId) {
             puestoSelect.disabled = false;
@@ -392,20 +423,17 @@ function setupDependentSelects() {
         } else {
             puestoSelect.disabled = true;
             puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-            mesaSelect.disabled = true;
-            mesaSelect.innerHTML = '<option value="">Primero seleccione un puesto</option>';
-            
-            // Limpiar info de mesas
-            if (mesaInfo) mesaInfo.textContent = '';
+            mesaInput.disabled = true;
+            configurarCampoMesa(null);
         }
         
         updateProgress();
     });
     
-    // Puesto -> Mesas
+    // Puesto -> Configurar campo Mesa
     document.getElementById('puesto_votacion').addEventListener('change', function() {
         const puestoId = this.value;
-        cargarMesasPorPuesto(puestoId);
+        configurarCampoMesa(puestoId);
     });
     
     // Departamento -> Municipio
@@ -453,6 +481,14 @@ function setupFormEvents() {
         element.addEventListener('change', updateProgress);
     });
     
+    // Validar campo de mesa cuando se pierde el foco
+    const mesaInput = document.getElementById('mesa');
+    if (mesaInput) {
+        mesaInput.addEventListener('blur', function() {
+            validarNumeroMesa(this);
+        });
+    }
+    
     // Manejar envío del formulario
     document.getElementById('referenciacion-form').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -473,6 +509,17 @@ function setupFormEvents() {
                 if (element) element.focus();
             }
         });
+        
+        // Validar mesa si está habilitada
+        const mesaInput = document.getElementById('mesa');
+        if (mesaInput && !mesaInput.disabled) {
+            const mesaValue = parseInt(mesaInput.value);
+            if (isNaN(mesaValue) || mesaValue < 1 || mesaValue > maxMesasPuestoActual) {
+                isValid = false;
+                errorMessage = `Por favor ingrese un número de mesa válido (1-${maxMesasPuestoActual})`;
+                mesaInput.focus();
+            }
+        }
         
         if (!isValid) {
             showNotification(errorMessage, 'error');
@@ -608,13 +655,21 @@ function resetForm() {
     document.getElementById('municipio').innerHTML = '<option value="">Primero seleccione un departamento</option>';
     
     // Resetear campo de mesas
-    const mesaSelect = document.getElementById('mesa');
+    const mesaInput = document.getElementById('mesa');
     const mesaInfo = document.getElementById('mesa-info');
-    if (mesaSelect) {
-        mesaSelect.disabled = true;
-        mesaSelect.innerHTML = '<option value="">Primero seleccione un puesto de votación</option>';
+    if (mesaInput) {
+        mesaInput.disabled = true;
+        mesaInput.value = "";
+        mesaInput.placeholder = "Número de mesa";
+        mesaInput.max = "30";
     }
-    if (mesaInfo) mesaInfo.textContent = '';
+    
+    if (mesaInfo) {
+        mesaInfo.innerHTML = 'Seleccione un puesto de votación para ver las mesas disponibles';
+        mesaInfo.style.color = '#666';
+    }
+    
+    maxMesasPuestoActual = 0;
     
     // Resetear insumos
     document.querySelectorAll('.insumo-checkbox').forEach(cb => {

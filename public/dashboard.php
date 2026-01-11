@@ -673,10 +673,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             
                             <td>
                                 <div class="action-buttons">
-                                    <button class="btn-action btn-edit" title="Editar usuario" onclick="editarUsuario(<?php echo $usuario['id_usuario']; ?>)">
-                                        <i class="fas fa-edit"></i> EDITAR
-                                    </button>
-                                    
                                     <?php if ($esta_activo): ?>
                                         <button class="btn-action btn-deactivate" 
                                                 title="Dar de baja al usuario"
@@ -885,12 +881,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 showNotification('Error de conexión: ' + error.message, 'error');
                 button.disabled = false;
             }
-        }
-        
-        // Función para editar usuario (placeholder)
-        function editarUsuario(idUsuario) {
-            showNotification('Funcionalidad de edición en desarrollo', 'warning');
-            // Aquí iría la lógica para editar el usuario
         }
         
         // Función para actualizar estadísticas

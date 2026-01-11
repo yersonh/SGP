@@ -75,7 +75,6 @@ function highlightStars(value) {
 }
 
 // Actualizar progreso
-// Actualizar progreso (modifica esta función en tu referenciador.js)
 function updateProgress() {
     let filledProgress = 0;
     
@@ -344,6 +343,12 @@ document.getElementById('referenciacion-form').addEventListener('submit', async 
             compromisoChars.textContent = '0';
             compromisoCounter.classList.remove('limit-exceeded');
             
+            // Resetear insumos
+            document.querySelectorAll('.insumo-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            updateInsumosDisplay();
+            
             // Resetear progreso
             totalProgress = 0;
             progressFill.style.width = '0%';
@@ -396,6 +401,74 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+// ==================== MANEJO DE INSUMOS ====================
+
+let insumosCheckboxes = [];
+let insumosSelectedDiv = null;
+
+function updateInsumosDisplay() {
+    if (!insumosSelectedDiv) return;
+    
+    const selectedInsumos = [];
+    
+    insumosCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const label = checkbox.nextElementSibling;
+            const texto = label.querySelector('.insumo-text').textContent;
+            selectedInsumos.push(texto);
+        }
+    });
+    
+    if (selectedInsumos.length > 0) {
+        insumosSelectedDiv.textContent = 'Seleccionados: ' + selectedInsumos.join(', ');
+        insumosSelectedDiv.classList.add('insumos-active');
+    } else {
+        insumosSelectedDiv.textContent = 'Ningún insumo seleccionado';
+        insumosSelectedDiv.classList.remove('insumos-active');
+    }
+    
+    updateProgress();
+}
+
+function setupInsumos() {
+    insumosCheckboxes = document.querySelectorAll('.insumo-checkbox');
+    insumosSelectedDiv = document.getElementById('insumos-selected');
+    
+    if (!insumosCheckboxes.length || !insumosSelectedDiv) {
+        console.log('Elementos de insumos no encontrados');
+        return;
+    }
+    
+    // Agregar evento a cada checkbox
+    insumosCheckboxes.forEach(checkbox => {
+        // Remover eventos previos si existen
+        const newCheckbox = checkbox.cloneNode(true);
+        checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+        
+        // Agregar nuevo evento
+        newCheckbox.addEventListener('change', updateInsumosDisplay);
+        
+        // Hacer clicable toda la tarjeta
+        const label = newCheckbox.nextElementSibling;
+        if (label) {
+            label.addEventListener('click', function(e) {
+                if (e.target !== newCheckbox && !e.target.closest('button')) {
+                    newCheckbox.checked = !newCheckbox.checked;
+                    newCheckbox.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+    });
+    
+    // Actualizar la referencia después del clonado
+    insumosCheckboxes = document.querySelectorAll('.insumo-checkbox');
+    
+    // Inicializar display
+    updateInsumosDisplay();
+}
+
+// ==================== INICIALIZACIÓN ====================
+
 // Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar contador de caracteres
@@ -419,6 +492,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Configurar insumos
+    setupInsumos();
+    
     // Inicializar progreso
     updateProgress();
+    
+    // También agregar eventos a los checkboxes de insumos para progreso
+    document.querySelectorAll('.insumo-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateProgress);
+    });
+});
+
+// También asegurar que los insumos se actualicen cuando se haga clic en cualquier parte del label
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.insumo-label')) {
+        const label = e.target.closest('.insumo-label');
+        const checkbox = label.previousElementSibling;
+        if (checkbox && checkbox.classList.contains('insumo-checkbox')) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        }
+    }
 });

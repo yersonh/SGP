@@ -500,55 +500,6 @@ $zonas = $zonaModel->getAll();
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Script para manejar los insumos -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Manejar los switches de insumos
-            const insumosCheckboxes = document.querySelectorAll('.insumo-checkbox');
-            const insumosSelectedDiv = document.getElementById('insumos-selected');
-            
-            function updateInsumosDisplay() {
-                const selectedInsumos = [];
-                
-                insumosCheckboxes.forEach(checkbox => {
-                    if (checkbox.checked) {
-                        // Obtener el texto del insumo desde el label
-                        const label = checkbox.nextElementSibling;
-                        const texto = label.querySelector('.insumo-text').textContent;
-                        selectedInsumos.push(texto);
-                    }
-                });
-                
-                if (selectedInsumos.length > 0) {
-                    insumosSelectedDiv.textContent = 'Seleccionados: ' + selectedInsumos.join(', ');
-                    insumosSelectedDiv.classList.add('insumos-active');
-                } else {
-                    insumosSelectedDiv.textContent = 'Ningún insumo seleccionado';
-                    insumosSelectedDiv.classList.remove('insumos-active');
-                }
-                
-                // Actualizar progreso
-                updateProgress();
-            }
-            
-            // Agregar evento a cada checkbox
-            insumosCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', updateInsumosDisplay);
-                
-                // También hacer clicable toda la tarjeta
-                const label = checkbox.nextElementSibling;
-                label.addEventListener('click', function(e) {
-                    if (e.target !== checkbox) {
-                        checkbox.checked = !checkbox.checked;
-                        checkbox.dispatchEvent(new Event('change'));
-                    }
-                });
-            });
-            
-            // Inicializar display
-            updateInsumosDisplay();
-        });
-    </script>
     <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
 </body>

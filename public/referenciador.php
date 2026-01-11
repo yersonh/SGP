@@ -217,7 +217,7 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
             font-size: 0.9rem;
         }
         
-        .form-control, .form-select {
+        .form-control, .form-select, .form-textarea {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -225,9 +225,15 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
             font-size: 0.95rem;
             transition: all 0.3s;
             background-color: #f9f9f9;
+            font-family: inherit;
         }
         
-        .form-control:focus, .form-select:focus {
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-control:focus, .form-select:focus, .form-textarea:focus {
             outline: none;
             border-color: var(--secondary-color);
             background-color: #fff;
@@ -329,7 +335,7 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
             text-align: center;
             padding: 20px 0;
             background: white;
-            color: var(--primary-color);
+            color: black;
             font-size: 0.85rem;
             line-height: 1.5;
             margin-top: 30px;
@@ -402,6 +408,19 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
         @keyframes slideIn {
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Counter for textarea */
+        .textarea-counter {
+            text-align: right;
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .textarea-counter.limit-exceeded {
+            color: var(--danger-color);
+            font-weight: bold;
         }
     </style>
 </head>
@@ -638,10 +657,10 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                     <!-- Apoyo -->
                     <div class="form-group">
                         <label class="form-label" for="apoyo">
-                            <i class="fas fa-handshake"></i>Apoyo
+                            <i class="fas fa-handshake"></i> Oferta de Apoyo
                         </label>
                         <select id="apoyo" name="apoyo" class="form-select" data-progress="3">
-                            <option value="">Seleccione nivel de apoyo</option>
+                            <option value="">Seleccione Oferta de apoyo</option>
                             <option value="Alto">Alto</option>
                             <option value="Medio">Medio</option>
                             <option value="Bajo">Bajo</option>
@@ -665,6 +684,23 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                             <option value="Indígenas">Indígenas</option>
                             <option value="Personas con discapacidad">Personas con discapacidad</option>
                         </select>
+                    </div>
+                    
+                    <!-- NUEVO: Compromiso -->
+                    <div class="form-group full-width">
+                        <label class="form-label" for="compromiso">
+                            <i class="fas fa-handshake"></i> Compromiso del Referido
+                        </label>
+                        <textarea 
+                            id="compromiso" 
+                            name="compromiso" 
+                            class="form-textarea" 
+                            placeholder="Describa el compromiso del referido (máximo 500 caracteres)"
+                            maxlength="500"
+                            data-progress="5"></textarea>
+                        <div class="textarea-counter" id="compromiso-counter">
+                            <span id="compromiso-chars">0</span>/500 caracteres
+                        </div>
                     </div>
                     
                     <!-- Botón de Envío -->
@@ -709,6 +745,26 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
         const ratingValue = document.getElementById('rating-value');
         const afinidadInput = document.getElementById('afinidad');
         let currentRating = 0;
+        
+        // Contador de caracteres para compromiso
+        const compromisoTextarea = document.getElementById('compromiso');
+        const compromisoCounter = document.getElementById('compromiso-counter');
+        const compromisoChars = document.getElementById('compromiso-chars');
+        
+        // Inicializar contador de caracteres
+        function updateCharCount() {
+            const length = compromisoTextarea.value.length;
+            compromisoChars.textContent = length;
+            
+            if (length >= 450) {
+                compromisoCounter.classList.add('limit-exceeded');
+            } else {
+                compromisoCounter.classList.remove('limit-exceeded');
+            }
+        }
+        
+        compromisoTextarea.addEventListener('input', updateCharCount);
+        compromisoTextarea.addEventListener('keyup', updateCharCount);
         
         // Inicializar rating
         stars.forEach(star => {
@@ -758,12 +814,14 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
             let filledProgress = 0;
             
             progressElements.forEach(element => {
-                if (element.type === 'hidden' || element.tagName === 'SELECT' || element.tagName === 'INPUT') {
+                if (element.type === 'hidden' || element.tagName === 'SELECT' || element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
                     const progressValue = parseInt(element.getAttribute('data-progress'));
                     
                     if (element.type === 'hidden' && element.value !== '0') {
                         filledProgress += progressValue;
                     } else if (element.tagName === 'SELECT' && element.value !== '') {
+                        filledProgress += progressValue;
+                    } else if (element.tagName === 'TEXTAREA' && element.value.trim() !== '') {
                         filledProgress += progressValue;
                     } else if (element.value && element.value.trim() !== '') {
                         filledProgress += progressValue;
@@ -779,7 +837,7 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
         }
         
         // Escuchar cambios en los campos
-        document.querySelectorAll('input, select').forEach(element => {
+        document.querySelectorAll('input, select, textarea').forEach(element => {
             element.addEventListener('input', updateProgress);
             element.addEventListener('change', updateProgress);
         });
@@ -862,6 +920,10 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                     star.classList.remove('selected', 'hover');
                 });
                 
+                // Resetear contador de caracteres
+                compromisoChars.textContent = '0';
+                compromisoCounter.classList.remove('limit-exceeded');
+                
                 // Resetear progreso
                 totalProgress = 0;
                 progressFill.style.width = '0%';
@@ -905,6 +967,9 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
         
         // Cargar combos desde base de datos (simulación)
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar contador de caracteres
+            updateCharCount();
+            
             // Simular carga de datos para combos
             const comboSelectors = ['#zona', '#sector', '#puesto_votacion', '#departamento', '#municipio'];
             

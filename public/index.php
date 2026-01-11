@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$nickname]);
             $usuario = $stmt->fetch();
             
-            if ($usuario && password === $usuario['password']) {
+            if ($usuario && $password === $usuario['password']) {
                 // Login exitoso
                 $_SESSION['id_usuario'] = $usuario['id_usuario'];
                 $_SESSION['nickname'] = $usuario['nickname'];

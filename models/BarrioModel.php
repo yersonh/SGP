@@ -9,8 +9,7 @@ class BarrioModel {
     
     public function getAll() {
         $sql = "SELECT * FROM barrio WHERE activo = true ORDER BY nombre";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
+        $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     

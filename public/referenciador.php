@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../models/DepartamentoModel.php';
 require_once __DIR__ . '/../models/ZonaModel.php';
+require_once __DIR__ . '/../models/BarrioModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
@@ -29,12 +30,14 @@ $grupoPoblacionalModel = new GrupoPoblacionalModel($pdo);
 $ofertaApoyoModel = new OfertaApoyoModel($pdo);
 $departamentoModel = new DepartamentoModel($pdo);
 $zonaModel = new ZonaModel($pdo);
+$barrioModel = new BarrioModel($pdo);
 
 // Obtener datos para los combos
 $gruposPoblacionales = $grupoPoblacionalModel->getAll();
 $ofertasApoyo = $ofertaApoyoModel->getAll();
 $departamentos = $departamentoModel->getAll();
 $zonas = $zonaModel->getAll();
+$barrios = $barrioModel->getAll();
 ?>
 
 <!DOCTYPE html>
@@ -206,7 +209,11 @@ $zonas = $zonaModel->getAll();
                         </label>
                         <select id="barrio" name="barrio" class="form-select" data-progress="3">
                             <option value="">Seleccione un barrio</option>
-                            <!-- Por ahora vacío, se puede llenar dinámicamente -->
+                            <?php foreach ($barrios as $barrio): ?>
+                            <option value="<?php echo $barrio['id_barrio']; ?>">
+                                <?php echo htmlspecialchars($barrio['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     

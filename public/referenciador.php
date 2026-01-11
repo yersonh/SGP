@@ -638,7 +638,7 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                     <!-- Apoyo -->
                     <div class="form-group">
                         <label class="form-label" for="apoyo">
-                            <i class="fas fa-handshake"></i> Nivel de Apoyo
+                            <i class="fas fa-handshake"></i>Apoyo
                         </label>
                         <select id="apoyo" name="apoyo" class="form-select" data-progress="3">
                             <option value="">Seleccione nivel de apoyo</option>

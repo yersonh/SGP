@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../models/ReferenciadoModel.php';
 
 // Verificar sesión
 if (!isset($_SESSION['id_usuario'])) {
+    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'No autorizado']);
     exit();
 }
@@ -12,31 +13,59 @@ if (!isset($_SESSION['id_usuario'])) {
 $pdo = Database::getConnection();
 $referenciadoModel = new ReferenciadoModel($pdo);
 
+// DEPURACIÓN: Ver qué llega
+error_log("Datos POST recibidos: " . print_r($_POST, true));
+
 // Recoger datos del formulario
 $data = [
-    'nombre' => $_POST['nombre'] ?? '',
-    'apellido' => $_POST['apellido'] ?? '',
-    'cedula' => $_POST['cedula'] ?? '',
-    'direccion' => $_POST['direccion'] ?? '',
-    'email' => $_POST['email'] ?? '',
-    'telefono' => $_POST['telefono'] ?? '',
-    'afinidad' => $_POST['afinidad'] ?? 0,
-    'id_zona' => $_POST['zona'] ?? null,
-    'id_sector' => $_POST['sector'] ?? null,
-    'id_puesto_votacion' => $_POST['puesto_votacion'] ?? null,
-    'mesa' => $_POST['mesa'] ?? null,
-    'id_departamento' => $_POST['departamento'] ?? null,
-    'id_municipio' => $_POST['municipio'] ?? null,
-    'id_oferta_apoyo' => $_POST['apoyo'] ?? null,
-    'id_grupo_poblacional' => $_POST['grupo_poblacional'] ?? null,
-    'compromiso' => $_POST['compromiso'] ?? null,
+    'nombre' => trim($_POST['nombre'] ?? ''),
+    'apellido' => trim($_POST['apellido'] ?? ''),
+    'cedula' => trim($_POST['cedula'] ?? ''),
+    'direccion' => trim($_POST['direccion'] ?? ''),
+    'email' => trim($_POST['email'] ?? ''),
+    'telefono' => trim($_POST['telefono'] ?? ''),
+    'afinidad' => intval($_POST['afinidad'] ?? 0),
+    'id_zona' => !empty($_POST['zona']) ? intval($_POST['zona']) : null,
+    'id_sector' => !empty($_POST['sector']) ? intval($_POST['sector']) : null,
+    'id_puesto_votacion' => !empty($_POST['puesto_votacion']) ? intval($_POST['puesto_votacion']) : null,
+    'mesa' => !empty($_POST['mesa']) ? intval($_POST['mesa']) : null,
+    'id_departamento' => !empty($_POST['departamento']) ? intval($_POST['departamento']) : null,
+    'id_municipio' => !empty($_POST['municipio']) ? intval($_POST['municipio']) : null,
+    'id_oferta_apoyo' => !empty($_POST['apoyo']) ? intval($_POST['apoyo']) : null,
+    'id_grupo_poblacional' => !empty($_POST['grupo_poblacional']) ? intval($_POST['grupo_poblacional']) : null,
+    'compromiso' => trim($_POST['compromiso'] ?? ''),
     'id_referenciador' => $_POST['id_referenciador'] ?? $_SESSION['id_usuario']
 ];
 
 // Validaciones básicas
 if (empty($data['nombre']) || empty($data['apellido']) || empty($data['cedula'])) {
-    echo json_encode(['success' => false, 'message' => 'Campos obligatorios faltantes']);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Nombre, apellido y cédula son obligatorios']);
     exit();
+}
+
+// Validar afinidad (DEBE ser entre 1 y 5)
+if ($data['afinidad'] < 1 || $data['afinidad'] > 5) {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'La afinidad debe estar entre 1 y 5']);
+    exit();
+}
+
+// Validar que el referenciador existe y es de tipo Referenciador
+try {
+    // Podrías agregar una verificación aquí si quieres:
+    $stmt = $pdo->prepare("SELECT tipo_usuario FROM usuario WHERE id_usuario = ?");
+    $stmt->execute([$data['id_referenciador']]);
+    $usuario = $stmt->fetch();
+    
+    if (!$usuario || $usuario['tipo_usuario'] !== 'Referenciador') {
+        echo json_encode(['success' => false, 'message' => 'Usuario no autorizado para referenciar']);
+        exit();
+    }
+    
+} catch (Exception $e) {
+    // Continuar sin esta verificación si hay error
+    error_log("Error verificando usuario: " . $e->getMessage());
 }
 
 try {
@@ -48,12 +77,17 @@ try {
         echo json_encode(['success' => false, 'message' => 'Error al guardar el referenciado']);
     }
 } catch (Exception $e) {
+    error_log("Error en guardar_referenciado: " . $e->getMessage());
+    
     // Verificar si es error de duplicado de cédula
     if (strpos($e->getMessage(), 'duplicate key') !== false || 
-        strpos($e->getMessage(), 'Duplicate entry') !== false) {
+        strpos($e->getMessage(), 'Duplicate entry') !== false ||
+        strpos($e->getMessage(), '23505') !== false) { // Código error PostgreSQL
         echo json_encode(['success' => false, 'message' => 'La cédula ya está registrada']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error del sistema: ' . $e->getMessage()]);
     }
 }
+
+header('Content-Type: application/json');
 ?>

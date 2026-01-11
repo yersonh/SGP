@@ -515,13 +515,3 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-
-document.getElementById('barrio').addEventListener('change', function() {
-    const otroBarrioContainer = document.getElementById('otro-barrio-container');
-    if (this.value === '0') {
-        otroBarrioContainer.style.display = 'block';
-    } else {
-        otroBarrioContainer.style.display = 'none';
-    }
-    updateProgress();
-});

@@ -376,6 +376,102 @@ $zonas = $zonaModel->getAll();
                             <span id="compromiso-chars">0</span>/500 caracteres
                         </div>
                     </div>
+                    <!-- Insumos Disponibles -->
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-tools"></i> Insumos Disponibles
+                        </label>
+                        <div class="insumos-container">
+                            <div class="insumos-grid">
+                                <!-- Carro -->
+                                <div class="insumo-item">
+                                    <input type="checkbox" id="insumo_carro" name="insumos[]" value="carro" class="insumo-checkbox">
+                                    <label for="insumo_carro" class="insumo-label">
+                                        <div class="insumo-icon">
+                                            <i class="fas fa-car"></i>
+                                        </div>
+                                        <span class="insumo-text">Carro</span>
+                                        <div class="insumo-switch">
+                                            <div class="switch-slider"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Caballo -->
+                                <div class="insumo-item">
+                                    <input type="checkbox" id="insumo_caballo" name="insumos[]" value="caballo" class="insumo-checkbox">
+                                    <label for="insumo_caballo" class="insumo-label">
+                                        <div class="insumo-icon">
+                                            <i class="fas fa-horse"></i>
+                                        </div>
+                                        <span class="insumo-text">Caballo</span>
+                                        <div class="insumo-switch">
+                                            <div class="switch-slider"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Cicla -->
+                                <div class="insumo-item">
+                                    <input type="checkbox" id="insumo_cicla" name="insumos[]" value="cicla" class="insumo-checkbox">
+                                    <label for="insumo_cicla" class="insumo-label">
+                                        <div class="insumo-icon">
+                                            <i class="fas fa-bicycle"></i>
+                                        </div>
+                                        <span class="insumo-text">Cicla</span>
+                                        <div class="insumo-switch">
+                                            <div class="switch-slider"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Moto -->
+                                <div class="insumo-item">
+                                    <input type="checkbox" id="insumo_moto" name="insumos[]" value="moto" class="insumo-checkbox">
+                                    <label for="insumo_moto" class="insumo-label">
+                                        <div class="insumo-icon">
+                                            <i class="fas fa-motorcycle"></i>
+                                        </div>
+                                        <span class="insumo-text">Moto</span>
+                                        <div class="insumo-switch">
+                                            <div class="switch-slider"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Motocarro -->
+                                <div class="insumo-item">
+                                    <input type="checkbox" id="insumo_motocarro" name="insumos[]" value="motocarro" class="insumo-checkbox">
+                                    <label for="insumo_motocarro" class="insumo-label">
+                                        <div class="insumo-icon">
+                                            <i class="fas fa-truck-pickup"></i>
+                                        </div>
+                                        <span class="insumo-text">Motocarro</span>
+                                        <div class="insumo-switch">
+                                            <div class="switch-slider"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Publicidad -->
+                                <div class="insumo-item">
+                                    <input type="checkbox" id="insumo_publicidad" name="insumos[]" value="publicidad" class="insumo-checkbox">
+                                    <label for="insumo_publicidad" class="insumo-label">
+                                        <div class="insumo-icon">
+                                            <i class="fas fa-bullhorn"></i>
+                                        </div>
+                                        <span class="insumo-text">Publicidad</span>
+                                        <div class="insumo-switch">
+                                            <div class="switch-slider"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="insumos-selected" id="insumos-selected">
+                                Ningún insumo seleccionado
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- Botón de Envío -->
                     <div class="form-group full-width">
@@ -404,7 +500,55 @@ $zonas = $zonaModel->getAll();
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+        <!-- Script para manejar los insumos -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Manejar los switches de insumos
+            const insumosCheckboxes = document.querySelectorAll('.insumo-checkbox');
+            const insumosSelectedDiv = document.getElementById('insumos-selected');
+            
+            function updateInsumosDisplay() {
+                const selectedInsumos = [];
+                
+                insumosCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        // Obtener el texto del insumo desde el label
+                        const label = checkbox.nextElementSibling;
+                        const texto = label.querySelector('.insumo-text').textContent;
+                        selectedInsumos.push(texto);
+                    }
+                });
+                
+                if (selectedInsumos.length > 0) {
+                    insumosSelectedDiv.textContent = 'Seleccionados: ' + selectedInsumos.join(', ');
+                    insumosSelectedDiv.classList.add('insumos-active');
+                } else {
+                    insumosSelectedDiv.textContent = 'Ningún insumo seleccionado';
+                    insumosSelectedDiv.classList.remove('insumos-active');
+                }
+                
+                // Actualizar progreso
+                updateProgress();
+            }
+            
+            // Agregar evento a cada checkbox
+            insumosCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateInsumosDisplay);
+                
+                // También hacer clicable toda la tarjeta
+                const label = checkbox.nextElementSibling;
+                label.addEventListener('click', function(e) {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+            
+            // Inicializar display
+            updateInsumosDisplay();
+        });
+    </script>
     <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
 </body>

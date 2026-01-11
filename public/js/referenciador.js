@@ -75,6 +75,7 @@ function highlightStars(value) {
 }
 
 // Actualizar progreso
+// Actualizar progreso (modifica esta función en tu referenciador.js)
 function updateProgress() {
     let filledProgress = 0;
     
@@ -93,6 +94,10 @@ function updateProgress() {
             }
         }
     });
+    
+    // AGREGAR ESTO PARA LOS INSUMOS (cada uno vale 2 puntos)
+    const insumosSeleccionados = document.querySelectorAll('.insumo-checkbox:checked').length;
+    filledProgress += (insumosSeleccionados * 2); // 2% por cada insumo
     
     totalProgress = Math.min(filledProgress, maxProgress);
     const percentage = Math.round((totalProgress / maxProgress) * 100);

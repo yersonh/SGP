@@ -389,3 +389,121 @@
             color: var(--danger-color);
             font-weight: bold;
         }
+
+                /* Estilos para los switches de insumos */
+        .insumos-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .insumos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .insumo-item {
+            position: relative;
+        }
+        
+        .insumo-checkbox {
+            display: none;
+        }
+        
+        .insumo-label {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        
+        .insumo-label:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .insumo-checkbox:checked + .insumo-label {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-color: #2196f3;
+            color: #1565c0;
+        }
+        
+        .insumo-icon {
+            width: 40px;
+            height: 40px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .insumo-checkbox:checked + .insumo-label .insumo-icon {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .insumo-text {
+            flex-grow: 1;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        
+        .insumo-switch {
+            width: 50px;
+            height: 26px;
+            background: #ddd;
+            border-radius: 13px;
+            position: relative;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+        
+        .switch-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .insumo-checkbox:checked + .insumo-label .insumo-switch {
+            background: #4caf50;
+        }
+        
+        .insumo-checkbox:checked + .insumo-label .switch-slider {
+            left: 27px;
+            background: white;
+        }
+        
+        .insumos-selected {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px dashed #ddd;
+            font-size: 14px;
+            color: #666;
+            min-height: 20px;
+        }
+        
+        .insumos-selected.insumos-active {
+            border-color: #4caf50;
+            background: #f1f8e9;
+            color: #2e7d32;
+            font-weight: 500;
+        }

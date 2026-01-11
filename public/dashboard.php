@@ -8,12 +8,6 @@ if (!isset($_SESSION['id_usuario'])) {
     header('Location: index.php');
     exit();
 }
-// VERIFICAR SI ES ADMINISTRADOR
-if ($_SESSION['tipo_usuario'] !== 'Administrador') {
-    // Si no es administrador, redirigir a una vista diferente
-    header('Location: usuario_dashboard.php'); // O la vista correspondiente
-    exit();
-}
 
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
@@ -60,84 +54,64 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             --warning-color: #f39c12;
         }
         
-        * {
-            box-sizing: border-box;
-        }
-        
         body {
             background-color: #f5f7fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
             margin: 0;
             padding: 0;
-            font-size: 14px;
         }
         
-        /* Header Styles - Mobile First */
+        /* Header Styles - Similar al login */
         .main-header {
             background: linear-gradient(135deg, var(--primary-color), #1a252f);
             color: white;
-            padding: 15px 0;
+            padding: 20px 0;
             margin-bottom: 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
         }
         
         .header-container {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-        
-        .header-top {
-            display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
         
         .header-title {
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex: 1;
+            gap: 10px;
         }
         
         .header-title h1 {
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             font-weight: 600;
             margin: 0;
-            line-height: 1.2;
         }
         
         .user-count {
             background: rgba(255,255,255,0.15);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 500;
-            white-space: nowrap;
         }
         
         .logout-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.3);
             color: white;
-            padding: 6px 12px;
+            padding: 8px 15px;
             border-radius: 5px;
             display: flex;
             align-items: center;
             gap: 5px;
             text-decoration: none;
             transition: all 0.3s;
-            font-size: 0.8rem;
-            white-space: nowrap;
+            font-size: 0.9rem;
         }
         
         .logout-btn:hover {
@@ -145,97 +119,37 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             color: white;
         }
         
-        /* Main Content - Mobile First */
+        /* Main Content */
         .main-container {
             max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 15px;
+            margin: 30px auto;
+            padding: 0 20px;
         }
         
-        /* Current User Info - Mobile First */
-        .current-user-info {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 15px;
-        }
-        
-        .current-user-header {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        .current-user-header h3 {
-            color: var(--primary-color);
-            font-size: 1rem;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .login-time {
-            color: #718096;
-            font-size: 0.8rem;
-            background: #f8fafc;
-            padding: 5px 10px;
-            border-radius: 5px;
-            text-align: center;
-            word-break: break-word;
-        }
-        
-        .user-details {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detail-label {
-            color: #718096;
-            font-size: 0.75rem;
-            margin-bottom: 3px;
-        }
-        
-        .detail-value {
-            color: var(--primary-color);
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        
-        /* Top Bar - Mobile First */
+        /* Top Bar - Agregar Usuario y Estadísticas */
         .top-bar {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
             gap: 15px;
-            margin-bottom: 20px;
         }
         
         .btn-add-user {
             background: var(--secondary-color);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 12px 25px;
             border-radius: 8px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            gap: 10px;
             transition: all 0.3s;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 1rem;
             box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
-            width: 100%;
         }
         
         .btn-add-user:hover {
@@ -246,22 +160,22 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         }
         
         .stats-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            width: 100%;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         
         .stat-card {
             background: white;
             border-radius: 8px;
-            padding: 12px;
+            padding: 15px 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             text-align: center;
+            min-width: 120px;
         }
         
         .stat-number {
-            font-size: 1.4rem;
+            font-size: 1.8rem;
             font-weight: 700;
             color: var(--primary-color);
             line-height: 1;
@@ -269,12 +183,11 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         
         .stat-label {
             color: #7f8c8d;
-            font-size: 0.7rem;
+            font-size: 0.85rem;
             margin-top: 5px;
-            line-height: 1.2;
         }
         
-        /* Table Container - Mobile First */
+        /* Table Container */
         .table-container {
             background: white;
             border-radius: 10px;
@@ -286,134 +199,98 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         
         .table-header {
             background: var(--light-gray);
-            padding: 15px;
+            padding: 20px;
             border-bottom: 2px solid #eaeaea;
         }
         
         .table-header h2 {
             color: var(--primary-color);
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: 600;
             margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         
-        /* Table Styles - Mobile Friendly */
+        /* Table Styles - Similar a la imagen */
         .users-table {
             width: 100%;
             border-collapse: collapse;
-            display: block;
         }
         
         .users-table thead {
-            display: none; /* Hide table headers on mobile */
+            background-color: #f1f5f9;
         }
         
-        .users-table tbody {
-            display: block;
+        .users-table th {
+            padding: 18px 20px;
+            text-align: left;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .users-table tr {
-            display: flex;
-            flex-direction: column;
+        .users-table tbody tr {
             border-bottom: 1px solid #f1f5f9;
-            padding: 15px;
-            position: relative;
+            transition: background-color 0.2s;
         }
         
-        .users-table tr:last-child {
-            border-bottom: none;
+        .users-table tbody tr:hover {
+            background-color: #f8fafc;
         }
         
         .users-table td {
-            display: flex;
-            padding: 8px 0;
-            border: none;
-            align-items: flex-start;
-        }
-        
-        .users-table td:before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: var(--primary-color);
-            width: 120px;
-            min-width: 120px;
-            font-size: 0.8rem;
-            padding-right: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 20px;
+            vertical-align: middle;
+            color: #4a5568;
         }
         
         .user-info {
             display: flex;
             flex-direction: column;
-            flex: 1;
         }
         
         .user-nickname {
             font-weight: 600;
             color: var(--primary-color);
-            font-size: 0.95rem;
+            font-size: 1.05rem;
             margin-bottom: 3px;
         }
         
         .user-fullname {
             color: #718096;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
         
-        /* User Type and Status */
-        .user-type {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            background-color: rgba(155, 89, 182, 0.1);
-            color: #9b59b6;
-        }
-        
-        .user-status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        .status-active {
-            background-color: rgba(39, 174, 96, 0.1);
-            color: var(--success-color);
-        }
-        
-        .status-inactive {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger-color);
-        }
-        
-        /* Action Buttons - Mobile Friendly */
+        /* Action Buttons */
         .action-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
+            gap: 10px;
         }
         
         .btn-action {
-            padding: 10px 15px;
+            padding: 8px 15px;
             border-radius: 6px;
             border: none;
             font-weight: 500;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 6px;
-            width: 100%;
+            gap: 5px;
+        }
+        
+        .btn-edit {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+        
+        .btn-edit:hover {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: var(--secondary-color);
         }
         
         .btn-deactivate {
@@ -438,38 +315,157 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             color: var(--success-color);
         }
         
+        /* User Status */
+        .user-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+        
+        .status-inactive {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        /* User Type */
+        .user-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background-color: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+        }
+        
         /* No Data Message */
         .no-data {
             text-align: center;
-            padding: 40px 15px;
+            padding: 60px 20px;
             color: #7f8c8d;
         }
         
         .no-data i {
-            font-size: 3rem;
-            margin-bottom: 15px;
+            font-size: 4rem;
+            margin-bottom: 20px;
             opacity: 0.5;
         }
         
-        .no-data h4 {
-            font-size: 1.1rem;
-            margin: 15px 0 10px;
+        /* Responsive */
+        @media (max-width: 992px) {
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .logout-btn {
+                align-self: flex-end;
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats-container {
+                justify-content: center;
+            }
+            
+            .users-table {
+                display: block;
+                overflow-x: auto;
+            }
         }
         
-        .no-data p {
-            font-size: 0.9rem;
+        @media (max-width: 768px) {
+            .users-table th,
+            .users-table td {
+                padding: 15px 10px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-action {
+                justify-content: center;
+            }
+        }
+        
+        /* Current User Info */
+        .current-user-info {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 20px;
+        }
+        
+        .current-user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .current-user-header h3 {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .login-time {
+            color: #718096;
+            font-size: 0.9rem;
+            background: #f8fafc;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        .user-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            color: var(--primary-color);
+            font-weight: 500;
         }
         
         /* Footer Styles */
         .system-footer {
             text-align: center;
-            margin-top: 30px;
-            padding: 15px 0;
+            margin-top: 40px;
+            padding: 20px 0;
             border-top: 1px solid #eaeaea;
             color: #7f8c8d;
-            font-size: 0.75rem;
-            line-height: 1.5;
+            font-size: 0.85rem;
+            line-height: 1.6;
         }
         
         .system-footer p {
@@ -481,22 +477,21 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             font-weight: 600;
         }
         
-        /* Notification Styles for Mobile */
+        /* Notification Styles */
         .notification {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            left: 10px;
-            padding: 12px 15px;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            min-width: 300px;
+            max-width: 400px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 1000;
             animation: slideIn 0.3s ease-out;
-            max-width: 400px;
-            margin: 0 auto;
         }
         
         .notification-success {
@@ -520,9 +515,8 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         .notification-content {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             flex: 1;
-            font-size: 0.85rem;
         }
         
         .notification-close {
@@ -531,7 +525,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             color: inherit;
             cursor: pointer;
             padding: 0;
-            margin-left: 8px;
+            margin-left: 10px;
             opacity: 0.7;
             transition: opacity 0.2s;
         }
@@ -541,209 +535,8 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         }
         
         @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        /* Tablet Styles (min-width: 768px) */
-        @media (min-width: 768px) {
-            body {
-                font-size: 16px;
-            }
-            
-            .main-header {
-                padding: 20px 0;
-            }
-            
-            .header-container {
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 20px;
-            }
-            
-            .header-top {
-                width: auto;
-                gap: 20px;
-            }
-            
-            .header-title h1 {
-                font-size: 1.5rem;
-            }
-            
-            .user-count {
-                font-size: 0.85rem;
-                padding: 4px 12px;
-            }
-            
-            .logout-btn {
-                padding: 8px 15px;
-                font-size: 0.9rem;
-            }
-            
-            .main-container {
-                padding: 0 20px;
-                margin: 30px auto;
-            }
-            
-            .current-user-info {
-                padding: 20px;
-            }
-            
-            .current-user-header {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .current-user-header h3 {
-                font-size: 1.1rem;
-            }
-            
-            .login-time {
-                font-size: 0.9rem;
-                text-align: right;
-            }
-            
-            .user-details {
-                flex-direction: row;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 20px;
-            }
-            
-            .detail-label {
-                font-size: 0.85rem;
-            }
-            
-            .detail-value {
-                font-size: 1rem;
-            }
-            
-            .top-bar {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .btn-add-user {
-                width: auto;
-                padding: 12px 25px;
-            }
-            
-            .stats-container {
-                grid-template-columns: repeat(3, auto);
-                gap: 15px;
-                width: auto;
-            }
-            
-            .stat-card {
-                padding: 15px 20px;
-                min-width: 120px;
-            }
-            
-            .stat-number {
-                font-size: 1.8rem;
-            }
-            
-            .stat-label {
-                font-size: 0.85rem;
-            }
-            
-            .table-header {
-                padding: 20px;
-            }
-            
-            .table-header h2 {
-                font-size: 1.3rem;
-            }
-            
-            /* Show table headers on tablet and desktop */
-            .users-table {
-                display: table;
-            }
-            
-            .users-table thead {
-                display: table-header-group;
-            }
-            
-            .users-table tbody {
-                display: table-row-group;
-            }
-            
-            .users-table tr {
-                display: table-row;
-                padding: 0;
-            }
-            
-            .users-table td {
-                display: table-cell;
-                padding: 15px 20px;
-            }
-            
-            .users-table td:before {
-                display: none;
-            }
-            
-            .action-buttons {
-                flex-direction: row;
-                gap: 10px;
-            }
-            
-            .btn-action {
-                width: auto;
-                padding: 8px 15px;
-                font-size: 0.85rem;
-                justify-content: flex-start;
-            }
-            
-            .no-data {
-                padding: 60px 20px;
-            }
-            
-            .no-data i {
-                font-size: 4rem;
-            }
-            
-            .no-data h4 {
-                font-size: 1.3rem;
-            }
-            
-            .no-data p {
-                font-size: 1rem;
-            }
-            
-            .system-footer {
-                font-size: 0.85rem;
-                padding: 20px 0;
-                margin-top: 40px;
-            }
-            
-            .notification {
-                top: 20px;
-                right: 20px;
-                left: auto;
-                min-width: 300px;
-                max-width: 400px;
-            }
-        }
-        
-        /* Desktop Styles (min-width: 992px) */
-        @media (min-width: 992px) {
-            .user-details {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-            
-            .users-table td {
-                padding: 20px;
-            }
-        }
-        
-        /* Large Desktop Styles (min-width: 1200px) */
-        @media (min-width: 1200px) {
-            .main-container,
-            .header-container {
-                max-width: 1200px;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
     </style>
 </head>
@@ -751,17 +544,15 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
     <!-- Header -->
     <header class="main-header">
         <div class="header-container">
-            <div class="header-top">
-                <div class="header-title">
-                    <h1>
-                        <i class="fas fa-users"></i> Usuarios del Sistema
-                        <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
-                    </h1>
-                </div>
-                <a href="logout.php" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
+            <div class="header-title">
+                <h1>
+                    <i class="fas fa-users"></i> Usuarios del Sistema
+                    <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
+                </h1>
             </div>
+            <a href="logout.php" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
         </div>
     </header>
 
@@ -845,13 +636,13 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
                         ?>
                         <tr>
-                            <td data-label="NICKNAME">
+                            <td>
                                 <div class="user-info">
                                     <span class="user-nickname"><?php echo htmlspecialchars($usuario['nickname']); ?></span>
                                 </div>
                             </td>
                             
-                            <td data-label="NOMBRE COMPLETO">
+                            <td>
                                 <div class="user-info">
                                     <?php 
                                     if (!empty($usuario['nombres']) && !empty($usuario['apellidos'])) {
@@ -863,11 +654,11 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                                 </div>
                             </td>
                             
-                            <td data-label="TIPO">
+                            <td>
                                 <span class="user-type"><?php echo htmlspecialchars($usuario['tipo_usuario']); ?></span>
                             </td>
                             
-                            <td data-label="ESTADO">
+                            <td>
                                 <?php if ($esta_activo): ?>
                                     <span class="user-status status-active">
                                         <i class="fas fa-check-circle"></i> Activo
@@ -879,7 +670,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                                 <?php endif; ?>
                             </td>
                             
-                            <td data-label="ACCIONES">
+                            <td>
                                 <div class="action-buttons">
                                     <?php if ($esta_activo): ?>
                                         <button class="btn-action btn-deactivate" 
@@ -1118,33 +909,15 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             }
         }
         
-        // Efecto hover en filas de la tabla (solo en desktop)
-        if (window.innerWidth >= 768) {
-            document.querySelectorAll('.users-table tbody tr').forEach(row => {
-                row.addEventListener('mouseenter', function() {
-                    this.style.backgroundColor = '#f8fafc';
-                });
-                
-                row.addEventListener('mouseleave', function() {
-                    this.style.backgroundColor = '';
-                });
+        // Efecto hover en filas de la tabla
+        document.querySelectorAll('.users-table tbody tr').forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8fafc';
             });
-        }
-        
-        // Manejar cambios de tamaño de ventana
-        window.addEventListener('resize', function() {
-            if (window.innerWidth >= 768) {
-                // Restaurar efecto hover en desktop
-                document.querySelectorAll('.users-table tbody tr').forEach(row => {
-                    row.addEventListener('mouseenter', function() {
-                        this.style.backgroundColor = '#f8fafc';
-                    });
-                    
-                    row.addEventListener('mouseleave', function() {
-                        this.style.backgroundColor = '';
-                    });
-                });
-            }
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
         });
     </script>
 </body>

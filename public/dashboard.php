@@ -53,127 +53,111 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-blue: #2c3e50;
-            --secondary-blue: #3498db;
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
             --light-gray: #f8f9fa;
             --dark-gray: #343a40;
-            --success-green: #28a745;
-            --danger-red: #dc3545;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
         }
         
         body {
             background-color: #f5f7fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
+            margin: 0;
+            padding: 0;
         }
         
-        /* Header Styles */
+        /* Header Styles - Similar al login */
         .main-header {
-            background: linear-gradient(135deg, var(--primary-blue), #1a252f);
+            background: linear-gradient(135deg, var(--primary-color), #1a252f);
             color: white;
-            padding: 25px 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            margin-bottom: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .header-content {
+        .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
         
-        .header-left h1 {
-            font-size: 1.8rem;
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-title h1 {
+            font-size: 1.5rem;
             font-weight: 600;
             margin: 0;
         }
         
         .user-count {
-            display: inline-block;
             background: rgba(255,255,255,0.15);
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
-            margin-left: 10px;
             font-weight: 500;
         }
         
-        /* User Info Card */
-        .user-info-sidebar {
-            background: white;
-            border-radius: 10px;
-            padding: 0;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            border: 1px solid #eaeaea;
-            overflow: hidden;
-        }
-        
-        .user-info-header {
-            background: var(--secondary-blue);
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
             color: white;
-            padding: 15px;
-            text-align: center;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 0.9rem;
         }
         
-        .user-info-header h5 {
-            margin: 0;
-            font-weight: 600;
-            font-size: 1.1rem;
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
         }
         
-        .user-info-body {
-            padding: 20px;
+        /* Main Content */
+        .main-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
         }
         
-        .user-field {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #f0f0f0;
-            padding-bottom: 15px;
+        /* Top Bar - Agregar Usuario y Estadísticas */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         
-        .user-field:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-        
-        .field-label {
-            color: #7f8c8d;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 5px;
-            display: block;
-        }
-        
-        .field-value {
-            color: var(--primary-blue);
-            font-size: 1rem;
-            font-weight: 600;
-        }
-        
-        .field-value.nickname {
-            color: var(--secondary-blue);
-        }
-        
-        .field-value.date {
-            color: #e74c3c;
-            font-weight: 500;
-        }
-        
-        /* Add User Button */
         .btn-add-user {
-            background: var(--secondary-blue);
+            background: var(--secondary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 500;
-            display: inline-flex;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             transition: all 0.3s;
             text-decoration: none;
+            font-size: 1rem;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
         }
         
         .btn-add-user:hover {
@@ -183,112 +167,192 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
         }
         
-        /* Main Content */
-        .main-content {
+        .stats-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        
+        /* Table Container */
+        .table-container {
             background: white;
             border-radius: 10px;
-            padding: 30px;
+            padding: 0;
             box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
             margin-top: 20px;
         }
         
-        .section-title {
-            color: var(--primary-blue);
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 25px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
+        .table-header {
+            background: var(--light-gray);
+            padding: 20px;
+            border-bottom: 2px solid #eaeaea;
         }
         
-        /* Table Styles */
-        .table-custom {
-            border-collapse: separate;
-            border-spacing: 0;
+        .table-header h2 {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        /* Table Styles - Similar a la imagen */
+        .users-table {
             width: 100%;
+            border-collapse: collapse;
         }
         
-        .table-custom thead th {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-            color: var(--primary-blue);
+        .users-table thead {
+            background-color: #f1f5f9;
+        }
+        
+        .users-table th {
+            padding: 18px 20px;
+            text-align: left;
+            color: var(--primary-color);
             font-weight: 600;
-            padding: 15px;
+            font-size: 0.95rem;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .users-table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+        
+        .users-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        
+        .users-table td {
+            padding: 20px;
             vertical-align: middle;
+            color: #4a5568;
         }
         
-        .table-custom tbody td {
-            padding: 15px;
-            vertical-align: middle;
-            border-bottom: 1px solid #eee;
+        .user-info {
+            display: flex;
+            flex-direction: column;
         }
         
-        .table-custom tbody tr:hover {
-            background-color: rgba(52, 152, 219, 0.05);
+        .user-nickname {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1.05rem;
+            margin-bottom: 3px;
         }
         
-        /* Status Badges */
-        .badge-status {
-            padding: 6px 12px;
+        .user-fullname {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .password-display {
+            font-family: monospace;
+            letter-spacing: 2px;
+            color: #718096;
+            font-size: 1rem;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-action {
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-edit {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+        
+        .btn-edit:hover {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: var(--secondary-color);
+        }
+        
+        .btn-delete {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+        
+        .btn-delete:hover {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+        
+        /* User Status */
+        .user-status {
+            display: inline-block;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 500;
         }
         
-        .badge-active {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: var(--success-green);
+        .status-active {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
         }
         
-        .badge-inactive {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--danger-red);
-        }
-        
-        /* User Type Badges */
-        .badge-admin {
+        .status-inactive {
             background-color: rgba(231, 76, 60, 0.1);
-            color: #e74c3c;
+            color: var(--danger-color);
         }
         
-        .badge-user {
-            background-color: rgba(52, 152, 219, 0.1);
-            color: var(--secondary-blue);
-        }
-        
-        /* Action Buttons */
-        .btn-action {
-            width: 36px;
-            height: 36px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-            background: white;
-            color: #6c757d;
-            transition: all 0.2s;
-        }
-        
-        .btn-action:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-        }
-        
-        .btn-action.edit:hover {
-            color: var(--secondary-blue);
-            border-color: var(--secondary-blue);
-        }
-        
-        .btn-action.delete:hover {
-            color: var(--danger-red);
-            border-color: var(--danger-red);
+        /* User Type */
+        .user-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background-color: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
         }
         
         /* No Data Message */
         .no-data {
             text-align: center;
-            padding: 50px 20px;
+            padding: 60px 20px;
             color: #7f8c8d;
         }
         
@@ -299,291 +363,350 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         }
         
         /* Responsive */
-        @media (max-width: 768px) {
-            .header-content {
+        @media (max-width: 992px) {
+            .header-container {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 15px;
             }
             
-            .header-right {
-                width: 100%;
+            .logout-btn {
+                align-self: flex-end;
             }
             
-            .user-info-sidebar {
-                margin-bottom: 20px;
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats-container {
+                justify-content: center;
+            }
+            
+            .users-table {
+                display: block;
+                overflow-x: auto;
             }
         }
         
-        /* Logout Button */
-        .btn-logout {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            transition: all 0.3s;
+        @media (max-width: 768px) {
+            .users-table th,
+            .users-table td {
+                padding: 15px 10px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-action {
+                justify-content: center;
+            }
         }
         
-        .btn-logout:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
+        /* Current User Info */
+        .current-user-info {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .current-user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .current-user-header h3 {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .login-time {
+            color: #718096;
+            font-size: 0.9rem;
+            background: #f8fafc;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        .user-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            color: var(--primary-color);
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="main-header">
-        <div class="container">
-            <div class="header-content">
-                <div class="header-left">
-                    <h1>
-                        <i class="fas fa-users me-2"></i>Usuarios del Sistema
-                        <span class="user-count">
-                            <i class="fas fa-user-friends me-1"></i><?php echo $total_usuarios; ?> usuarios
-                        </span>
-                    </h1>
-                </div>
-                
-                <div class="header-right">
-                    <a href="logout.php" class="btn-logout">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                    </a>
-                </div>
+        <div class="header-container">
+            <div class="header-title">
+                <h1>
+                    <i class="fas fa-users"></i> Usuarios del Sistema
+                    <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
+                </h1>
             </div>
+            <a href="logout.php" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
         </div>
     </header>
 
-    <div class="container">
-        <div class="row">
-            <!-- Columna izquierda: Información del usuario logueado -->
-            <div class="col-lg-4">
-                <div class="user-info-sidebar">
-                    <div class="user-info-header">
-                        <h5><i class="fas fa-user-circle me-2"></i>Información de Sesión</h5>
-                    </div>
-                    
-                    <div class="user-info-body">
-                        <div class="user-field">
-                            <span class="field-label">Usuario:</span>
-                            <span class="field-value">
-                                <?php 
-                                $nombre_completo = '';
-                                if (!empty($usuario_logueado['nombres']) && !empty($usuario_logueado['apellidos'])) {
-                                    $nombre_completo = htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']);
-                                } else {
-                                    $nombre_completo = htmlspecialchars($usuario_logueado['nickname']);
-                                }
-                                echo $nombre_completo;
-                                ?>
-                            </span>
-                        </div>
-                        
-                        <div class="user-field">
-                            <span class="field-label">Nickname:</span>
-                            <span class="field-value nickname">
-                                <?php echo htmlspecialchars($usuario_logueado['nickname']); ?>
-                            </span>
-                        </div>
-                        
-                        <div class="user-field">
-                            <span class="field-label">Fecha de ingreso:</span>
-                            <span class="field-value date">
-                                <i class="fas fa-calendar-alt me-1"></i><?php echo $fecha_formateada; ?>
-                            </span>
-                        </div>
-                        
-                        <div class="user-field">
-                            <span class="field-label">Tipo de usuario:</span>
-                            <span class="field-value">
-                                <?php 
-                                $tipo_usuario = htmlspecialchars($usuario_logueado['tipo_usuario']);
-                                $badge_class = ($tipo_usuario == 'Administrador') ? 'badge-admin' : 'badge-user';
-                                ?>
-                                <span class="badge-status <?php echo $badge_class; ?>">
-                                    <?php echo $tipo_usuario; ?>
-                                </span>
-                            </span>
-                        </div>
-                    </div>
+    <div class="main-container">
+        <!-- Información del usuario actual -->
+        <div class="current-user-info">
+            <div class="current-user-header">
+                <h3><i class="fas fa-user-circle"></i> Sesión activa</h3>
+                <span class="login-time" id="current-time"><?php echo $fecha_formateada; ?></span>
+            </div>
+            <div class="user-details">
+                <div class="detail-item">
+                    <span class="detail-label">Usuario:</span>
+                    <span class="detail-value">
+                        <?php 
+                        $nombre_completo = '';
+                        if (!empty($usuario_logueado['nombres']) && !empty($usuario_logueado['apellidos'])) {
+                            $nombre_completo = htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']);
+                        } else {
+                            $nombre_completo = htmlspecialchars($usuario_logueado['nickname']);
+                        }
+                        echo $nombre_completo;
+                        ?>
+                    </span>
                 </div>
-                
-                <!-- Botón de Agregar Usuario -->
-                <div class="mt-3">
-                    <a href="agregar_usuario.php" class="btn-add-user">
-                        <i class="fas fa-plus-circle"></i> Agregar Nuevo Usuario
-                    </a>
+                <div class="detail-item">
+                    <span class="detail-label">Nickname:</span>
+                    <span class="detail-value"><?php echo htmlspecialchars($usuario_logueado['nickname']); ?></span>
                 </div>
+                <div class="detail-item">
+                    <span class="detail-label">Tipo de usuario:</span>
+                    <span class="detail-value user-type"><?php echo htmlspecialchars($usuario_logueado['tipo_usuario']); ?></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Bar con botón y estadísticas -->
+        <div class="top-bar">
+            <a href="agregar_usuario.php" class="btn-add-user">
+                <i class="fas fa-plus-circle"></i> AGREGAR USUARIO
+            </a>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $total_usuarios; ?></div>
+                    <div class="stat-label">Usuarios totales</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">
+                        <?php 
+                        $usuarios_activos = array_filter($usuarios, function($u) {
+                            $activo = $u['activo'];
+                            return ($activo === true || $activo === 't' || $activo == 1);
+                        });
+                        echo count($usuarios_activos);
+                        ?>
+                    </div>
+                    <div class="stat-label">Usuarios activos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">
+                        <?php 
+                        $usuarios_admin = array_filter($usuarios, function($u) {
+                            return $u['tipo_usuario'] == 'Administrador';
+                        });
+                        echo count($usuarios_admin);
+                        ?>
+                    </div>
+                    <div class="stat-label">Administradores</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de usuarios -->
+        <div class="table-container">
+            <div class="table-header">
+                <h2><i class="fas fa-list-alt"></i> Listado de Usuarios</h2>
             </div>
             
-            <!-- Columna derecha: Tabla de usuarios -->
-            <div class="col-lg-8">
-                <div class="main-content">
-                    <h2 class="section-title">
-                        <i class="fas fa-list-alt me-2"></i>Listado de Usuarios
-                    </h2>
-                    
-                    <?php if ($total_usuarios > 0): ?>
-                    <div class="table-responsive">
-                        <table class="table table-custom">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nickname</th>
-                                    <th>Nombre Completo</th>
-                                    <th>Tipo Usuario</th>
-                                    <th>Fecha Creación</th>
-                                    <th>Último Registro</th>
-                                    <th>Tope</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($usuarios as $usuario): ?>
-                                <tr>
-                                    <td class="fw-bold">#<?php echo $usuario['id_usuario']; ?></td>
-                                    
-                                    <td>
-                                        <div class="fw-bold"><?php echo htmlspecialchars($usuario['nickname']); ?></div>
-                                    </td>
-                                    
-                                    <td>
-                                        <?php 
-                                        if (!empty($usuario['nombres']) && !empty($usuario['apellidos'])) {
-                                            echo htmlspecialchars($usuario['nombres'] . ' ' . $usuario['apellidos']);
-                                        } else {
-                                            echo '<span class="text-muted fst-italic">Sin asignar</span>';
-                                        }
-                                        ?>
-                                    </td>
-                                    
-                                    <td>
-                                        <?php 
-                                        $tipo = htmlspecialchars($usuario['tipo_usuario']);
-                                        $badge_class_tipo = ($tipo == 'Administrador') ? 'badge-admin' : 'badge-user';
-                                        ?>
-                                        <span class="badge-status <?php echo $badge_class_tipo; ?>">
-                                            <?php echo $tipo; ?>
-                                        </span>
-                                    </td>
-                                    
-                                    <td>
-                                        <?php echo date('d/m/Y', strtotime($usuario['fecha_creacion'])); ?>
-                                    </td>
-                                    
-                                    <td>
-                                        <?php 
-                                        if ($usuario['ultimo_registro']) {
-                                            echo date('d/m/Y H:i', strtotime($usuario['ultimo_registro']));
-                                        } else {
-                                            echo '<span class="text-muted fst-italic">Nunca</span>';
-                                        }
-                                        ?>
-                                    </td>
-                                    
-                                    <td>
-                                        <?php echo htmlspecialchars($usuario['tope']); ?>
-                                    </td>
-                                    
-                                    <td>
-                                        <?php if ($usuario['activo'] == true || $usuario['activo'] === 't' || $usuario['activo'] == 1): ?>
-                                            <span class="badge-status badge-active">
-                                                <i class="fas fa-check-circle me-1"></i>Activo
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge-status badge-inactive">
-                                                <i class="fas fa-times-circle me-1"></i>Inactivo
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
-                                    
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn-action edit" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn-action delete" title="Eliminar">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <?php else: ?>
-                    <div class="no-data">
-                        <i class="fas fa-users"></i>
-                        <h4 class="mt-3 mb-2">No hay usuarios registrados</h4>
-                        <p class="text-muted">El sistema no tiene usuarios registrados actualmente.</p>
-                        <a href="agregar_usuario.php" class="btn-add-user mt-3">
-                            <i class="fas fa-plus-circle"></i> Agregar Primer Usuario
-                        </a>
-                    </div>
-                    <?php endif; ?>
-                </div>
+            <?php if ($total_usuarios > 0): ?>
+            <div class="table-responsive">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>NICKNAME</th>
+                            <th>NOMBRE COMPLETO</th>
+                            <th>CONTRASEÑA</th>
+                            <th>TIPO</th>
+                            <th>ESTADO</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($usuarios as $usuario): ?>
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <span class="user-nickname"><?php echo htmlspecialchars($usuario['nickname']); ?></span>
+                                    <span class="text-muted" style="font-size: 0.8rem;">ID: #<?php echo $usuario['id_usuario']; ?></span>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                <div class="user-info">
+                                    <?php 
+                                    if (!empty($usuario['nombres']) && !empty($usuario['apellidos'])) {
+                                        echo '<span class="user-fullname">' . htmlspecialchars($usuario['nombres'] . ' ' . $usuario['apellidos']) . '</span>';
+                                    } else {
+                                        echo '<span class="text-muted fst-italic">Sin asignar</span>';
+                                    }
+                                    ?>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                <span class="password-display">•••••••••</span>
+                            </td>
+                            
+                            <td>
+                                <span class="user-type"><?php echo htmlspecialchars($usuario['tipo_usuario']); ?></span>
+                            </td>
+                            
+                            <td>
+                                <?php 
+                                $activo = $usuario['activo'];
+                                $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                                ?>
+                                <?php if ($esta_activo): ?>
+                                    <span class="user-status status-active">
+                                        <i class="fas fa-check-circle"></i> Activo
+                                    </span>
+                                <?php else: ?>
+                                    <span class="user-status status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactivo
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-edit" title="Editar usuario">
+                                        <i class="fas fa-edit"></i> EDITAR
+                                    </button>
+                                    <button class="btn-action btn-delete" title="Eliminar usuario">
+                                        <i class="fas fa-trash"></i> BORRAR
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
+            <?php else: ?>
+            <div class="no-data">
+                <i class="fas fa-users"></i>
+                <h4 class="mt-3 mb-2">No hay usuarios registrados</h4>
+                <p class="text-muted">El sistema no tiene usuarios registrados actualmente.</p>
+                <a href="agregar_usuario.php" class="btn-add-user mt-3">
+                    <i class="fas fa-plus-circle"></i> Agregar Primer Usuario
+                </a>
+            </div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- Información del sistema -->
+        <div class="text-center text-muted mt-4 mb-4">
+            <small>
+                Sistema de Gestión Personal (SGP) &copy; <?php echo date('Y'); ?> | 
+                Última actualización: <span id="last-update"><?php echo $fecha_formateada; ?></span>
+            </small>
         </div>
     </div>
-
-    <!-- Footer (opcional) -->
-    <footer class="mt-5 py-4 text-center text-muted border-top">
-        <div class="container">
-            <p class="mb-0">
-                <small>
-                    Sistema de Gestión Personal (SGP) &copy; <?php echo date('Y'); ?> 
-                    | Última actualización: <?php echo $fecha_formateada; ?>
-                </small>
-            </p>
-        </div>
-    </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Actualizar la hora en tiempo real
-        function updateTime() {
+        // Actualizar hora en tiempo real
+        function updateCurrentTime() {
             const now = new Date();
             const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
                 hour: '2-digit', 
                 minute: '2-digit',
                 second: '2-digit'
             };
-            const dateString = now.toLocaleDateString('es-ES', options);
+            const timeString = now.toLocaleDateString('es-ES', options);
             
-            // Podemos mostrar esto en algún lugar si queremos
-            console.log('Hora actualizada:', dateString);
+            // Actualizar tiempo en el header
+            const currentTimeElement = document.getElementById('current-time');
+            if (currentTimeElement) {
+                currentTimeElement.textContent = timeString;
+            }
+            
+            // Actualizar última actualización en el footer
+            const lastUpdateElement = document.getElementById('last-update');
+            if (lastUpdateElement) {
+                lastUpdateElement.textContent = timeString;
+            }
         }
         
         // Actualizar cada segundo
-        setInterval(updateTime, 1000);
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
         
         // Confirmación para eliminar
-        document.querySelectorAll('.btn-action.delete').forEach(button => {
+        document.querySelectorAll('.btn-delete').forEach(button => {
             button.addEventListener('click', function() {
                 if (confirm('¿Está seguro de que desea eliminar este usuario?\nEsta acción no se puede deshacer.')) {
-                    // Aquí iría la lógica para eliminar el usuario
                     alert('Funcionalidad de eliminar en desarrollo');
                 }
             });
         });
         
         // Acción para editar
-        document.querySelectorAll('.btn-action.edit').forEach(button => {
+        document.querySelectorAll('.btn-edit').forEach(button => {
             button.addEventListener('click', function() {
-                // Aquí iría la lógica para editar el usuario
                 alert('Funcionalidad de editar en desarrollo');
+            });
+        });
+        
+        // Efecto hover en filas de la tabla
+        document.querySelectorAll('.users-table tbody tr').forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8fafc';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
             });
         });
     </script>

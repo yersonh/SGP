@@ -195,8 +195,22 @@ $zonas = $zonaModel->getAll();
                                required
                                data-progress="5">
                     </div>
-                    
-                    <!-- Email -->
+                    <!-- Barrio -->
+                    <div class="form-group">
+                        <label class="form-label" for="barrio">
+                            <i class="fas fa-map-signs"></i> Barrio
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-map-signs input-icon"></i>
+                            <input type="text" 
+                                   id="barrio" 
+                                   name="barrio" 
+                                   class="form-control" 
+                                   placeholder="Nombre del barrio"
+                                   data-progress="3">
+                        </div>
+                    </div>
+                     <!-- Email -->
                     <div class="form-group">
                         <label class="form-label" for="email">
                             <i class="fas fa-envelope"></i> Email *

@@ -1,9 +1,11 @@
 <?php
 session_start();
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/UsuarioModel.php';
 header('Content-Type: text/html; charset=utf-8');
 
 $pdo = Database::getConnection();
+$model = new UsuarioModel($pdo);
 $error = '';
 
 // Procesar login si se envió el formulario
@@ -13,24 +15,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (!empty($nickname) && !empty($password)) {
         try {
-            // Buscar usuario por nickname
-            $stmt = $pdo->prepare("SELECT * FROM usuario WHERE nickname = ? AND activo = true");
-            $stmt->execute([$nickname]);
-            $usuario = $stmt->fetch();
+            // Usar el modelo para verificar credenciales
+            $usuario = $model->verificarCredenciales($nickname, $password);
             
-            if ($usuario && $password === $usuario['password']) {
+            if ($usuario) {
                 // Login exitoso
                 $_SESSION['id_usuario'] = $usuario['id_usuario'];
                 $_SESSION['nickname'] = $usuario['nickname'];
                 $_SESSION['tipo_usuario'] = $usuario['tipo_usuario'];
                 $_SESSION['login_time'] = time();
                 
-                // Actualizar último registro
+                // Actualizar último registro usando el modelo
                 $fecha_actual = date('Y-m-d H:i:s');
-                $stmt_update = $pdo->prepare("UPDATE usuario SET ultimo_registro = ? WHERE id_usuario = ?");
-                $stmt_update->execute([$fecha_actual, $usuario['id_usuario']]);
+                $model->actualizarUltimoRegistro($usuario['id_usuario'], $fecha_actual);
                 
-                // Redirigir a dashboard o vista de usuarios
+                // Redirigir a dashboard
                 header('Location: dashboard.php');
                 exit();
             } else {
@@ -242,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="logo">
                 <i class="fas fa-user-shield"></i>
             </div>
-            <h1>Sistema de Gestión Personal</h1>
+            <h1>SGP</h1>
             <p>Acceso restringido al personal autorizado</p>
         </div>
         
@@ -317,7 +316,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
             
             // Mostrar/ocultar contraseña (opcional, puedes agregar un icono)
-            // Podrías agregar un icono de ojo para mostrar/ocultar contraseña
+            const passwordInput = document.getElementById('password');
+            const showPasswordBtn = document.createElement('button');
+            showPasswordBtn.type = 'button';
+            showPasswordBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            showPasswordBtn.style.cssText = 'position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #7f8c8d; cursor: pointer; padding: 0;';
+            
+            showPasswordBtn.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+            
+            document.querySelector('.input-with-icon').appendChild(showPasswordBtn);
         });
     </script>
 </body>

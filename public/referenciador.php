@@ -1,26 +1,17 @@
 <?php
 session_start();
-
-// ==================== CÓDIGO PRINCIPAL ====================
-
-// Cargar configuración
 require_once __DIR__ . '/../config/database.php';
-
-// Cargar modelos
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../models/DepartamentoModel.php';
 require_once __DIR__ . '/../models/ZonaModel.php';
 
-// ==================== VERIFICACIÓN DE USUARIO ====================
-
+// Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
     header('Location: index.php');
     exit();
 }
-
-// ==================== CONEXIÓN Y DATOS ====================
 
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
@@ -45,6 +36,7 @@ $ofertasApoyo = $ofertaApoyoModel->getAll();
 $departamentos = $departamentoModel->getAll();
 $zonas = $zonaModel->getAll();
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -55,13 +47,6 @@ $zonas = $zonaModel->getAll();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; }
-        .main-header { background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; padding: 15px 0; }
-        .form-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.08); margin: 20px auto; max-width: 1200px; }
-        .form-control, .form-select { border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; }
-        .submit-btn { background: linear-gradient(135deg, #27ae60, #219653); color: white; border: none; padding: 15px 30px; border-radius: 8px; width: 100%; }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -98,7 +83,6 @@ $zonas = $zonaModel->getAll();
         <div class="form-card">
             <div class="form-header">
                 <h2><i class="fas fa-edit"></i> Datos Personales del Referido</h2>
-                <small class="text-muted">Los campos marcados con * son obligatorios</small>
             </div>
             
             <form id="referenciacion-form">
@@ -375,22 +359,6 @@ $zonas = $zonaModel->getAll();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.js"></script>
     
-    <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
-    
-    <!-- Script de inicialización básica -->
-    <script>
-        // Configurar selects dependientes
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('sector').disabled = true;
-            document.getElementById('puesto_votacion').disabled = true;
-            document.getElementById('municipio').disabled = true;
-        });
-        
-        // Función básica para abrir censo
-        function abrirConsultaCenso() {
-            window.open('https://consultacenso.registraduria.gov.co/consultar/', '_blank');
-        }
-    </script>
 </body>
 </html>

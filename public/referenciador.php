@@ -183,34 +183,34 @@ $zonas = $zonaModel->getAll();
                     </div>
                     
                     <!-- Dirección -->
-                    <div class="form-group full-width">
+                    <div class="form-group">
                         <label class="form-label" for="direccion">
                             <i class="fas fa-map-marker-alt"></i> Dirección *
                         </label>
-                        <input type="text" 
-                               id="direccion" 
-                               name="direccion" 
-                               class="form-control" 
-                               placeholder="Ingrese la dirección completa"
-                               required
-                               data-progress="5">
+                        <div class="input-with-icon">
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                            <input type="text" 
+                                   id="direccion" 
+                                   name="direccion" 
+                                   class="form-control" 
+                                   placeholder="Ingrese la dirección"
+                                   required
+                                   data-progress="5">
+                        </div>
                     </div>
+                    
                     <!-- Barrio -->
                     <div class="form-group">
                         <label class="form-label" for="barrio">
                             <i class="fas fa-map-signs"></i> Barrio
                         </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-map-signs input-icon"></i>
-                            <input type="text" 
-                                   id="barrio" 
-                                   name="barrio" 
-                                   class="form-control" 
-                                   placeholder="Nombre del barrio"
-                                   data-progress="3">
-                        </div>
+                        <select id="barrio" name="barrio" class="form-select" data-progress="3">
+                            <option value="">Seleccione un barrio</option>
+                            <!-- Por ahora vacío, se puede llenar dinámicamente -->
+                        </select>
                     </div>
-                     <!-- Email -->
+                    
+                    <!-- Email -->
                     <div class="form-group">
                         <label class="form-label" for="email">
                             <i class="fas fa-envelope"></i> Email *

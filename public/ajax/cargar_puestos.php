@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/PuestoVotacionModel.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
 
 $pdo = Database::getConnection();
 $puestoModel = new PuestoVotacionModel($pdo);

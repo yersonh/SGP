@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/ReferenciadoModel.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/ReferenciadoModel.php';
 
 // Verificar sesión
 if (!isset($_SESSION['id_usuario'])) {

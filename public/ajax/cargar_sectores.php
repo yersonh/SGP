@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/SectorModel.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/SectorModel.php';
 
 $pdo = Database::getConnection();
 $sectorModel = new SectorModel($pdo);

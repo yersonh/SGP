@@ -45,8 +45,55 @@ $zonas = $zonaModel->getAll();
     <title>Formulario de Referenciación - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; }
+        .main-header { background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; padding: 15px 0; }
+        .form-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.08); margin: 20px auto; max-width: 1200px; }
+        .form-control, .form-select { border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; }
+        .submit-btn { background: linear-gradient(135deg, #27ae60, #219653); color: white; border: none; padding: 15px 30px; border-radius: 8px; width: 100%; }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .notification-success { background: linear-gradient(135deg, #27ae60, #219653); }
+        .notification-error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .notification-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .notification-info { background: linear-gradient(135deg, #3498db, #2980b9); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-left: auto;
+            font-size: 16px;
+        }
+        .rating-container { display: flex; align-items: center; gap: 15px; }
+        .stars-container { display: flex; gap: 5px; }
+        .star { cursor: pointer; font-size: 24px; color: #ddd; }
+        .star.selected { color: #f1c40f; }
+        .star.hover { color: #f1c40f; }
+        .rating-value { font-weight: bold; color: #2c3e50; }
+        .input-with-icon { position: relative; }
+        .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; }
+        .input-with-icon .form-control { padding-left: 40px; }
+        .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #3498db; }
+        .textarea-counter { text-align: right; font-size: 12px; color: #666; margin-top: 5px; }
+        .limit-exceeded { color: #e74c3c; }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -357,8 +404,8 @@ $zonas = $zonaModel->getAll();
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.js"></script>
     
+    <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
 </body>
 </html>

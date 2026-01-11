@@ -124,7 +124,12 @@ document.getElementById('zona').addEventListener('change', function() {
         
         // Llamada AJAX para obtener sectores
         fetch(`ajax/cargar_sectores.php?zona_id=${zonaId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     sectorSelect.innerHTML = '<option value="">Seleccione un sector</option>';
@@ -163,7 +168,12 @@ document.getElementById('sector').addEventListener('change', function() {
         
         // Llamada AJAX para obtener puestos
         fetch(`ajax/cargar_puestos.php?sector_id=${sectorId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     puestoSelect.innerHTML = '<option value="">Seleccione un puesto</option>';
@@ -200,7 +210,12 @@ document.getElementById('departamento').addEventListener('change', function() {
         
         // Llamada AJAX para obtener municipios
         fetch(`ajax/cargar_municipios.php?departamento_id=${departamentoId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     municipioSelect.innerHTML = '<option value="">Seleccione un municipio</option>';
@@ -267,9 +282,9 @@ document.getElementById('referenciacion-form').addEventListener('submit', async 
         return;
     }
     
-    // Validar afinidad
+    // Validar afinidad (debe ser 1-5)
     if (currentRating === 0) {
-        showNotification('Por favor seleccione el nivel de afinidad', 'error');
+        showNotification('Por favor seleccione el nivel de afinidad (1-5 estrellas)', 'error');
         return;
     }
     
@@ -278,15 +293,21 @@ document.getElementById('referenciacion-form').addEventListener('submit', async 
     submitBtn.disabled = true;
     
     try {
-        // Preparar datos para enviar
+        // Preparar datos para enviar usando FormData
         const formData = new FormData(this);
-        formData.append('id_referenciador', '<?php echo $id_usuario_logueado; ?>');
+        
+        // Asegurar que la afinidad se envíe correctamente
+        formData.set('afinidad', currentRating.toString());
         
         // Enviar datos al servidor
         const response = await fetch('ajax/guardar_referenciado.php', {
             method: 'POST',
             body: formData
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const data = await response.json();
         
@@ -328,6 +349,7 @@ document.getElementById('referenciacion-form').addEventListener('submit', async 
         }
         
     } catch (error) {
+        console.error('Error:', error);
         showNotification('Error de conexión: ' + error.message, 'error');
     } finally {
         // Restaurar botón
@@ -347,10 +369,16 @@ function showNotification(message, type = 'info') {
     // Crear nueva notificación
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
+    
+    let icon = 'info-circle';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'error') icon = 'exclamation-circle';
+    if (type === 'warning') icon = 'exclamation-triangle';
+    
     notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <i class="fas fa-${icon}"></i>
         <span>${message}</span>
-        <button class="btn-close" onclick="this.parentElement.remove()"></button>
+        <button class="btn-close" onclick="this.parentElement.remove()">×</button>
     `;
     
     document.body.appendChild(notification);
@@ -385,4 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (value > 30) this.value = 30;
         });
     }
+    
+    // Inicializar progreso
+    updateProgress();
 });

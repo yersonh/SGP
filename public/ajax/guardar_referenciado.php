@@ -10,13 +10,11 @@ if (!isset($_SESSION['id_usuario'])) {
     exit();
 }
 
+// Obtener conexión
 $pdo = Database::getConnection();
 $referenciadoModel = new ReferenciadoModel($pdo);
 
-// DEPURACIÓN: Ver qué llega
-error_log("Datos POST recibidos: " . print_r($_POST, true));
-
-// Recoger datos del formulario
+// Recoger y sanitizar datos del formulario
 $data = [
     'nombre' => trim($_POST['nombre'] ?? ''),
     'apellido' => trim($_POST['apellido'] ?? ''),
@@ -38,33 +36,43 @@ $data = [
 ];
 
 // Validaciones básicas
-if (empty($data['nombre']) || empty($data['apellido']) || empty($data['cedula'])) {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Nombre, apellido y cédula son obligatorios']);
-    exit();
-}
+$errors = [];
+if (empty($data['nombre'])) $errors[] = 'El nombre es obligatorio';
+if (empty($data['apellido'])) $errors[] = 'El apellido es obligatorio';
+if (empty($data['cedula'])) $errors[] = 'La cédula es obligatoria';
+if (empty($data['direccion'])) $errors[] = 'La dirección es obligatoria';
+if (empty($data['email'])) $errors[] = 'El email es obligatorio';
+if (empty($data['telefono'])) $errors[] = 'El teléfono es obligatorio';
 
-// Validar afinidad (DEBE ser entre 1 y 5)
+// Validar afinidad (DEBE ser entre 1 y 5 según la tabla)
 if ($data['afinidad'] < 1 || $data['afinidad'] > 5) {
+    $errors[] = 'La afinidad debe estar entre 1 y 5';
+}
+
+// Si hay errores, retornarlos
+if (!empty($errors)) {
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'La afinidad debe estar entre 1 y 5']);
+    echo json_encode(['success' => false, 'message' => implode(', ', $errors)]);
     exit();
 }
 
-// Validar que el referenciador existe y es de tipo Referenciador
+// Validar que el usuario referenciador existe
 try {
-    // Podrías agregar una verificación aquí si quieres:
-    $stmt = $pdo->prepare("SELECT tipo_usuario FROM usuario WHERE id_usuario = ?");
+    $stmt = $pdo->prepare("SELECT id_usuario, tipo_usuario FROM usuario WHERE id_usuario = ?");
     $stmt->execute([$data['id_referenciador']]);
     $usuario = $stmt->fetch();
     
-    if (!$usuario || $usuario['tipo_usuario'] !== 'Referenciador') {
+    if (!$usuario) {
+        echo json_encode(['success' => false, 'message' => 'Usuario referenciador no encontrado']);
+        exit();
+    }
+    
+    if ($usuario['tipo_usuario'] !== 'Referenciador') {
         echo json_encode(['success' => false, 'message' => 'Usuario no autorizado para referenciar']);
         exit();
     }
     
 } catch (Exception $e) {
-    // Continuar sin esta verificación si hay error
     error_log("Error verificando usuario: " . $e->getMessage());
 }
 
@@ -80,12 +88,13 @@ try {
     error_log("Error en guardar_referenciado: " . $e->getMessage());
     
     // Verificar si es error de duplicado de cédula
-    if (strpos($e->getMessage(), 'duplicate key') !== false || 
-        strpos($e->getMessage(), 'Duplicate entry') !== false ||
-        strpos($e->getMessage(), '23505') !== false) { // Código error PostgreSQL
+    $errorMessage = $e->getMessage();
+    if (strpos($errorMessage, 'duplicate key') !== false || 
+        strpos($errorMessage, 'Duplicate entry') !== false ||
+        strpos($errorMessage, '23505') !== false) {
         echo json_encode(['success' => false, 'message' => 'La cédula ya está registrada']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Error del sistema: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Error del sistema: ' . $errorMessage]);
     }
 }
 

@@ -1,5 +1,4 @@
 <?php
-// models/ReferenciadoModel.php
 class ReferenciadoModel {
     private $pdo;
     
@@ -7,7 +6,10 @@ class ReferenciadoModel {
         $this->pdo = $pdo;
     }
     
-     public function guardarReferenciado($data) {
+    public function guardarReferenciado($data) {
+        // Asegurar que afinidad sea válida (1-5)
+        $afinidad = max(1, min(5, intval($data['afinidad'])));
+        
         $sql = "INSERT INTO referenciados (
             nombre, apellido, cedula, direccion, email, telefono, 
             afinidad, id_zona, id_sector, id_puesto_votacion, mesa,
@@ -29,7 +31,7 @@ class ReferenciadoModel {
         $stmt->bindValue(':direccion', $data['direccion']);
         $stmt->bindValue(':email', $data['email']);
         $stmt->bindValue(':telefono', $data['telefono']);
-        $stmt->bindValue(':afinidad', $data['afinidad'], PDO::PARAM_INT);
+        $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
         
         // Campos opcionales
         $stmt->bindValue(':id_zona', $data['id_zona'], PDO::PARAM_INT);
@@ -67,7 +69,7 @@ class ReferenciadoModel {
                 ORDER BY r.fecha_registro DESC";
         
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
+        $stmt->bindValue(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

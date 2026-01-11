@@ -2,6 +2,10 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../models/GrupoPoblacionalModel.php';
+require_once __DIR__ . '/../models/OfertaApoyoModel.php';
+require_once __DIR__ . '/../models/DepartamentoModel.php';
+require_once __DIR__ . '/../models/ZonaModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
@@ -19,6 +23,18 @@ $usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
 // Actualizar último registro
 $fecha_actual = date('Y-m-d H:i:s');
 $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
+
+// Inicializar modelos para los combos
+$grupoPoblacionalModel = new GrupoPoblacionalModel($pdo);
+$ofertaApoyoModel = new OfertaApoyoModel($pdo);
+$departamentoModel = new DepartamentoModel($pdo);
+$zonaModel = new ZonaModel($pdo);
+
+// Obtener datos para los combos
+$gruposPoblacionales = $grupoPoblacionalModel->getAll();
+$ofertasApoyo = $ofertaApoyoModel->getAll();
+$departamentos = $departamentoModel->getAll();
+$zonas = $zonaModel->getAll();
 ?>
 
 <!DOCTYPE html>
@@ -31,9 +47,6 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
-    <style>
-        
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -197,7 +210,11 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         </label>
                         <select id="zona" name="zona" class="form-select" data-progress="3">
                             <option value="">Seleccione una zona</option>
-                            <!-- Opciones vendrán de la base de datos -->
+                            <?php foreach ($zonas as $zona): ?>
+                            <option value="<?php echo $zona['id_zona']; ?>">
+                                <?php echo htmlspecialchars($zona['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
@@ -206,9 +223,8 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         <label class="form-label" for="sector">
                             <i class="fas fa-th"></i> Sector
                         </label>
-                        <select id="sector" name="sector" class="form-select" data-progress="3">
-                            <option value="">Seleccione un sector</option>
-                            <!-- Opciones vendrán de la base de datos -->
+                        <select id="sector" name="sector" class="form-select" data-progress="3" disabled>
+                            <option value="">Primero seleccione una zona</option>
                         </select>
                     </div>
                     
@@ -217,9 +233,8 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         <label class="form-label" for="puesto_votacion">
                             <i class="fas fa-vote-yea"></i> Puesto de Votación
                         </label>
-                        <select id="puesto_votacion" name="puesto_votacion" class="form-select" data-progress="3">
-                            <option value="">Seleccione un puesto</option>
-                            <!-- Opciones vendrán de la base de datos -->
+                        <select id="puesto_votacion" name="puesto_votacion" class="form-select" data-progress="3" disabled>
+                            <option value="">Primero seleccione un sector</option>
                         </select>
                     </div>
                     
@@ -250,7 +265,11 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         </label>
                         <select id="departamento" name="departamento" class="form-select" data-progress="3">
                             <option value="">Seleccione un departamento</option>
-                            <!-- Opciones vendrán de la base de datos -->
+                            <?php foreach ($departamentos as $departamento): ?>
+                            <option value="<?php echo $departamento['id_departamento']; ?>">
+                                <?php echo htmlspecialchars($departamento['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
@@ -259,9 +278,8 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         <label class="form-label" for="municipio">
                             <i class="fas fa-city"></i> Municipio
                         </label>
-                        <select id="municipio" name="municipio" class="form-select" data-progress="3">
-                            <option value="">Seleccione un municipio</option>
-                            <!-- Opciones vendrán de la base de datos -->
+                        <select id="municipio" name="municipio" class="form-select" data-progress="3" disabled>
+                            <option value="">Primero seleccione un departamento</option>
                         </select>
                     </div>
                     
@@ -272,10 +290,11 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         </label>
                         <select id="apoyo" name="apoyo" class="form-select" data-progress="3">
                             <option value="">Seleccione Oferta de apoyo</option>
-                            <option value="Alto">Alto</option>
-                            <option value="Medio">Medio</option>
-                            <option value="Bajo">Bajo</option>
-                            <option value="Ninguno">Ninguno</option>
+                            <?php foreach ($ofertasApoyo as $oferta): ?>
+                            <option value="<?php echo $oferta['id_oferta']; ?>">
+                                <?php echo htmlspecialchars($oferta['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
@@ -286,18 +305,15 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
                         </label>
                         <select id="grupo_poblacional" name="grupo_poblacional" class="form-select" data-progress="3">
                             <option value="">Seleccione grupo</option>
-                            <option value="Jóvenes">Jóvenes</option>
-                            <option value="Adultos">Adultos</option>
-                            <option value="Adultos Mayores">Adultos Mayores</option>
-                            <option value="Mujeres">Mujeres</option>
-                            <option value="LGBTIQ+">LGBTIQ+</option>
-                            <option value="Afrodescendientes">Afrodescendientes</option>
-                            <option value="Indígenas">Indígenas</option>
-                            <option value="Personas con discapacidad">Personas con discapacidad</option>
+                            <?php foreach ($gruposPoblacionales as $grupo): ?>
+                            <option value="<?php echo $grupo['id_grupo']; ?>">
+                                <?php echo htmlspecialchars($grupo['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
-                    <!-- NUEVO: Compromiso -->
+                    <!-- Compromiso -->
                     <div class="form-group full-width">
                         <label class="form-label" for="compromiso">
                             <i class="fas fa-handshake"></i> Compromiso del Referido

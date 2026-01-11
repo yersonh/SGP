@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/UsuarioModel.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
@@ -9,35 +10,25 @@ if (!isset($_SESSION['id_usuario'])) {
 }
 
 $pdo = Database::getConnection();
+$model = new UsuarioModel($pdo);
 $id_usuario_logueado = $_SESSION['id_usuario'];
 
 // 1. Capturar la fecha actual
 $fecha_actual = date('Y-m-d H:i:s');
 
-// 2. Actualizar último registro en la base de datos
-$query_actualizar = "UPDATE usuario SET ultimo_registro = ? WHERE id_usuario = ?";
-$stmt_actualizar = $pdo->prepare($query_actualizar);
-$stmt_actualizar->execute([$fecha_actual, $id_usuario_logueado]);
+// 2. Actualizar último registro usando el modelo
+$model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
 
-// 3. Obtener datos del usuario logueado
-$query_usuario = "SELECT u.*, pe.nombres, pe.apellidos 
-                  FROM usuario u 
-                  LEFT JOIN personal_electoral pe ON u.id_usuario = pe.id_usuario 
-                  WHERE u.id_usuario = ?";
-$stmt_usuario = $pdo->prepare($query_usuario);
-$stmt_usuario->execute([$id_usuario_logueado]);
-$usuario_logueado = $stmt_usuario->fetch();
+// 3. Obtener datos del usuario logueado usando el modelo
+$usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
 
-// 4. Obtener todos los usuarios para la tabla
-$query_usuarios = "SELECT u.*, pe.nombres, pe.apellidos 
-                   FROM usuario u 
-                   LEFT JOIN personal_electoral pe ON u.id_usuario = pe.id_usuario 
-                   ORDER BY u.fecha_creacion DESC";
-$stmt_usuarios = $pdo->query($query_usuarios);
-$usuarios = $stmt_usuarios->fetchAll();
+// 4. Obtener todos los usuarios usando el modelo
+$usuarios = $model->getAllUsuarios();
 
-// 5. Contar número de usuarios
-$total_usuarios = count($usuarios);
+// 5. Obtener estadísticas usando el modelo
+$total_usuarios = $model->countUsuarios();
+$usuarios_activos = $model->countUsuariosActivos();
+$administradores = $model->countAdministradores();
 
 // 6. Formatear fecha para mostrar
 $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
@@ -60,6 +51,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             --dark-gray: #343a40;
             --success-color: #27ae60;
             --danger-color: #e74c3c;
+            --warning-color: #f39c12;
         }
         
         body {
@@ -271,13 +263,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             font-size: 0.9rem;
         }
         
-        .password-display {
-            font-family: monospace;
-            letter-spacing: 2px;
-            color: #718096;
-            font-size: 1rem;
-        }
-        
         /* Action Buttons */
         .action-buttons {
             display: flex;
@@ -308,15 +293,26 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             color: var(--secondary-color);
         }
         
-        .btn-delete {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger-color);
-            border: 1px solid rgba(231, 76, 60, 0.2);
+        .btn-deactivate {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(243, 156, 18, 0.2);
         }
         
-        .btn-delete:hover {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: var(--danger-color);
+        .btn-deactivate:hover {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .btn-activate {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(39, 174, 96, 0.2);
+        }
+        
+        .btn-activate:hover {
+            background-color: rgba(39, 174, 96, 0.2);
+            color: var(--success-color);
         }
         
         /* User Status */
@@ -460,6 +456,88 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             color: var(--primary-color);
             font-weight: 500;
         }
+        
+        /* Footer Styles */
+        .system-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            border-top: 1px solid #eaeaea;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        
+        .system-footer p {
+            margin: 5px 0;
+        }
+        
+        .system-footer strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .notification-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .notification-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .notification-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -523,26 +601,11 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                     <div class="stat-label">Usuarios totales</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">
-                        <?php 
-                        $usuarios_activos = array_filter($usuarios, function($u) {
-                            $activo = $u['activo'];
-                            return ($activo === true || $activo === 't' || $activo == 1);
-                        });
-                        echo count($usuarios_activos);
-                        ?>
-                    </div>
+                    <div class="stat-number"><?php echo $usuarios_activos; ?></div>
                     <div class="stat-label">Usuarios activos</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">
-                        <?php 
-                        $usuarios_admin = array_filter($usuarios, function($u) {
-                            return $u['tipo_usuario'] == 'Administrador';
-                        });
-                        echo count($usuarios_admin);
-                        ?>
-                    </div>
+                    <div class="stat-number"><?php echo $administradores; ?></div>
                     <div class="stat-label">Administradores</div>
                 </div>
             </div>
@@ -568,6 +631,10 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                     </thead>
                     <tbody>
                         <?php foreach ($usuarios as $usuario): ?>
+                        <?php 
+                        $activo = $usuario['activo'];
+                        $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                        ?>
                         <tr>
                             <td>
                                 <div class="user-info">
@@ -593,10 +660,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             </td>
                             
                             <td>
-                                <?php 
-                                $activo = $usuario['activo'];
-                                $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
-                                ?>
                                 <?php if ($esta_activo): ?>
                                     <span class="user-status status-active">
                                         <i class="fas fa-check-circle"></i> Activo
@@ -610,12 +673,23 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             
                             <td>
                                 <div class="action-buttons">
-                                    <button class="btn-action btn-edit" title="Editar usuario">
+                                    <button class="btn-action btn-edit" title="Editar usuario" onclick="editarUsuario(<?php echo $usuario['id_usuario']; ?>)">
                                         <i class="fas fa-edit"></i> EDITAR
                                     </button>
-                                    <button class="btn-action btn-delete" title="Eliminar usuario">
-                                        <i class="fas fa-trash"></i> BORRAR
-                                    </button>
+                                    
+                                    <?php if ($esta_activo): ?>
+                                        <button class="btn-action btn-deactivate" 
+                                                title="Dar de baja al usuario"
+                                                onclick="darDeBaja(<?php echo $usuario['id_usuario']; ?>, '<?php echo htmlspecialchars($usuario['nickname']); ?>', this)">
+                                            <i class="fas fa-user-slash"></i> DAR DE BAJA
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn-action btn-activate" 
+                                                title="Reactivar usuario"
+                                                onclick="reactivarUsuario(<?php echo $usuario['id_usuario']; ?>, '<?php echo htmlspecialchars($usuario['nickname']); ?>', this)">
+                                            <i class="fas fa-user-check"></i> REACTIVAR
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -635,13 +709,16 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             <?php endif; ?>
         </div>
         
-        <!-- Información del sistema -->
-        <div class="text-center text-muted mt-4 mb-4">
-            <small>
-                Sistema de Gestión Personal (SGP) &copy; <?php echo date('Y'); ?> | 
-                Última actualización: <span id="last-update"><?php echo $fecha_formateada; ?></span>
-            </small>
-        </div>
+        <!-- Footer del sistema -->
+        <footer class="system-footer">
+            <p>© Derechos de autor Reservados. 
+                <strong>Ing. Rubén Darío González García</strong> • 
+                SISGONTech • Colombia © • <?php echo date('Y'); ?>
+            </p>
+            <p>Contacto: <strong>+57 3106310227</strong> • 
+                Email: <strong>sisgonnet@gmail.com</strong>
+            </p>
+        </footer>
     </div>
 
     <!-- Bootstrap JS -->
@@ -651,26 +728,17 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         // Actualizar hora en tiempo real
         function updateCurrentTime() {
             const now = new Date();
-            const options = { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric',
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            };
-            const timeString = now.toLocaleDateString('es-ES', options);
+            const day = now.getDate().toString().padStart(2, '0');
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const year = now.getFullYear();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
             
-            // Actualizar tiempo en el header
             const currentTimeElement = document.getElementById('current-time');
             if (currentTimeElement) {
                 currentTimeElement.textContent = timeString;
-            }
-            
-            // Actualizar última actualización en el footer
-            const lastUpdateElement = document.getElementById('last-update');
-            if (lastUpdateElement) {
-                lastUpdateElement.textContent = timeString;
             }
         }
         
@@ -678,21 +746,179 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         updateCurrentTime();
         setInterval(updateCurrentTime, 1000);
         
-        // Confirmación para eliminar
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', function() {
-                if (confirm('¿Está seguro de que desea eliminar este usuario?\nEsta acción no se puede deshacer.')) {
-                    alert('Funcionalidad de eliminar en desarrollo');
+        // Función para mostrar notificaciones
+        function showNotification(message, type = 'info') {
+            // Eliminar notificación anterior si existe
+            const oldNotification = document.querySelector('.notification');
+            if (oldNotification) {
+                oldNotification.remove();
+            }
+            
+            // Crear nueva notificación
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+                <button class="notification-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Botón para cerrar
+            notification.querySelector('.notification-close').addEventListener('click', () => {
+                notification.remove();
+            });
+            
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
                 }
-            });
-        });
+            }, 5000);
+        }
         
-        // Acción para editar
-        document.querySelectorAll('.btn-edit').forEach(button => {
-            button.addEventListener('click', function() {
-                alert('Funcionalidad de editar en desarrollo');
-            });
-        });
+        // Función para dar de baja un usuario
+        async function darDeBaja(idUsuario, nickname, button) {
+            if (!confirm(`¿Está seguro de dar de BAJA al usuario "${nickname}"?\n\nEl usuario no podrá acceder al sistema, pero se mantendrán sus registros.`)) {
+                return;
+            }
+            
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            button.disabled = true;
+            
+            try {
+                const response = await fetch('ajax/usuario.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `accion=desactivar&id_usuario=${idUsuario}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Cambiar el estado en la tabla
+                    const row = button.closest('tr');
+                    const statusBadge = row.querySelector('.user-status');
+                    if (statusBadge) {
+                        statusBadge.className = 'user-status status-inactive';
+                        statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Inactivo';
+                    }
+                    
+                    // Cambiar el botón a "REACTIVAR"
+                    button.innerHTML = '<i class="fas fa-user-check"></i> REACTIVAR';
+                    button.className = 'btn-action btn-activate';
+                    button.onclick = function() {
+                        reactivarUsuario(idUsuario, nickname, button);
+                    };
+                    
+                    // Actualizar estadísticas
+                    updateStats(-1, 0);
+                    
+                    showNotification('Usuario dado de baja correctamente', 'success');
+                } else {
+                    showNotification('Error: ' + (data.message || 'No se pudo dar de baja el usuario'), 'error');
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            } catch (error) {
+                showNotification('Error de conexión: ' + error.message, 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+        
+        // Función para reactivar un usuario
+        async function reactivarUsuario(idUsuario, nickname, button) {
+            if (!confirm(`¿Desea REACTIVAR al usuario "${nickname}"?`)) {
+                return;
+            }
+            
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            button.disabled = true;
+            
+            try {
+                const response = await fetch('ajax/usuario.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `accion=reactivar&id_usuario=${idUsuario}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Cambiar el estado en la tabla
+                    const row = button.closest('tr');
+                    const statusBadge = row.querySelector('.user-status');
+                    if (statusBadge) {
+                        statusBadge.className = 'user-status status-active';
+                        statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Activo';
+                    }
+                    
+                    // Cambiar el botón a "DAR DE BAJA"
+                    button.innerHTML = '<i class="fas fa-user-slash"></i> DAR DE BAJA';
+                    button.className = 'btn-action btn-deactivate';
+                    button.onclick = function() {
+                        darDeBaja(idUsuario, nickname, button);
+                    };
+                    
+                    // Actualizar estadísticas
+                    updateStats(1, 0);
+                    
+                    showNotification('Usuario reactivado correctamente', 'success');
+                } else {
+                    showNotification('Error: ' + data.message, 'error');
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            } catch (error) {
+                showNotification('Error de conexión: ' + error.message, 'error');
+                button.disabled = false;
+            }
+        }
+        
+        // Función para editar usuario (placeholder)
+        function editarUsuario(idUsuario) {
+            showNotification('Funcionalidad de edición en desarrollo', 'warning');
+            // Aquí iría la lógica para editar el usuario
+        }
+        
+        // Función para actualizar estadísticas
+        function updateStats(changeActivos, changeTotal) {
+            const statCards = document.querySelectorAll('.stat-card');
+            if (statCards.length >= 2) {
+                const totalElement = statCards[0].querySelector('.stat-number');
+                const activosElement = statCards[1].querySelector('.stat-number');
+                
+                if (totalElement && changeTotal !== 0) {
+                    const current = parseInt(totalElement.textContent);
+                    totalElement.textContent = current + changeTotal;
+                }
+                
+                if (activosElement && changeActivos !== 0) {
+                    const current = parseInt(activosElement.textContent);
+                    activosElement.textContent = current + changeActivos;
+                }
+                
+                // Actualizar contador en el header
+                const userCountElement = document.querySelector('.user-count');
+                if (userCountElement && changeTotal !== 0) {
+                    const text = userCountElement.textContent;
+                    const count = parseInt(text);
+                    userCountElement.textContent = (count + changeTotal) + ' usuarios';
+                }
+            }
+        }
         
         // Efecto hover en filas de la tabla
         document.querySelectorAll('.users-table tbody tr').forEach(row => {

@@ -1,6 +1,4 @@
 <?php
-// models/UsuarioModel.php
-
 class UsuarioModel {
     private $pdo;
     

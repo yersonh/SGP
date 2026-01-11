@@ -328,11 +328,12 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
         .system-footer {
             text-align: center;
             padding: 20px 0;
-            background: var(--primary-color);
-            color: white;
+            background: white;
+            color: var(--primary-color);
             font-size: 0.85rem;
             line-height: 1.5;
             margin-top: 30px;
+            border-top: 2px solid #eaeaea;
         }
         
         .system-footer p {

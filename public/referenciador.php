@@ -1,230 +1,22 @@
 <?php
 session_start();
 
-// Activar todos los errores
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// ==================== DEBUG INTEGRADO ====================
-// Si el parámetro debug=1 está presente, mostrar información de debug
-if (isset($_GET['debug']) && $_GET['debug'] == '1') {
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Debug - Referenciador</title>';
-    echo '<style>body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }';
-    echo 'pre { background: #2d2d2d; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db; }';
-    echo '.success { color: #2ecc71; } .error { color: #e74c3c; } .warning { color: #f39c12; }';
-    echo 'h1, h2, h3 { color: #3498db; }';
-    echo 'a { color: #3498db; text-decoration: none; }';
-    echo 'a:hover { text-decoration: underline; }';
-    echo '.file-list { background: #2d2d2d; padding: 10px; border-radius: 5px; margin: 10px 0; }';
-    echo '</style></head><body>';
-    
-    echo '<h1>🔍 Debug - Sistema de Referenciación</h1>';
-    echo '<p><a href="referenciador.php">← Volver sin debug</a></p>';
-    
-    // Información básica
-    echo '<h2>📊 Información del Sistema</h2>';
-    echo '<pre>';
-    echo 'PHP Version: ' . phpversion() . "\n";
-    echo 'Session ID: ' . session_id() . "\n";
-    echo 'Current Directory: ' . __DIR__ . "\n";
-    echo 'Working Directory: ' . getcwd() . "\n";
-    echo '</pre>';
-    
-    // Verificar sesión
-    echo '<h2>🔐 Estado de Sesión</h2>';
-    echo '<pre>';
-    if (isset($_SESSION['id_usuario'])) {
-        echo 'Usuario ID: ' . $_SESSION['id_usuario'] . "\n";
-        echo 'Nickname: ' . ($_SESSION['nickname'] ?? 'No definido') . "\n";
-        echo 'Tipo Usuario: ' . ($_SESSION['tipo_usuario'] ?? 'No definido') . "\n";
-    } else {
-        echo '❌ NO hay sesión activa' . "\n";
-    }
-    echo '</pre>';
-    
-    // Verificar archivos de modelos
-    echo '<h2>📁 Verificación de Archivos</h2>';
-    
-    $archivos = [
-        'Config Database' => __DIR__ . '/../config/database.php',
-        'UsuarioModel' => __DIR__ . '/../models/UsuarioModel.php',
-        'GrupoPoblacionalModel' => __DIR__ . '/../models/GrupoPoblacionalModel.php',
-        'OfertaApoyoModel' => __DIR__ . '/../models/OfertaApoyoModel.php',
-        'DepartamentoModel' => __DIR__ . '/../models/DepartamentoModel.php',
-        'ZonaModel' => __DIR__ . '/../models/ZonaModel.php',
-    ];
-    
-    foreach ($archivos as $nombre => $ruta) {
-        echo '<div class="file-list">';
-        echo "<strong>{$nombre}:</strong><br>";
-        echo "Ruta: {$ruta}<br>";
-        
-        if (file_exists($ruta)) {
-            echo '<span class="success">✅ EXISTE</span><br>';
-            echo 'Tamaño: ' . filesize($ruta) . ' bytes<br>';
-            echo 'Permisos: ' . substr(sprintf('%o', fileperms($ruta)), -4) . '<br>';
-            
-            // Verificar contenido
-            $content = file_get_contents($ruta);
-            if (strpos($content, '<?php') === false) {
-                echo '<span class="warning">⚠️ No tiene etiqueta PHP</span>';
-            }
-        } else {
-            echo '<span class="error">❌ NO EXISTE</span>';
-        }
-        echo '</div>';
-    }
-    
-    // Listar contenido de models/
-    echo '<h2>📂 Directorio models/</h2>';
-    $models_dir = __DIR__ . '/../models/';
-    
-    if (is_dir($models_dir)) {
-        echo '<div class="file-list">';
-        $files = scandir($models_dir);
-        echo 'Archivos encontrados:<br>';
-        foreach ($files as $file) {
-            if ($file !== '.' && $file !== '..') {
-                $path = $models_dir . $file;
-                $icon = is_dir($path) ? '📁' : '📄';
-                echo "{$icon} {$file}<br>";
-            }
-        }
-        echo '</div>';
-    } else {
-        echo '<div class="file-list error">';
-        echo '❌ El directorio models/ no existe en: ' . $models_dir;
-        echo '</div>';
-    }
-    
-    echo '<hr>';
-    echo '<h3>🔧 Solución Rápida</h3>';
-    echo '<p>Si los archivos no existen, créalos manualmente en Railway:</p>';
-    echo '<pre style="background: #2d2d2d; padding: 15px;">';
-    echo "1. Ve a Railway Dashboard\n";
-    echo "2. Selecciona tu proyecto\n";
-    echo "3. Ve a 'Settings' → 'Variables'\n";
-    echo "4. Verifica las rutas\n";
-    echo "5. O usa el terminal para ver la estructura: ls -la";
-    echo '</pre>';
-    
-    echo '</body></html>';
-    exit();
-}
-
 // ==================== CÓDIGO PRINCIPAL ====================
 
-// Intentar cargar los modelos con manejo de errores
-try {
-    require_once __DIR__ . '/../config/database.php';
-    echo '<!-- Debug: database.php cargado -->';
-} catch (Exception $e) {
-    die("Error cargando database.php: " . $e->getMessage());
-}
+// Cargar configuración
+require_once __DIR__ . '/../config/database.php';
 
-// Intentar cargar UsuarioModel
-try {
-    require_once __DIR__ . '/../models/UsuarioModel.php';
-    echo '<!-- Debug: UsuarioModel.php cargado -->';
-} catch (Exception $e) {
-    // Si falla, crear una versión mínima temporal
-    if (!class_exists('UsuarioModel')) {
-        class UsuarioModel {
-            private $pdo;
-            public function __construct($pdo) { $this->pdo = $pdo; }
-            public function getUsuarioById($id) {
-                return ['nombres' => 'Usuario', 'apellidos' => 'Demo', 'nickname' => 'demo'];
-            }
-            public function actualizarUltimoRegistro($id, $fecha) {
-                return true;
-            }
-        }
-        echo '<!-- Debug: UsuarioModel creado temporalmente -->';
-    }
-}
-
-// Intentar cargar otros modelos o crearlos temporalmente
-$modelos_a_crear = [
-    'GrupoPoblacionalModel' => function($pdo) {
-        return [
-            ['id_grupo' => 1, 'nombre' => 'Jóvenes'],
-            ['id_grupo' => 2, 'nombre' => 'Adultos'],
-            ['id_grupo' => 3, 'nombre' => 'Adultos Mayores'],
-            ['id_grupo' => 4, 'nombre' => 'Mujeres'],
-            ['id_grupo' => 5, 'nombre' => 'LGBTIQ+'],
-            ['id_grupo' => 6, 'nombre' => 'Afrodescendientes'],
-            ['id_grupo' => 7, 'nombre' => 'Indígenas'],
-            ['id_grupo' => 8, 'nombre' => 'Personas con discapacidad']
-        ];
-    },
-    'OfertaApoyoModel' => function($pdo) {
-        return [
-            ['id_oferta' => 1, 'nombre' => 'Testigo Electoral'],
-            ['id_oferta' => 2, 'nombre' => 'Jurado de Votacion'],
-            ['id_oferta' => 3, 'nombre' => 'Pregonero-Boxeador'],
-            ['id_oferta' => 4, 'nombre' => 'Voluntario']
-        ];
-    },
-    'DepartamentoModel' => function($pdo) {
-        // Solo algunos para demo
-        return [
-            ['id_departamento' => 1, 'nombre' => 'Meta'],
-            ['id_departamento' => 2, 'nombre' => 'Cundinamarca'],
-            ['id_departamento' => 3, 'nombre' => 'Antioquia'],
-            ['id_departamento' => 4, 'nombre' => 'Valle del Cauca']
-        ];
-    },
-    'ZonaModel' => function($pdo) {
-        return [
-            ['id_zona' => 1, 'nombre' => 'Urbano'],
-            ['id_zona' => 2, 'nombre' => 'Rural']
-        ];
-    }
-];
-
-foreach ($modelos_a_crear as $modelo => $data_function) {
-    if (!class_exists($modelo)) {
-        $class_code = "
-        class $modelo {
-            private \$pdo;
-            public function __construct(\$pdo) { \$this->pdo = \$pdo; }
-            public function getAll() { 
-                \$data = " . var_export($data_function(null), true) . ";
-                return \$data;
-            }
-        }";
-        eval($class_code);
-        echo "<!-- Debug: $modelo creado temporalmente -->";
-    } else {
-        // Intentar cargar el archivo real
-        $archivo = __DIR__ . '/../models/' . $modelo . '.php';
-        if (file_exists($archivo)) {
-            try {
-                require_once $archivo;
-                echo "<!-- Debug: $modelo cargado desde archivo -->";
-            } catch (Exception $e) {
-                echo "<!-- Debug: Error cargando $modelo: " . $e->getMessage() . " -->";
-            }
-        }
-    }
-}
+// Cargar modelos
+require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../models/GrupoPoblacionalModel.php';
+require_once __DIR__ . '/../models/OfertaApoyoModel.php';
+require_once __DIR__ . '/../models/DepartamentoModel.php';
+require_once __DIR__ . '/../models/ZonaModel.php';
 
 // ==================== VERIFICACIÓN DE USUARIO ====================
 
-// Verificar si el usuario está logueado y es referenciador
-if (!isset($_SESSION['id_usuario'])) {
+if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
     header('Location: index.php');
-    exit();
-}
-
-// Verificar tipo de usuario
-if ($_SESSION['tipo_usuario'] !== 'Referenciador') {
-    // Redirigir según el tipo de usuario
-    if ($_SESSION['tipo_usuario'] === 'Administrador') {
-        header('Location: dashboard.php');
-    } else {
-        header('Location: index.php');
-    }
     exit();
 }
 
@@ -252,8 +44,6 @@ $gruposPoblacionales = $grupoPoblacionalModel->getAll();
 $ofertasApoyo = $ofertaApoyoModel->getAll();
 $departamentos = $departamentoModel->getAll();
 $zonas = $zonaModel->getAll();
-
-// ==================== HTML ====================
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -266,34 +56,14 @@ $zonas = $zonaModel->getAll();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
     <style>
-        /* Estilos adicionales si el CSS no carga */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; }
         .main-header { background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; padding: 15px 0; }
         .form-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.08); margin: 20px auto; max-width: 1200px; }
         .form-control, .form-select { border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; }
         .submit-btn { background: linear-gradient(135deg, #27ae60, #219653); color: white; border: none; padding: 15px 30px; border-radius: 8px; width: 100%; }
-        .debug-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 12px; color: #666; }
-        .debug-info a { color: #3498db; }
     </style>
 </head>
 <body>
-    <!-- Debug info (solo visible si hay problemas) -->
-    <div class="debug-info" style="display: none;">
-        <small>
-            Modo: <?php echo class_exists('Database') ? 'Normal' : 'Emergencia'; ?> | 
-            Modelos cargados: <?php 
-                $models_loaded = 0;
-                $models_total = 0;
-                foreach (['UsuarioModel', 'GrupoPoblacionalModel', 'OfertaApoyoModel', 'DepartamentoModel', 'ZonaModel'] as $model) {
-                    $models_total++;
-                    if (class_exists($model)) $models_loaded++;
-                }
-                echo "{$models_loaded}/{$models_total}";
-            ?> | 
-            <a href="referenciador.php?debug=1">🔍 Debug</a>
-        </small>
-    </div>
-
     <!-- Header -->
     <header class="main-header">
         <div class="header-container">
@@ -610,17 +380,8 @@ $zonas = $zonaModel->getAll();
     
     <!-- Script de inicialización básica -->
     <script>
-        // Mostrar debug info si hay problemas
+        // Configurar selects dependientes
         document.addEventListener('DOMContentLoaded', function() {
-            const modelsLoaded = <?php echo $models_loaded; ?>;
-            const modelsTotal = <?php echo $models_total; ?>;
-            
-            if (modelsLoaded < modelsTotal) {
-                document.querySelector('.debug-info').style.display = 'block';
-                console.warn(`⚠️ Solo ${modelsLoaded}/${modelsTotal} modelos cargados`);
-            }
-            
-            // Configurar selects dependientes
             document.getElementById('sector').disabled = true;
             document.getElementById('puesto_votacion').disabled = true;
             document.getElementById('municipio').disabled = true;

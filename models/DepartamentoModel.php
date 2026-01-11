@@ -1,6 +1,6 @@
 <?php
-// models/BarrioModel.php
-class BarrioModel {
+// models/DepartamentoModel.php
+class DepartamentoModel {
     private $pdo;
     
     public function __construct($pdo) {
@@ -8,17 +8,10 @@ class BarrioModel {
     }
     
     public function getAll() {
-        $sql = "SELECT * FROM barrio WHERE activo = true ORDER BY nombre";
+        $sql = "SELECT * FROM departamento ORDER BY nombre";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    public function getById($id) {
-        $sql = "SELECT * FROM barrio WHERE id_barrio = ?";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id]);
-        return $stmt->fetch();
     }
 }
 ?>

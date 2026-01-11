@@ -491,7 +491,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                                     </td>
                                     
                                     <td>
-                                        <?php if ($usuario['activo'] == 1): ?>
+                                        <?php if ($usuario['activo'] == true || $usuario['activo'] === 't' || $usuario['activo'] == 1): ?>
                                             <span class="badge-status badge-active">
                                                 <i class="fas fa-check-circle me-1"></i>Activo
                                             </span>

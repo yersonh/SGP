@@ -13,28 +13,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (!empty($nickname) && !empty($password)) {
         try {
-            // Buscar usuario por nickname
-            $stmt = $pdo->prepare("SELECT * FROM usuario WHERE nickname = ? AND activo = 1");
+            // Buscar usuario por nickname - CORREGIDO: activo = true en PostgreSQL
+            $stmt = $pdo->prepare("SELECT * FROM usuario WHERE nickname = ? AND activo = true");
             $stmt->execute([$nickname]);
             $usuario = $stmt->fetch();
             
-            if ($usuario && password_verify($password, $usuario['password'])) {
-                // Login exitoso
-                $_SESSION['id_usuario'] = $usuario['id_usuario'];
-                $_SESSION['nickname'] = $usuario['nickname'];
-                $_SESSION['tipo_usuario'] = $usuario['tipo_usuario'];
-                $_SESSION['login_time'] = time();
-                
-                // Actualizar último registro
-                $fecha_actual = date('Y-m-d H:i:s');
-                $stmt_update = $pdo->prepare("UPDATE usuario SET ultimo_registro = ? WHERE id_usuario = ?");
-                $stmt_update->execute([$fecha_actual, $usuario['id_usuario']]);
-                
-                // Redirigir a dashboard o vista de usuarios
-                header('Location: dashboard.php');
-                exit();
+            // Verificar si se encontró el usuario
+            if ($usuario) {
+                // IMPORTANTE: Como no tienes hash, comparamos directamente
+                // Si tu contraseña está almacenada como texto plano (no recomendado)
+                if ($password === $usuario['password']) {
+                    // Login exitoso
+                    $_SESSION['id_usuario'] = $usuario['id_usuario'];
+                    $_SESSION['nickname'] = $usuario['nickname'];
+                    $_SESSION['tipo_usuario'] = $usuario['tipo_usuario'];
+                    $_SESSION['login_time'] = time();
+                    
+                    // Actualizar último registro
+                    $fecha_actual = date('Y-m-d H:i:s');
+                    $stmt_update = $pdo->prepare("UPDATE usuario SET ultimo_registro = ? WHERE id_usuario = ?");
+                    $stmt_update->execute([$fecha_actual, $usuario['id_usuario']]);
+                    
+                    // Redirigir a dashboard
+                    header('Location: dashboard.php');
+                    exit();
+                } else {
+                    $error = 'Contraseña incorrecta';
+                }
             } else {
-                $error = 'Credenciales incorrectas o usuario inactivo';
+                $error = 'Usuario no encontrado o inactivo';
             }
         } catch (Exception $e) {
             $error = 'Error al procesar la solicitud';
@@ -221,6 +228,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             line-height: 1.4;
         }
         
+        .debug-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            color: #666;
+            border-left: 3px solid #3498db;
+        }
+        
         @media (max-width: 480px) {
             .login-container {
                 padding: 25px;
@@ -263,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            placeholder="Ingrese su nombre de usuario" 
                            required
                            autocomplete="username"
-                           value="<?php echo isset($_POST['nickname']) ? htmlspecialchars($_POST['nickname']) : ''; ?>">
+                           value="<?php echo isset($_POST['nickname']) ? htmlspecialchars($_POST['nickname']) : 'Domo1'; ?>">
                 </div>
             </div>
             
@@ -276,7 +293,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            name="password" 
                            placeholder="Ingrese su contraseña" 
                            required
-                           autocomplete="current-password">
+                           autocomplete="current-password"
+                           value="30000">
                 </div>
             </div>
             
@@ -284,6 +302,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
             </button>
         </form>
+        
+        <!-- Información de depuración (opcional, quitar en producción) -->
+        <div class="debug-info">
+            <p><strong>Credenciales de prueba:</strong></p>
+            <p>Usuario: Domo1</p>
+            <p>Contraseña: 30000</p>
+        </div>
         
         <div class="footer-links">
             <a href="#"><i class="fas fa-question-circle"></i> ¿Olvidó su contraseña?</a>
@@ -311,8 +336,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
             
-            // Mostrar/ocultar contraseña (opcional, puedes agregar un icono)
-            // Podrías agregar un icono de ojo para mostrar/ocultar contraseña
+            // Auto-seleccionar campo usuario al cargar
+            document.getElementById('nickname').focus();
         });
     </script>
 </body>

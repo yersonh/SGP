@@ -561,7 +561,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         <tr>
                             <th>NICKNAME</th>
                             <th>NOMBRE COMPLETO</th>
-                            <th>CONTRASEÑA</th>
                             <th>TIPO</th>
                             <th>ESTADO</th>
                             <th>ACCIONES</th>

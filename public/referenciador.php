@@ -153,38 +153,6 @@ $barrios = $barrioModel->getAll();
                         </div>
                     </div>
                     
-                    <!-- Dirección -->
-                    <div class="form-group">
-                        <label class="form-label" for="direccion">
-                            <i class="fas fa-map-marker-alt"></i> Dirección *
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-map-marker-alt input-icon"></i>
-                            <input type="text" 
-                                   id="direccion" 
-                                   name="direccion" 
-                                   class="form-control" 
-                                   placeholder="Ingrese la dirección"
-                                   required
-                                   data-progress="5">
-                        </div>
-                    </div>
-                    
-                    <!-- Barrio -->
-                    <div class="form-group">
-                        <label class="form-label" for="barrio">
-                            <i class="fas fa-map-signs"></i> Barrio
-                        </label>
-                        <select id="barrio" name="barrio" class="form-select" data-progress="3">
-                            <option value="">Seleccione un barrio</option>
-                            <?php foreach ($barrios as $barrio): ?>
-                            <option value="<?php echo $barrio['id_barrio']; ?>">
-                                <?php echo htmlspecialchars($barrio['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
                     <!-- Email -->
                     <div class="form-group">
                         <label class="form-label" for="email">
@@ -219,6 +187,63 @@ $barrios = $barrioModel->getAll();
                                    title="Ingrese un número de teléfono válido"
                                    data-progress="5">
                         </div>
+                    </div>
+                    
+                    <!-- Dirección -->
+                    <div class="form-group">
+                        <label class="form-label" for="direccion">
+                            <i class="fas fa-map-marker-alt"></i> Dirección *
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                            <input type="text" 
+                                   id="direccion" 
+                                   name="direccion" 
+                                   class="form-control" 
+                                   placeholder="Ingrese la dirección"
+                                   required
+                                   data-progress="5">
+                        </div>
+                    </div>
+                    
+                    <!-- Barrio -->
+                    <div class="form-group">
+                        <label class="form-label" for="barrio">
+                            <i class="fas fa-map-signs"></i> Barrio
+                        </label>
+                        <select id="barrio" name="barrio" class="form-select" data-progress="3">
+                            <option value="">Seleccione un barrio</option>
+                            <?php foreach ($barrios as $barrio): ?>
+                            <option value="<?php echo $barrio['id_barrio']; ?>">
+                                <?php echo htmlspecialchars($barrio['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Departamento -->
+                    <div class="form-group">
+                        <label class="form-label" for="departamento">
+                            <i class="fas fa-landmark"></i> Departamento
+                        </label>
+                        <select id="departamento" name="departamento" class="form-select" data-progress="3">
+                            <option value="">Seleccione un departamento</option>
+                            <?php foreach ($departamentos as $departamento): ?>
+                            <option value="<?php echo $departamento['id_departamento']; ?>">
+                                <?php echo htmlspecialchars($departamento['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Municipio -->
+                    <div class="form-group">
+                        <label class="form-label" for="municipio">
+                            <i class="fas fa-city"></i> Municipio
+                        </label>
+                        <select id="municipio" name="municipio" class="form-select" data-progress="3" disabled>
+                            <option value="">Primero seleccione un departamento</option>
+                        </select>
                     </div>
                     
                     <!-- Afinidad (Rating) -->
@@ -294,31 +319,6 @@ $barrios = $barrioModel->getAll();
                         </div>
                     </div>
                     
-                    <!-- Departamento -->
-                    <div class="form-group">
-                        <label class="form-label" for="departamento">
-                            <i class="fas fa-landmark"></i> Departamento
-                        </label>
-                        <select id="departamento" name="departamento" class="form-select" data-progress="3">
-                            <option value="">Seleccione un departamento</option>
-                            <?php foreach ($departamentos as $departamento): ?>
-                            <option value="<?php echo $departamento['id_departamento']; ?>">
-                                <?php echo htmlspecialchars($departamento['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <!-- Municipio -->
-                    <div class="form-group">
-                        <label class="form-label" for="municipio">
-                            <i class="fas fa-city"></i> Municipio
-                        </label>
-                        <select id="municipio" name="municipio" class="form-select" data-progress="3" disabled>
-                            <option value="">Primero seleccione un departamento</option>
-                        </select>
-                    </div>
-                    
                     <!-- Apoyo -->
                     <div class="form-group">
                         <label class="form-label" for="apoyo">
@@ -365,6 +365,7 @@ $barrios = $barrioModel->getAll();
                             <span id="compromiso-chars">0</span>/500 caracteres
                         </div>
                     </div>
+                    
                     <!-- Insumos Disponibles -->
                     <div class="form-group full-width">
                         <label class="form-label">

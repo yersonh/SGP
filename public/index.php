@@ -29,8 +29,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fecha_actual = date('Y-m-d H:i:s');
                 $model->actualizarUltimoRegistro($usuario['id_usuario'], $fecha_actual);
                 
-                // Redirigir a dashboard
-                header('Location: dashboard.php');
+                // REDIRIGIR SEGÚN EL TIPO DE USUARIO
+                switch ($usuario['tipo_usuario']) {
+                    case 'Administrador':
+                        header('Location: dashboard.php');
+                        break;
+                    case 'Referenciador':
+                        header('Location: referenciador.php');
+                        break;
+                    case 'Usuario':
+                        // Si tienes vista específica para usuario normal
+                        header('Location: usuario_dashboard.php');
+                        break;
+                    default:
+                        // Redirigir a una vista por defecto o mostrar error
+                        header('Location: dashboard.php');
+                        break;
+                }
                 exit();
             } else {
                 $error = 'Credenciales incorrectas o usuario inactivo';

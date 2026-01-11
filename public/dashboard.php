@@ -8,6 +8,12 @@ if (!isset($_SESSION['id_usuario'])) {
     header('Location: index.php');
     exit();
 }
+// VERIFICAR SI ES ADMINISTRADOR
+if ($_SESSION['tipo_usuario'] !== 'Administrador') {
+    // Si no es administrador, redirigir a una vista diferente
+    header('Location: usuario_dashboard.php'); // O la vista correspondiente
+    exit();
+}
 
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
@@ -842,7 +848,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             <td data-label="NICKNAME">
                                 <div class="user-info">
                                     <span class="user-nickname"><?php echo htmlspecialchars($usuario['nickname']); ?></span>
-                                    <span class="text-muted" style="font-size: 0.8rem;">ID: #<?php echo $usuario['id_usuario']; ?></span>
                                 </div>
                             </td>
                             

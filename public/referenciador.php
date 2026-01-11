@@ -2,10 +2,7 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
-require_once __DIR__ . '/../models/GrupoPoblacionalModel.php';
-require_once __DIR__ . '/../models/OfertaApoyoModel.php';
-require_once __DIR__ . '/../models/DepartamentoModel.php';
-require_once __DIR__ . '/../models/ZonaModel.php';
+
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {

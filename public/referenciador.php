@@ -341,7 +341,7 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
         }
         
         .system-footer strong {
-            color: #3498db;
+            color: #000000;
             font-weight: 600;
         }
         

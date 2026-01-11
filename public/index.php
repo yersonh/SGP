@@ -37,10 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     case 'Referenciador':
                         header('Location: referenciador.php');
                         break;
-                    case 'Usuario':
-                        // Si tienes vista específica para usuario normal
-                        header('Location: usuario_dashboard.php');
-                        break;
                     default:
                         // Redirigir a una vista por defecto o mostrar error
                         header('Location: dashboard.php');

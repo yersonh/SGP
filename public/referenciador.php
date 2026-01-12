@@ -68,33 +68,33 @@ $barrios = $barrioModel->getAll();
 </head>
 <body>
     <!-- Header -->
-    <header class="main-header">
-        <div class="header-container">
-            <div class="header-top">
-                <div class="header-title">
-                    <h1><i class="fas fa-user-tie"></i> Formulario de Referenciación</h1>
-                    <div class="user-info">
-                        <i class="fas fa-user-circle"></i>
-                        <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
-                    </div>
+<header class="main-header">
+    <div class="header-container">
+        <div class="header-top">
+            <div class="header-title">
+                <h1><i class="fas fa-user-tie"></i> Formulario de Referenciación</h1>
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
                 </div>
-                <a href="logout.php" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
             </div>
-            
-            <!-- Progress Bar -->
-            <div class="progress-container">
-                <div class="progress-header">
-                    <span>Progreso del formulario</span>
-                    <span id="progress-percentage">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
+            <a href="logout.php" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
+        </div>
+        
+        <!-- Barra de Progreso del Tope (NUEVA EN EL HEADER) -->
+        <div class="progress-container">
+            <div class="progress-header">
+                <span>Progreso del Tope: <?php echo $usuario_logueado['total_referenciados'] ?? 0; ?>/<?php echo $usuario_logueado['tope'] ?? 0; ?></span>
+                <span id="tope-percentage"><?php echo $usuario_logueado['porcentaje_tope'] ?? 0; ?>%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="tope-progress-fill"></div>
             </div>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- Main Form -->
     <div class="main-container">
@@ -463,7 +463,16 @@ $barrios = $barrioModel->getAll();
                             </div>
                         </div>
                     </div>
-                    
+                    <!-- Barra de Progreso del Formulario (MOVIDA AQUÍ, ANTES DEL BOTÓN) -->
+                    <div class="progress-container" style="margin: 30px 0 20px 0;">
+                        <div class="progress-header">
+                            <span>Progreso del formulario</span>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
                     <!-- Botón de Envío -->
                     <div class="form-group full-width">
                         <button type="submit" class="submit-btn" id="submit-btn">

@@ -389,8 +389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Ing. Rubén Darío González García • 
             SISGONTech • Colombia © • <?php echo date('Y'); ?>
             </p>
-            <p>Contacto: +57 3106310227 • 
-            Email: sisgonnet@gmail.com
+            <p>Contacto: +57 3106310227 • Email: sisgonnet@gmail.com
             </p>
         </div>
     </div>

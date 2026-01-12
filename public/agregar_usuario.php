@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/ZonaModel.php';
 require_once __DIR__ . '/../models/SectorModel.php';
-require_once __DIR__ . '/../models/PuestoModel.php';
+require_once __DIR__ . '/../models/PuestoVotacionModel.php';
 
 // Verificar permisos (solo administradores pueden agregar usuarios)
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {

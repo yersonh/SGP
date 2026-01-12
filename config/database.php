@@ -38,36 +38,16 @@ class Database {
     
     // 🔥 NUEVO: Configuración de uploads para Railway
     public static function getUploadsPath() {
-        // Railway crea automáticamente la variable RAILWAY_VOLUME_MOUNT_PATH
-        // cuando configuras un mount en railway.json
-        if (getenv('RAILWAY_VOLUME_MOUNT_PATH')) {
-            // En producción con Railway
-            return getenv('RAILWAY_VOLUME_MOUNT_PATH') . '/uploads/';
-        } elseif (getenv('UPLOADS_PATH')) {
-            // Variable personalizada
-            return getenv('UPLOADS_PATH') . '/';
-        } else {
-            // Entorno local o desarrollo
-            return dirname(__DIR__) . '/uploads/';
-        }
+        // En Railway con Persistent Volume
+        return '/uploads/';
     }
     
     public static function getUploadsUrl() {
-        // Para Railway, necesitamos construir la URL correctamente
-        if (getenv('RAILWAY_STATIC_URL')) {
-            // Railway proporciona esta variable para static assets
-            return getenv('RAILWAY_STATIC_URL') . '/uploads/';
-        } else {
-            // Entorno local o fallback
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $basePath = dirname($_SERVER['PHP_SELF'] ?? '');
-            
-            // Remover "index.php" si está en la ruta
-            $basePath = str_replace('/index.php', '', $basePath);
-            
-            return $protocol . $host . $basePath . '/uploads/';
-        }
+        // URL para acceder a los uploads
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        return $protocol . $host . '/uploads/';
     }
     
     // Validar que el directorio de uploads existe
@@ -76,19 +56,16 @@ class Database {
         
         if (!is_dir($uploadsPath)) {
             mkdir($uploadsPath, 0755, true);
-            mkdir($uploadsPath . 'profiles/', 0755, true);
-            mkdir($uploadsPath . 'temp/', 0755, true);
-            
-            // Crear archivos .gitkeep para mantener las carpetas
-            file_put_contents($uploadsPath . 'profiles/.gitkeep', '');
-            file_put_contents($uploadsPath . 'temp/.gitkeep', '');
-            
             error_log("✅ Directorio de uploads creado: {$uploadsPath}");
         }
         
-        // Verificar permisos
-        if (!is_writable($uploadsPath)) {
-            error_log("⚠️  Advertencia: Directorio de uploads no tiene permisos de escritura: {$uploadsPath}");
+        // Crear subdirectorios
+        $subdirs = ['profiles', 'temp'];
+        foreach ($subdirs as $subdir) {
+            $dir = $uploadsPath . $subdir . '/';
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
         }
         
         return $uploadsPath;

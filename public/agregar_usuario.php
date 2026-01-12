@@ -2,6 +2,9 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../models/ZonaModel.php';
+require_once __DIR__ . '/../models/SectorModel.php';
+require_once __DIR__ . '/../models/PuestoVotacionModel.php';
 
 // Verificar permisos (solo administradores pueden agregar usuarios)
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {
@@ -11,28 +14,12 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administra
 
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
+$zonaModel = new ZonaModel($pdo);
+$sectorModel = new SectorModel($pdo);
+$puestoModel = new PuestoVotacionModel($pdo);
 
-// Cargar datos para los combos desde la base de datos directamente
-$zonas = [];
-$sectores = [];
-$puestos = [];
-
-try {
-    // Cargar zonas
-    $stmt = $pdo->query("SELECT id_zona as id, nombre FROM zonas ORDER BY nombre");
-    $zonas = $stmt->fetchAll();
-    
-    // Cargar sectores
-    $stmt = $pdo->query("SELECT id_sector as id, nombre FROM sectores ORDER BY nombre");
-    $sectores = $stmt->fetchAll();
-    
-    // Cargar puestos
-    $stmt = $pdo->query("SELECT id_puesto as id, nombre FROM puestos_votacion ORDER BY nombre");
-    $puestos = $stmt->fetchAll();
-} catch (Exception $e) {
-    // Si hay error, dejar arrays vacíos
-    error_log("Error cargando datos para combos: " . $e->getMessage());
-}
+// Cargar datos para los combos usando los modelos
+$zonas = $zonaModel->getAll();
 
 // Tipos de usuario permitidos
 $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin'];
@@ -777,7 +764,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     <select id="zona" name="zona" class="form-select">
                         <option value="">Seleccione una zona</option>
                         <?php foreach ($zonas as $zona): ?>
-                        <option value="<?php echo htmlspecialchars($zona['id']); ?>">
+                        <option value="<?php echo htmlspecialchars($zona['id_zona']); ?>">
                             <?php echo htmlspecialchars($zona['nombre']); ?>
                         </option>
                         <?php endforeach; ?>
@@ -926,6 +913,8 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         
         // ==================== SELECTS DEPENDIENTES ====================
         function setupDependentSelects() {
+            console.log('Configurando selects dependientes...');
+            
             // Configurar selects como deshabilitados inicialmente
             document.getElementById('sector').disabled = true;
             document.getElementById('puesto').disabled = true;
@@ -936,13 +925,17 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 const sectorSelect = document.getElementById('sector');
                 const puestoSelect = document.getElementById('puesto');
                 
+                console.log('Zona seleccionada:', zonaId);
+                
                 if (zonaId) {
                     sectorSelect.disabled = false;
                     sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
                     
+                    // Llamada AJAX para obtener sectores
                     fetch(`ajax/cargar_sectores.php?zona_id=${zonaId}`)
                         .then(response => response.json())
                         .then(data => {
+                            console.log('Respuesta sectores:', data);
                             if (data.success) {
                                 sectorSelect.innerHTML = '<option value="">Seleccione un sector</option>';
                                 data.sectores.forEach(sector => {
@@ -951,13 +944,14 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                                     option.textContent = sector.nombre;
                                     sectorSelect.appendChild(option);
                                 });
+                                console.log(`Sectores cargados: ${data.sectores.length}`);
                             } else {
                                 sectorSelect.innerHTML = '<option value="">Error al cargar sectores</option>';
                                 showNotification(data.message || 'Error al cargar sectores', 'error');
                             }
                         })
                         .catch(error => {
-                            console.error('Error:', error);
+                            console.error('Error cargando sectores:', error);
                             sectorSelect.innerHTML = '<option value="">Error al cargar</option>';
                             showNotification('Error de conexión al cargar sectores', 'error');
                         });
@@ -974,13 +968,17 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 const sectorId = this.value;
                 const puestoSelect = document.getElementById('puesto');
                 
+                console.log('Sector seleccionado:', sectorId);
+                
                 if (sectorId) {
                     puestoSelect.disabled = false;
                     puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
                     
+                    // Llamada AJAX para obtener puestos
                     fetch(`ajax/cargar_puestos.php?sector_id=${sectorId}`)
                         .then(response => response.json())
                         .then(data => {
+                            console.log('Respuesta puestos:', data);
                             if (data.success) {
                                 puestoSelect.innerHTML = '<option value="">Seleccione un puesto</option>';
                                 data.puestos.forEach(puesto => {
@@ -989,13 +987,14 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                                     option.textContent = puesto.nombre;
                                     puestoSelect.appendChild(option);
                                 });
+                                console.log(`Puestos cargados: ${data.puestos.length}`);
                             } else {
                                 puestoSelect.innerHTML = '<option value="">Error al cargar puestos</option>';
                                 showNotification(data.message || 'Error al cargar puestos', 'error');
                             }
                         })
                         .catch(error => {
-                            console.error('Error:', error);
+                            console.error('Error cargando puestos:', error);
                             puestoSelect.innerHTML = '<option value="">Error al cargar</option>';
                             showNotification('Error de conexión al cargar puestos', 'error');
                         });
@@ -1206,11 +1205,8 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
                 submitBtn.disabled = true;
                 
-                // Enviar formulario
-                const formData = new FormData(usuarioForm);
-                
-                // Para propósitos de demostración, simularemos el envío
-                // En producción, enviarías el formulario realmente
+                // Simular envío (por ahora solo simulación)
+                // En producción, descomentar el código fetch de abajo
                 setTimeout(() => {
                     // Simulación de éxito
                     showNotification('✅ Usuario registrado exitosamente', 'success');
@@ -1230,8 +1226,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
                     
-                    console.log('Datos del formulario que se enviarían:', 
-                        Object.fromEntries(formData));
+                    console.log('Formulario enviado exitosamente (simulación)');
                     
                 }, 1500);
             });

@@ -1,8 +1,6 @@
 // Variables globales
 let currentRating = 0;
 let maxMesasPuestoActual = 0;
-let ultimoMensajeError = '';
-let timeoutError = null;
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', function() {
@@ -189,10 +187,6 @@ function configurarCampoMesa(puestoId) {
     const mesaInput = document.getElementById('mesa');
     const mesaInfo = document.getElementById('mesa-info');
     
-    // Limpiar mensajes previos
-    ultimoMensajeError = '';
-    clearTimeout(timeoutError);
-    
     if (!puestoId) {
         mesaInput.disabled = true;
         mesaInput.placeholder = "Número de mesa";
@@ -201,9 +195,8 @@ function configurarCampoMesa(puestoId) {
         maxMesasPuestoActual = 0;
         
         if (mesaInfo) {
-            mesaInfo.textContent = 'Seleccione un puesto de votación para ver las mesas disponibles';
+            mesaInfo.innerHTML = 'Seleccione un puesto de votación para ver las mesas disponibles';
             mesaInfo.style.color = '#666';
-            mesaInfo.classList.remove('error', 'success');
         }
         return;
     }
@@ -212,7 +205,7 @@ function configurarCampoMesa(puestoId) {
     const puestoSelect = document.getElementById('puesto_votacion');
     const selectedOption = puestoSelect.options[puestoSelect.selectedIndex];
     const numMesas = parseInt(selectedOption.getAttribute('data-mesas')) || 0;
-    const puestoNombre = selectedOption.textContent;
+    const puestoNombre = selectedOption.textContent.split(' (')[0]; // Remover texto entre paréntesis
     
     maxMesasPuestoActual = numMesas;
     
@@ -227,8 +220,6 @@ function configurarCampoMesa(puestoId) {
             mesaInfo.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>${puestoNombre}</strong> no tiene mesas disponibles para votación`;
             mesaInfo.style.color = '#e67e22';
             mesaInfo.style.fontWeight = '500';
-            mesaInfo.classList.add('error');
-            mesaInfo.classList.remove('success');
         }
         return;
     }
@@ -240,12 +231,8 @@ function configurarCampoMesa(puestoId) {
     mesaInput.min = 1;
     mesaInput.value = "";
     
-    // Remover event listeners previos para evitar duplicados
-    const nuevaMesaInput = mesaInput.cloneNode(true);
-    mesaInput.parentNode.replaceChild(nuevaMesaInput, mesaInput);
-    
     // Agregar validación en tiempo real
-    nuevaMesaInput.addEventListener('input', function() {
+    mesaInput.addEventListener('input', function() {
         validarNumeroMesa(this);
     });
     
@@ -254,8 +241,6 @@ function configurarCampoMesa(puestoId) {
         mesaInfo.innerHTML = `<i class="fas fa-info-circle"></i> <strong>${puestoNombre}</strong> tiene <strong>${numMesas}</strong> mesa${numMesas !== 1 ? 's' : ''} disponible${numMesas !== 1 ? 's' : ''}`;
         mesaInfo.style.color = '#27ae60';
         mesaInfo.style.fontWeight = '500';
-        mesaInfo.classList.add('success');
-        mesaInfo.classList.remove('error');
     }
     
     updateProgress();
@@ -266,84 +251,18 @@ function validarNumeroMesa(input) {
     const value = parseInt(input.value);
     const mesaInfo = document.getElementById('mesa-info');
     
-    // Limpiar timeout anterior
-    clearTimeout(timeoutError);
-    
     if (isNaN(value) || value < 1) {
-        // No mostrar mensaje si el campo está vacío
-        if (input.value === "") {
-            if (mesaInfo && mesaInfo.classList.contains('error')) {
-                mesaInfo.textContent = mesaInfo.textContent.replace(/\([^)]*\)/g, '').trim();
-                mesaInfo.style.color = '#27ae60';
-                mesaInfo.classList.remove('error');
-                mesaInfo.classList.add('success');
-            }
-            return;
-        }
-        
-        // Mostrar error solo si no es el mismo mensaje que ya está mostrando
-        const nuevoMensaje = '(Ingrese un número válido)';
-        if (ultimoMensajeError !== nuevoMensaje) {
-            ultimoMensajeError = nuevoMensaje;
-            
-            if (mesaInfo) {
-                // Mantener la información base y añadir error
-                const textoBase = mesaInfo.textContent.replace(/\([^)]*\)/g, '').trim();
-                mesaInfo.innerHTML = textoBase + ` <span style="color:#e74c3c">${nuevoMensaje}</span>`;
-                mesaInfo.classList.add('error');
-                mesaInfo.classList.remove('success');
-                
-                // Auto-eliminar mensaje después de 3 segundos
-                timeoutError = setTimeout(() => {
-                    if (mesaInfo) {
-                        mesaInfo.innerHTML = textoBase;
-                        mesaInfo.style.color = '#27ae60';
-                        mesaInfo.classList.remove('error');
-                        mesaInfo.classList.add('success');
-                        ultimoMensajeError = '';
-                    }
-                }, 3000);
-            }
+        input.value = "";
+        if (mesaInfo) {
+            mesaInfo.innerHTML += ' <span style="color:#e74c3c">(Ingrese un número válido)</span>';
         }
         return;
     }
     
     if (value > maxMesasPuestoActual) {
         input.value = maxMesasPuestoActual;
-        
-        // Mostrar error solo si no es el mismo mensaje que ya está mostrando
-        const nuevoMensaje = `(Máximo permitido: ${maxMesasPuestoActual})`;
-        if (ultimoMensajeError !== nuevoMensaje) {
-            ultimoMensajeError = nuevoMensaje;
-            
-            if (mesaInfo) {
-                // Mantener la información base y añadir error
-                const textoBase = mesaInfo.textContent.replace(/\([^)]*\)/g, '').trim();
-                mesaInfo.innerHTML = textoBase + ` <span style="color:#e74c3c">${nuevoMensaje}</span>`;
-                mesaInfo.classList.add('error');
-                mesaInfo.classList.remove('success');
-                
-                // Auto-eliminar mensaje después de 3 segundos
-                timeoutError = setTimeout(() => {
-                    if (mesaInfo) {
-                        mesaInfo.innerHTML = textoBase;
-                        mesaInfo.style.color = '#27ae60';
-                        mesaInfo.classList.remove('error');
-                        mesaInfo.classList.add('success');
-                        ultimoMensajeError = '';
-                    }
-                }, 3000);
-            }
-        }
-    } else {
-        // Si el valor es válido, limpiar mensaje de error
-        if (mesaInfo && mesaInfo.classList.contains('error')) {
-            const textoBase = mesaInfo.textContent.replace(/\([^)]*\)/g, '').trim();
-            mesaInfo.innerHTML = textoBase;
-            mesaInfo.style.color = '#27ae60';
-            mesaInfo.classList.remove('error');
-            mesaInfo.classList.add('success');
-            ultimoMensajeError = '';
+        if (mesaInfo) {
+            mesaInfo.innerHTML += ' <span style="color:#e74c3c">(Máximo permitido: ' + maxMesasPuestoActual + ')</span>';
         }
     }
 }
@@ -456,7 +375,7 @@ function setupDependentSelects() {
         updateProgress();
     });
     
-    // Sector -> Puesto (SIN mostrar número de mesas en el nombre)
+    // Sector -> Puesto
     document.getElementById('sector').addEventListener('change', function() {
         const sectorId = this.value;
         const puestoSelect = document.getElementById('puesto_votacion');
@@ -476,18 +395,20 @@ function setupDependentSelects() {
                             const option = document.createElement('option');
                             option.value = puesto.id_puesto;
                             
-                            // SOLO mostrar el nombre del puesto (sin número de mesas)
-                            option.textContent = puesto.nombre;
+                            // Mostrar información con número de mesas
+                            let texto = puesto.nombre;
+                            let mesaText = '';
                             
-                            // Guardar número de mesas en atributo data para usarlo después
-                            option.setAttribute('data-mesas', puesto.num_mesas || 0);
-                            
-                            // Color diferente para puestos sin mesas
                             if (puesto.num_mesas === 0) {
+                                mesaText = ' (Sin mesas)';
                                 option.style.color = '#e67e22';
                             } else {
-                                option.style.color = '';
+                                mesaText = ` (${puesto.num_mesas} mesa${puesto.num_mesas !== 1 ? 's' : ''})`;
+                                option.style.color = '#27ae60';
                             }
+                            
+                            option.textContent = texto + mesaText;
+                            option.setAttribute('data-mesas', puesto.num_mesas || 0);
                             
                             puestoSelect.appendChild(option);
                         });
@@ -563,12 +484,9 @@ function setupFormEvents() {
     // Validar campo de mesa cuando se pierde el foco
     const mesaInput = document.getElementById('mesa');
     if (mesaInput) {
-        // Usar event delegation para manejar el input clonado
-        document.addEventListener('blur', function(e) {
-            if (e.target.id === 'mesa') {
-                validarNumeroMesa(e.target);
-            }
-        }, true);
+        mesaInput.addEventListener('blur', function() {
+            validarNumeroMesa(this);
+        });
     }
     
     // Manejar envío del formulario
@@ -594,7 +512,7 @@ function setupFormEvents() {
         
         // Validar mesa si está habilitada
         const mesaInput = document.getElementById('mesa');
-        if (mesaInput && !mesaInput.disabled && mesaInput.value.trim() !== '') {
+        if (mesaInput && !mesaInput.disabled) {
             const mesaValue = parseInt(mesaInput.value);
             if (isNaN(mesaValue) || mesaValue < 1 || mesaValue > maxMesasPuestoActual) {
                 isValid = false;
@@ -737,15 +655,21 @@ function resetForm() {
     document.getElementById('municipio').innerHTML = '<option value="">Primero seleccione un departamento</option>';
     
     // Resetear campo de mesas
+    const mesaInput = document.getElementById('mesa');
     const mesaInfo = document.getElementById('mesa-info');
+    if (mesaInput) {
+        mesaInput.disabled = true;
+        mesaInput.value = "";
+        mesaInput.placeholder = "Número de mesa";
+        mesaInput.max = "30";
+    }
+    
     if (mesaInfo) {
-        mesaInfo.textContent = '';
-        mesaInfo.classList.remove('error', 'success');
+        mesaInfo.innerHTML = 'Seleccione un puesto de votación para ver las mesas disponibles';
+        mesaInfo.style.color = '#666';
     }
     
     maxMesasPuestoActual = 0;
-    ultimoMensajeError = '';
-    clearTimeout(timeoutError);
     
     // Resetear insumos
     document.querySelectorAll('.insumo-checkbox').forEach(cb => {

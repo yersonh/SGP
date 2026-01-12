@@ -205,15 +205,18 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             font-size: 1rem;
         }
         
-        .form-control, .form-select {
+        /* ESTILOS CORREGIDOS PARA INPUTS Y SELECTS */
+        .form-control {
             width: 100%;
             padding: 12px 15px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             font-size: 0.95rem;
             transition: all 0.3s;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(30, 30, 40, 0.9);
             color: #ffffff;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .form-control::placeholder {
@@ -221,13 +224,76 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             opacity: 0.7;
         }
         
-        .form-control:focus, .form-select:focus {
+        .form-control:focus {
             outline: none;
             border-color: #4fc3f7;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(40, 40, 50, 0.95);
             box-shadow: 
                 0 0 0 3px rgba(79, 195, 247, 0.2),
                 inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-control:disabled {
+            background-color: rgba(30, 30, 40, 0.5);
+            color: #90a4ae;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* ESTILOS CORREGIDOS PARA SELECTS (COMBOBOX) */
+        .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            background: rgba(30, 30, 40, 0.9);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234fc3f7' width='18px' height='18px'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 18px;
+        }
+        
+        /* ESTILOS PARA LAS OPCIONES DENTRO DEL SELECT */
+        .form-select option {
+            background: rgba(30, 30, 50, 0.95);
+            color: #ffffff;
+            padding: 12px;
+            font-size: 0.95rem;
+            border: none;
+        }
+        
+        /* ESTILOS PARA SELECT DESHABILITADO */
+        .form-select:disabled {
+            background-color: rgba(30, 30, 40, 0.5);
+            color: #90a4ae;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.05);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2390a4ae' width='18px' height='18px'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+        }
+        
+        /* ESTILOS PARA SELECT EN FOCO */
+        .form-select:focus {
+            outline: none;
+            border-color: #4fc3f7;
+            background: rgba(40, 40, 50, 0.95);
+            box-shadow: 
+                0 0 0 3px rgba(79, 195, 247, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        
+        /* ESTILOS PARA SELECT HOVER (NO DESHABILITADO) */
+        .form-select:not(:disabled):hover {
+            background: rgba(35, 35, 45, 0.95);
+            border-color: rgba(79, 195, 247, 0.3);
         }
         
         .input-with-icon {
@@ -457,18 +523,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             opacity: 0.8;
         }
         
-        /* Estilos para selects dependientes */
-        .form-select:disabled {
-            background-color: rgba(255, 255, 255, 0.03);
-            color: #78909c;
-            cursor: not-allowed;
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-        
-        .form-select:disabled option {
-            color: #78909c;
-        }
-        
         /* Estilos para notificaciones */
         @keyframes slideIn {
             from {
@@ -579,6 +633,17 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 right: 10px;
                 left: 10px;
                 max-width: none;
+            }
+            
+            /* AJUSTES RESPONSIVE PARA SELECTS */
+            .form-select, .form-control {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .form-select {
+                background-position: right 12px center;
+                background-size: 16px;
             }
         }
         

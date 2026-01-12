@@ -16,14 +16,31 @@ class UsuarioModel {
         return $stmt->fetchAll();
     }
     
-    // Obtener usuario por ID
+    // Obtener usuario por ID CON estadísticas de referenciados
     public function getUsuarioById($id_usuario) {
-        $query = "SELECT u.*, pe.nombres, pe.apellidos 
+        $query = "SELECT 
+                    u.*, 
+                    pe.nombres, 
+                    pe.apellidos,
+                    COALESCE(r.total_referenciados, 0) as total_referenciados,
+                    u.tope,
+                    CASE 
+                        WHEN u.tope > 0 THEN 
+                            ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                        ELSE 0 
+                    END as porcentaje_tope
                   FROM usuario u 
                   LEFT JOIN personal_electoral pe ON u.id_usuario = pe.id_usuario 
+                  LEFT JOIN (
+                      SELECT id_referenciador, COUNT(*) as total_referenciados 
+                      FROM referenciado 
+                      WHERE id_referenciador = ?
+                      GROUP BY id_referenciador
+                  ) r ON u.id_usuario = r.id_referenciador
                   WHERE u.id_usuario = ?";
+        
         $stmt = $this->pdo->prepare($query);
-        $stmt->execute([$id_usuario]);
+        $stmt->execute([$id_usuario, $id_usuario]);
         return $stmt->fetch();
     }
     
@@ -93,6 +110,25 @@ class UsuarioModel {
         }
         
         return false;
+    }
+    
+    // Obtener estadísticas detalladas de referenciados (método nuevo)
+    public function getEstadisticasReferenciados($id_usuario) {
+        $query = "SELECT 
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN fecha_creacion >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as ultima_semana,
+                    COUNT(CASE WHEN fecha_creacion >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as ultimo_mes,
+                    TO_CHAR(fecha_creacion, 'YYYY-MM') as mes,
+                    COUNT(*) as por_mes
+                  FROM referenciado 
+                  WHERE id_referenciador = ?
+                  GROUP BY TO_CHAR(fecha_creacion, 'YYYY-MM')
+                  ORDER BY mes DESC
+                  LIMIT 6";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$id_usuario]);
+        return $stmt->fetchAll();
     }
 }
 ?>

@@ -806,7 +806,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     </label>
                     <div class="phone-input input-with-icon">
                         <i class="fas fa-phone input-icon"></i>
-                        <span class="phone-prefix">+57</span>
                         <input type="tel" 
                                id="telefono" 
                                name="telefono" 

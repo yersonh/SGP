@@ -33,7 +33,7 @@ class FileHelper {
         return [
             'filename' => $filename,
             'path' => $destination,
-            'url' => Database::getUploadsUrl() . $config['profiles_path'] . $filename,
+            'url' => self::buildUrl('/uploads/' . $config['profiles_path'] . $filename),
             'size' => filesize($destination),
             'type' => mime_content_type($destination)
         ];
@@ -181,48 +181,52 @@ class FileHelper {
     }
     
     /**
-     * Obtener URL de foto - VERSIÓN MEJORADA
+     * Obtener URL de foto - VERSIÓN CORREGIDA (usa buildUrl consistentemente)
      */
     public static function getPhotoUrl($filename, $folder = 'profiles') {
         $config = require __DIR__ . '/../config/uploads.php';
         
         // Si no hay foto o es la por defecto
-        if (empty($filename) || $filename === 'default.png' || $filename === 'imagendefault.png' || stripos($filename, 'default') !== false) {
-            // Usar Database::getUploadsUrl() para consistencia
-            // Para la foto por defecto, solo cambiamos la ruta
-            $uploadsUrl = Database::getUploadsUrl();
-            $baseUrl = str_replace('/uploads/', '', $uploadsUrl);
-            return $baseUrl . $config['default_photo'];
+        if (empty($filename) || 
+            $filename === 'default.png' || 
+            $filename === 'imagendefault.png' || 
+            stripos($filename, 'default') !== false) {
+            return self::buildUrl($config['default_photo']);
         }
         
         // Para fotos subidas
-        return Database::getUploadsUrl() . $folder . '/' . $filename;
+        return self::buildUrl('/uploads/' . $folder . '/' . $filename);
     }
     
     /**
-     * Construir URL completa
+     * Construir URL completa - Método centralizado
      */
-     private static function buildUrl($path) {
-        // En Railway, detectar HTTPS correctamente
+    private static function buildUrl($path) {
+        // Usar la misma lógica que Database::getUploadsUrl() para consistencia
         $isHttps = false;
         
-        // 1. Verificar header estándar
-        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-            $isHttps = true;
-        }
-        
-        // 2. Verificar header de Railway (proxy)
+        // 1. Railway usa este header (PRINCIPAL)
         if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
             $isHttps = true;
         }
         
-        // 3. Verificar header de cloudflare/otros proxies
+        // 2. Verificar header estándar (backup)
+        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+            $isHttps = true;
+        }
+        
+        // 3. Verificar otros headers de proxy
         if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
             $isHttps = true;
         }
         
         $protocol = $isHttps ? 'https://' : 'http://';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        // Asegurar que el path empiece con /
+        if (strpos($path, '/') !== 0) {
+            $path = '/' . $path;
+        }
         
         return $protocol . $host . $path;
     }
@@ -231,7 +235,10 @@ class FileHelper {
      * Verificar si una foto existe
      */
     public static function photoExists($filename, $folder = 'profiles') {
-        if (empty($filename) || $filename === 'default.png' || $filename === 'imagendefault.png') {
+        if (empty($filename) || 
+            $filename === 'default.png' || 
+            $filename === 'imagendefault.png' ||
+            stripos($filename, 'default') !== false) {
             // Verificar si la foto por defecto existe
             $config = require __DIR__ . '/../config/uploads.php';
             $defaultPath = $_SERVER['DOCUMENT_ROOT'] . $config['default_photo'];
@@ -242,5 +249,13 @@ class FileHelper {
         $filePath = $uploadsPath . $folder . '/' . $filename;
         
         return file_exists($filePath) && is_file($filePath);
+    }
+    
+    /**
+     * Método adicional: Obtener URL base (sin /uploads/)
+     */
+    public static function getBaseUrl() {
+        $uploadsUrl = self::buildUrl('/uploads/');
+        return str_replace('/uploads/', '', $uploadsUrl);
     }
 }

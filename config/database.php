@@ -43,29 +43,29 @@ class Database {
     }
     
 public static function getUploadsUrl() {
-        // URL para acceder a los uploads - VERSIÓN CORREGIDA PARA RAILWAY
-        $isHttps = false;
-        
-        // 1. Railway usa este header
-        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-            $isHttps = true;
-        }
-        
-        // 2. Verificar header estándar (por si acaso)
-        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-            $isHttps = true;
-        }
-        
-        // 3. Verificar otros headers de proxy
-        if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
-            $isHttps = true;
-        }
-        
-        $protocol = $isHttps ? 'https://' : 'http://';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        
-        return $protocol . $host . '/uploads/';
+    // Para consistencia, usar el mismo método que FileHelper::buildUrl()
+    $isHttps = false;
+    
+    // 1. Railway usa este header
+    if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        $isHttps = true;
     }
+    
+    // 2. Verificar header estándar
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+        $isHttps = true;
+    }
+    
+    // 3. Verificar otros headers de proxy
+    if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
+        $isHttps = true;
+    }
+    
+    $protocol = $isHttps ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    return $protocol . $host . '/uploads/';
+}
     
     // Validar que el directorio de uploads existe
     public static function ensureUploadsDirectory() {

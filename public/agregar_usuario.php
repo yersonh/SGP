@@ -1258,7 +1258,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             
             // Validar teléfono
             const telefono = telefonoInput.value.replace(/\D/g, '');
-            if (telefono.length !== 10) {
+            if (telefono.length !== 11) {
                 showNotification('El teléfono debe tener 10 dígitos.', 'error');
                 telefonoInput.focus();
                 return;

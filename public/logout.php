@@ -1,6 +1,10 @@
 <?php
 session_start();
 
+// Agregar las mismas dependencias que en referenciador.php
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/UsuarioModel.php';
+
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
     // Si no hay sesión, redirigir directamente al login
@@ -8,8 +12,22 @@ if (!isset($_SESSION['id_usuario'])) {
     exit();
 }
 
+// CONEXIÓN A LA BASE DE DATOS Y OBTENCIÓN DEL USUARIO
+$pdo = Database::getConnection();
+$model = new UsuarioModel($pdo);
+$id_usuario_logueado = $_SESSION['id_usuario'];
+
+// Obtener datos del usuario logueado
+$usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
+
 // Obtener datos del usuario para mostrar en el mensaje
-$nombre_usuario = isset($_SESSION['nombres']) ? $_SESSION['nombres'] . ' ' . $_SESSION['apellidos'] : 'Usuario';
+$nombre_usuario = 'Usuario'; // Valor por defecto
+
+if ($usuario_logueado && isset($usuario_logueado['nombres']) && isset($usuario_logueado['apellidos'])) {
+    $nombre_usuario = $usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos'];
+} elseif (isset($_SESSION['nickname'])) {
+    $nombre_usuario = $_SESSION['nickname'];
+}
 
 // Si se recibió confirmación de cerrar sesión
 if (isset($_GET['confirm']) && $_GET['confirm'] == 'true') {

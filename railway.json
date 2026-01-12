@@ -6,5 +6,8 @@
   },
   "deploy": {
     "startCommand": "bash .platform/scripts/start-votaciones.sh"
+  },
+  "mounts": {
+    "uploads": "/uploads"
   }
 }

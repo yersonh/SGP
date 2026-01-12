@@ -1,62 +1,3 @@
-<?php
-session_start();
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/UsuarioModel.php';
-header('Content-Type: text/html; charset=utf-8');
-
-$pdo = Database::getConnection();
-$model = new UsuarioModel($pdo);
-$error = '';
-if (isset($_GET['logout']) && $_GET['logout'] == 'success') {
-    $logout_message = "Sesión cerrada exitosamente";
-}
-// Procesar login si se envió el formulario
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nickname = trim($_POST['nickname'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-    
-    if (!empty($nickname) && !empty($password)) {
-        try {
-            // Usar el modelo para verificar credenciales
-            $usuario = $model->verificarCredenciales($nickname, $password);
-            
-            if ($usuario) {
-                // Login exitoso
-                $_SESSION['id_usuario'] = $usuario['id_usuario'];
-                $_SESSION['nickname'] = $usuario['nickname'];
-                $_SESSION['tipo_usuario'] = $usuario['tipo_usuario'];
-                $_SESSION['login_time'] = time();
-                
-                // Actualizar último registro usando el modelo
-                $fecha_actual = date('Y-m-d H:i:s');
-                $model->actualizarUltimoRegistro($usuario['id_usuario'], $fecha_actual);
-                
-                // REDIRIGIR SEGÚN EL TIPO DE USUARIO
-                switch ($usuario['tipo_usuario']) {
-                    case 'Administrador':
-                        header('Location: dashboard.php');
-                        break;
-                    case 'Referenciador':
-                        header('Location: referenciador.php');
-                        break;
-                    default:
-                        // Redirigir a una vista por defecto o mostrar error
-                        header('Location: dashboard.php');
-                        break;
-                }
-                exit();
-            } else {
-                $error = 'Credenciales incorrectas o usuario inactivo';
-            }
-        } catch (Exception $e) {
-            $error = 'Error al procesar la solicitud';
-            error_log("Error login: " . $e->getMessage());
-        }
-    } else {
-        $error = 'Por favor complete todos los campos';
-    }
-}
-?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -118,12 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     .logo-section h1 {
         color: #ffffff;
-        font-size: 1.4rem;
+        font-size: 1.35rem; /* Reducido de 1.4rem */
         margin-bottom: 8px;
-        line-height: 1.2;
-        white-space: nowrap;
+        line-height: 1.3;
         font-weight: 600;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px; /* Reducido de 0.5px */
+        padding: 0 5px; /* Espacio interno para balance */
+        word-break: keep-all; /* Evita separación de palabras */
     }
     
     .logo-section p {
@@ -284,6 +226,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .system-info p {
         margin-bottom: 5px;
         opacity: 0.8;
+        word-break: keep-all; /* Evita separación de palabras */
+        white-space: nowrap; /* Mantiene en una línea */
+        overflow: hidden;
+        text-overflow: ellipsis; /* Muestra ... si es muy largo */
+    }
+    
+    .contact-line {
+        display: flex;
+        flex-wrap: nowrap; /* No permite salto de línea */
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap; /* Permite ajuste inteligente */
     }
     
     /* Efecto de brillo sutil en los bordes */
@@ -314,8 +269,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .logo-section h1 {
-            font-size: 1.2rem;
-            white-space: nowrap;
+            font-size: 1.15rem; /* Ajustado para móviles */
+            letter-spacing: 0.2px;
+            white-space: normal; /* Permite salto de línea si es necesario */
+            word-break: keep-all;
+            padding: 0 2px;
         }
         
         .logo-section p {
@@ -324,6 +282,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .login-btn {
             padding: 12px;
+        }
+        
+        .system-info p {
+            font-size: 0.7rem; /* Un poco más pequeño en móviles */
+            white-space: normal; /* Permite salto de línea */
+            word-break: normal;
+        }
+        
+        .contact-line {
+            flex-wrap: wrap; /* En móviles permite ajuste */
+            justify-content: center;
+            gap: 3px;
+        }
+    }
+    
+    @media (max-width: 380px) {
+        .logo-section h1 {
+            font-size: 1.05rem; /* Más pequeño para pantallas muy pequeñas */
+        }
+        
+        .system-info p {
+            font-size: 0.65rem;
+            line-height: 1.5;
         }
     }
 </style>
@@ -389,7 +370,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Ing. Rubén Darío González García • 
             SISGONTech • Colombia © • <?php echo date('Y'); ?>
             </p>
-            <p>Contacto: +57 3106310227 • Email: sisgonnet@gmail.com
+            <p class="contact-line">
+                <span>Contacto: +57 3106310227</span>
+                <span>•</span>
+                <span>Email: sisgonnet@gmail.com</span>
             </p>
         </div>
     </div>

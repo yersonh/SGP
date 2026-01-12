@@ -810,14 +810,11 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                             id="telefono" 
                             name="telefono" 
                             class="form-control" 
-                            placeholder="3001234567"
+                            placeholder="Ingrese el número de teléfono"
                             required
-                            maxlength="10"
-                            pattern="[0-9]{10}"
-                            title="Ingrese un número de teléfono válido (10 dígitos)"
                             autocomplete="off">
                     </div>
-                    <span class="field-hint">10 dígitos sin espacios (ej: 3001234567)</span>
+                    <span class="field-hint">Número de teléfono (ej: 3001234567)</span>
                 </div>
                 
                 <!-- Zona -->
@@ -1125,60 +1122,17 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             e.target.value = e.target.value.replace(/\D/g, '');
         });
         
-        // 🔥 FORMATO DE TELÉFONO CORREGIDO
+        // 🔥 TELÉFONO - SIN VALIDACIÓN ESPECIAL
         const telefonoInput = document.getElementById('telefono');
-        
-        // Permitir entrada sin formato, solo números
+        // Solo permitir números (opcional, puedes quitar esto también)
         telefonoInput.addEventListener('input', function(e) {
-            // Guardar posición del cursor
-            const cursorPosition = this.selectionStart;
-            const originalLength = this.value.length;
-            
             // Remover caracteres no numéricos
-            let value = this.value.replace(/\D/g, '');
+            e.target.value = e.target.value.replace(/\D/g, '');
             
-            // Limitar a 10 dígitos
-            if (value.length > 10) {
-                value = value.substring(0, 10);
+            // Limitar a 15 caracteres (más que suficiente)
+            if (e.target.value.length > 15) {
+                e.target.value = e.target.value.substring(0, 15);
             }
-            
-            // Guardar el valor sin formato
-            this.dataset.rawValue = value;
-            
-            // Formatear para mostrar (300 1234567)
-            let formattedValue = value;
-            if (value.length > 3) {
-                formattedValue = value.substring(0, 3) + ' ' + value.substring(3);
-            }
-            
-            // Actualizar el valor
-            this.value = formattedValue;
-            
-            // Ajustar posición del cursor
-            if (originalLength < this.value.length && cursorPosition === originalLength) {
-                // El cursor estaba al final, mantenerlo al final
-                this.setSelectionRange(this.value.length, this.value.length);
-            } else {
-                // Intentar mantener posición relativa
-                const newCursorPosition = cursorPosition + (this.value.length - originalLength);
-                this.setSelectionRange(newCursorPosition, newCursorPosition);
-            }
-        });
-        
-        // Al hacer focus, mostrar solo números temporalmente
-        telefonoInput.addEventListener('focus', function() {
-            if (this.dataset.rawValue) {
-                this.value = this.dataset.rawValue;
-            }
-        });
-        
-        // Al perder focus, formatear nuevamente
-        telefonoInput.addEventListener('blur', function() {
-            let value = this.value.replace(/\D/g, '');
-            if (value.length > 3) {
-                this.value = value.substring(0, 3) + ' ' + value.substring(3);
-            }
-            this.dataset.rawValue = value;
         });
         
         // Validar fortaleza de contraseña
@@ -1238,7 +1192,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         passwordInput.addEventListener('input', validatePasswordMatch);
         confirmPasswordInput.addEventListener('input', validatePasswordMatch);
         
-        // 🔥 VALIDACIÓN CORREGIDA DEL FORMULARIO
+        // 🔥 VALIDACIÓN SIMPLIFICADA DEL FORMULARIO (SIN VALIDACIÓN DE TELÉFONO)
         const usuarioForm = document.getElementById('usuario-form');
         const submitBtn = document.getElementById('submit-btn');
         
@@ -1268,10 +1222,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // Validar cédula
+            // Validar cédula (mínimo 6 dígitos)
             const cedula = cedulaInput.value.replace(/\D/g, '');
-            if (cedula.length < 6 || cedula.length > 10) {
-                showNotification('La cédula debe tener entre 6 y 10 dígitos.', 'error');
+            if (cedula.length < 6) {
+                showNotification('La cédula debe tener al menos 6 dígitos.', 'error');
                 cedulaInput.focus();
                 return;
             }
@@ -1293,11 +1247,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // 🔥 VALIDACIÓN CORREGIDA DEL TELÉFONO
-            const telefono = telefonoInput.value.replace(/\s/g, '').replace(/\D/g, '');
-            
-            if (telefono.length !== 10) {
-                showNotification('El teléfono debe tener exactamente 10 dígitos.', 'error');
+            // 🔥 NO VALIDAR TELÉFONO - Solo asegurar que no esté vacío
+            const telefono = telefonoInput.value.trim();
+            if (!telefono) {
+                showNotification('El teléfono es obligatorio.', 'error');
                 telefonoInput.focus();
                 return;
             }
@@ -1307,7 +1260,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             
             // Asegurar que los valores numéricos estén limpios
             formData.set('cedula', cedula);
-            formData.set('telefono', telefono); // Enviar solo números
+            // El teléfono se envía como está (la validación fuerte está en el servidor)
             
             if (formData.get('tope')) {
                 formData.set('tope', formData.get('tope').replace(/\D/g, ''));
@@ -1325,6 +1278,8 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Respuesta del servidor:', data);
+                
                 if (data.success) {
                     showNotification(data.message, 'success');
                     
@@ -1353,12 +1308,18 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     showNotification(data.message || 'Error al crear usuario', 'error');
                     if (data.errors) {
                         console.error('Errores del servidor:', data.errors);
+                        // Mostrar errores específicos si existen
+                        if (Array.isArray(data.errors)) {
+                            data.errors.forEach(error => {
+                                console.error('-', error);
+                            });
+                        }
                     }
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error de conexión con el servidor', 'error');
+                console.error('Error de red:', error);
+                showNotification('Error de conexión con el servidor. Verifica tu conexión a internet.', 'error');
             })
             .finally(() => {
                 submitBtn.innerHTML = originalText;

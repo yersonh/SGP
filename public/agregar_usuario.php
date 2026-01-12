@@ -949,331 +949,345 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
 
     <!-- JavaScript -->
     <script>
-        // ==================== FUNCIÓN PARA MOSTRAR NOTIFICACIONES ====================
-        function showNotification(message, type = 'info') {
-            const oldNotification = document.querySelector('.notification');
-            if (oldNotification) oldNotification.remove();
-            
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            
-            let icon = 'info-circle';
-            if (type === 'success') icon = 'check-circle';
-            if (type === 'error') icon = 'exclamation-circle';
-            if (type === 'warning') icon = 'exclamation-triangle';
-            
-            notification.innerHTML = `
-                <i class="fas fa-${icon}"></i>
-                <span>${message}</span>
-                <button class="btn-close" onclick="this.parentElement.remove()">×</button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) notification.remove();
-            }, 5000);
-        }
+    // ==================== FUNCIÓN PARA MOSTRAR NOTIFICACIONES ====================
+    function showNotification(message, type = 'info') {
+        const oldNotification = document.querySelector('.notification');
+        if (oldNotification) oldNotification.remove();
         
-        // ==================== SELECTS DEPENDIENTES ====================
-        function setupDependentSelects() {
-            console.log('Configurando selects dependientes...');
-            
-            // Configurar selects como deshabilitados inicialmente
-            document.getElementById('sector').disabled = true;
-            document.getElementById('puesto').disabled = true;
-            
-            // Zona -> Sector
-            document.getElementById('zona').addEventListener('change', function() {
-                const zonaId = this.value;
-                const sectorSelect = document.getElementById('sector');
-                const puestoSelect = document.getElementById('puesto');
-                
-                console.log('Zona seleccionada:', zonaId);
-                
-                if (zonaId) {
-                    sectorSelect.disabled = false;
-                    sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
-                    
-                    // Llamada AJAX para obtener sectores
-                    fetch(`ajax/cargar_sectores.php?zona_id=${zonaId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Respuesta sectores:', data);
-                            if (data.success) {
-                                sectorSelect.innerHTML = '<option value="">Seleccione un sector</option>';
-                                data.sectores.forEach(sector => {
-                                    const option = document.createElement('option');
-                                    option.value = sector.id_sector;
-                                    option.textContent = sector.nombre;
-                                    sectorSelect.appendChild(option);
-                                });
-                                console.log(`Sectores cargados: ${data.sectores.length}`);
-                            } else {
-                                sectorSelect.innerHTML = '<option value="">Error al cargar sectores</option>';
-                                showNotification(data.message || 'Error al cargar sectores', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error cargando sectores:', error);
-                            sectorSelect.innerHTML = '<option value="">Error al cargar</option>';
-                            showNotification('Error de conexión al cargar sectores', 'error');
-                        });
-                } else {
-                    sectorSelect.disabled = true;
-                    sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
-                    puestoSelect.disabled = true;
-                    puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-                }
-            });
-            
-            // Sector -> Puesto
-            document.getElementById('sector').addEventListener('change', function() {
-                const sectorId = this.value;
-                const puestoSelect = document.getElementById('puesto');
-                
-                console.log('Sector seleccionado:', sectorId);
-                
-                if (sectorId) {
-                    puestoSelect.disabled = false;
-                    puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
-                    
-                    // Llamada AJAX para obtener puestos
-                    fetch(`ajax/cargar_puestos.php?sector_id=${sectorId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Respuesta puestos:', data);
-                            if (data.success) {
-                                puestoSelect.innerHTML = '<option value="">Seleccione un puesto</option>';
-                                data.puestos.forEach(puesto => {
-                                    const option = document.createElement('option');
-                                    option.value = puesto.id_puesto;
-                                    option.textContent = puesto.nombre;
-                                    puestoSelect.appendChild(option);
-                                });
-                                console.log(`Puestos cargados: ${data.puestos.length}`);
-                            } else {
-                                puestoSelect.innerHTML = '<option value="">Error al cargar puestos</option>';
-                                showNotification(data.message || 'Error al cargar puestos', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error cargando puestos:', error);
-                            puestoSelect.innerHTML = '<option value="">Error al cargar</option>';
-                            showNotification('Error de conexión al cargar puestos', 'error');
-                        });
-                } else {
-                    puestoSelect.disabled = true;
-                    puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-                }
-            });
-        }
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
         
-        // ==================== FUNCIÓN PARA RESETEAR SELECTS ====================
-        function resetDependentSelects() {
-            const zonaSelect = document.getElementById('zona');
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+        if (type === 'warning') icon = 'exclamation-triangle';
+        
+        notification.innerHTML = `
+            <i class="fas fa-${icon}"></i>
+            <span>${message}</span>
+            <button class="btn-close" onclick="this.parentElement.remove()">×</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) notification.remove();
+        }, 5000);
+    }
+    
+    // ==================== SELECTS DEPENDIENTES ====================
+    function setupDependentSelects() {
+        console.log('Configurando selects dependientes...');
+        
+        // Configurar selects como deshabilitados inicialmente
+        document.getElementById('sector').disabled = true;
+        document.getElementById('puesto').disabled = true;
+        
+        // Zona -> Sector
+        document.getElementById('zona').addEventListener('change', function() {
+            const zonaId = this.value;
             const sectorSelect = document.getElementById('sector');
             const puestoSelect = document.getElementById('puesto');
             
-            zonaSelect.value = '';
-            sectorSelect.disabled = true;
-            sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
-            puestoSelect.disabled = true;
-            puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
-        }
+            console.log('Zona seleccionada:', zonaId);
+            
+            if (zonaId) {
+                sectorSelect.disabled = false;
+                sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
+                
+                // Llamada AJAX para obtener sectores
+                fetch(`ajax/cargar_sectores.php?zona_id=${zonaId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Respuesta sectores:', data);
+                        if (data.success) {
+                            sectorSelect.innerHTML = '<option value="">Seleccione un sector</option>';
+                            data.sectores.forEach(sector => {
+                                const option = document.createElement('option');
+                                option.value = sector.id_sector;
+                                option.textContent = sector.nombre;
+                                sectorSelect.appendChild(option);
+                            });
+                            console.log(`Sectores cargados: ${data.sectores.length}`);
+                        } else {
+                            sectorSelect.innerHTML = '<option value="">Error al cargar sectores</option>';
+                            showNotification(data.message || 'Error al cargar sectores', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cargando sectores:', error);
+                        sectorSelect.innerHTML = '<option value="">Error al cargar</option>';
+                        showNotification('Error de conexión al cargar sectores', 'error');
+                    });
+            } else {
+                sectorSelect.disabled = true;
+                sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
+                puestoSelect.disabled = true;
+                puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
+            }
+        });
         
-        // ==================== INICIALIZACIÓN ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM cargado - Inicializando formulario de agregar usuario...');
+        // Sector -> Puesto
+        document.getElementById('sector').addEventListener('change', function() {
+            const sectorId = this.value;
+            const puestoSelect = document.getElementById('puesto');
             
-            // Configurar selects dependientes (USANDO LOS MISMOS ARCHIVOS AJAX)
-            setupDependentSelects();
+            console.log('Sector seleccionado:', sectorId);
             
-            // Foto de perfil
-            const photoPreview = document.getElementById('photoPreview');
-            const photoInput = document.getElementById('foto');
-            const photoImage = document.getElementById('photoImage');
-            const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
-            
-            // Evento para abrir el selector de archivos
-            photoPreview.addEventListener('click', function() {
-                photoInput.click();
-            });
-            
-            uploadPhotoBtn.addEventListener('click', function() {
-                photoInput.click();
-            });
-            
-            // Mostrar imagen seleccionada
-            photoInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        photoImage.src = e.target.result;
-                        photoImage.style.display = 'block';
-                        photoPreview.querySelector('.photo-placeholder').style.display = 'none';
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
-            // Formato de cédula (solo números)
-            const cedulaInput = document.getElementById('cedula');
-            cedulaInput.addEventListener('input', function(e) {
-                // Remover caracteres no numéricos
-                e.target.value = e.target.value.replace(/\D/g, '');
-            });
-            
-            // Formato de teléfono (Colombia)
-            const telefonoInput = document.getElementById('telefono');
-            telefonoInput.addEventListener('input', function(e) {
-                // Remover caracteres no numéricos
-                let value = e.target.value.replace(/\D/g, '');
+            if (sectorId) {
+                puestoSelect.disabled = false;
+                puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
                 
-                // Limitar a 10 dígitos
-                if (value.length > 10) {
-                    value = value.substring(0, 10);
-                }
-                
-                // Formatear: 300 1234567
-                if (value.length > 3) {
-                    value = value.substring(0, 3) + ' ' + value.substring(3);
-                }
-                
-                e.target.value = value;
-            });
+                // Llamada AJAX para obtener puestos
+                fetch(`ajax/cargar_puestos.php?sector_id=${sectorId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Respuesta puestos:', data);
+                        if (data.success) {
+                            puestoSelect.innerHTML = '<option value="">Seleccione un puesto</option>';
+                            data.puestos.forEach(puesto => {
+                                const option = document.createElement('option');
+                                option.value = puesto.id_puesto;
+                                option.textContent = puesto.nombre;
+                                puestoSelect.appendChild(option);
+                            });
+                            console.log(`Puestos cargados: ${data.puestos.length}`);
+                        } else {
+                            puestoSelect.innerHTML = '<option value="">Error al cargar puestos</option>';
+                            showNotification(data.message || 'Error al cargar puestos', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cargando puestos:', error);
+                        puestoSelect.innerHTML = '<option value="">Error al cargar</option>';
+                        showNotification('Error de conexión al cargar puestos', 'error');
+                    });
+            } else {
+                puestoSelect.disabled = true;
+                puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
+            }
+        });
+    }
+    
+    // ==================== FUNCIÓN PARA RESETEAR SELECTS ====================
+    function resetDependentSelects() {
+        const zonaSelect = document.getElementById('zona');
+        const sectorSelect = document.getElementById('sector');
+        const puestoSelect = document.getElementById('puesto');
+        
+        zonaSelect.value = '';
+        sectorSelect.disabled = true;
+        sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
+        puestoSelect.disabled = true;
+        puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
+    }
+    
+    // ==================== INICIALIZACIÓN ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM cargado - Inicializando formulario de agregar usuario...');
+        
+        // Configurar selects dependientes (USANDO LOS MISMOS ARCHIVOS AJAX)
+        setupDependentSelects();
+        
+        // Foto de perfil
+        const photoPreview = document.getElementById('photoPreview');
+        const photoInput = document.getElementById('foto');
+        const photoImage = document.getElementById('photoImage');
+        const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+        
+        // Evento para abrir el selector de archivos
+        photoPreview.addEventListener('click', function() {
+            photoInput.click();
+        });
+        
+        uploadPhotoBtn.addEventListener('click', function() {
+            photoInput.click();
+        });
+        
+        // Mostrar imagen seleccionada
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoImage.src = e.target.result;
+                    photoImage.style.display = 'block';
+                    photoPreview.querySelector('.photo-placeholder').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Formato de cédula (solo números)
+        const cedulaInput = document.getElementById('cedula');
+        cedulaInput.addEventListener('input', function(e) {
+            // Remover caracteres no numéricos
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+        
+        // Formato de teléfono (Colombia)
+        const telefonoInput = document.getElementById('telefono');
+        telefonoInput.addEventListener('input', function(e) {
+            // Remover caracteres no numéricos
+            let value = e.target.value.replace(/\D/g, '');
             
-            // Validar fortaleza de contraseña
-            const passwordInput = document.getElementById('password');
-            const passwordStrength = document.getElementById('passwordStrength');
-            
-            passwordInput.addEventListener('input', function(e) {
-                const password = e.target.value;
-                let strength = 0;
-                
-                // Longitud
-                if (password.length >= 6) strength++;
-                if (password.length >= 8) strength++;
-                
-                // Caracteres mixtos
-                if (/[a-z]/.test(password)) strength++;
-                if (/[A-Z]/.test(password)) strength++;
-                if (/[0-9]/.test(password)) strength++;
-                if (/[^A-Za-z0-9]/.test(password)) strength++;
-                
-                // Actualizar indicador visual
-                passwordStrength.className = 'password-strength';
-                if (password.length === 0) {
-                    passwordStrength.style.display = 'none';
-                } else {
-                    passwordStrength.style.display = 'block';
-                    if (strength <= 2) {
-                        passwordStrength.classList.add('weak');
-                    } else if (strength <= 4) {
-                        passwordStrength.classList.add('medium');
-                    } else {
-                        passwordStrength.classList.add('strong');
-                    }
-                }
-            });
-            
-            // Validar coincidencia de contraseñas
-            const confirmPasswordInput = document.getElementById('confirm_password');
-            const passwordMatch = document.getElementById('passwordMatch');
-            
-            function validatePasswordMatch() {
-                const password = passwordInput.value;
-                const confirmPassword = confirmPasswordInput.value;
-                
-                if (confirmPassword.length === 0) {
-                    passwordMatch.textContent = '';
-                    passwordMatch.className = 'password-match';
-                } else if (password === confirmPassword) {
-                    passwordMatch.textContent = '✓ Las contraseñas coinciden';
-                    passwordMatch.className = 'password-match valid';
-                } else {
-                    passwordMatch.textContent = '✗ Las contraseñas no coinciden';
-                    passwordMatch.className = 'password-match invalid';
-                }
+            // Limitar a 10 dígitos
+            if (value.length > 10) {
+                value = value.substring(0, 10);
             }
             
-            passwordInput.addEventListener('input', validatePasswordMatch);
-            confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+            // Formatear: 300 1234567
+            if (value.length > 3) {
+                value = value.substring(0, 3) + ' ' + value.substring(3);
+            }
             
-            // Validar formulario antes de enviar
-            const usuarioForm = document.getElementById('usuario-form');
-            const submitBtn = document.getElementById('submit-btn');
+            e.target.value = value;
+        });
+        
+        // Validar fortaleza de contraseña
+        const passwordInput = document.getElementById('password');
+        const passwordStrength = document.getElementById('passwordStrength');
+        
+        passwordInput.addEventListener('input', function(e) {
+            const password = e.target.value;
+            let strength = 0;
             
-            usuarioForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Validar campos obligatorios
-                const requiredFields = [
-                    'nombres', 'apellidos', 'cedula', 'nickname', 
-                    'correo', 'telefono', 'tipo_usuario', 'password', 'confirm_password'
-                ];
-                
-                let isValid = true;
-                let errorField = null;
-                
-                requiredFields.forEach(field => {
-                    const element = document.getElementById(field);
-                    if (element && !element.value.trim()) {
-                        isValid = false;
-                        if (!errorField) errorField = element;
-                    }
-                });
-                
-                if (!isValid) {
-                    showNotification('Por favor complete todos los campos obligatorios (*)', 'error');
-                    if (errorField) errorField.focus();
-                    return;
+            // Longitud
+            if (password.length >= 6) strength++;
+            if (password.length >= 8) strength++;
+            
+            // Caracteres mixtos
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            
+            // Actualizar indicador visual
+            passwordStrength.className = 'password-strength';
+            if (password.length === 0) {
+                passwordStrength.style.display = 'none';
+            } else {
+                passwordStrength.style.display = 'block';
+                if (strength <= 2) {
+                    passwordStrength.classList.add('weak');
+                } else if (strength <= 4) {
+                    passwordStrength.classList.add('medium');
+                } else {
+                    passwordStrength.classList.add('strong');
                 }
-                
-                // Validar cédula
-                const cedula = cedulaInput.value;
-                if (cedula.length < 6 || cedula.length > 10) {
-                    showNotification('La cédula debe tener entre 6 y 10 dígitos.', 'error');
-                    cedulaInput.focus();
-                    return;
+            }
+        });
+        
+        // Validar coincidencia de contraseñas
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const passwordMatch = document.getElementById('passwordMatch');
+        
+        function validatePasswordMatch() {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            if (confirmPassword.length === 0) {
+                passwordMatch.textContent = '';
+                passwordMatch.className = 'password-match';
+            } else if (password === confirmPassword) {
+                passwordMatch.textContent = '✓ Las contraseñas coinciden';
+                passwordMatch.className = 'password-match valid';
+            } else {
+                passwordMatch.textContent = '✗ Las contraseñas no coinciden';
+                passwordMatch.className = 'password-match invalid';
+            }
+        }
+        
+        passwordInput.addEventListener('input', validatePasswordMatch);
+        confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+        
+        // Validar formulario antes de enviar
+        const usuarioForm = document.getElementById('usuario-form');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        usuarioForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validar campos obligatorios
+            const requiredFields = [
+                'nombres', 'apellidos', 'cedula', 'nickname', 
+                'correo', 'telefono', 'tipo_usuario', 'password', 'confirm_password'
+            ];
+            
+            let isValid = true;
+            let errorField = null;
+            
+            requiredFields.forEach(field => {
+                const element = document.getElementById(field);
+                if (element && !element.value.trim()) {
+                    isValid = false;
+                    if (!errorField) errorField = element;
                 }
-                
-                // Validar contraseñas
-                const password = passwordInput.value;
-                const confirmPassword = confirmPasswordInput.value;
-                
-                if (password !== confirmPassword) {
-                    showNotification('Las contraseñas no coinciden. Por favor verifique.', 'error');
-                    confirmPasswordInput.focus();
-                    return;
-                }
-                
-                // Validar fortaleza de contraseña
-                if (password.length < 6) {
-                    showNotification('La contraseña debe tener al menos 6 caracteres.', 'error');
-                    passwordInput.focus();
-                    return;
-                }
-                
-                // Validar teléfono
-                const telefono = telefonoInput.value.replace(/\s/g, '');
-                if (telefono.length !== 10) {
-                    showNotification('El teléfono debe tener 10 dígitos.', 'error');
-                    telefonoInput.focus();
-                    return;
-                }
-                
-                // Mostrar estado de carga
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
-                submitBtn.disabled = true;
-                
-                // Simular envío (por ahora solo simulación)
-                // En producción, descomentar el código fetch de abajo
-                setTimeout(() => {
-                    // Simulación de éxito
-                    showNotification('✅ Usuario registrado exitosamente', 'success');
+            });
+            
+            if (!isValid) {
+                showNotification('Por favor complete todos los campos obligatorios (*)', 'error');
+                if (errorField) errorField.focus();
+                return;
+            }
+            
+            // Validar cédula
+            const cedula = cedulaInput.value.replace(/\D/g, '');
+            if (cedula.length < 6 || cedula.length > 10) {
+                showNotification('La cédula debe tener entre 6 y 10 dígitos.', 'error');
+                cedulaInput.focus();
+                return;
+            }
+            
+            // Validar contraseñas
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            if (password !== confirmPassword) {
+                showNotification('Las contraseñas no coinciden. Por favor verifique.', 'error');
+                confirmPasswordInput.focus();
+                return;
+            }
+            
+            // Validar fortaleza de contraseña
+            if (password.length < 6) {
+                showNotification('La contraseña debe tener al menos 6 caracteres.', 'error');
+                passwordInput.focus();
+                return;
+            }
+            
+            // Validar teléfono
+            const telefono = telefonoInput.value.replace(/\D/g, '');
+            if (telefono.length !== 10) {
+                showNotification('El teléfono debe tener 10 dígitos.', 'error');
+                telefonoInput.focus();
+                return;
+            }
+            
+            // Crear FormData para enviar (incluye archivos)
+            const formData = new FormData(usuarioForm);
+            
+            // Asegurar que los valores numéricos estén limpios
+            formData.set('cedula', cedula);
+            formData.set('telefono', telefono);
+            if (formData.get('tope')) {
+                formData.set('tope', formData.get('tope').replace(/\D/g, ''));
+            }
+            
+            // Mostrar estado de carga
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            submitBtn.disabled = true;
+            
+            // Enviar datos al servidor
+            fetch('procesar_usuario.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
                     
                     // Resetear formulario
                     usuarioForm.reset();
@@ -1287,19 +1301,37 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     // Resetear selects dependientes
                     resetDependentSelects();
                     
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
+                    // Redirigir después de 2 segundos
+                    setTimeout(() => {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            window.location.href = 'dashboard.php?success=usuario_creado';
+                        }
+                    }, 2000);
                     
-                    console.log('Formulario enviado exitosamente (simulación)');
-                    
-                }, 1500);
+                } else {
+                    showNotification(data.message || 'Error al crear usuario', 'error');
+                    if (data.errors) {
+                        console.error('Errores del servidor:', data.errors);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error de conexión con el servidor', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             });
-            
-            // Inicializar
-            passwordStrength.style.display = 'none';
-            
-            console.log('Formulario de agregar usuario inicializado correctamente');
         });
-    </script>
+        
+        // Inicializar
+        passwordStrength.style.display = 'none';
+        
+        console.log('Formulario de agregar usuario inicializado correctamente');
+    });
+</script>
 </body>
 </html>

@@ -51,4 +51,4 @@ echo "PHP Version: " . PHP_VERSION . "<br>";
     h1 { color: #333; }
     h2 { color: #555; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
     h3 { color: #777; }
-</style>
+</style>sss

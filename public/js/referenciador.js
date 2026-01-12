@@ -21,138 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar eventos del formulario
     setupFormEvents();
     
-    // Inicializar TODOS los progresos
-    updateAllProgress();
+    // Inicializar progreso
+    updateProgress();
     
     console.log('Sistema inicializado correctamente');
 });
-
-// ==================== FUNCIONES DE TOPE ====================
-
-// Actualizar barra de tope
-function updateTopeProgress() {
-    const topeActual = parseInt(document.getElementById('tope-actual')?.textContent || 0);
-    const topeMaximo = parseInt(document.getElementById('tope-maximo')?.textContent || 0);
-    const topePorcentaje = document.getElementById('tope-porcentaje');
-    const topeProgressFill = document.getElementById('tope-progress-fill');
-    
-    if (!topeProgressFill || topeMaximo === 0) return;
-    
-    const porcentaje = Math.min((topeActual / topeMaximo) * 100, 100);
-    
-    // Actualizar visualmente
-    topeProgressFill.style.width = porcentaje + '%';
-    
-    // Actualizar texto del porcentaje
-    if (topePorcentaje) {
-        topePorcentaje.textContent = '(' + Math.round(porcentaje) + '%)';
-    }
-    
-    // Cambiar color según el porcentaje
-    if (porcentaje >= 100) {
-        topeProgressFill.style.background = 'linear-gradient(90deg, #f44336, #e53935)';
-    } else if (porcentaje >= 80) {
-        topeProgressFill.style.background = 'linear-gradient(90deg, #FF9800, #FFB74D)';
-    } else {
-        topeProgressFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
-    }
-}
-
-// Incrementar contador de referenciados (se llamará después de guardar)
-function incrementarReferenciados() {
-    const topeActualElement = document.getElementById('tope-actual');
-    if (!topeActualElement) return;
-    
-    const current = parseInt(topeActualElement.textContent || 0);
-    topeActualElement.textContent = current + 1;
-    
-    updateTopeProgress();
-}
-
-// ==================== FUNCIONES DE PROGRESO DEL FORMULARIO ====================
-
-// Actualizar ambas barras de progreso
-function updateAllProgress() {
-    updateFormProgress();
-    updateTopeProgress();
-}
-
-// Actualizar progreso del formulario
-function updateFormProgress() {
-    const progressFill = document.getElementById('progress-fill');
-    const formProgressFill = document.getElementById('form-progress-fill');
-    const progressPercentage = document.getElementById('progress-percentage');
-    const formProgressPercentage = document.getElementById('form-progress-percentage');
-    
-    if (!progressFill || !formProgressFill || !progressPercentage || !formProgressPercentage) {
-        console.error('Elementos de progreso no encontrados');
-        return;
-    }
-    
-    let filledProgress = 0;
-    const maxProgress = 100;
-    
-    // Campos con data-progress
-    document.querySelectorAll('[data-progress]').forEach(element => {
-        const progressValue = parseInt(element.getAttribute('data-progress')) || 0;
-        const value = element.value;
-        
-        if (element.tagName === 'INPUT') {
-            if (element.type === 'hidden') {
-                if (value && value !== '0' && value !== '') {
-                    filledProgress += progressValue;
-                }
-            } else if (element.type === 'text' || element.type === 'email' || element.type === 'tel' || element.type === 'number') {
-                if (value && value.trim() !== '') {
-                    filledProgress += progressValue;
-                }
-            } else if (element.type === 'checkbox') {
-                // Los checkboxes se manejan aparte
-            }
-        } else if (element.tagName === 'SELECT') {
-            if (value && value !== '') {
-                filledProgress += progressValue;
-            }
-        } else if (element.tagName === 'TEXTAREA') {
-            if (value && value.trim() !== '') {
-                filledProgress += progressValue;
-            }
-        }
-    });
-    
-    // Insumos (2% por cada uno)
-    const insumosSeleccionados = document.querySelectorAll('.insumo-checkbox:checked').length;
-    filledProgress += (insumosSeleccionados * 2);
-    
-    // Asegurar que no supere el máximo
-    filledProgress = Math.min(filledProgress, maxProgress);
-    const percentage = Math.round((filledProgress / maxProgress) * 100);
-    
-    // Actualizar ambas barras visualmente
-    progressFill.style.width = percentage + '%';
-    formProgressFill.style.width = percentage + '%';
-    
-    // Actualizar ambos porcentajes
-    progressPercentage.textContent = percentage + '%';
-    formProgressPercentage.textContent = percentage + '%';
-    
-    // Cambiar color según el porcentaje
-    if (percentage >= 100) {
-        progressFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
-        formProgressFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
-    } else if (percentage >= 70) {
-        progressFill.style.background = 'linear-gradient(90deg, #2196F3, #03A9F4)';
-        formProgressFill.style.background = 'linear-gradient(90deg, #2196F3, #03A9F4)';
-    } else if (percentage >= 40) {
-        progressFill.style.background = 'linear-gradient(90deg, #FF9800, #FFC107)';
-        formProgressFill.style.background = 'linear-gradient(90deg, #FF9800, #FFC107)';
-    } else {
-        progressFill.style.background = 'linear-gradient(90deg, #f44336, #e53935)';
-        formProgressFill.style.background = 'linear-gradient(90deg, #f44336, #e53935)';
-    }
-    
-    console.log('Progreso del formulario actualizado:', percentage + '%');
-}
 
 // ==================== SISTEMA DE ESTRELLAS (RATING) ====================
 function setupStarsSystem() {
@@ -214,8 +87,8 @@ function setupStarsSystem() {
             // Actualizar visualmente
             updateStars(currentRating, false);
             
-            // Actualizar progreso del FORMULARIO
-            updateFormProgress();
+            // Actualizar progreso
+            updateProgress();
             
             console.log('Rating seleccionado:', value);
         });
@@ -249,6 +122,62 @@ function setupCharCounter() {
     
     compromisoTextarea.addEventListener('input', updateCharCount);
     updateCharCount(); // Inicializar
+}
+
+// ==================== SISTEMA DE PROGRESO ====================
+function updateProgress() {
+    const progressFill = document.getElementById('progress-fill');
+    const progressPercentage = document.getElementById('progress-percentage');
+    
+    if (!progressFill || !progressPercentage) {
+        console.error('Elementos de progreso no encontrados');
+        return;
+    }
+    
+    let filledProgress = 0;
+    const maxProgress = 100;
+    
+    // Campos con data-progress
+    document.querySelectorAll('[data-progress]').forEach(element => {
+        const progressValue = parseInt(element.getAttribute('data-progress')) || 0;
+        const value = element.value;
+        
+        if (element.tagName === 'INPUT') {
+            if (element.type === 'hidden') {
+                if (value && value !== '0' && value !== '') {
+                    filledProgress += progressValue;
+                }
+            } else if (element.type === 'text' || element.type === 'email' || element.type === 'tel' || element.type === 'number') {
+                if (value && value.trim() !== '') {
+                    filledProgress += progressValue;
+                }
+            } else if (element.type === 'checkbox') {
+                // Los checkboxes se manejan aparte
+            }
+        } else if (element.tagName === 'SELECT') {
+            if (value && value !== '') {
+                filledProgress += progressValue;
+            }
+        } else if (element.tagName === 'TEXTAREA') {
+            if (value && value.trim() !== '') {
+                filledProgress += progressValue;
+            }
+        }
+    });
+    
+    // Insumos (2% por cada uno)
+    const insumosSeleccionados = document.querySelectorAll('.insumo-checkbox:checked').length;
+    filledProgress += (insumosSeleccionados * 2);
+    
+    // Asegurar que no supere el máximo
+    filledProgress = Math.min(filledProgress, maxProgress);
+    const percentage = Math.round((filledProgress / maxProgress) * 100);
+    
+    // Actualizar visualmente
+    progressFill.style.width = percentage + '%';
+    progressPercentage.textContent = percentage + '%';
+    
+    console.log('Progreso actualizado:', percentage + '%');
 }
 
 // ==================== SISTEMA DE MESAS DINÁMICAS ====================
@@ -314,7 +243,7 @@ function configurarCampoMesa(puestoId) {
         mesaInfo.style.fontWeight = '500';
     }
     
-    updateFormProgress();
+    updateProgress();
 }
 
 // Validar número de mesa ingresado
@@ -371,8 +300,8 @@ function setupInsumos() {
             insumosSelectedDiv.classList.remove('insumos-active');
         }
         
-        // Actualizar progreso del FORMULARIO
-        updateFormProgress();
+        // Actualizar progreso
+        updateProgress();
     }
     
     // Agregar evento a cada checkbox
@@ -443,7 +372,7 @@ function setupDependentSelects() {
             configurarCampoMesa(null);
         }
         
-        updateFormProgress();
+        updateProgress();
     });
     
     // Sector -> Puesto
@@ -498,7 +427,7 @@ function setupDependentSelects() {
             configurarCampoMesa(null);
         }
         
-        updateFormProgress();
+        updateProgress();
     });
     
     // Puesto -> Configurar campo Mesa
@@ -540,16 +469,16 @@ function setupDependentSelects() {
             municipioSelect.innerHTML = '<option value="">Primero seleccione un departamento</option>';
         }
         
-        updateFormProgress();
+        updateProgress();
     });
 }
 
 // ==================== EVENTOS DEL FORMULARIO ====================
 function setupFormEvents() {
-    // Escuchar cambios en todos los campos para actualizar progreso del FORMULARIO
+    // Escuchar cambios en todos los campos para actualizar progreso
     document.querySelectorAll('input, select, textarea').forEach(element => {
-        element.addEventListener('input', updateFormProgress);
-        element.addEventListener('change', updateFormProgress);
+        element.addEventListener('input', updateProgress);
+        element.addEventListener('change', updateProgress);
     });
     
     // Validar campo de mesa cuando se pierde el foco
@@ -641,9 +570,6 @@ function setupFormEvents() {
             
             if (data.success) {
                 showNotification(data.message || 'Registro guardado exitosamente', 'success');
-                
-                // INCREMENTAR CONTADOR DE REFERENCIADOS
-                incrementarReferenciados();
                 
                 // Resetear formulario
                 this.reset();
@@ -756,6 +682,6 @@ function resetForm() {
         insumosCheckboxes[0].dispatchEvent(new Event('change'));
     }
     
-    // Resetear progreso del FORMULARIO
-    updateFormProgress();
+    // Resetear progreso
+    updateProgress();
 }

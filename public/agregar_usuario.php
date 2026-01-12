@@ -778,7 +778,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                                autocomplete="off"
                                minlength="4">
                     </div>
-                    <span class="field-hint">Debe ser único en el sistema (mínimo 4 caracteres)</span>
+                    <span class="field-hint">(mínimo 4 caracteres)</span>
                 </div>
                 
                 <!-- Correo -->
@@ -796,7 +796,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                                required
                                autocomplete="off">
                     </div>
-                    <span class="field-hint">Debe ser único en el sistema</span>
                 </div>
                 
                 <!-- Teléfono -->
@@ -810,11 +809,14 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                             id="telefono" 
                             name="telefono" 
                             class="form-control" 
-                            placeholder="Ingrese el número de teléfono"
+                            placeholder="Ej: 3001234567"
                             required
+                            maxlength="10"
+                            pattern="\d{10}"
+                            title="El teléfono debe tener exactamente 10 dígitos"
                             autocomplete="off">
                     </div>
-                    <span class="field-hint">Número de teléfono (ej: 3001234567)</span>
+                    <span class="field-hint">Debe tener exactamente 10 dígitos</span>
                 </div>
                 
                 <!-- Zona -->
@@ -1124,14 +1126,13 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         
         // 🔥 TELÉFONO - SIN VALIDACIÓN ESPECIAL
         const telefonoInput = document.getElementById('telefono');
-        // Solo permitir números (opcional, puedes quitar esto también)
         telefonoInput.addEventListener('input', function(e) {
-            // Remover caracteres no numéricos
+            // Solo permitir números
             e.target.value = e.target.value.replace(/\D/g, '');
             
-            // Limitar a 15 caracteres (más que suficiente)
-            if (e.target.value.length > 15) {
-                e.target.value = e.target.value.substring(0, 15);
+            // Limitar a exactamente 10 caracteres
+            if (e.target.value.length > 10) {
+                e.target.value = e.target.value.substring(0, 10);
             }
         });
         
@@ -1251,6 +1252,11 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             const telefono = telefonoInput.value.trim();
             if (!telefono) {
                 showNotification('El teléfono es obligatorio.', 'error');
+                telefonoInput.focus();
+                return;
+            }
+            if (telefono.length !== 10) {
+                showNotification('El teléfono debe tener exactamente 10 dígitos.', 'error');
                 telefonoInput.focus();
                 return;
             }

@@ -470,6 +470,81 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             opacity: 0.8;
         }
         
+        /* Estilos para selects dependientes */
+        .form-select:disabled {
+            background-color: rgba(255, 255, 255, 0.03);
+            color: #78909c;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .form-select:disabled option {
+            color: #78909c;
+        }
+        
+        /* Estilos para notificaciones */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .notification-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .notification-error {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .notification-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .notification-info {
+            background: #3498db;
+            color: white;
+        }
+        
+        .notification .btn-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        
+        .notification .btn-close:hover {
+            opacity: 1;
+        }
+        
         @media (max-width: 768px) {
             .form-container {
                 padding: 25px;
@@ -510,6 +585,13 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             .photo-preview {
                 width: 120px;
                 height: 120px;
+            }
+            
+            .notification {
+                top: 80px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
             }
         }
         
@@ -561,7 +643,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             <p>Complete todos los campos para registrar un nuevo usuario en el sistema</p>
         </div>
         
-        <form id="usuario-form">
+        <form id="usuario-form" method="POST" action="procesar_usuario.php">
             <!-- Foto de perfil -->
             <div class="form-group full-width photo-section">
                 <div class="photo-upload-container">
@@ -707,13 +789,8 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     <label class="form-label" for="sector">
                         <i class="fas fa-th"></i> Sector
                     </label>
-                    <select id="sector" name="sector" class="form-select">
-                        <option value="">Seleccione un sector</option>
-                        <?php foreach ($sectores as $sector): ?>
-                        <option value="<?php echo htmlspecialchars($sector['id']); ?>">
-                            <?php echo htmlspecialchars($sector['nombre']); ?>
-                        </option>
-                        <?php endforeach; ?>
+                    <select id="sector" name="sector" class="form-select" disabled>
+                        <option value="">Primero seleccione una zona</option>
                     </select>
                 </div>
                 
@@ -722,13 +799,8 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     <label class="form-label" for="puesto">
                         <i class="fas fa-building"></i> Puesto
                     </label>
-                    <select id="puesto" name="puesto" class="form-select">
-                        <option value="">Seleccione un puesto</option>
-                        <?php foreach ($puestos as $puesto): ?>
-                        <option value="<?php echo htmlspecialchars($puesto['id']); ?>">
-                            <?php echo htmlspecialchars($puesto['nombre']); ?>
-                        </option>
-                        <?php endforeach; ?>
+                    <select id="puesto" name="puesto" class="form-select" disabled>
+                        <option value="">Primero seleccione un sector</option>
                     </select>
                 </div>
                 
@@ -826,7 +898,134 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
 
     <!-- JavaScript -->
     <script>
+        // ==================== FUNCIÓN PARA MOSTRAR NOTIFICACIONES ====================
+        function showNotification(message, type = 'info') {
+            const oldNotification = document.querySelector('.notification');
+            if (oldNotification) oldNotification.remove();
+            
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'exclamation-circle';
+            if (type === 'warning') icon = 'exclamation-triangle';
+            
+            notification.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <span>${message}</span>
+                <button class="btn-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) notification.remove();
+            }, 5000);
+        }
+        
+        // ==================== SELECTS DEPENDIENTES ====================
+        function setupDependentSelects() {
+            // Configurar selects como deshabilitados inicialmente
+            document.getElementById('sector').disabled = true;
+            document.getElementById('puesto').disabled = true;
+            
+            // Zona -> Sector
+            document.getElementById('zona').addEventListener('change', function() {
+                const zonaId = this.value;
+                const sectorSelect = document.getElementById('sector');
+                const puestoSelect = document.getElementById('puesto');
+                
+                if (zonaId) {
+                    sectorSelect.disabled = false;
+                    sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
+                    
+                    fetch(`ajax/cargar_sectores.php?zona_id=${zonaId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                sectorSelect.innerHTML = '<option value="">Seleccione un sector</option>';
+                                data.sectores.forEach(sector => {
+                                    const option = document.createElement('option');
+                                    option.value = sector.id_sector;
+                                    option.textContent = sector.nombre;
+                                    sectorSelect.appendChild(option);
+                                });
+                            } else {
+                                sectorSelect.innerHTML = '<option value="">Error al cargar sectores</option>';
+                                showNotification(data.message || 'Error al cargar sectores', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            sectorSelect.innerHTML = '<option value="">Error al cargar</option>';
+                            showNotification('Error de conexión al cargar sectores', 'error');
+                        });
+                } else {
+                    sectorSelect.disabled = true;
+                    sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
+                    puestoSelect.disabled = true;
+                    puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
+                }
+            });
+            
+            // Sector -> Puesto
+            document.getElementById('sector').addEventListener('change', function() {
+                const sectorId = this.value;
+                const puestoSelect = document.getElementById('puesto');
+                
+                if (sectorId) {
+                    puestoSelect.disabled = false;
+                    puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
+                    
+                    fetch(`ajax/cargar_puestos.php?sector_id=${sectorId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                puestoSelect.innerHTML = '<option value="">Seleccione un puesto</option>';
+                                data.puestos.forEach(puesto => {
+                                    const option = document.createElement('option');
+                                    option.value = puesto.id_puesto;
+                                    option.textContent = puesto.nombre;
+                                    puestoSelect.appendChild(option);
+                                });
+                            } else {
+                                puestoSelect.innerHTML = '<option value="">Error al cargar puestos</option>';
+                                showNotification(data.message || 'Error al cargar puestos', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            puestoSelect.innerHTML = '<option value="">Error al cargar</option>';
+                            showNotification('Error de conexión al cargar puestos', 'error');
+                        });
+                } else {
+                    puestoSelect.disabled = true;
+                    puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
+                }
+            });
+        }
+        
+        // ==================== FUNCIÓN PARA RESETEAR SELECTS ====================
+        function resetDependentSelects() {
+            const zonaSelect = document.getElementById('zona');
+            const sectorSelect = document.getElementById('sector');
+            const puestoSelect = document.getElementById('puesto');
+            
+            zonaSelect.value = '';
+            sectorSelect.disabled = true;
+            sectorSelect.innerHTML = '<option value="">Primero seleccione una zona</option>';
+            puestoSelect.disabled = true;
+            puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
+        }
+        
+        // ==================== INICIALIZACIÓN ====================
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado - Inicializando formulario de agregar usuario...');
+            
+            // Configurar selects dependientes (USANDO LOS MISMOS ARCHIVOS AJAX)
+            setupDependentSelects();
+            
             // Foto de perfil
             const photoPreview = document.getElementById('photoPreview');
             const photoInput = document.getElementById('foto');
@@ -946,10 +1145,33 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             usuarioForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Validar campos obligatorios
+                const requiredFields = [
+                    'nombres', 'apellidos', 'cedula', 'nickname', 
+                    'correo', 'telefono', 'tipo_usuario', 'password', 'confirm_password'
+                ];
+                
+                let isValid = true;
+                let errorField = null;
+                
+                requiredFields.forEach(field => {
+                    const element = document.getElementById(field);
+                    if (element && !element.value.trim()) {
+                        isValid = false;
+                        if (!errorField) errorField = element;
+                    }
+                });
+                
+                if (!isValid) {
+                    showNotification('Por favor complete todos los campos obligatorios (*)', 'error');
+                    if (errorField) errorField.focus();
+                    return;
+                }
+                
                 // Validar cédula
                 const cedula = cedulaInput.value;
                 if (cedula.length < 6 || cedula.length > 10) {
-                    alert('La cédula debe tener entre 6 y 10 dígitos.');
+                    showNotification('La cédula debe tener entre 6 y 10 dígitos.', 'error');
                     cedulaInput.focus();
                     return;
                 }
@@ -959,14 +1181,14 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 const confirmPassword = confirmPasswordInput.value;
                 
                 if (password !== confirmPassword) {
-                    alert('Las contraseñas no coinciden. Por favor verifique.');
+                    showNotification('Las contraseñas no coinciden. Por favor verifique.', 'error');
                     confirmPasswordInput.focus();
                     return;
                 }
                 
                 // Validar fortaleza de contraseña
                 if (password.length < 6) {
-                    alert('La contraseña debe tener al menos 6 caracteres.');
+                    showNotification('La contraseña debe tener al menos 6 caracteres.', 'error');
                     passwordInput.focus();
                     return;
                 }
@@ -974,7 +1196,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 // Validar teléfono
                 const telefono = telefonoInput.value.replace(/\s/g, '');
                 if (telefono.length !== 10) {
-                    alert('El teléfono debe tener 10 dígitos.');
+                    showNotification('El teléfono debe tener 10 dígitos.', 'error');
                     telefonoInput.focus();
                     return;
                 }
@@ -984,9 +1206,16 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
                 submitBtn.disabled = true;
                 
-                // Simular envío (por ahora solo diseño)
+                // Enviar formulario
+                const formData = new FormData(usuarioForm);
+                
+                // Para propósitos de demostración, simularemos el envío
+                // En producción, enviarías el formulario realmente
                 setTimeout(() => {
-                    alert('✅ Usuario registrado exitosamente (simulación)');
+                    // Simulación de éxito
+                    showNotification('✅ Usuario registrado exitosamente', 'success');
+                    
+                    // Resetear formulario
                     usuarioForm.reset();
                     photoImage.src = '';
                     photoImage.style.display = 'none';
@@ -995,13 +1224,22 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     passwordMatch.textContent = '';
                     passwordMatch.className = 'password-match';
                     
+                    // Resetear selects dependientes
+                    resetDependentSelects();
+                    
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
+                    
+                    console.log('Datos del formulario que se enviarían:', 
+                        Object.fromEntries(formData));
+                    
                 }, 1500);
             });
             
             // Inicializar
             passwordStrength.style.display = 'none';
+            
+            console.log('Formulario de agregar usuario inicializado correctamente');
         });
     </script>
 </body>

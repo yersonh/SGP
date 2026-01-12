@@ -208,8 +208,26 @@ class FileHelper {
     /**
      * Construir URL completa
      */
-    private static function buildUrl($path) {
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+     private static function buildUrl($path) {
+        // En Railway, detectar HTTPS correctamente
+        $isHttps = false;
+        
+        // 1. Verificar header estándar
+        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+            $isHttps = true;
+        }
+        
+        // 2. Verificar header de Railway (proxy)
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $isHttps = true;
+        }
+        
+        // 3. Verificar header de cloudflare/otros proxies
+        if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
+            $isHttps = true;
+        }
+        
+        $protocol = $isHttps ? 'https://' : 'http://';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         
         return $protocol . $host . $path;

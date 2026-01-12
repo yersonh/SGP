@@ -186,19 +186,13 @@ class FileHelper {
     public static function getPhotoUrl($filename, $folder = 'profiles') {
         $config = require __DIR__ . '/../config/uploads.php';
         
-        // Si no hay foto
-        if (empty($filename)) {
-            return self::buildUrl($config['default_photo']);
-        }
-        
-        // Si es la foto por defecto
-        if ($filename === 'default.png' || $filename === 'imagendefault.png') {
-            return self::buildUrl($config['default_photo']);
-        }
-        
-        // Si contiene 'default' en el nombre
-        if (stripos($filename, 'default') !== false) {
-            return self::buildUrl($config['default_photo']);
+        // Si no hay foto o es la por defecto
+        if (empty($filename) || $filename === 'default.png' || $filename === 'imagendefault.png' || stripos($filename, 'default') !== false) {
+            // Usar Database::getUploadsUrl() para consistencia
+            // Para la foto por defecto, solo cambiamos la ruta
+            $uploadsUrl = Database::getUploadsUrl();
+            $baseUrl = str_replace('/uploads/', '', $uploadsUrl);
+            return $baseUrl . $config['default_photo'];
         }
         
         // Para fotos subidas

@@ -42,9 +42,26 @@ class Database {
         return '/uploads/';
     }
     
-    public static function getUploadsUrl() {
-        // URL para acceder a los uploads
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+public static function getUploadsUrl() {
+        // URL para acceder a los uploads - VERSIÓN CORREGIDA PARA RAILWAY
+        $isHttps = false;
+        
+        // 1. Railway usa este header
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $isHttps = true;
+        }
+        
+        // 2. Verificar header estándar (por si acaso)
+        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+            $isHttps = true;
+        }
+        
+        // 3. Verificar otros headers de proxy
+        if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
+            $isHttps = true;
+        }
+        
+        $protocol = $isHttps ? 'https://' : 'http://';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         
         return $protocol . $host . '/uploads/';

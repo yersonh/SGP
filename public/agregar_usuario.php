@@ -61,8 +61,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             background-size: cover;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Cambiar de center a flex-start */
             padding: 20px;
+            padding-bottom: 100px; /* Agregar padding inferior para el footer */
+            position: relative; /* Agregar esto */
         }
         
         .main-header {
@@ -152,6 +154,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             padding: 40px;
             animation: fadeIn 0.5s ease-out;
             margin-top: 80px;
+            margin-bottom: 40px; 
         }
         
         @keyframes fadeIn {
@@ -452,18 +455,21 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(30, 30, 40, 0.9);
-            color: #78909c;
+            background: rgba(30, 30, 40, 0.95);
+            color: #90a4ae;
             text-align: center;
             padding: 15px;
             font-size: 0.8rem;
             backdrop-filter: blur(10px);
             z-index: 1000;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .system-footer p {
             margin: 3px 0;
             opacity: 0.8;
+            font-weight: normal;
+            color: #cfd8dc;
         }
         
         .password-match {
@@ -489,10 +495,13 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         }
         
         @media (max-width: 768px) {
+            body {
+                padding-bottom: 120px;
+            }
             .form-container {
-                padding: 25px;
                 margin-top: 100px;
-                max-width: 95%;
+                margin-bottom: 60px;
+                padding: 25px;
             }
             
             .form-grid {
@@ -527,6 +536,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             .photo-preview {
                 width: 120px;
                 height: 120px;
+            }
+            .system-footer {
+                padding: 12px 10px;
+                font-size: 0.75rem;
             }
         }
         
@@ -842,8 +855,9 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
     <!-- Footer -->
     <footer class="system-footer">
         <div class="container">
-            <p>SGP - Sistema de Gestión de Política</p>
-            <p>© Derechos de autor Reservados • Ing. Rubén Darío González García • SISGONTech • Colombia © • <?php echo date('Y'); ?></p>
+            <p>© Derechos de autor Reservados.</p>
+            <p>Ing. Rubén Darío González García • SISGONTech • Colombia © • <?php echo date('Y'); ?></p>
+            <p>Contacto: +57 3106310227 • Email: sisgonnet@gmail.com</p>
         </div>
     </footer>
 

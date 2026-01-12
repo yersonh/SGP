@@ -2,8 +2,6 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
-require_once __DIR__ . '/../models/ZonaModel.php';
-require_once __DIR__ . '/../models/SectorModel.php';
 
 // Verificar permisos (solo administradores pueden agregar usuarios)
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {
@@ -14,9 +12,27 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administra
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 
-// Cargar datos para los combos (si existen los modelos)
+// Cargar datos para los combos desde la base de datos directamente
 $zonas = [];
 $sectores = [];
+$puestos = [];
+
+try {
+    // Cargar zonas
+    $stmt = $pdo->query("SELECT id_zona as id, nombre FROM zonas ORDER BY nombre");
+    $zonas = $stmt->fetchAll();
+    
+    // Cargar sectores
+    $stmt = $pdo->query("SELECT id_sector as id, nombre FROM sectores ORDER BY nombre");
+    $sectores = $stmt->fetchAll();
+    
+    // Cargar puestos
+    $stmt = $pdo->query("SELECT id_puesto as id, nombre FROM puestos_votacion ORDER BY nombre");
+    $puestos = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Si hay error, dejar arrays vacíos
+    error_log("Error cargando datos para combos: " . $e->getMessage());
+}
 
 // Tipos de usuario permitidos
 $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin'];
@@ -28,7 +44,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agregar Usuario - SGP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -39,20 +54,32 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         }
         
         body {
-            background-color: #f5f7fa;
             min-height: 100vh;
-            color: #333;
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+                url('/imagenes/fondo.jpg') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
         
         .main-header {
-            background: linear-gradient(135deg, #2c3e50, #1a252f);
-            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 40, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 15px 0;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
         }
         
         .header-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 0 20px;
         }
@@ -61,7 +88,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
         }
         
         .header-title {
@@ -74,6 +100,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             font-size: 1.5rem;
             font-weight: 600;
             margin: 0;
+            color: white;
         }
         
         .user-info {
@@ -84,9 +111,15 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             padding: 8px 15px;
             border-radius: 20px;
             backdrop-filter: blur(5px);
+            color: white;
         }
         
-        .logout-btn {
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .header-btn {
             color: white;
             text-decoration: none;
             display: flex;
@@ -96,25 +129,29 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             background: rgba(255, 255, 255, 0.1);
             border-radius: 6px;
             transition: all 0.3s;
+            font-size: 0.9rem;
         }
         
-        .logout-btn:hover {
+        .header-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             color: white;
+            transform: translateY(-2px);
         }
         
-        .main-container {
+        .form-container {
+            background: rgba(30, 30, 40, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            width: 100%;
             max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        
-        .form-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            padding: 40px;
             animation: fadeIn 0.5s ease-out;
+            margin-top: 80px;
         }
         
         @keyframes fadeIn {
@@ -126,26 +163,33 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .form-header h2 {
-            color: #2c3e50;
+            color: #ffffff;
             font-size: 1.8rem;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            margin-bottom: 10px;
         }
         
         .form-header h2 i {
-            color: #3498db;
+            color: #4fc3f7;
+        }
+        
+        .form-header p {
+            color: #b0bec5;
+            font-size: 0.95rem;
+            line-height: 1.5;
         }
         
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 25px;
         }
         
@@ -160,33 +204,42 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         .form-label {
             display: block;
             margin-bottom: 8px;
-            color: #2c3e50;
+            color: #cfd8dc;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
             gap: 8px;
         }
         
         .form-label i {
-            color: #7f8c8d;
+            color: #90a4ae;
             font-size: 1rem;
         }
         
         .form-control, .form-select {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
             font-size: 0.95rem;
             transition: all 0.3s;
-            background-color: white;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+        
+        .form-control::placeholder {
+            color: #90a4ae;
+            opacity: 0.7;
         }
         
         .form-control:focus, .form-select:focus {
             outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            border-color: #4fc3f7;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 
+                0 0 0 3px rgba(79, 195, 247, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
         }
         
         .input-with-icon {
@@ -198,28 +251,35 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: #7f8c8d;
+            color: #90a4ae;
             font-size: 1rem;
+            z-index: 2;
         }
         
-        .input-with-icon .form-control {
+        .input-with-icon .form-control, 
+        .input-with-icon .form-select {
             padding-left: 40px;
         }
         
-        .photo-upload-container {
+        .photo-section {
             grid-column: 1 / -1;
             text-align: center;
             margin-bottom: 20px;
+        }
+        
+        .photo-upload-container {
+            display: inline-block;
+            text-align: center;
         }
         
         .photo-preview {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            border: 4px solid #e0e0e0;
+            border: 4px solid rgba(79, 195, 247, 0.3);
             margin: 0 auto 15px;
             overflow: hidden;
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -229,8 +289,9 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         }
         
         .photo-preview:hover {
-            border-color: #3498db;
+            border-color: #4fc3f7;
             transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.3);
         }
         
         .photo-preview img {
@@ -240,7 +301,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         }
         
         .photo-placeholder {
-            color: #95a5a6;
+            color: #90a4ae;
             font-size: 3rem;
         }
         
@@ -248,19 +309,21 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #3498db;
-            color: white;
-            border: none;
+            background: rgba(79, 195, 247, 0.2);
+            color: #4fc3f7;
+            border: 1px solid rgba(79, 195, 247, 0.3);
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
+            backdrop-filter: blur(5px);
         }
         
         .photo-upload-btn:hover {
-            background: #2980b9;
+            background: rgba(79, 195, 247, 0.3);
             transform: translateY(-2px);
+            border-color: #4fc3f7;
         }
         
         .phone-input {
@@ -272,9 +335,9 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: #7f8c8d;
+            color: #90a4ae;
             font-weight: 500;
-            pointer-events: none;
+            z-index: 2;
         }
         
         .phone-input .form-control {
@@ -283,7 +346,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         
         .password-strength {
             height: 4px;
-            background: #e0e0e0;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 2px;
             margin-top: 8px;
             overflow: hidden;
@@ -297,26 +360,34 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         }
         
         .password-strength.weak .password-strength-fill {
-            background: #e74c3c;
+            background: #ff6b6b;
             width: 33%;
         }
         
         .password-strength.medium .password-strength-fill {
-            background: #f39c12;
+            background: #ffd166;
             width: 66%;
         }
         
         .password-strength.strong .password-strength-fill {
-            background: #27ae60;
+            background: #06d6a0;
             width: 100%;
         }
         
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
         .submit-btn {
-            background: linear-gradient(135deg, #27ae60, #219653);
+            background: linear-gradient(135deg, #06d6a0, #118ab2);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
+            padding: 15px 40px;
+            border-radius: 10px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -325,55 +396,151 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             align-items: center;
             justify-content: center;
             gap: 10px;
-            width: 100%;
-            margin-top: 10px;
+            min-width: 200px;
+            box-shadow: 0 4px 15px rgba(6, 214, 160, 0.3);
         }
         
         .submit-btn:hover {
-            background: linear-gradient(135deg, #219653, #1e8449);
+            background: linear-gradient(135deg, #05c593, #0d7a9c);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+            box-shadow: 0 6px 20px rgba(6, 214, 160, 0.4);
+        }
+        
+        .cancel-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 200px;
+            text-decoration: none;
+            backdrop-filter: blur(5px);
+        }
+        
+        .cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            color: white;
         }
         
         .form-footer {
             margin-top: 30px;
             text-align: center;
             padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #7f8c8d;
-            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #90a4ae;
+            font-size: 0.85rem;
+        }
+        
+        .form-footer i {
+            color: #4fc3f7;
+            margin-right: 5px;
         }
         
         .system-footer {
-            background: #2c3e50;
-            color: white;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 40, 0.9);
+            color: #78909c;
             text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-        }
-        
-        .system-footer .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            padding: 15px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
         }
         
         .system-footer p {
-            margin: 5px 0;
-            opacity: 0.9;
+            margin: 3px 0;
+            opacity: 0.8;
+        }
+        
+        .password-match {
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        .password-match.valid {
+            color: #06d6a0;
+        }
+        
+        .password-match.invalid {
+            color: #ff6b6b;
+        }
+        
+        .field-hint {
+            color: #90a4ae;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+            opacity: 0.8;
         }
         
         @media (max-width: 768px) {
+            .form-container {
+                padding: 25px;
+                margin-top: 100px;
+                max-width: 95%;
+            }
+            
             .form-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
             
-            .form-card {
+            .header-title h1 {
+                font-size: 1.2rem;
+            }
+            
+            .header-actions {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .header-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .submit-btn, .cancel-btn {
+                width: 100%;
+                min-width: auto;
+                padding: 12px;
+            }
+            
+            .photo-preview {
+                width: 120px;
+                height: 120px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .form-container {
                 padding: 20px;
             }
             
-            .header-title h1 {
-                font-size: 1.3rem;
+            .form-header h2 {
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -390,12 +557,12 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                         <span>Administrador</span>
                     </div>
                 </div>
-                <div>
-                    <a href="dashboard.php" class="logout-btn" style="margin-right: 10px;">
+                <div class="header-actions">
+                    <a href="dashboard.php" class="header-btn">
                         <i class="fas fa-arrow-left"></i> Volver
                     </a>
-                    <a href="logout.php" class="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    <a href="logout.php" class="header-btn">
+                        <i class="fas fa-sign-out-alt"></i> Salir
                     </a>
                 </div>
             </div>
@@ -403,15 +570,15 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
     </header>
 
     <!-- Main Form -->
-    <div class="main-container">
-        <div class="form-card">
-            <div class="form-header">
-                <h2><i class="fas fa-user-cog"></i> Información del Nuevo Usuario</h2>
-                <p style="color: #7f8c8d; margin-top: 10px;">Complete todos los campos obligatorios (*) para registrar un nuevo usuario</p>
-            </div>
-            
-            <form id="usuario-form">
-                <!-- Foto de perfil -->
+    <div class="form-container">
+        <div class="form-header">
+            <h2><i class="fas fa-user-cog"></i> Registro de Nuevo Usuario</h2>
+            <p>Complete todos los campos para registrar un nuevo usuario en el sistema</p>
+        </div>
+        
+        <form id="usuario-form">
+            <!-- Foto de perfil -->
+            <div class="form-group full-width photo-section">
                 <div class="photo-upload-container">
                     <div class="photo-preview" id="photoPreview">
                         <div class="photo-placeholder">
@@ -421,248 +588,262 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     </div>
                     <input type="file" id="foto" name="foto" accept="image/*" style="display: none;">
                     <button type="button" class="photo-upload-btn" id="uploadPhotoBtn">
-                        <i class="fas fa-camera"></i> Subir Foto
+                        <i class="fas fa-camera"></i> Subir Foto de Perfil
                     </button>
                 </div>
+            </div>
+            
+            <div class="form-grid">
+                <!-- Nombres -->
+                <div class="form-group">
+                    <label class="form-label" for="nombres">
+                        <i class="fas fa-user"></i> Nombres *
+                    </label>
+                    <input type="text" 
+                           id="nombres" 
+                           name="nombres" 
+                           class="form-control" 
+                           placeholder="Ingrese los nombres"
+                           required
+                           autocomplete="off">
+                </div>
                 
-                <div class="form-grid">
-                    <!-- Nombres -->
-                    <div class="form-group">
-                        <label class="form-label" for="nombres">
-                            <i class="fas fa-user"></i> Nombres *
-                        </label>
+                <!-- Apellidos -->
+                <div class="form-group">
+                    <label class="form-label" for="apellidos">
+                        <i class="fas fa-user"></i> Apellidos *
+                    </label>
+                    <input type="text" 
+                           id="apellidos" 
+                           name="apellidos" 
+                           class="form-control" 
+                           placeholder="Ingrese los apellidos"
+                           required
+                           autocomplete="off">
+                </div>
+                
+                <!-- Cédula -->
+                <div class="form-group">
+                    <label class="form-label" for="cedula">
+                        <i class="fas fa-id-card"></i> Cédula *
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-id-card input-icon"></i>
                         <input type="text" 
-                               id="nombres" 
-                               name="nombres" 
+                               id="cedula" 
+                               name="cedula" 
                                class="form-control" 
-                               placeholder="Ingrese los nombres"
+                               placeholder="Ingrese el número de cédula"
+                               required
+                               maxlength="10"
+                               pattern="\d{6,10}"
+                               title="Ingrese un número de cédula válido (6-10 dígitos)"
+                               autocomplete="off">
+                    </div>
+                    <span class="field-hint">6-10 dígitos numéricos</span>
+                </div>
+                
+                <!-- Nickname -->
+                <div class="form-group">
+                    <label class="form-label" for="nickname">
+                        <i class="fas fa-at"></i> Nombre de Usuario *
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-at input-icon"></i>
+                        <input type="text" 
+                               id="nickname" 
+                               name="nickname" 
+                               class="form-control" 
+                               placeholder="Ingrese el nombre de usuario"
+                               required
+                               autocomplete="off"
+                               minlength="4">
+                    </div>
+                    <span class="field-hint">Debe ser único en el sistema (mínimo 4 caracteres)</span>
+                </div>
+                
+                <!-- Correo -->
+                <div class="form-group">
+                    <label class="form-label" for="correo">
+                        <i class="fas fa-envelope"></i> Correo Electrónico *
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" 
+                               id="correo" 
+                               name="correo" 
+                               class="form-control" 
+                               placeholder="ejemplo@correo.com"
                                required
                                autocomplete="off">
                     </div>
-                    
-                    <!-- Apellidos -->
-                    <div class="form-group">
-                        <label class="form-label" for="apellidos">
-                            <i class="fas fa-user"></i> Apellidos *
-                        </label>
-                        <input type="text" 
-                               id="apellidos" 
-                               name="apellidos" 
-                               class="form-control" 
-                               placeholder="Ingrese los apellidos"
-                               required
-                               autocomplete="off">
-                    </div>
-                    
-                    <!-- Nickname -->
-                    <div class="form-group">
-                        <label class="form-label" for="nickname">
-                            <i class="fas fa-at"></i> Nickname *
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-at input-icon"></i>
-                            <input type="text" 
-                                   id="nickname" 
-                                   name="nickname" 
-                                   class="form-control" 
-                                   placeholder="Ingrese el nombre de usuario"
-                                   required
-                                   autocomplete="off"
-                                   minlength="4">
-                        </div>
-                        <small style="color: #7f8c8d; font-size: 0.85rem; display: block; margin-top: 5px;">
-                            Debe ser único en el sistema
-                        </small>
-                    </div>
-                    
-                    <!-- Correo -->
-                    <div class="form-group">
-                        <label class="form-label" for="correo">
-                            <i class="fas fa-envelope"></i> Correo Electrónico *
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-envelope input-icon"></i>
-                            <input type="email" 
-                                   id="correo" 
-                                   name="correo" 
-                                   class="form-control" 
-                                   placeholder="ejemplo@correo.com"
-                                   required
-                                   autocomplete="off">
-                        </div>
-                    </div>
-                    
-                    <!-- Teléfono -->
-                    <div class="form-group">
-                        <label class="form-label" for="telefono">
-                            <i class="fas fa-phone"></i> Teléfono *
-                        </label>
-                        <div class="phone-input">
-                            <span class="phone-prefix">+57</span>
-                            <input type="tel" 
-                                   id="telefono" 
-                                   name="telefono" 
-                                   class="form-control" 
-                                   placeholder="300 1234567"
-                                   required
-                                   maxlength="10"
-                                   pattern="[0-9]{10}"
-                                   title="Ingrese un número de teléfono válido (10 dígitos)"
-                                   autocomplete="off">
-                        </div>
-                        <small style="color: #7f8c8d; font-size: 0.85rem; display: block; margin-top: 5px;">
-                            Formato: 10 dígitos (ej: 3001234567)
-                        </small>
-                    </div>
-                    
-                    <!-- Zona -->
-                    <div class="form-group">
-                        <label class="form-label" for="zona">
-                            <i class="fas fa-map"></i> Zona
-                        </label>
-                        <select id="zona" name="zona" class="form-select">
-                            <option value="">Seleccione una zona</option>
-                            <?php foreach ($zonas as $zona): ?>
-                            <option value="<?php echo htmlspecialchars($zona['id_zona'] ?? $zona['id']); ?>">
-                                <?php echo htmlspecialchars($zona['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <!-- Sector -->
-                    <div class="form-group">
-                        <label class="form-label" for="sector">
-                            <i class="fas fa-th"></i> Sector
-                        </label>
-                        <select id="sector" name="sector" class="form-select">
-                            <option value="">Seleccione un sector</option>
-                            <?php foreach ($sectores as $sector): ?>
-                            <option value="<?php echo htmlspecialchars($sector['id_sector'] ?? $sector['id']); ?>">
-                                <?php echo htmlspecialchars($sector['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <!-- Puesto -->
-                    <div class="form-group">
-                        <label class="form-label" for="puesto">
-                            <i class="fas fa-building"></i> Puesto
-                        </label>
-                        <select id="puesto" name="puesto" class="form-select">
-                            <option value="">Seleccione un puesto</option>
-                            <?php foreach ($puestos as $puesto): ?>
-                            <option value="<?php echo htmlspecialchars($puesto['id_puesto'] ?? $puesto['id']); ?>">
-                                <?php echo htmlspecialchars($puesto['nombre']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <!-- Tope -->
-                    <div class="form-group">
-                        <label class="form-label" for="tope">
-                            <i class="fas fa-chart-line"></i> Tope
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-chart-line input-icon"></i>
-                            <input type="number" 
-                                   id="tope" 
-                                   name="tope" 
-                                   class="form-control" 
-                                   placeholder="Ej: 100"
-                                   min="0"
-                                   step="1"
-                                   autocomplete="off">
-                        </div>
-                        <small style="color: #7f8c8d; font-size: 0.85rem; display: block; margin-top: 5px;">
-                            Número máximo de referenciados permitidos
-                        </small>
-                    </div>
-                    
-                    <!-- Tipo de Usuario -->
-                    <div class="form-group">
-                        <label class="form-label" for="tipo_usuario">
-                            <i class="fas fa-user-tag"></i> Tipo de Usuario *
-                        </label>
-                        <select id="tipo_usuario" name="tipo_usuario" class="form-select" required>
-                            <option value="">Seleccione un tipo</option>
-                            <?php foreach ($tipos_usuario as $tipo): ?>
-                            <option value="<?php echo htmlspecialchars($tipo); ?>">
-                                <?php echo htmlspecialchars($tipo); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <!-- Contraseña -->
-                    <div class="form-group">
-                        <label class="form-label" for="password">
-                            <i class="fas fa-lock"></i> Contraseña *
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-lock input-icon"></i>
-                            <input type="password" 
-                                   id="password" 
-                                   name="password" 
-                                   class="form-control" 
-                                   placeholder="Ingrese la contraseña"
-                                   required
-                                   minlength="6"
-                                   autocomplete="new-password">
-                        </div>
-                        <div class="password-strength" id="passwordStrength">
-                            <div class="password-strength-fill"></div>
-                        </div>
-                        <small style="color: #7f8c8d; font-size: 0.85rem; display: block; margin-top: 5px;">
-                            Mínimo 6 caracteres
-                        </small>
-                    </div>
-                    
-                    <!-- Confirmar Contraseña -->
-                    <div class="form-group">
-                        <label class="form-label" for="confirm_password">
-                            <i class="fas fa-lock"></i> Confirmar Contraseña *
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-lock input-icon"></i>
-                            <input type="password" 
-                                   id="confirm_password" 
-                                   name="confirm_password" 
-                                   class="form-control" 
-                                   placeholder="Confirme la contraseña"
-                                   required
-                                   autocomplete="new-password">
-                        </div>
-                        <small id="passwordMatch" style="font-size: 0.85rem; display: block; margin-top: 5px;"></small>
-                    </div>
-                    
-                    <!-- Botón de Envío -->
-                    <div class="form-group full-width">
-                        <button type="submit" class="submit-btn" id="submit-btn">
-                            <i class="fas fa-user-plus"></i> Registrar Usuario
-                        </button>
-                    </div>
+                    <span class="field-hint">Debe ser único en el sistema</span>
                 </div>
                 
-                <div class="form-footer">
-                    <p><i class="fas fa-info-circle"></i> Los campos marcados con * son obligatorios</p>
+                <!-- Teléfono -->
+                <div class="form-group">
+                    <label class="form-label" for="telefono">
+                        <i class="fas fa-phone"></i> Teléfono *
+                    </label>
+                    <div class="phone-input input-with-icon">
+                        <i class="fas fa-phone input-icon"></i>
+                        <span class="phone-prefix">+57</span>
+                        <input type="tel" 
+                               id="telefono" 
+                               name="telefono" 
+                               class="form-control" 
+                               placeholder="300 1234567"
+                               required
+                               maxlength="10"
+                               pattern="[0-9]{10}"
+                               title="Ingrese un número de teléfono válido (10 dígitos)"
+                               autocomplete="off">
+                    </div>
+                    <span class="field-hint">10 dígitos (ej: 3001234567)</span>
                 </div>
-            </form>
-        </div>
+                
+                <!-- Zona -->
+                <div class="form-group">
+                    <label class="form-label" for="zona">
+                        <i class="fas fa-map"></i> Zona
+                    </label>
+                    <select id="zona" name="zona" class="form-select">
+                        <option value="">Seleccione una zona</option>
+                        <?php foreach ($zonas as $zona): ?>
+                        <option value="<?php echo htmlspecialchars($zona['id']); ?>">
+                            <?php echo htmlspecialchars($zona['nombre']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Sector -->
+                <div class="form-group">
+                    <label class="form-label" for="sector">
+                        <i class="fas fa-th"></i> Sector
+                    </label>
+                    <select id="sector" name="sector" class="form-select">
+                        <option value="">Seleccione un sector</option>
+                        <?php foreach ($sectores as $sector): ?>
+                        <option value="<?php echo htmlspecialchars($sector['id']); ?>">
+                            <?php echo htmlspecialchars($sector['nombre']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Puesto -->
+                <div class="form-group">
+                    <label class="form-label" for="puesto">
+                        <i class="fas fa-building"></i> Puesto
+                    </label>
+                    <select id="puesto" name="puesto" class="form-select">
+                        <option value="">Seleccione un puesto</option>
+                        <?php foreach ($puestos as $puesto): ?>
+                        <option value="<?php echo htmlspecialchars($puesto['id']); ?>">
+                            <?php echo htmlspecialchars($puesto['nombre']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Tope -->
+                <div class="form-group">
+                    <label class="form-label" for="tope">
+                        <i class="fas fa-chart-line"></i> Tope
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-chart-line input-icon"></i>
+                        <input type="number" 
+                               id="tope" 
+                               name="tope" 
+                               class="form-control" 
+                               placeholder="Ej: 100"
+                               min="0"
+                               step="1"
+                               autocomplete="off">
+                    </div>
+                    <span class="field-hint">Número máximo de referenciados permitidos</span>
+                </div>
+                
+                <!-- Tipo de Usuario -->
+                <div class="form-group">
+                    <label class="form-label" for="tipo_usuario">
+                        <i class="fas fa-user-tag"></i> Tipo de Usuario *
+                    </label>
+                    <select id="tipo_usuario" name="tipo_usuario" class="form-select" required>
+                        <option value="">Seleccione un tipo</option>
+                        <?php foreach ($tipos_usuario as $tipo): ?>
+                        <option value="<?php echo htmlspecialchars($tipo); ?>">
+                            <?php echo htmlspecialchars($tipo); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label class="form-label" for="password">
+                        <i class="fas fa-lock"></i> Contraseña *
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" 
+                               id="password" 
+                               name="password" 
+                               class="form-control" 
+                               placeholder="Ingrese la contraseña"
+                               required
+                               minlength="6"
+                               autocomplete="new-password">
+                    </div>
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="password-strength-fill"></div>
+                    </div>
+                    <span class="field-hint">Mínimo 6 caracteres</span>
+                </div>
+                
+                <!-- Confirmar Contraseña -->
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">
+                        <i class="fas fa-lock"></i> Confirmar Contraseña *
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" 
+                               id="confirm_password" 
+                               name="confirm_password" 
+                               class="form-control" 
+                               placeholder="Confirme la contraseña"
+                               required
+                               autocomplete="new-password">
+                    </div>
+                    <span id="passwordMatch" class="password-match"></span>
+                </div>
+                
+                <!-- Botones -->
+                <div class="form-group full-width form-actions">
+                    <a href="dashboard.php" class="cancel-btn">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <i class="fas fa-user-plus"></i> Registrar Usuario
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-footer">
+                <p><i class="fas fa-info-circle"></i> Los campos marcados con * son obligatorios</p>
+                <p><i class="fas fa-shield-alt"></i> Todos los datos se almacenan de forma segura</p>
+            </div>
+        </form>
     </div>
 
     <!-- Footer -->
     <footer class="system-footer">
         <div class="container">
-            <p>© Derechos de autor Reservados. 
-                <strong>Ing. Rubén Darío González García</strong> • 
-                SISGONTech • Colombia © • <?php echo date('Y'); ?>
-            </p>
-            <p>Contacto: <strong>+57 3106310227</strong> • 
-                Email: <strong>sisgonnet@gmail.com</strong>
-            </p>
+            <p>SGP - Sistema de Gestión de Política</p>
+            <p>© Derechos de autor Reservados • Ing. Rubén Darío González García • SISGONTech • Colombia © • <?php echo date('Y'); ?></p>
         </div>
     </footer>
 
@@ -696,6 +877,13 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     };
                     reader.readAsDataURL(file);
                 }
+            });
+            
+            // Formato de cédula (solo números)
+            const cedulaInput = document.getElementById('cedula');
+            cedulaInput.addEventListener('input', function(e) {
+                // Remover caracteres no numéricos
+                e.target.value = e.target.value.replace(/\D/g, '');
             });
             
             // Formato de teléfono (Colombia)
@@ -761,13 +949,13 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 
                 if (confirmPassword.length === 0) {
                     passwordMatch.textContent = '';
-                    passwordMatch.style.color = '';
+                    passwordMatch.className = 'password-match';
                 } else if (password === confirmPassword) {
                     passwordMatch.textContent = '✓ Las contraseñas coinciden';
-                    passwordMatch.style.color = '#27ae60';
+                    passwordMatch.className = 'password-match valid';
                 } else {
                     passwordMatch.textContent = '✗ Las contraseñas no coinciden';
-                    passwordMatch.style.color = '#e74c3c';
+                    passwordMatch.className = 'password-match invalid';
                 }
             }
             
@@ -780,6 +968,14 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             
             usuarioForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Validar cédula
+                const cedula = cedulaInput.value;
+                if (cedula.length < 6 || cedula.length > 10) {
+                    alert('La cédula debe tener entre 6 y 10 dígitos.');
+                    cedulaInput.focus();
+                    return;
+                }
                 
                 // Validar contraseñas
                 const password = passwordInput.value;
@@ -813,13 +1009,14 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 
                 // Simular envío (por ahora solo diseño)
                 setTimeout(() => {
-                    alert('Usuario registrado exitosamente (simulación)');
+                    alert('✅ Usuario registrado exitosamente (simulación)');
                     usuarioForm.reset();
                     photoImage.src = '';
                     photoImage.style.display = 'none';
                     photoPreview.querySelector('.photo-placeholder').style.display = 'block';
                     passwordStrength.style.display = 'none';
                     passwordMatch.textContent = '';
+                    passwordMatch.className = 'password-match';
                     
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;

@@ -64,6 +64,39 @@ $barrios = $barrioModel->getAll();
     
     .textarea-counter { text-align: right; font-size: 12px; color: #666; margin-top: 5px; }
     .limit-exceeded { color: #e74c3c; }
+    
+    /* ESTILOS NUEVOS PARA LA BARRA DE PROGRESO DEL FORMULARIO (igual al header) */
+    .form-progress-container {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 10px;
+        margin: 30px 0 20px 0;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .form-progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        color: white;
+    }
+    
+    .form-progress-bar {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .form-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2ecc71);
+        width: 0%;
+        transition: width 0.5s ease;
+        border-radius: 4px;
+    }
 </style>
 </head>
 <body>
@@ -463,16 +496,18 @@ $barrios = $barrioModel->getAll();
                             </div>
                         </div>
                     </div>
-                    <!-- Barra de Progreso del Formulario (MOVIDA AQUÍ, ANTES DEL BOTÓN) -->
-                    <div class="progress-container" style="margin: 30px 0 20px 0;">
-                        <div class="progress-header">
+                    
+                    <!-- Barra de Progreso del Formulario - CON ESTILOS IGUAL AL HEADER -->
+                    <div class="form-progress-container">
+                        <div class="form-progress-header">
                             <span>Progreso del formulario</span>
                             <span id="progress-percentage">0%</span>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill"></div>
+                        <div class="form-progress-bar">
+                            <div class="form-progress-fill" id="progress-fill"></div>
                         </div>
                     </div>
+                    
                     <!-- Botón de Envío -->
                     <div class="form-group full-width">
                         <button type="submit" class="submit-btn" id="submit-btn">

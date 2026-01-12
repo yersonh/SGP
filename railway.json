@@ -2,10 +2,33 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "bash .platform/scripts/build-votaciones.sh"
+    "buildCommand": "bash .platform/scripts/build-votaciones.sh",
+    "nixpacksConfig": {
+      "phases": {
+        "setup": {
+          "aptPkgs": [
+            "php8.3-fpm",
+            "php8.3-cli", 
+            "php8.3-pgsql",
+            "php8.3-gd",
+            "php8.3-mbstring",
+            "php8.3-xml",
+            "php8.3-zip",
+            "gettext-base"
+          ]
+        },
+        "install": {
+          "commands": [
+            "chmod +x .platform/scripts/build-votaciones.sh",
+            "bash .platform/scripts/build-votaciones.sh"
+          ]
+        }
+      }
+    }
   },
   "deploy": {
-    "startCommand": "bash .platform/scripts/start-votaciones.sh"
+    "startCommand": "bash .platform/scripts/start-votaciones.sh",
+    "restartPolicyType": "ON_FAILURE"
   },
   "mounts": {
     "uploads": "/uploads"

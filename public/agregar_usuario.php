@@ -804,20 +804,20 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     <label class="form-label" for="telefono">
                         <i class="fas fa-phone"></i> Teléfono *
                     </label>
-                    <div class="phone-input input-with-icon">
+                    <div class="input-with-icon">
                         <i class="fas fa-phone input-icon"></i>
                         <input type="tel" 
-                               id="telefono" 
-                               name="telefono" 
-                               class="form-control" 
-                               placeholder="300 1234567"
-                               required
-                               maxlength="11"
-                               pattern="[0-9]{10}"
-                               title="Ingrese un número de teléfono válido (10 dígitos)"
-                               autocomplete="off">
+                            id="telefono" 
+                            name="telefono" 
+                            class="form-control" 
+                            placeholder="3001234567"
+                            required
+                            maxlength="10"
+                            pattern="[0-9]{10}"
+                            title="Ingrese un número de teléfono válido (10 dígitos)"
+                            autocomplete="off">
                     </div>
-                    <span class="field-hint">10 dígitos (ej: 3001234567)</span>
+                    <span class="field-hint">10 dígitos sin espacios (ej: 3001234567)</span>
                 </div>
                 
                 <!-- Zona -->
@@ -948,7 +948,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
     </div>
 
     <!-- JavaScript -->
-    <script>
+<script>
     // ==================== FUNCIÓN PARA MOSTRAR NOTIFICACIONES ====================
     function showNotification(message, type = 'info') {
         const oldNotification = document.querySelector('.notification');
@@ -1125,23 +1125,60 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             e.target.value = e.target.value.replace(/\D/g, '');
         });
         
-        // Formato de teléfono (Colombia)
+        // 🔥 FORMATO DE TELÉFONO CORREGIDO
         const telefonoInput = document.getElementById('telefono');
+        
+        // Permitir entrada sin formato, solo números
         telefonoInput.addEventListener('input', function(e) {
+            // Guardar posición del cursor
+            const cursorPosition = this.selectionStart;
+            const originalLength = this.value.length;
+            
             // Remover caracteres no numéricos
-            let value = e.target.value.replace(/\D/g, '');
+            let value = this.value.replace(/\D/g, '');
             
             // Limitar a 10 dígitos
             if (value.length > 10) {
                 value = value.substring(0, 10);
             }
             
-            // Formatear: 300 1234567
+            // Guardar el valor sin formato
+            this.dataset.rawValue = value;
+            
+            // Formatear para mostrar (300 1234567)
+            let formattedValue = value;
             if (value.length > 3) {
-                value = value.substring(0, 3) + ' ' + value.substring(3);
+                formattedValue = value.substring(0, 3) + ' ' + value.substring(3);
             }
             
-            e.target.value = value;
+            // Actualizar el valor
+            this.value = formattedValue;
+            
+            // Ajustar posición del cursor
+            if (originalLength < this.value.length && cursorPosition === originalLength) {
+                // El cursor estaba al final, mantenerlo al final
+                this.setSelectionRange(this.value.length, this.value.length);
+            } else {
+                // Intentar mantener posición relativa
+                const newCursorPosition = cursorPosition + (this.value.length - originalLength);
+                this.setSelectionRange(newCursorPosition, newCursorPosition);
+            }
+        });
+        
+        // Al hacer focus, mostrar solo números temporalmente
+        telefonoInput.addEventListener('focus', function() {
+            if (this.dataset.rawValue) {
+                this.value = this.dataset.rawValue;
+            }
+        });
+        
+        // Al perder focus, formatear nuevamente
+        telefonoInput.addEventListener('blur', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length > 3) {
+                this.value = value.substring(0, 3) + ' ' + value.substring(3);
+            }
+            this.dataset.rawValue = value;
         });
         
         // Validar fortaleza de contraseña
@@ -1201,7 +1238,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         passwordInput.addEventListener('input', validatePasswordMatch);
         confirmPasswordInput.addEventListener('input', validatePasswordMatch);
         
-        // Validar formulario antes de enviar
+        // 🔥 VALIDACIÓN CORREGIDA DEL FORMULARIO
         const usuarioForm = document.getElementById('usuario-form');
         const submitBtn = document.getElementById('submit-btn');
         
@@ -1256,10 +1293,11 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // Validar teléfono
-            const telefono = telefonoInput.value.replace(/\D/g, '');
-            if (telefono.length !== 11) {
-                showNotification('El teléfono debe tener 10 dígitos.', 'error');
+            // 🔥 VALIDACIÓN CORREGIDA DEL TELÉFONO
+            const telefono = telefonoInput.value.replace(/\s/g, '').replace(/\D/g, '');
+            
+            if (telefono.length !== 10) {
+                showNotification('El teléfono debe tener exactamente 10 dígitos.', 'error');
                 telefonoInput.focus();
                 return;
             }
@@ -1269,7 +1307,8 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             
             // Asegurar que los valores numéricos estén limpios
             formData.set('cedula', cedula);
-            formData.set('telefono', telefono);
+            formData.set('telefono', telefono); // Enviar solo números
+            
             if (formData.get('tope')) {
                 formData.set('tope', formData.get('tope').replace(/\D/g, ''));
             }

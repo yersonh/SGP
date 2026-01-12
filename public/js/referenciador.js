@@ -21,8 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar eventos del formulario
     setupFormEvents();
     
-    // Inicializar progreso
+    // Inicializar progreso del formulario
     updateProgress();
+    
+    // Inicializar barra de tope
+    updateTopeProgress();
     
     console.log('Sistema inicializado correctamente');
 });
@@ -178,6 +181,60 @@ function updateProgress() {
     progressPercentage.textContent = percentage + '%';
     
     console.log('Progreso actualizado:', percentage + '%');
+}
+
+// ==================== BARRA DE TOPE ====================
+function updateTopeProgress() {
+    const topeProgressFill = document.getElementById('tope-progress-fill');
+    const topePercentage = document.getElementById('tope-percentage');
+    
+    if (!topeProgressFill || !topePercentage) {
+        console.error('Elementos de tope no encontrados');
+        return;
+    }
+    
+    // Obtener valores del HTML
+    const topeText = document.querySelector('.progress-header span:first-child').textContent;
+    const match = topeText.match(/(\d+)\/(\d+)/);
+    
+    if (!match) return;
+    
+    const actual = parseInt(match[1]);
+    const maximo = parseInt(match[2]);
+    
+    if (maximo === 0) return;
+    
+    const percentage = Math.min((actual / maximo) * 100, 100);
+    
+    // Actualizar visualmente
+    topeProgressFill.style.width = percentage + '%';
+    topePercentage.textContent = Math.round(percentage) + '%';
+    
+    console.log('Tope actualizado:', percentage + '%');
+}
+
+// ==================== FUNCIÓN PARA INCREMENTAR TOPE ====================
+function incrementarTope() {
+    // Obtener el texto actual del tope
+    const topeSpan = document.querySelector('.progress-header span:first-child');
+    if (!topeSpan) return;
+    
+    const texto = topeSpan.textContent;
+    const match = texto.match(/(\d+)\/(\d+)/);
+    
+    if (!match) return;
+    
+    const actual = parseInt(match[1]);
+    const maximo = parseInt(match[2]);
+    
+    // Incrementar en 1
+    const nuevoActual = actual + 1;
+    
+    // Actualizar el texto
+    topeSpan.textContent = `Progreso del Tope: ${nuevoActual}/${maximo}`;
+    
+    // Actualizar la barra de tope
+    updateTopeProgress();
 }
 
 // ==================== SISTEMA DE MESAS DINÁMICAS ====================
@@ -570,6 +627,9 @@ function setupFormEvents() {
             
             if (data.success) {
                 showNotification(data.message || 'Registro guardado exitosamente', 'success');
+                
+                // ACTUALIZAR TOPE (incrementar contador)
+                incrementarTope();
                 
                 // Resetear formulario
                 this.reset();

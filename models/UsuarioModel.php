@@ -33,7 +33,7 @@ class UsuarioModel {
                   LEFT JOIN personal_electoral pe ON u.id_usuario = pe.id_usuario 
                   LEFT JOIN (
                       SELECT id_referenciador, COUNT(*) as total_referenciados 
-                      FROM referenciado 
+                      FROM referenciados 
                       WHERE id_referenciador = ?
                       GROUP BY id_referenciador
                   ) r ON u.id_usuario = r.id_referenciador
@@ -120,7 +120,7 @@ class UsuarioModel {
                     COUNT(CASE WHEN fecha_creacion >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as ultimo_mes,
                     TO_CHAR(fecha_creacion, 'YYYY-MM') as mes,
                     COUNT(*) as por_mes
-                  FROM referenciado 
+                  FROM referenciados
                   WHERE id_referenciador = ?
                   GROUP BY TO_CHAR(fecha_creacion, 'YYYY-MM')
                   ORDER BY mes DESC

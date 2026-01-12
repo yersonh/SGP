@@ -1,36 +1,67 @@
 #!/bin/bash
+set -e
 
-# Crear directorio de uploads si no existe
+echo "🚀 Iniciando Sistema de Votaciones..."
+
+# 🔥 1. CREAR DIRECTORIO DE UPLOADS (ANTES DE CONFIGURAR NGINX)
 UPLOADS_DIR="/uploads"
+echo "📁 Configurando directorio de uploads..."
 if [ ! -d "$UPLOADS_DIR" ]; then
-    echo "🚀 Creando directorio de uploads..."
+    echo "  🚀 Creando directorio de uploads..."
     mkdir -p "$UPLOADS_DIR/profiles"
     mkdir -p "$UPLOADS_DIR/temp"
     chmod -R 755 "$UPLOADS_DIR"
-    echo "✅ Directorio de uploads creado en $UPLOADS_DIR"
+    echo "  ✅ Directorio de uploads creado en $UPLOADS_DIR"
 fi
 
-# Copiar foto por defecto si no existe
-DEFAULT_PHOTO="$UPLOADS_DIR/profiles/default.png"
-if [ ! -f "$DEFAULT_PHOTO" ]; then
-    echo "🚀 Creando foto por defecto..."
-    # Crear una imagen por defecto simple con ImageMagick o base64
-    if command -v convert &> /dev/null; then
-        convert -size 150x150 xc:#2c3e50 -pointsize 20 -fill white -gravity center -draw "text 0,0 'USER'" "$DEFAULT_PHOTO"
-    else
-        # Si no hay ImageMagick, crear un archivo vacío o copiar desde assets
-        echo "⚠️  ImageMagick no encontrado, creando placeholder..."
-        cp /app/public/default-profile.png "$DEFAULT_PHOTO" 2>/dev/null || true
-    fi
-    echo "✅ Foto por defecto creada"
+# Copiar foto por defecto si existe en public/
+if [ -f "/app/public/default-profile.png" ] && [ ! -f "$UPLOADS_DIR/profiles/default.png" ]; then
+    echo "  📸 Copiando foto por defecto..."
+    cp "/app/public/default-profile.png" "$UPLOADS_DIR/profiles/default.png"
+    echo "  ✅ Foto por defecto copiada"
 fi
 
-# Verificar permisos
-if [ ! -w "$UPLOADS_DIR" ]; then
-    echo "⚠️  Advertencia: Directorio de uploads no tiene permisos de escritura"
-    echo "📝 Intentando cambiar permisos..."
-    chmod -R 755 "$UPLOADS_DIR" || true
+# 2. Configurar Nginx
+echo "🌐 Configurando Nginx..."
+if command -v envsubst &> /dev/null; then
+    envsubst '\$PORT' < /app/.platform/nginx/nginx-votaciones.conf > /etc/nginx/nginx.conf
+else
+    sed "s/\${PORT}/$PORT/g" /app/.platform/nginx/nginx-votaciones.conf > /etc/nginx/nginx.conf
 fi
 
-echo "🚀 Iniciando servidor PHP..."
-php -S 0.0.0.0:${PORT:-3000} index.php
+# 3. Validar Nginx
+nginx -t
+
+# 4. Buscar php-fpm en diferentes ubicaciones
+echo "🐘 Buscando PHP-FPM..."
+PHP_FPM_CMD=""
+
+# Intentar diferentes ubicaciones comunes
+if [ -f "/usr/sbin/php-fpm8.2" ]; then
+    PHP_FPM_CMD="/usr/sbin/php-fpm8.2"
+elif [ -f "/usr/sbin/php-fpm8.1" ]; then
+    PHP_FPM_CMD="/usr/sbin/php-fpm8.1"
+elif [ -f "/usr/sbin/php-fpm8.0" ]; then
+    PHP_FPM_CMD="/usr/sbin/php-fpm8.0"
+elif [ -f "/usr/sbin/php-fpm" ]; then
+    PHP_FPM_CMD="/usr/sbin/php-fpm"
+elif command -v php-fpm &> /dev/null; then
+    PHP_FPM_CMD="php-fpm"
+else
+    echo "⚠️  PHP-FPM no encontrado, usando PHP built-in server..."
+    # Fallback: usar PHP built-in server apuntando a /app/public
+    php -S 0.0.0.0:$PORT -t /app/public &
+    sleep 2
+    echo "✅ PHP built-in server iniciado en puerto: $PORT"
+    wait
+    exit 0
+fi
+
+# 5. Iniciar PHP-FPM
+echo "🚀 Iniciando PHP-FPM: $PHP_FPM_CMD"
+$PHP_FPM_CMD --daemonize
+
+# 6. Iniciar Nginx
+echo "🌐 Iniciando Nginx..."
+echo "✅ Sistema listo en puerto: $PORT"
+exec nginx -g 'daemon off;'

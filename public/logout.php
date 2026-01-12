@@ -48,114 +48,133 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cerrar Sesión - Sistema de Gestión de Referenciación</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Cerrar Sesión - SGP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
             min-height: 100vh;
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+                url('/imagenes/fondo.jpg') no-repeat center center fixed;
+            background-size: cover;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             padding: 20px;
-            color: #333;
         }
         
         .logout-container {
-            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            background: rgba(30, 30, 40, 0.85); /* Fondo oscuro semi-transparente */
+            backdrop-filter: blur(15px); /* Efecto de desenfoque tipo vidrio */
+            -webkit-backdrop-filter: blur(15px);
             border-radius: 20px;
-            padding: 50px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(255, 255, 255, 0.1);
-            max-width: 500px;
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
             width: 100%;
+            max-width: 480px;
+            padding: 40px 35px;
+            animation: fadeIn 0.5s ease-out;
             text-align: center;
             position: relative;
             overflow: hidden;
-            animation: fadeIn 0.5s ease-out;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
+        /* Efecto de brillo sutil en los bordes */
         .logout-container::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #ff6b6b, #ff8e53, #ffd166);
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+            border-radius: 20px 20px 0 0;
         }
         
         .logout-icon {
-            font-size: 80px;
-            color: #ff6b6b;
-            margin-bottom: 25px;
+            font-size: 4.5rem;
+            color: #ff6b6b; /* Rojo/anaranjado para cerrar sesión */
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
             animation: pulse 2s infinite;
         }
         
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
         }
         
         .logout-title {
-            color: #2c3e50;
-            font-size: 28px;
-            font-weight: 700;
+            color: #ffffff;
+            font-size: 1.8rem;
             margin-bottom: 15px;
-            letter-spacing: -0.5px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
         }
         
         .user-info {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
+            background: rgba(79, 195, 247, 0.15); /* Azul con transparencia */
+            color: #4fc3f7;
             padding: 12px 20px;
-            border-radius: 12px;
+            border-radius: 10px;
             margin: 20px auto;
-            max-width: 300px;
+            max-width: 320px;
             font-weight: 600;
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .user-info i {
-            margin-right: 10px;
-            color: #a3e4d7;
+            font-size: 1.1rem;
         }
         
         .logout-message {
-            color: #5d6d7e;
+            color: #b0bec5;
             line-height: 1.6;
-            margin-bottom: 35px;
-            font-size: 16px;
-            padding: 0 10px;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+            padding: 0 5px;
+        }
+        
+        .logout-message strong {
+            color: #ffffff;
+            font-weight: 600;
         }
         
         .logout-actions {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             justify-content: center;
-            margin-top: 30px;
+            margin-top: 10px;
         }
         
         .btn {
-            padding: 15px 35px;
-            border-radius: 12px;
+            padding: 14px 30px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 0.95rem;
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -164,61 +183,119 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
-            min-width: 180px;
+            min-width: 160px;
+            letter-spacing: 0.3px;
         }
         
         .btn-logout {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: #1a1a2e;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+            border: none;
         }
         
         .btn-logout:hover {
-            background: linear-gradient(135deg, #ee5a52, #d64541);
-            transform: translateY(-3px);
-            box-shadow: 0 12px 25px rgba(255, 107, 107, 0.4);
-            color: white;
+            background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+            color: #1a1a2e;
         }
         
         .btn-cancel {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white;
-            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
         }
         
         .btn-cancel:hover {
-            background: linear-gradient(135deg, #27ae60, #219653);
-            transform: translateY(-3px);
-            box-shadow: 0 12px 25px rgba(46, 204, 113, 0.4);
-            color: white;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
         
         .security-note {
-            margin-top: 30px;
+            margin-top: 25px;
             padding-top: 20px;
-            border-top: 1px solid #eaeaea;
-            color: #7f8c8d;
-            font-size: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #90a4ae;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .security-note i {
-            color: #3498db;
-            margin-right: 8px;
+            color: #4fc3f7;
+        }
+        
+        .system-info {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #78909c;
+            line-height: 1.4;
+        }
+        
+        .system-info p {
+            margin-bottom: 5px;
+            opacity: 0.8;
         }
         
         @media (max-width: 576px) {
             .logout-container {
-                padding: 30px 20px;
+                padding: 30px 25px;
+                max-width: 380px;
+            }
+            
+            .logout-icon {
+                font-size: 4rem;
+            }
+            
+            .logout-title {
+                font-size: 1.5rem;
             }
             
             .logout-actions {
                 flex-direction: column;
-                gap: 15px;
+                gap: 12px;
             }
             
             .btn {
                 width: 100%;
                 min-width: auto;
+                padding: 13px;
+            }
+            
+            .user-info {
+                max-width: 280px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .logout-message {
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 380px) {
+            .logout-container {
+                padding: 25px 20px;
+                max-width: 320px;
+            }
+            
+            .logout-icon {
+                font-size: 3.5rem;
+            }
+            
+            .logout-title {
+                font-size: 1.3rem;
+            }
+            
+            .logout-message {
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -237,7 +314,7 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
         </div>
         
         <p class="logout-message">
-            Estás a punto de salir del <strong>Sistema de Gestión de Referenciación</strong>. 
+            Estás a punto de salir del <strong>Sistema de Gestión de Política</strong>. 
             Si cierras sesión, deberás ingresar tus credenciales nuevamente para acceder.
         </p>
         
@@ -255,7 +332,12 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
         
         <div class="security-note">
             <i class="fas fa-shield-alt"></i>
-            <span>Tu sesión se cerrará de forma segura en todos los dispositivos</span>
+            <span>Tu sesión se cerrará de forma segura</span>
+        </div>
+        
+        <div class="system-info">
+            <p>SGP - Sistema de Gestión de Política</p>
+            <p>© <?php echo date('Y'); ?> • Todos los derechos reservados</p>
         </div>
     </div>
     
@@ -264,10 +346,10 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.querySelector('.logout-container');
             container.style.opacity = '0';
-            container.style.transform = 'translateY(30px)';
+            container.style.transform = 'translateY(20px)';
             
             setTimeout(() => {
-                container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                container.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                 container.style.opacity = '1';
                 container.style.transform = 'translateY(0)';
             }, 100);
@@ -276,12 +358,30 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
             document.querySelectorAll('.btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+                    const isLogout = this.classList.contains('btn-logout');
+                    
+                    this.innerHTML = isLogout 
+                        ? '<i class="fas fa-spinner fa-spin"></i> Cerrando sesión...' 
+                        : '<i class="fas fa-spinner fa-spin"></i> Regresando...';
                     this.style.pointerEvents = 'none';
+                    this.style.opacity = '0.8';
+                    
+                    // Si es cancelar, permitir redirección inmediata
+                    if (!isLogout) {
+                        return true;
+                    }
+                    
+                    // Si es logout, prevenir navegación rápida
+                    e.preventDefault();
+                    
+                    setTimeout(() => {
+                        window.location.href = this.href;
+                    }, 1000);
                     
                     setTimeout(() => {
                         this.innerHTML = originalText;
                         this.style.pointerEvents = 'auto';
+                        this.style.opacity = '1';
                     }, 2000);
                 });
             });

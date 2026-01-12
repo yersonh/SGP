@@ -83,14 +83,32 @@ $barrios = $barrioModel->getAll();
                 </a>
             </div>
             
-            <!-- Progress Bar -->
-            <div class="progress-container">
-                <div class="progress-header">
+            <!-- Barra de Progreso del Tope (NUEVA) -->
+            <div class="progress-tope-container">
+                <div class="progress-tope-header">
+                    <span>Progreso del Tope</span>
+                    <div class="tope-stats">
+                        <span id="tope-actual"><?php echo $usuario_logueado['total_referenciados'] ?? 0; ?></span>
+                        <span>/</span>
+                        <span id="tope-maximo"><?php echo $usuario_logueado['tope'] ?? 0; ?></span>
+                        <span id="tope-porcentaje" class="porcentaje-tope">
+                            (<?php echo $usuario_logueado['porcentaje_tope'] ?? 0; ?>%)
+                        </span>
+                    </div>
+                </div>
+                <div class="progress-tope-bar">
+                    <div class="progress-tope-fill" id="tope-progress-fill"></div>
+                </div>
+            </div>
+            
+            <!-- Barra de Progreso del Formulario (EXISTENTE - Modificada) -->
+            <div class="progress-form-container">
+                <div class="progress-form-header">
                     <span>Progreso del formulario</span>
                     <span id="progress-percentage">0%</span>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
+                <div class="progress-form-bar">
+                    <div class="progress-form-fill" id="progress-fill"></div>
                 </div>
             </div>
         </div>
@@ -367,99 +385,15 @@ $barrios = $barrioModel->getAll();
                         </div>
                     </div>
                     
-                    <!-- Insumos Disponibles -->
+                    <!-- Barra de Progreso del Formulario (ANTES del botón) -->
                     <div class="form-group full-width">
-                        <label class="form-label">
-                            <i class="fas fa-tools"></i> Insumos Disponibles
-                        </label>
-                        <div class="insumos-container">
-                            <div class="insumos-grid">
-                                <!-- Carro -->
-                                <div class="insumo-item">
-                                    <input type="checkbox" id="insumo_carro" name="insumos[]" value="carro" class="insumo-checkbox">
-                                    <label for="insumo_carro" class="insumo-label">
-                                        <div class="insumo-icon">
-                                            <i class="fas fa-car"></i>
-                                        </div>
-                                        <span class="insumo-text">Carro</span>
-                                        <div class="insumo-switch">
-                                            <div class="switch-slider"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <!-- Caballo -->
-                                <div class="insumo-item">
-                                    <input type="checkbox" id="insumo_caballo" name="insumos[]" value="caballo" class="insumo-checkbox">
-                                    <label for="insumo_caballo" class="insumo-label">
-                                        <div class="insumo-icon">
-                                            <i class="fas fa-horse"></i>
-                                        </div>
-                                        <span class="insumo-text">Caballo</span>
-                                        <div class="insumo-switch">
-                                            <div class="switch-slider"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <!-- Cicla -->
-                                <div class="insumo-item">
-                                    <input type="checkbox" id="insumo_cicla" name="insumos[]" value="cicla" class="insumo-checkbox">
-                                    <label for="insumo_cicla" class="insumo-label">
-                                        <div class="insumo-icon">
-                                            <i class="fas fa-bicycle"></i>
-                                        </div>
-                                        <span class="insumo-text">Cicla</span>
-                                        <div class="insumo-switch">
-                                            <div class="switch-slider"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <!-- Moto -->
-                                <div class="insumo-item">
-                                    <input type="checkbox" id="insumo_moto" name="insumos[]" value="moto" class="insumo-checkbox">
-                                    <label for="insumo_moto" class="insumo-label">
-                                        <div class="insumo-icon">
-                                            <i class="fas fa-motorcycle"></i>
-                                        </div>
-                                        <span class="insumo-text">Moto</span>
-                                        <div class="insumo-switch">
-                                            <div class="switch-slider"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <!-- Motocarro -->
-                                <div class="insumo-item">
-                                    <input type="checkbox" id="insumo_motocarro" name="insumos[]" value="motocarro" class="insumo-checkbox">
-                                    <label for="insumo_motocarro" class="insumo-label">
-                                        <div class="insumo-icon">
-                                            <i class="fas fa-truck-pickup"></i>
-                                        </div>
-                                        <span class="insumo-text">Motocarro</span>
-                                        <div class="insumo-switch">
-                                            <div class="switch-slider"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <!-- Publicidad -->
-                                <div class="insumo-item">
-                                    <input type="checkbox" id="insumo_publicidad" name="insumos[]" value="publicidad" class="insumo-checkbox">
-                                    <label for="insumo_publicidad" class="insumo-label">
-                                        <div class="insumo-icon">
-                                            <i class="fas fa-bullhorn"></i>
-                                        </div>
-                                        <span class="insumo-text">Publicidad</span>
-                                        <div class="insumo-switch">
-                                            <div class="switch-slider"></div>
-                                        </div>
-                                    </label>
-                                </div>
+                        <div class="form-progress-container">
+                            <div class="form-progress-header">
+                                <span>Completado del formulario:</span>
+                                <span id="form-progress-percentage">0%</span>
                             </div>
-                            <div class="insumos-selected" id="insumos-selected">
-                                Ningún insumo seleccionado
+                            <div class="form-progress-bar">
+                                <div class="form-progress-fill" id="form-progress-fill"></div>
                             </div>
                         </div>
                     </div>
@@ -467,7 +401,7 @@ $barrios = $barrioModel->getAll();
                     <!-- Botón de Envío -->
                     <div class="form-group full-width">
                         <button type="submit" class="submit-btn" id="submit-btn">
-                            <i class="fas fa-save"></i> Grabar Registro
+                            <i class="fas fa-save"></i> Guardar Registro
                         </button>
                     </div>
                 </div>

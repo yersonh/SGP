@@ -112,9 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .logo-section h1 {
             color: #2c3e50;
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             margin-bottom: 8px;
             line-height: 1.2;
+            white-space: nowrap;
         }
         
         .logo-section p {
@@ -266,7 +267,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             .logo-section h1 {
-                font-size: 1.4rem;
+                font-size: 1.2rem;
+                white-space: nowrap;
             }
             
             .logo-section p {

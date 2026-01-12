@@ -89,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 15px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 450px;
-            padding: 40px;
+            max-width: 420px;
+            padding: 35px 30px;
             animation: fadeIn 0.5s ease-out;
         }
         
@@ -101,58 +101,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .logo-section {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         
         .logo {
-            font-size: 3rem;
+            font-size: 2.8rem;
             color: #2c3e50;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         .logo-section h1 {
             color: #2c3e50;
-            font-size: 1.8rem;
-            margin-bottom: 5px;
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+            line-height: 1.2;
         }
         
         .logo-section p {
             color: #7f8c8d;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
         
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             position: relative;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #2c3e50;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
         .input-with-icon {
             position: relative;
         }
         
-        .input-with-icon i {
+        .input-with-icon i.fa-user,
+        .input-with-icon i.fa-lock {
             position: absolute;
-            left: 15px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: #7f8c8d;
-            font-size: 1.1rem;
+            font-size: 1rem;
+            z-index: 2;
+        }
+        
+        .input-with-icon .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #7f8c8d;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 0.9rem;
+            z-index: 2;
         }
         
         .input-with-icon input {
             width: 100%;
-            padding: 14px 14px 14px 45px;
+            padding: 12px 40px 12px 35px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             transition: all 0.3s;
             background-color: #f9f9f9;
         }
@@ -167,22 +185,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .error-message {
             background-color: #fee;
             color: #c0392b;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
             border-left: 4px solid #c0392b;
             display: <?php echo $error ? 'block' : 'none'; ?>;
         }
         
         .login-btn {
             width: 100%;
-            padding: 15px;
+            padding: 13px;
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
@@ -203,20 +221,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .login-btn i {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         
         .footer-links {
-            margin-top: 25px;
+            margin-top: 20px;
             text-align: center;
-            padding-top: 20px;
+            padding-top: 15px;
             border-top: 1px solid #eee;
         }
         
         .footer-links a {
             color: #3498db;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: color 0.3s;
         }
         
@@ -226,16 +244,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .system-info {
-            margin-top: 25px;
+            margin-top: 20px;
             text-align: center;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #95a5a6;
             line-height: 1.4;
         }
         
+        .system-info p {
+            margin-bottom: 5px;
+        }
+        
         @media (max-width: 480px) {
             .login-container {
-                padding: 25px;
+                padding: 25px 20px;
+                max-width: 350px;
             }
             
             .logo {
@@ -243,7 +266,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             .logo-section h1 {
-                font-size: 1.5rem;
+                font-size: 1.4rem;
+            }
+            
+            .logo-section p {
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -254,8 +281,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="logo">
                 <i class="fas fa-user-shield"></i>
             </div>
-            <h1>SGP-Sistema de Gestion de Politica</h1>
-            <p>Acceso restringido al personal autorizado</p>
+            <h1>SGP-Sistema de Gestión de Política</h1>
+            <p>Plataforma de confirmación de usuario autorizado para acceso al software SGP.</p>
         </div>
         
         <?php if ($error): ?>
@@ -289,6 +316,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            placeholder="Ingrese su contraseña" 
                            required
                            autocomplete="current-password">
+                    <button type="button" class="toggle-password" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
             </div>
             
@@ -303,18 +333,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <div class="system-info">
             <p>© Derechos de autor Reservados. 
-            <strong>Ing. Rubén Darío González García</strong> • 
+            Ing. Rubén Darío González García • 
             SISGONTech • Colombia © • <?php echo date('Y'); ?>
             </p>
-            <p>Contacto: <strong>+57 3106310227</strong> • 
-            Email: <strong>sisgonnet@gmail.com</strong>
+            <p>Contacto: +57 3106310227 • 
+            Email: sisgonnet@gmail.com
             </p>
         </div>
     </div>
 
     <script>
-        // Efecto de enfoque en campos
+        // Mostrar/ocultar contraseña
         document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            
+            togglePasswordBtn.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+            
+            // Efecto de enfoque en campos
             const inputs = document.querySelectorAll('input');
             inputs.forEach(input => {
                 input.addEventListener('focus', function() {
@@ -327,21 +367,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 });
             });
-            
-            // Mostrar/ocultar contraseña (opcional, puedes agregar un icono)
-            const passwordInput = document.getElementById('password');
-            const showPasswordBtn = document.createElement('button');
-            showPasswordBtn.type = 'button';
-            showPasswordBtn.innerHTML = '<i class="fas fa-eye"></i>';
-            showPasswordBtn.style.cssText = 'position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #7f8c8d; cursor: pointer; padding: 0;';
-            
-            showPasswordBtn.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-            });
-            
-            document.querySelector('.input-with-icon').appendChild(showPasswordBtn);
         });
     </script>
 </body>

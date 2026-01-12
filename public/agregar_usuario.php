@@ -677,9 +677,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="dashboard.php" class="header-btn">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </a>
                     <a href="logout.php" class="header-btn">
                         <i class="fas fa-sign-out-alt"></i> Salir
                     </a>

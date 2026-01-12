@@ -342,10 +342,10 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
                 <span>Sí, Cerrar Sesión</span>
             </a>
             
-            <a href="referenciador.php" class="btn btn-cancel">
-                <i class="fas fa-times"></i>
+            <button type="button" class="btn btn-cancel" id="btn-cancel">
+                <i class="fas fa-arrow-left"></i>
                 <span>Cancelar y Volver</span>
-            </a>
+            </button>
         </div>
         
         <div class="security-note">
@@ -372,24 +372,17 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
                 container.style.transform = 'translateY(0)';
             }, 100);
             
-            // Prevenir doble clic en botones
-            document.querySelectorAll('.btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
+            // Prevenir doble clic en botón de cerrar sesión
+            const btnLogout = document.querySelector('.btn-logout');
+            if (btnLogout) {
+                btnLogout.addEventListener('click', function(e) {
                     const originalText = this.innerHTML;
-                    const isLogout = this.classList.contains('btn-logout');
                     
-                    this.innerHTML = isLogout 
-                        ? '<i class="fas fa-spinner fa-spin"></i> Cerrando sesión...' 
-                        : '<i class="fas fa-spinner fa-spin"></i> Regresando...';
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando sesión...';
                     this.style.pointerEvents = 'none';
                     this.style.opacity = '0.8';
                     
-                    // Si es cancelar, permitir redirección inmediata
-                    if (!isLogout) {
-                        return true;
-                    }
-                    
-                    // Si es logout, prevenir navegación rápida
+                    // Prevenir navegación rápida
                     e.preventDefault();
                     
                     setTimeout(() => {
@@ -402,7 +395,42 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
                         this.style.opacity = '1';
                     }, 2000);
                 });
-            });
+            }
+            
+            // Botón para volver a la página anterior
+            const btnCancel = document.getElementById('btn-cancel');
+            if (btnCancel) {
+                btnCancel.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Mostrar estado de carga
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Regresando...';
+                    this.disabled = true;
+                    this.style.opacity = '0.7';
+                    
+                    // Verificar si hay historial de navegación
+                    if (window.history.length > 1) {
+                        // Usar history.back() para volver a la página anterior
+                        setTimeout(() => {
+                            window.history.back();
+                        }, 300);
+                    } else {
+                        // Si no hay historial, redirigir según el tipo de usuario
+                        setTimeout(() => {
+                            // Por defecto redirigir al referenciador
+                            window.location.href = 'referenciador.php';
+                        }, 300);
+                    }
+                    
+                    // Restaurar el botón después de 2 segundos (por si falla la redirección)
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+                        this.style.opacity = '1';
+                    }, 2000);
+                });
+            }
         });
     </script>
 </body>

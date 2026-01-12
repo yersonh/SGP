@@ -4,7 +4,6 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/ZonaModel.php';
 require_once __DIR__ . '/../models/SectorModel.php';
-require_once __DIR__ . '/../models/PuestoVotacionModel.php';
 
 // Verificar permisos (solo administradores pueden agregar usuarios)
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {
@@ -18,20 +17,6 @@ $usuarioModel = new UsuarioModel($pdo);
 // Cargar datos para los combos (si existen los modelos)
 $zonas = [];
 $sectores = [];
-$puestos = [];
-
-try {
-    $zonaModel = new ZonaModel($pdo);
-    $zonas = $zonaModel->getAll();
-    
-    $sectorModel = new SectorModel($pdo);
-    $sectores = $sectorModel->getAll();
-    
-    $puestoModel = new PuestoModel($pdo);
-    $puestos = $puestoModel->getAll();
-} catch (Exception $e) {
-    // Si los modelos no existen, dejar arrays vacíos
-}
 
 // Tipos de usuario permitidos
 $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin'];

@@ -30,5 +30,5 @@ return [
     'temp_path' => 'temp/',
     
     // Foto por defecto
-    'default_photo' => 'default.png'
+    'default_photo' => '/imagenes/imagendefault.png'
 ];

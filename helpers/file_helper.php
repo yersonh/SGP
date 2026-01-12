@@ -183,11 +183,22 @@ class FileHelper {
     /**
      * Obtener URL de foto
      */
-    public static function getPhotoUrl($filename, $folder = 'profiles') {
-        if (empty($filename)) {
-            return Database::getUploadsUrl() . 'profiles/default.png';
+      public static function getPhotoUrl($filename, $folder = 'profiles') {
+        $config = require __DIR__ . '/../config/uploads.php';
+        
+        // Si no hay foto o es la por defecto
+        if (empty($filename) || $filename === 'default.png' || $filename === 'imagendefault.png') {
+            // Devolver la URL de la imagen por defecto
+            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            
+            // La imagen por defecto está en /app/public/imagenes/imagendefault.png
+            // Se sirve como https://tudominio.com/imagenes/imagendefault.png
+            return $protocol . $host . $config['default_photo'];
         }
         
+        // Para fotos subidas, usar la ruta de uploads
+        // Se sirven como https://tudominio.com/uploads/profiles/foto.jpg
         return Database::getUploadsUrl() . $folder . '/' . $filename;
     }
 }

@@ -51,6 +51,9 @@ class Database {
     }
     
     // Validar que el directorio de uploads existe
+    // En tu database.php, agrega esto al final:
+
+    // Validar que el directorio de uploads existe
     public static function ensureUploadsDirectory() {
         $uploadsPath = self::getUploadsPath();
         
@@ -59,13 +62,18 @@ class Database {
             error_log("✅ Directorio de uploads creado: {$uploadsPath}");
         }
         
-        // Crear subdirectorios
-        $subdirs = ['profiles', 'temp'];
-        foreach ($subdirs as $subdir) {
-            $dir = $uploadsPath . $subdir . '/';
-            if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
+        // Crear subdirectorios si no existen
+        $config = require __DIR__ . '/uploads.php'; // Necesitarás incluir esto
+        
+        $profilesDir = $uploadsPath . 'profiles/';
+        $tempDir = $uploadsPath . 'temp/';
+        
+        if (!is_dir($profilesDir)) {
+            mkdir($profilesDir, 0755, true);
+        }
+        
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
         }
         
         return $uploadsPath;

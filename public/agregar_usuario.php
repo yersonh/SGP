@@ -812,7 +812,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                                class="form-control" 
                                placeholder="300 1234567"
                                required
-                               maxlength="10"
+                               maxlength="11"
                                pattern="[0-9]{10}"
                                title="Ingrese un número de teléfono válido (10 dígitos)"
                                autocomplete="off">

@@ -181,24 +181,54 @@ class FileHelper {
     }
     
     /**
-     * Obtener URL de foto
+     * Obtener URL de foto - VERSIÓN MEJORADA
      */
-      public static function getPhotoUrl($filename, $folder = 'profiles') {
+    public static function getPhotoUrl($filename, $folder = 'profiles') {
         $config = require __DIR__ . '/../config/uploads.php';
         
-        // Si no hay foto o es la por defecto
-        if (empty($filename) || $filename === 'default.png' || $filename === 'imagendefault.png') {
-            // Devolver la URL de la imagen por defecto
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            
-            // La imagen por defecto está en /app/public/imagenes/imagendefault.png
-            // Se sirve como https://tudominio.com/imagenes/imagendefault.png
-            return $protocol . $host . $config['default_photo'];
+        // Si no hay foto
+        if (empty($filename)) {
+            return self::buildUrl($config['default_photo']);
         }
         
-        // Para fotos subidas, usar la ruta de uploads
-        // Se sirven como https://tudominio.com/uploads/profiles/foto.jpg
+        // Si es la foto por defecto
+        if ($filename === 'default.png' || $filename === 'imagendefault.png') {
+            return self::buildUrl($config['default_photo']);
+        }
+        
+        // Si contiene 'default' en el nombre
+        if (stripos($filename, 'default') !== false) {
+            return self::buildUrl($config['default_photo']);
+        }
+        
+        // Para fotos subidas
         return Database::getUploadsUrl() . $folder . '/' . $filename;
+    }
+    
+    /**
+     * Construir URL completa
+     */
+    private static function buildUrl($path) {
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        return $protocol . $host . $path;
+    }
+    
+    /**
+     * Verificar si una foto existe
+     */
+    public static function photoExists($filename, $folder = 'profiles') {
+        if (empty($filename) || $filename === 'default.png' || $filename === 'imagendefault.png') {
+            // Verificar si la foto por defecto existe
+            $config = require __DIR__ . '/../config/uploads.php';
+            $defaultPath = $_SERVER['DOCUMENT_ROOT'] . $config['default_photo'];
+            return file_exists($defaultPath);
+        }
+        
+        $uploadsPath = Database::getUploadsPath();
+        $filePath = $uploadsPath . $folder . '/' . $filename;
+        
+        return file_exists($filePath) && is_file($filePath);
     }
 }

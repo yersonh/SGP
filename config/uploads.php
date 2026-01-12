@@ -29,6 +29,6 @@ return [
     'profiles_path' => 'profiles/',
     'temp_path' => 'temp/',
     
-    // Foto por defecto
+    // 🔥 CORRECCIÓN: Ruta absoluta desde la raíz web
     'default_photo' => '/imagenes/imagendefault.png'
 ];

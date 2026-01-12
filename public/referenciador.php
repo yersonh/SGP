@@ -15,23 +15,15 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referencia
 }
 
 $pdo = Database::getConnection();
-$usuarioModel = new UsuarioModel($pdo);
+$model = new UsuarioModel($pdo);
 $id_usuario_logueado = $_SESSION['id_usuario'];
 
-// Obtener datos del usuario logueado CON estadísticas
-$usuario_logueado = $usuarioModel->getUsuarioById($id_usuario_logueado);
-
-// Extraer las estadísticas
-$total_referenciados = $usuario_logueado['total_referenciados'] ?? 0;
-$tope_usuario = $usuario_logueado['tope'] ?? 0;
-$porcentaje_tope = $usuario_logueado['porcentaje_tope'] ?? 0;
-
-// Limitar el porcentaje a 100% máximo para la barra de progreso
-$porcentaje_barra = min($porcentaje_tope, 100);
+// Obtener datos del usuario logueado
+$usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
 
 // Actualizar último registro
 $fecha_actual = date('Y-m-d H:i:s');
-$usuarioModel->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
+$model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
 
 // Inicializar modelos para los combos
 $grupoPoblacionalModel = new GrupoPoblacionalModel($pdo);
@@ -76,105 +68,33 @@ $barrios = $barrioModel->getAll();
 </head>
 <body>
     <!-- Header -->
-<header class="main-header">
-    <div class="header-container">
-        <div class="header-top">
-            <div class="header-title">
-                <h1><i class="fas fa-user-tie"></i> Formulario de Referenciación</h1>
-                <div class="user-info">
-                    <i class="fas fa-user-circle"></i>
-                    <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
-                    <span class="user-nickname">@<?php echo htmlspecialchars($usuario_logueado['nickname']); ?></span>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="header-top">
+                <div class="header-title">
+                    <h1><i class="fas fa-user-tie"></i> Formulario de Referenciación</h1>
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
+                    </div>
                 </div>
+                <a href="logout.php" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
             </div>
-            <a href="logout.php" class="logout-btn">
-                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-            </a>
-        </div>
-        
-        <!-- Contenedor de métricas -->
-        <div class="metrics-container">
-            <!-- Progreso del formulario actual -->
-            <div class="form-progress">
+            
+            <!-- Progress Bar -->
+            <div class="progress-container">
                 <div class="progress-header">
-                    <span><i class="fas fa-edit"></i> Progreso del formulario actual</span>
+                    <span>Progreso del formulario</span>
                     <span id="progress-percentage">0%</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
             </div>
-            
-            <!-- Métricas del usuario -->
-            <div class="user-metrics">
-                <div class="metric-card">
-                    <div class="metric-header">
-                        <i class="fas fa-bullseye"></i>
-                        <span>Meta de Referenciación</span>
-                    </div>
-                    <div class="metric-body">
-                        <div class="metric-value">
-                            <span class="current"><?php echo number_format($total_referenciados); ?></span>
-                            <span class="separator">/</span>
-                            <span class="target"><?php echo number_format($tope_usuario); ?></span>
-                        </div>
-                        <div class="metric-progress">
-                            <div class="progress-bar-small">
-                                <div class="progress-fill-small" 
-                                     style="width: <?php echo $porcentaje_barra; ?>%">
-                                </div>
-                            </div>
-                            <div class="progress-percentage">
-                                <?php echo number_format($porcentaje_tope, 2); ?>%
-                            </div>
-                        </div>
-                        <div class="metric-info">
-                            <i class="fas fa-info-circle"></i>
-                            <span>
-                                <?php if ($porcentaje_tope >= 100): ?>
-                                    ¡Meta cumplida! 🎉
-                                <?php elseif ($porcentaje_tope >= 80): ?>
-                                    ¡Casi lo logras! ✅
-                                <?php elseif ($porcentaje_tope >= 50): ?>
-                                    Vas por buen camino 📈
-                                <?php else: ?>
-                                    Sigue así 💪
-                                <?php endif; ?>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="metric-card">
-                    <div class="metric-header">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Estadísticas del Usuario</span>
-                    </div>
-                    <div class="metric-body">
-                        <div class="metric-detail">
-                            <div class="detail-item">
-                                <i class="fas fa-user-check"></i>
-                                <span>Estado: <?php echo $usuario_logueado['activo'] ? '<strong style="color:#2ecc71">Activo</strong>' : '<strong style="color:#e74c3c">Inactivo</strong>'; ?></span>
-                            </div>
-                            <div class="detail-item">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span>Registro: <?php echo date('d/m/Y', strtotime($usuario_logueado['fecha_creacion'])); ?></span>
-                            </div>
-                            <div class="detail-item">
-                                <i class="fas fa-history"></i>
-                                <span>Último: <?php echo date('d/m/Y H:i', strtotime($usuario_logueado['ultimo_registro'])); ?></span>
-                            </div>
-                            <div class="detail-item">
-                                <i class="fas fa-user-tag"></i>
-                                <span>Rol: <strong><?php echo htmlspecialchars($usuario_logueado['tipo_usuario']); ?></strong></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <!-- Main Form -->
     <div class="main-container">
@@ -386,20 +306,20 @@ $barrios = $barrioModel->getAll();
                         </label>
                         <div class="input-with-icon">
                             <input type="number" 
-                                id="mesa" 
-                                name="mesa" 
-                                class="form-control" 
-                                placeholder="Número de mesa"
-                                min="1"
-                                data-progress="3"
-                                disabled>
+                                   id="mesa" 
+                                   name="mesa" 
+                                   class="form-control" 
+                                   placeholder="Número de mesa"
+                                   min="1"
+                                   data-progress="3"
+                                   disabled>
                             <span class="input-suffix" onclick="abrirConsultaCenso()" title="Consultar censo electoral">
                                 <i class="fas fa-search"></i>
                             </span>
                         </div>
                         <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
                     </div>
-                                    
+                    
                     <!-- Apoyo -->
                     <div class="form-group">
                         <label class="form-label" for="apoyo">

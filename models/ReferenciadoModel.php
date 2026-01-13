@@ -232,5 +232,30 @@ public function getAllReferenciados() {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+public function desactivarReferenciado($id_referenciado) {
+    $query = "UPDATE referenciados SET activo = false WHERE id_referenciado = ?";
+    $stmt = $this->pdo->prepare($query);
+    return $stmt->execute([$id_referenciado]);
+}
+
+/**
+ * Reactivar un referenciado (cambiar estado a true/activo)
+ */
+public function reactivarReferenciado($id_referenciado) {
+    $query = "UPDATE referenciados SET activo = true WHERE id_referenciado = ?";
+    $stmt = $this->pdo->prepare($query);
+    return $stmt->execute([$id_referenciado]);
+}
+
+/**
+ * Obtener estado de un referenciado
+ */
+public function getEstadoReferenciado($id_referenciado) {
+    $query = "SELECT activo FROM referenciados WHERE id_referenciado = ?";
+    $stmt = $this->pdo->prepare($query);
+    $stmt->execute([$id_referenciado]);
+    $result = $stmt->fetch();
+    return $result ? $result['activo'] : null;
+}
 }
 ?>

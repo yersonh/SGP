@@ -677,11 +677,30 @@ foreach ($barrios as $barrio) {
                                             title="Editar referido">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <!-- BOTÓN DE DESACTIVAR -->
-                                    <button class="btn-action btn-deactivate" 
-                                            title="Desactivar referido">
-                                        <i class="fas fa-user-slash"></i>
-                                    </button>
+                                    <!-- BOTÓN DE ACTIVAR/DESACTIVAR -->
+                                    <?php 
+                                    $activo = $referenciado['activo'] ?? true;
+                                    $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                                    
+                                    if ($esta_activo): ?>
+                                        <button class="btn-action btn-deactivate" 
+                                                title="Desactivar referido"
+                                                onclick="desactivarReferenciado(
+                                                    <?php echo $referenciado['id_referenciado']; ?>, 
+                                                    '<?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?>', 
+                                                    this)">
+                                            <i class="fas fa-user-slash"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn-action btn-activate" 
+                                                title="Activar referido"
+                                                onclick="reactivarReferenciado(
+                                                    <?php echo $referenciado['id_referenciado']; ?>, 
+                                                    '<?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?>', 
+                                                    this)">
+                                            <i class="fas fa-user-check"></i>
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -770,6 +789,207 @@ foreach ($barrios as $barrio) {
                 }
             );
         });
+        // Función para desactivar un referenciado
+async function desactivarReferenciado(idReferenciado, nombreReferenciado, button) {
+    if (!confirm(`¿Está seguro de DESACTIVAR al referenciado "${nombreReferenciado}"?\n\nEl referenciado será marcado como inactivo, pero se mantendrá en el sistema.`)) {
+        return;
+    }
+    
+    const originalIcon = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch('../ajax/referenciados.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `accion=desactivar&id_referenciado=${idReferenciado}`
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Cambiar el botón a verde con icono de reactivar
+            button.className = 'btn-action btn-activate';
+            button.title = 'Activar referido';
+            button.innerHTML = '<i class="fas fa-user-check"></i>';
+            
+            // Cambiar event listener para reactivar
+            button.onclick = function() {
+                reactivarReferenciado(idReferenciado, nombreReferenciado, button);
+            };
+            
+            // Mostrar notificación
+            showNotification('Referenciado desactivado correctamente', 'success');
+        } else {
+            showNotification('Error: ' + (data.message || 'No se pudo desactivar el referenciado'), 'error');
+            button.innerHTML = originalIcon;
+            button.disabled = false;
+        }
+    } catch (error) {
+        showNotification('Error de conexión: ' + error.message, 'error');
+        button.innerHTML = originalIcon;
+        button.disabled = false;
+    }
+}
+
+// Función para reactivar un referenciado
+async function reactivarReferenciado(idReferenciado, nombreReferenciado, button) {
+    if (!confirm(`¿Desea REACTIVAR al referenciado "${nombreReferenciado}"?`)) {
+        return;
+    }
+    
+    const originalIcon = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch('../ajax/referenciados.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `accion=reactivar&id_referenciado=${idReferenciado}`
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Cambiar el botón a amarillo con icono de desactivar
+            button.className = 'btn-action btn-deactivate';
+            button.title = 'Desactivar referido';
+            button.innerHTML = '<i class="fas fa-user-slash"></i>';
+            
+            // Cambiar event listener para desactivar
+            button.onclick = function() {
+                desactivarReferenciado(idReferenciado, nombreReferenciado, button);
+            };
+            
+            // Mostrar notificación
+            showNotification('Referenciado reactivado correctamente', 'success');
+        } else {
+            showNotification('Error: ' + data.message, 'error');
+            button.innerHTML = originalIcon;
+            button.disabled = false;
+        }
+    } catch (error) {
+        showNotification('Error de conexión: ' + error.message, 'error');
+        button.disabled = false;
+    }
+}
+
+// Función para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Botón para cerrar
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.remove();
+    });
+    
+    // Auto-eliminar después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Estilos para las notificaciones (agrega esto al CSS)
+const notificationStyles = `
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 300px;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .notification-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .notification-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .notification-warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+    
+    .notification-close {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 10px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+    
+    .notification-close:hover {
+        opacity: 1;
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    /* ESTILOS PARA EL BOTÓN DE ACTIVAR (VERDE) */
+    .btn-activate {
+        background-color: rgba(39, 174, 96, 0.1) !important;
+        color: #27ae60 !important;
+        border: 1px solid rgba(39, 174, 96, 0.2) !important;
+    }
+    
+    .btn-activate:hover {
+        background-color: rgba(39, 174, 96, 0.2) !important;
+        color: #27ae60 !important;
+    }
+`;
+
+// Agregar estilos de notificación al documento
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = notificationStyles;
+document.head.appendChild(styleSheet);
     </script>
 </body>
 </html>

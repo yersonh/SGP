@@ -225,7 +225,7 @@ class ReferenciadoModel {
             LEFT JOIN zona z ON r.id_zona = z.id_zona
             LEFT JOIN sector s ON r.id_sector = s.id_sector
             LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-            LEFT JOIN usuarios u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
             ORDER BY r.fecha_registro DESC";
     
     $stmt = $this->pdo->prepare($sql);

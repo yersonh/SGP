@@ -21,7 +21,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Super Admin - SGP</title>
+    <title>Data Referidos - Super Admin - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -110,7 +110,30 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             color: white;
         }
         
-        /* Main Container - CENTRADO Y MÁS AMPLIO */
+        /* Breadcrumb Navigation */
+        .breadcrumb-nav {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            padding: 0 15px;
+        }
+        
+        .breadcrumb {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb-item a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item.active {
+            color: #666;
+        }
+        
+        /* Main Container */
         .main-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -120,15 +143,15 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             flex-direction: column;
         }
         
-        /* Dashboard Header con título destacado */
+        /* Dashboard Header */
         .dashboard-header {
             text-align: center;
-            margin: 30px 0 40px;
+            margin: 20px 0 40px;
             padding: 0 20px;
         }
         
         .dashboard-title {
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 700;
             color: #2c3e50;
             margin-bottom: 10px;
@@ -151,16 +174,16 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 30px;
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
             width: 100%;
         }
         
-        /* Botones estilo tarjeta mejorados */
-        .dashboard-option {
+        /* Botones estilo tarjeta */
+        .data-option {
             background: white;
             border-radius: 12px;
-            padding: 35px 25px;
+            padding: 40px 30px;
             text-align: center;
             text-decoration: none;
             color: #2c3e50;
@@ -174,82 +197,139 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             border: 1px solid #eaeaea;
             position: relative;
             overflow: hidden;
+            min-height: 300px;
         }
         
-        .dashboard-option::before {
+        .data-option::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #3498db, #2ecc71);
         }
         
-        .dashboard-option:hover {
+        /* Color para Data Referidos */
+        .data-referidos::before {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+        
+        /* Color para Data Descargadores */
+        .data-descargadores::before {
+            background: linear-gradient(90deg, #27ae60, #219653);
+        }
+        
+        .data-option:hover {
             transform: translateY(-8px);
             box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
-            border-color: #3498db;
             text-decoration: none;
             color: #2c3e50;
         }
         
-        .option-icon-wrapper {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        .data-referidos:hover {
+            border-color: #3498db;
+        }
+        
+        .data-descargadores:hover {
+            border-color: #27ae60;
+        }
+        
+        .data-icon-wrapper {
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             transition: all 0.3s ease;
         }
         
-        .dashboard-option:hover .option-icon-wrapper {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+        .data-referidos .data-icon-wrapper {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        }
+        
+        .data-descargadores .data-icon-wrapper {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        }
+        
+        .data-option:hover .data-icon-wrapper {
             transform: scale(1.1);
         }
         
-        .option-icon {
-            font-size: 2.2rem;
-            color: #3498db;
+        .data-referidos:hover .data-icon-wrapper {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        
+        .data-descargadores:hover .data-icon-wrapper {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        
+        .data-icon {
+            font-size: 2.5rem;
             transition: all 0.3s ease;
         }
         
-        .dashboard-option:hover .option-icon {
+        .data-referidos .data-icon {
+            color: #3498db;
+        }
+        
+        .data-descargadores .data-icon {
+            color: #27ae60;
+        }
+        
+        .data-option:hover .data-icon {
             color: white;
         }
         
-        .option-title {
-            font-size: 1.4rem;
+        .data-title {
+            font-size: 1.6rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             color: #2c3e50;
         }
         
-        .option-description {
+        .data-description {
             font-size: 0.95rem;
             color: #666;
             line-height: 1.5;
             max-width: 90%;
-            margin: 0 auto;
+            margin: 0 auto 20px;
         }
         
-        /* Indicador de acceso */
-        .access-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #f8f9fa;
-            border-radius: 20px;
-            padding: 4px 10px;
-            font-size: 0.75rem;
+        .data-stats {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: block;
+        }
+        
+        .data-referidos .stat-number {
+            color: #3498db;
+        }
+        
+        .data-descargadores .stat-number {
+            color: #27ae60;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
             color: #666;
-            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
-        /* Footer (igual al referenciador) */
+        /* Footer */
         .system-footer {
             text-align: center;
             padding: 25px 0;
@@ -275,8 +355,9 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 gap: 25px;
             }
             
-            .dashboard-option {
-                padding: 30px 20px;
+            .data-option {
+                padding: 35px 25px;
+                min-height: 280px;
             }
             
             .dashboard-title {
@@ -301,7 +382,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             }
             
             .dashboard-header {
-                margin: 20px 0 30px;
+                margin: 15px 0 30px;
             }
             
             .dashboard-title {
@@ -315,17 +396,27 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 padding: 0 10px;
             }
             
-            .option-icon-wrapper {
-                width: 60px;
-                height: 60px;
+            .data-icon-wrapper {
+                width: 70px;
+                height: 70px;
+                margin-bottom: 20px;
             }
             
-            .option-icon {
-                font-size: 1.8rem;
+            .data-icon {
+                font-size: 2.2rem;
             }
             
-            .option-title {
-                font-size: 1.2rem;
+            .data-title {
+                font-size: 1.4rem;
+            }
+            
+            .data-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .stat-number {
+                font-size: 1.6rem;
             }
             
             .system-footer {
@@ -335,37 +426,38 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         }
         
         @media (max-width: 480px) {
-            .dashboard-option {
-                padding: 25px 15px;
+            .data-option {
+                padding: 30px 20px;
+                min-height: 260px;
             }
             
-            .option-icon-wrapper {
-                width: 55px;
-                height: 55px;
-                margin-bottom: 15px;
+            .data-icon-wrapper {
+                width: 65px;
+                height: 65px;
+                margin-bottom: 18px;
             }
             
-            .option-icon {
-                font-size: 1.6rem;
+            .data-icon {
+                font-size: 2rem;
             }
             
-            .option-title {
-                font-size: 1.1rem;
+            .data-title {
+                font-size: 1.3rem;
             }
             
-            .option-description {
+            .data-description {
                 font-size: 0.9rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header (igual al referenciador) -->
+    <!-- Header -->
     <header class="main-header">
         <div class="header-container">
             <div class="header-top">
                 <div class="header-title">
-                    <h1><i class="fas fa-user-shield"></i> Panel Super Admin</h1>
+                    <h1><i class="fas fa-database"></i> Data Referidos - Super Admin</h1>
                     <div class="user-info">
                         <i class="fas fa-user-circle"></i>
                         <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
@@ -378,87 +470,77 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         </div>
     </header>
 
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb-nav">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
+                <li class="breadcrumb-item active"><i class="fas fa-database"></i> Datas</li>
+            </ol>
+        </nav>
+    </div>
+
     <!-- Main Content -->
     <div class="main-container">
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="dashboard-title">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Panel de Control Super Admin</span>
+                <i class="fas fa-database"></i>
+                <span>Gestión de Datas del Sistema</span>
             </div>
             <p class="dashboard-subtitle">
-                Acceda a los módulos principales del sistema de gestión política. 
-                Controle y supervise todas las operaciones desde un solo lugar.
+                Seleccione el tipo de data que desea gestionar y consultar. 
+                Acceda a toda la información de referenciación y descarga del sistema.
             </p>
         </div>
         
         <!-- Grid de 2 columnas -->
         <div class="dashboard-grid">
-            <!-- Monitoreos -->
-            <a href="superadmin_monitoreos.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-chart-line"></i>
+            <!-- Data Referidos -->
+            <a href="data_referidos.php" class="data-option data-referidos">
+                <div class="data-icon-wrapper">
+                    <div class="data-icon">
+                        <i class="fas fa-users"></i>
                     </div>
                 </div>
-                <div class="option-title">MONITOREOS</div>
-                <div class="option-description">
-                    Gráficas de avance, estadísticas en tiempo real, 
-                    comparativas entre referenciadores y análisis detallados
+                <div class="data-title">DATA REFERIDOS</div>
+                <div class="data-description">
+                    Gestión completa de todos los referidos registrados en el sistema. 
+                    Consulta, edición y administración de información de referenciación.
+                </div>
+                <div class="data-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">1,245</span>
+                        <span class="stat-label">Total Referidos</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">832</span>
+                        <span class="stat-label">Por Votar</span>
+                    </div>
                 </div>
             </a>
             
-            <!-- Georeferenciación -->
-            <a href="superadmin_georeferenciacion.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-map-marked-alt"></i>
+            <!-- Data Descargadores -->
+            <a href="data_descargadores.php" class="data-option data-descargadores">
+                <div class="data-icon-wrapper">
+                    <div class="data-icon">
+                        <i class="fas fa-user-check"></i>
                     </div>
                 </div>
-                <div class="option-title">GEOREFERENCIACIÓN</div>
-                <div class="option-description">
-                    Visualización geográfica de referenciados, 
-                    filtros por ubicación y consulta avanzada en mapas interactivos
+                <div class="data-title">DATA DESCARGADORES</div>
+                <div class="data-description">
+                    Información detallada de quienes ya han votado. 
+                    Control y seguimiento de la descarga de votos verificados.
                 </div>
-            </a>
-            
-            <!-- Reportes -->
-            <a href="superadmin_reportes.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-file-alt"></i>
+                <div class="data-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">413</span>
+                        <span class="stat-label">Ya Votaron</span>
                     </div>
-                </div>
-                <div class="option-title">REPORTES</div>
-                <div class="option-description">
-                    Generación de informes detallados, 
-                    exportación en múltiples formatos y análisis estadístico completo
-                </div>
-            </a>
-            
-            <!-- Datas -->
-            <a href="superAdmin/superadmin_datas.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-database"></i>
+                    <div class="stat-item">
+                        <span class="stat-number">67%</span>
+                        <span class="stat-label">Efectividad</span>
                     </div>
-                </div>
-                <div class="option-title">DATAS</div>
-                <div class="option-description">
-                    Gestión integral de bases de datos, 
-                    administración de referidos y descargadores del sistema
                 </div>
             </a>
         </div>
@@ -479,5 +561,28 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Aquí puedes agregar funcionalidad para cargar estadísticas reales
+            // Por ahora son números estáticos de ejemplo
+            
+            // Efecto hover mejorado
+            $('.data-option').hover(
+                function() {
+                    $(this).css('transform', 'translateY(-8px)');
+                },
+                function() {
+                    $(this).css('transform', 'translateY(0)');
+                }
+            );
+            
+            // Breadcrumb navigation
+            $('.breadcrumb a').click(function(e) {
+                if ($(this).attr('href') === '#') {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

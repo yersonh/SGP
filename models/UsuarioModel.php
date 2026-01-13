@@ -125,80 +125,120 @@ class UsuarioModel {
     
     // Actualizar usuario con posibilidad de cambiar foto
     public function actualizarUsuario($id_usuario, $datos, $foto = null) {
-        try {
-            $this->pdo->beginTransaction();
+    try {
+        $this->pdo->beginTransaction();
+        
+        // Obtener foto actual
+        $usuarioActual = $this->getUsuarioById($id_usuario);
+        $fotoActual = $usuarioActual['foto'] ?? null;
+        $nuevaFoto = $fotoActual;
+        
+        // Procesar nueva foto si se proporciona
+        if ($foto && isset($foto['tmp_name']) && $foto['tmp_name'] !== '') {
+            // Subir nueva foto
+            $fileInfo = FileHelper::uploadProfilePhoto($foto, $id_usuario);
+            $nuevaFoto = basename($fileInfo['filename']);
             
-            // Obtener foto actual
-            $usuarioActual = $this->getUsuarioById($id_usuario);
-            $fotoActual = $usuarioActual['foto'] ?? null;
-            $nuevaFoto = $fotoActual;
-            
-            // Procesar nueva foto si se proporciona
-            if ($foto && isset($foto['tmp_name']) && $foto['tmp_name'] !== '') {
-                // Subir nueva foto
-                $fileInfo = FileHelper::uploadProfilePhoto($foto, $id_usuario);
-                $nuevaFoto = basename($fileInfo['filename']);
-                
-                // Eliminar foto anterior si existe y no es la por defecto
-                if ($fotoActual && $fotoActual !== 'default.png') {
-                    FileHelper::deleteFile($fotoActual, 'profiles');
-                }
+            // Eliminar foto anterior si existe y no es la por defecto
+            if ($fotoActual && $fotoActual !== 'default.png') {
+                FileHelper::deleteFile($fotoActual, 'profiles');
             }
-            
-            $query = "UPDATE usuario SET
-                        nickname = :nickname,
-                        tope = :tope,
-                        tipo_usuario = :tipo_usuario,
-                        telefono = :telefono,
-                        correo = :correo,
-                        cedula = :cedula,
-                        apellidos = :apellidos,
-                        nombres = :nombres,
-                        id_puesto = :id_puesto,
-                        id_sector = :id_sector,
-                        id_zona = :id_zona,
-                        foto = :foto,
-                        activo = :activo
-                      WHERE id_usuario = :id_usuario";
-            
-            $stmt = $this->pdo->prepare($query);
-            $params = [
-                ':nickname' => $datos['nickname'],
-                ':tope' => $datos['tope'] ?? 0,
-                ':tipo_usuario' => $datos['tipo_usuario'] ?? 'Referenciador',
-                ':telefono' => $datos['telefono'] ?? null,
-                ':correo' => $datos['correo'] ?? null,
-                ':cedula' => $datos['cedula'] ?? null,
-                ':apellidos' => $datos['apellidos'] ?? null,
-                ':nombres' => $datos['nombres'] ?? null,
-                ':id_puesto' => $datos['id_puesto'] ?? null,
-                ':id_sector' => $datos['id_sector'] ?? null,
-                ':id_zona' => $datos['id_zona'] ?? null,
-                ':foto' => $nuevaFoto,
-                ':activo' => $datos['activo'] ?? true,
-                ':id_usuario' => $id_usuario
-            ];
-            
-            // Solo actualizar password si se proporciona uno nuevo
-            if (!empty($datos['password'])) {
-                $query = str_replace(
-                    "nickname = :nickname,", 
-                    "nickname = :nickname, password = :password,", 
-                    $query
-                );
-                $params[':password'] = $datos['password']; // Considera usar password_hash() aquí
-            }
-            
-            $stmt->execute($params);
-            $this->pdo->commit();
-            
-            return true;
-            
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            throw $e;
         }
+        
+        // Construir la consulta base
+        $campos = [
+            "nickname = :nickname",
+            "tope = :tope",
+            "tipo_usuario = :tipo_usuario",
+            "telefono = :telefono",
+            "correo = :correo",
+            "cedula = :cedula",
+            "apellidos = :apellidos",
+            "nombres = :nombres",
+            "foto = :foto",
+            "activo = :activo",
+            "ultimo_registro = NOW()" // Actualizar último registro
+        ];
+        
+        // Agregar campos opcionales solo si están presentes en $datos
+        if (isset($datos['id_puesto'])) {
+            $campos[] = "id_puesto = :id_puesto";
+        }
+        
+        if (isset($datos['id_sector'])) {
+            $campos[] = "id_sector = :id_sector";
+        }
+        
+        if (isset($datos['id_zona'])) {
+            $campos[] = "id_zona = :id_zona";
+        }
+        
+        // Preparar parámetros base
+        $params = [
+            ':nickname' => $datos['nickname'] ?? '',
+            ':tope' => $datos['tope'] ?? 0,
+            ':tipo_usuario' => $datos['tipo_usuario'] ?? 'Referenciador',
+            ':telefono' => $datos['telefono'] ?? null,
+            ':correo' => $datos['correo'] ?? null,
+            ':cedula' => $datos['cedula'] ?? null,
+            ':apellidos' => $datos['apellidos'] ?? null,
+            ':nombres' => $datos['nombres'] ?? null,
+            ':foto' => $nuevaFoto,
+            ':activo' => isset($datos['activo']) ? (bool)$datos['activo'] : true,
+            ':id_usuario' => $id_usuario
+        ];
+        
+        // Agregar parámetros opcionales
+        if (isset($datos['id_puesto'])) {
+            $params[':id_puesto'] = $datos['id_puesto'];
+        }
+        
+        if (isset($datos['id_sector'])) {
+            $params[':id_sector'] = $datos['id_sector'];
+        }
+        
+        if (isset($datos['id_zona'])) {
+            $params[':id_zona'] = $datos['id_zona'];
+        }
+        
+        // Manejar contraseña si se proporciona
+        if (!empty($datos['password'])) {
+            $campos[] = "password = :password";
+            $params[':password'] = password_hash($datos['password'], PASSWORD_DEFAULT);
+        }
+        
+        // Construir la consulta final
+        $campos_str = implode(', ', $campos);
+        $query = "UPDATE usuario SET {$campos_str} WHERE id_usuario = :id_usuario";
+        
+        $stmt = $this->pdo->prepare($query);
+        
+        // Enlazar parámetros con tipos correctos
+        foreach ($params as $key => $value) {
+            $tipo = PDO::PARAM_STR;
+            
+            if ($value === null) {
+                $tipo = PDO::PARAM_NULL;
+            } elseif (is_bool($value)) {
+                $tipo = PDO::PARAM_BOOL;
+            } elseif (is_int($value)) {
+                $tipo = PDO::PARAM_INT;
+            }
+            
+            $stmt->bindValue($key, $value, $tipo);
+        }
+        
+        $resultado = $stmt->execute();
+        $this->pdo->commit();
+        
+        return $resultado;
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        error_log("Error al actualizar usuario: " . $e->getMessage());
+        throw $e;
     }
+}
     
     // Eliminar usuario (y su foto)
     public function eliminarUsuario($id_usuario) {
@@ -364,24 +404,44 @@ class UsuarioModel {
     }
     
     // Verificar si un nickname o cédula ya existen
-    public function verificarExistencia($nickname, $cedula, $excluirId = null) {
-        $where = ["(nickname = ? OR cedula = ?)"];
-        $params = [$nickname, $cedula];
-        
-        if ($excluirId) {
-            $where[] = "id_usuario != ?";
-            $params[] = $excluirId;
-        }
-        
-        $whereClause = implode(' AND ', $where);
-        $query = "SELECT COUNT(*) as existe FROM usuario WHERE {$whereClause}";
-        
-        $stmt = $this->pdo->prepare($query);
-        $stmt->execute($params);
-        $result = $stmt->fetch();
-        
-        return $result['existe'] > 0;
+    public function nicknameExiste($nickname, $excluir_id = null) {
+    $sql = "SELECT COUNT(*) FROM usuario WHERE nickname = :nickname";
+    
+    if ($excluir_id) {
+        $sql .= " AND id_usuario != :excluir_id";
     }
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':nickname', $nickname);
+    
+    if ($excluir_id) {
+        $stmt->bindValue(':excluir_id', $excluir_id, PDO::PARAM_INT);
+    }
+    
+    $stmt->execute();
+    return $stmt->fetchColumn() > 0;
+}
+
+/**
+ * Verifica si una cédula ya existe (excluyendo un usuario específico)
+ */
+public function cedulaExiste($cedula, $excluir_id = null) {
+    $sql = "SELECT COUNT(*) FROM usuario WHERE cedula = :cedula";
+    
+    if ($excluir_id) {
+        $sql .= " AND id_usuario != :excluir_id";
+    }
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':cedula', $cedula);
+    
+    if ($excluir_id) {
+        $stmt->bindValue(':excluir_id', $excluir_id, PDO::PARAM_INT);
+    }
+    
+    $stmt->execute();
+    return $stmt->fetchColumn() > 0;
+}
     
 }
 ?>

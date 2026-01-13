@@ -323,21 +323,21 @@ class UsuarioModel {
     }
     
     // Verificar si usuario existe y está activo
-    public function verificarCredenciales($nickname, $password) {
-        $query = "SELECT * FROM usuario WHERE nickname = ? AND activo = true";
-        $stmt = $this->pdo->prepare($query);
-        $stmt->execute([$nickname]);
-        $usuario = $stmt->fetch();
-        
-        // Usar password_verify() si las contraseñas están hasheadas
-        if ($usuario && password_verify($password, $usuario['password'])) {
-            // Agregar URL de foto
-            $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
-            return $usuario;
-        }
-        
-        return false;
+public function verificarCredenciales($nickname, $password) {
+    $query = "SELECT * FROM usuario WHERE nickname = ? AND activo = true";
+    $stmt = $this->pdo->prepare($query);
+    $stmt->execute([$nickname]);
+    $usuario = $stmt->fetch();
+    
+    // Usar password_verify() si las contraseñas están hasheadas
+    if ($usuario && password_verify($password, $usuario['password'])) {
+        // Agregar URL de foto
+        $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
+        return $usuario;
     }
+    
+    return false;
+}
     
     // Obtener estadísticas detalladas de referenciados
     public function getEstadisticasReferenciados($id_usuario) {

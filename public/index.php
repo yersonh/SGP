@@ -33,6 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // REDIRIGIR SEGÚN EL TIPO DE USUARIO
                 switch ($usuario['tipo_usuario']) {
+                    case 'SuperAdmin':
+                        header('Location: superadmin_dashboard.php');
+                        break;
                     case 'Administrador':
                         header('Location: dashboard.php');
                         break;

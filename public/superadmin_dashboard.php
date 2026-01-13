@@ -25,256 +25,264 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary-dark: #1a237e;
-            --primary: #283593;
-            --primary-light: #5c6bc0;
-            --accent: #00bcd4;
-            --success: #4caf50;
-            --warning: #ff9800;
-            --danger: #f44336;
-            --gray-dark: #212529;
-            --gray: #6c757d;
-            --gray-light: #f8f9fa;
-        }
-
+        /* Mismo estilo que la vista del referenciador */
         * {
             box-sizing: border-box;
         }
-
+        
         body {
+            background-color: #f5f7fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            color: #333;
             margin: 0;
             padding: 0;
+            font-size: 14px;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-
-        /* Header */
-        .superadmin-header {
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
+        
+        /* Header Styles (igual al referenciador) */
+        .main-header {
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
             color: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 15px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .header-content {
+        
+        .header-container {
+            display: flex;
+            flex-direction: column;
             max-width: 1400px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 15px;
+        }
+        
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 10px;
         }
-
-        .header-left {
+        
+        .header-title {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
-
-        .header-logo {
-            font-size: 1.8rem;
-            color: var(--accent);
-        }
-
+        
         .header-title h1 {
-            font-size: 1.5rem;
-            margin: 0;
+            font-size: 1.2rem;
             font-weight: 600;
-        }
-
-        .header-title p {
             margin: 0;
-            font-size: 0.9rem;
-            color: #aaa;
         }
-
+        
         .user-info {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 5px 10px;
             border-radius: 20px;
         }
-
+        
         .user-info i {
-            color: var(--accent);
+            color: #3498db;
         }
-
+        
         .logout-btn {
-            background: var(--danger);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 5px;
+            text-decoration: none;
             transition: all 0.3s;
-            font-weight: 500;
+            font-size: 0.8rem;
         }
-
+        
         .logout-btn:hover {
-            background: #d32f2f;
+            background: rgba(255,255,255,0.2);
             color: white;
-            transform: translateY(-2px);
         }
-
-        /* Main Content */
-        .main-content {
+        
+        /* Main Container (igual al referenciador) */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto 30px;
+            padding: 0 15px;
             flex: 1;
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 40px 20px;
+            justify-content: center;
         }
-
-        /* Dashboard Cards */
-        .dashboard-cards {
+        
+        /* Dashboard Cards Container */
+        .dashboard-cards-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .dashboard-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        
+        .dashboard-header h2 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dashboard-header h2 i {
+            color: #3498db;
+        }
+        
+        /* Grid de botones */
+        .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            width: 100%;
+            gap: 25px;
         }
-
-        .dashboard-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 40px 30px;
+        
+        /* Botones de opciones */
+        .dashboard-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 30px 20px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
             text-decoration: none;
-            display: block;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 200px;
         }
-
-        .dashboard-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
+        
+        .dashboard-option:hover {
+            background: #e3f2fd;
+            border-color: #3498db;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.2);
+            text-decoration: none;
+            color: #2c3e50;
         }
-
-        .dashboard-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .card-icon {
-            font-size: 3.5rem;
-            margin-bottom: 20px;
-            color: var(--primary);
-        }
-
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 600;
+        
+        .option-icon {
+            font-size: 2.5rem;
+            color: #3498db;
             margin-bottom: 15px;
-            color: var(--gray-dark);
         }
-
-        .card-description {
-            color: var(--gray);
-            font-size: 0.95rem;
-            line-height: 1.5;
+        
+        .option-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
-
-        /* Footer */
+        
+        .option-description {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        /* Footer (igual al referenciador) */
         .system-footer {
             text-align: center;
             padding: 20px 0;
             background: white;
-            color: #333;
+            color: black;
             font-size: 0.85rem;
             line-height: 1.5;
             border-top: 2px solid #eaeaea;
             width: 100%;
+            margin-top: auto;
         }
-
+        
         .system-footer p {
             margin: 5px 0;
         }
-
+        
         /* Responsive */
-        @media (max-width: 768px) {
-            .header-content {
+        @media (max-width: 767px) {
+            .header-top {
                 flex-direction: column;
-                gap: 15px;
+                align-items: flex-start;
+                gap: 10px;
             }
-
-            .header-left {
-                flex-direction: column;
-                text-align: center;
+            
+            .user-info {
+                order: 1;
             }
-
-            .dashboard-cards {
+            
+            .logout-btn {
+                order: 2;
+                align-self: flex-end;
+            }
+            
+            .dashboard-cards-container {
+                padding: 20px;
+            }
+            
+            .dashboard-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
-
-            .dashboard-card {
-                padding: 30px 20px;
-            }
-
-            .card-icon {
-                font-size: 3rem;
-            }
-
-            .card-title {
-                font-size: 1.3rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .main-content {
-                padding: 20px 15px;
-            }
-
-            .dashboard-card {
+            
+            .dashboard-option {
+                height: 180px;
                 padding: 25px 15px;
             }
-
-            .card-icon {
-                font-size: 2.5rem;
+            
+            .option-icon {
+                font-size: 2rem;
             }
-
-            .card-title {
-                font-size: 1.2rem;
+            
+            .option-title {
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-header h2 {
+                font-size: 1.3rem;
+            }
+            
+            .dashboard-option {
+                height: 160px;
+                padding: 20px 15px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="superadmin-header">
-        <div class="header-content">
-            <div class="header-left">
-                <div class="header-logo">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
+    <!-- Header (igual al referenciador) -->
+    <header class="main-header">
+        <div class="header-container">
+            <div class="header-top">
                 <div class="header-title">
-                    <h1>Panel Super Admin - Sistema de Gestión Política</h1>
-                    <p>Control total del sistema de referenciación</p>
-                </div>
-            </div>
-            <div class="header-right">
-                <div class="user-info">
-                    <i class="fas fa-user-circle"></i>
-                    <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
+                    <h1><i class="fas fa-user-shield"></i> Panel Super Admin</h1>
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
+                    </div>
                 </div>
                 <a href="logout.php" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
@@ -284,59 +292,61 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
     </header>
 
     <!-- Main Content -->
-    <div class="main-content">
-        <div class="dashboard-cards">
-            <!-- Monitoreos -->
-            <a href="superadmin_monitoreos.php" class="dashboard-card">
-                <div class="card-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="card-title">MONITOREOS</div>
-                <div class="card-description">
-                    Avance de referenciadores y gráficas comparativas. 
-                    Monitoreo en tiempo real del progreso de referenciación.
-                </div>
-            </a>
-
-            <!-- Georeferenciación -->
-            <a href="superadmin_georeferenciacion.php" class="dashboard-card">
-                <div class="card-icon">
-                    <i class="fas fa-map-marked-alt"></i>
-                </div>
-                <div class="card-title">GEOREFERENCIACIÓN</div>
-                <div class="card-description">
-                    Visualización en Google Maps de todos los referenciados.
-                    Filtros avanzados por ubicación y características.
-                </div>
-            </a>
-
-            <!-- Reportes -->
-            <a href="superadmin_reportes.php" class="dashboard-card">
-                <div class="card-icon">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <div class="card-title">REPORTES</div>
-                <div class="card-description">
-                    Generación de reportes detallados y exportación de datos.
-                    Análisis estadístico completo del sistema.
-                </div>
-            </a>
-
-            <!-- Datas -->
-            <a href="superadmin_datas.php" class="dashboard-card">
-                <div class="card-icon">
-                    <i class="fas fa-database"></i>
-                </div>
-                <div class="card-title">DATAS</div>
-                <div class="card-description">
-                    Gestión completa de datos: referidos y descargadores.
-                    Administración de la información del sistema.
-                </div>
-            </a>
+    <div class="main-container">
+        <div class="dashboard-cards-container">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-tachometer-alt"></i> Módulos Super Admin</h2>
+            </div>
+            
+            <div class="dashboard-grid">
+                <!-- Monitoreos -->
+                <a href="superadmin_monitoreos.php" class="dashboard-option">
+                    <div class="option-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="option-title">MONITOREOS</div>
+                    <div class="option-description">
+                        Avance de referenciadores, gráficas comparativas y estadísticas en tiempo real
+                    </div>
+                </a>
+                
+                <!-- Georeferenciación -->
+                <a href="superadmin_georeferenciacion.php" class="dashboard-option">
+                    <div class="option-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="option-title">GEOREFERENCIACIÓN</div>
+                    <div class="option-description">
+                        Visualización en Google Maps con filtros avanzados por ubicación
+                    </div>
+                </a>
+                
+                <!-- Reportes -->
+                <a href="superadmin_reportes.php" class="dashboard-option">
+                    <div class="option-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="option-title">REPORTES</div>
+                    <div class="option-description">
+                        Generación de reportes detallados y exportación de datos en múltiples formatos
+                    </div>
+                </a>
+                
+                <!-- Datas -->
+                <a href="superadmin_datas.php" class="dashboard-option">
+                    <div class="option-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="option-title">DATAS</div>
+                    <div class="option-description">
+                        Gestión completa de datos: referidos y descargadores del sistema
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer (igual al referenciador) -->
     <footer class="system-footer">
         <div class="container">
             <p>© Derechos de autor Reservados. 
@@ -348,5 +358,8 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             </p>
         </div>
     </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </body>
 </html>

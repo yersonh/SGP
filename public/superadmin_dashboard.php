@@ -110,117 +110,180 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             color: white;
         }
         
-        /* Main Container (igual al referenciador) */
+        /* Main Container - CENTRADO Y MÁS AMPLIO */
         .main-container {
             max-width: 1400px;
-            margin: 0 auto 30px;
-            padding: 0 15px;
+            margin: 0 auto;
+            padding: 0 15px 30px;
             flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
         }
         
-        /* Dashboard Cards Container */
-        .dashboard-cards-container {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
+        /* Dashboard Header con título destacado */
         .dashboard-header {
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f1f5f9;
+            text-align: center;
+            margin: 30px 0 40px;
+            padding: 0 20px;
         }
         
-        .dashboard-header h2 {
+        .dashboard-title {
+            font-size: 2.2rem;
+            font-weight: 700;
             color: #2c3e50;
-            font-size: 1.5rem;
-            margin: 0;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 15px;
         }
         
-        .dashboard-header h2 i {
-            color: #3498db;
+        .dashboard-subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
         }
         
-        /* Grid de botones */
+        /* Grid de 2 columnas para los botones */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
         }
         
-        /* Botones de opciones */
+        /* Botones estilo tarjeta mejorados */
         .dashboard-option {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 30px 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 35px 25px;
             text-align: center;
             text-decoration: none;
             color: #2c3e50;
             transition: all 0.3s ease;
             cursor: pointer;
-            height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eaeaea;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
         }
         
         .dashboard-option:hover {
-            background: #e3f2fd;
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
             border-color: #3498db;
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.2);
             text-decoration: none;
             color: #2c3e50;
         }
         
+        .option-icon-wrapper {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-option:hover .option-icon-wrapper {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            transform: scale(1.1);
+        }
+        
         .option-icon {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             color: #3498db;
-            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-option:hover .option-icon {
+            color: white;
         }
         
         .option-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #2c3e50;
         }
         
         .option-description {
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             color: #666;
-            line-height: 1.4;
+            line-height: 1.5;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+        
+        /* Indicador de acceso */
+        .access-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 500;
         }
         
         /* Footer (igual al referenciador) */
         .system-footer {
             text-align: center;
-            padding: 20px 0;
+            padding: 25px 0;
             background: white;
             color: black;
-            font-size: 0.85rem;
-            line-height: 1.5;
+            font-size: 0.9rem;
+            line-height: 1.6;
             border-top: 2px solid #eaeaea;
             width: 100%;
-            margin-top: auto;
+            margin-top: 60px;
         }
         
         .system-footer p {
-            margin: 5px 0;
+            margin: 8px 0;
+            color: #333;
         }
         
         /* Responsive */
+        @media (max-width: 992px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                max-width: 600px;
+                gap: 25px;
+            }
+            
+            .dashboard-option {
+                padding: 30px 20px;
+            }
+            
+            .dashboard-title {
+                font-size: 1.8rem;
+            }
+        }
+        
         @media (max-width: 767px) {
             .header-top {
                 flex-direction: column;
@@ -237,37 +300,61 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 align-self: flex-end;
             }
             
-            .dashboard-cards-container {
-                padding: 20px;
+            .dashboard-header {
+                margin: 20px 0 30px;
             }
             
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
+            .dashboard-title {
+                font-size: 1.6rem;
+                flex-direction: column;
+                gap: 10px;
             }
             
-            .dashboard-option {
-                height: 180px;
-                padding: 25px 15px;
+            .dashboard-subtitle {
+                font-size: 1rem;
+                padding: 0 10px;
+            }
+            
+            .option-icon-wrapper {
+                width: 60px;
+                height: 60px;
             }
             
             .option-icon {
-                font-size: 2rem;
+                font-size: 1.8rem;
+            }
+            
+            .option-title {
+                font-size: 1.2rem;
+            }
+            
+            .system-footer {
+                padding: 20px 15px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-option {
+                padding: 25px 15px;
+            }
+            
+            .option-icon-wrapper {
+                width: 55px;
+                height: 55px;
+                margin-bottom: 15px;
+            }
+            
+            .option-icon {
+                font-size: 1.6rem;
             }
             
             .option-title {
                 font-size: 1.1rem;
             }
-        }
-        
-        @media (max-width: 480px) {
-            .dashboard-header h2 {
-                font-size: 1.3rem;
-            }
             
-            .dashboard-option {
-                height: 160px;
-                padding: 20px 15px;
+            .option-description {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -293,60 +380,91 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
     <!-- Main Content -->
     <div class="main-container">
-        <div class="dashboard-cards-container">
-            <div class="dashboard-header">
-                <h2><i class="fas fa-tachometer-alt"></i> Módulos Super Admin</h2>
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Panel de Control Super Admin</span>
             </div>
-            
-            <div class="dashboard-grid">
-                <!-- Monitoreos -->
-                <a href="superadmin_monitoreos.php" class="dashboard-option">
+            <p class="dashboard-subtitle">
+                Acceda a los módulos principales del sistema de gestión política. 
+                Controle y supervise todas las operaciones desde un solo lugar.
+            </p>
+        </div>
+        
+        <!-- Grid de 2 columnas -->
+        <div class="dashboard-grid">
+            <!-- Monitoreos -->
+            <a href="superadmin_monitoreos.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
                     <div class="option-icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <div class="option-title">MONITOREOS</div>
-                    <div class="option-description">
-                        Avance de referenciadores, gráficas comparativas y estadísticas en tiempo real
-                    </div>
-                </a>
-                
-                <!-- Georeferenciación -->
-                <a href="superadmin_georeferenciacion.php" class="dashboard-option">
+                </div>
+                <div class="option-title">MONITOREOS</div>
+                <div class="option-description">
+                    Gráficas de avance, estadísticas en tiempo real, 
+                    comparativas entre referenciadores y análisis detallados
+                </div>
+            </a>
+            
+            <!-- Georeferenciación -->
+            <a href="superadmin_georeferenciacion.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
                     <div class="option-icon">
                         <i class="fas fa-map-marked-alt"></i>
                     </div>
-                    <div class="option-title">GEOREFERENCIACIÓN</div>
-                    <div class="option-description">
-                        Visualización en Google Maps con filtros avanzados por ubicación
-                    </div>
-                </a>
-                
-                <!-- Reportes -->
-                <a href="superadmin_reportes.php" class="dashboard-option">
+                </div>
+                <div class="option-title">GEOREFERENCIACIÓN</div>
+                <div class="option-description">
+                    Visualización geográfica de referenciados, 
+                    filtros por ubicación y consulta avanzada en mapas interactivos
+                </div>
+            </a>
+            
+            <!-- Reportes -->
+            <a href="superadmin_reportes.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
                     <div class="option-icon">
                         <i class="fas fa-file-alt"></i>
                     </div>
-                    <div class="option-title">REPORTES</div>
-                    <div class="option-description">
-                        Generación de reportes detallados y exportación de datos en múltiples formatos
-                    </div>
-                </a>
-                
-                <!-- Datas -->
-                <a href="superadmin_datas.php" class="dashboard-option">
+                </div>
+                <div class="option-title">REPORTES</div>
+                <div class="option-description">
+                    Generación de informes detallados, 
+                    exportación en múltiples formatos y análisis estadístico completo
+                </div>
+            </a>
+            
+            <!-- Datas -->
+            <a href="superadmin_datas.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
                     <div class="option-icon">
                         <i class="fas fa-database"></i>
                     </div>
-                    <div class="option-title">DATAS</div>
-                    <div class="option-description">
-                        Gestión completa de datos: referidos y descargadores del sistema
-                    </div>
-                </a>
-            </div>
+                </div>
+                <div class="option-title">DATAS</div>
+                <div class="option-description">
+                    Gestión integral de bases de datos, 
+                    administración de referidos y descargadores del sistema
+                </div>
+            </a>
         </div>
     </div>
 
-    <!-- Footer (igual al referenciador) -->
+    <!-- Footer -->
     <footer class="system-footer">
         <div class="container">
             <p>© Derechos de autor Reservados. 

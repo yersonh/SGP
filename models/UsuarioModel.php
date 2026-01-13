@@ -442,6 +442,42 @@ public function cedulaExiste($cedula, $excluir_id = null) {
     $stmt->execute();
     return $stmt->fetchColumn() > 0;
 }
-    
+    // Contar Referenciadores
+public function countReferenciadores() {
+    $query = "SELECT COUNT(*) as referenciadores FROM usuario WHERE tipo_usuario = 'Referenciador'";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['referenciadores'];
+}
+
+// Contar Descargadores
+public function countDescargadores() {
+    $query = "SELECT COUNT(*) as descargadores FROM usuario WHERE tipo_usuario = 'Descargador'";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['descargadores'];
+}
+
+// Contar SuperAdmin
+public function countSuperAdmin() {
+    $query = "SELECT COUNT(*) as superadmin FROM usuario WHERE tipo_usuario = 'SuperAdmin'";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['superadmin'];
+}
+
+// Contar todos los tipos de usuario en un solo método
+public function countTodosLosTipos() {
+    $query = "SELECT 
+                tipo_usuario,
+                COUNT(*) as cantidad,
+                COUNT(CASE WHEN activo = true THEN 1 END) as activos,
+                COUNT(CASE WHEN activo = false THEN 1 END) as inactivos
+              FROM usuario 
+              GROUP BY tipo_usuario 
+              ORDER BY tipo_usuario";
+    $stmt = $this->pdo->query($query);
+    return $stmt->fetchAll();
+}
 }
 ?>

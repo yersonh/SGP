@@ -29,6 +29,10 @@ $usuarios = $model->getAllUsuarios();
 $total_usuarios = $model->countUsuarios();
 $usuarios_activos = $model->countUsuariosActivos();
 $administradores = $model->countAdministradores();
+$referenciadores = $model->countReferenciadores();
+$descargadores = $model->countDescargadores();
+$superadmin = $model->countSuperAdmin();
+$tipos_usuario_stats = $model->countTodosLosTipos();
 
 // 6. Formatear fecha para mostrar
 $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
@@ -579,7 +583,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             </div>
             <div class="user-details">
                 <div class="detail-item">
-                    <span class="detail-label">Usuario:</span>
+                    <span class="detail-label">Usuario Actual:</span>
                     <span class="detail-value">
                         <?php 
                         $nombre_completo = '';

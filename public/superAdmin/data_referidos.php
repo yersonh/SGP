@@ -669,14 +669,17 @@ foreach ($barrios as $barrio) {
                                     <!-- BOTÓN DE VER DETALLE -->
                                     <button class="btn-action btn-view" 
                                             title="Ver detalle del referido">
+                                        <i class="fas fa-eye"></i>
                                     </button>
                                     <!-- BOTÓN DE EDITAR -->
                                     <button class="btn-action btn-edit" 
                                             title="Editar referido">
+                                        <i class="fas fa-edit"></i>
                                     </button>
                                     <!-- BOTÓN DE ELIMINAR -->
                                     <button class="btn-action btn-delete" 
                                             title="Eliminar referido">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </td>

@@ -14,5 +14,11 @@ class MunicipioModel {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function getAll() {
+        $sql = "SELECT * FROM municipio ORDER BY nombre";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

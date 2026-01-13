@@ -818,12 +818,19 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Inactivo';
                     }
                     
-                    // Cambiar el botón a "REACTIVAR"
-                    button.innerHTML = '<i class="fas fa-user-check"></i> REACTIVAR';
-                    button.className = 'btn-action btn-activate';
-                    button.onclick = function() {
-                        reactivarUsuario(idUsuario, nickname, button);
-                    };
+                    // Crear nuevo botón REACTIVAR con event listener
+                    const newButton = document.createElement('button');
+                    newButton.className = 'btn-action btn-activate';
+                    newButton.title = 'Reactivar usuario';
+                    newButton.innerHTML = '<i class="fas fa-user-check"></i> REACTIVAR';
+                    newButton.addEventListener('click', function() {
+                        reactivarUsuario(idUsuario, nickname, newButton);
+                    });
+                    
+                    // Reemplazar el botón en el contenedor
+                    const buttonContainer = button.parentNode;
+                    buttonContainer.removeChild(button);
+                    buttonContainer.appendChild(newButton);
                     
                     // Actualizar estadísticas
                     updateStats(-1, 0);
@@ -840,9 +847,9 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 button.disabled = false;
             }
         }
-        
-        // Función para reactivar un usuario
-        async function reactivarUsuario(idUsuario, nickname, button) {
+                
+                // Función para reactivar un usuario
+                async function reactivarUsuario(idUsuario, nickname, button) {
             if (!confirm(`¿Desea REACTIVAR al usuario "${nickname}"?`)) {
                 return;
             }
@@ -871,12 +878,19 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Activo';
                     }
                     
-                    // Cambiar el botón a "DAR DE BAJA"
-                    button.innerHTML = '<i class="fas fa-user-slash"></i> DAR DE BAJA';
-                    button.className = 'btn-action btn-deactivate';
-                    button.onclick = function() {
-                        darDeBaja(idUsuario, nickname, button);
-                    };
+                    // Crear nuevo botón DAR DE BAJA con event listener
+                    const newButton = document.createElement('button');
+                    newButton.className = 'btn-action btn-deactivate';
+                    newButton.title = 'Dar de baja al usuario';
+                    newButton.innerHTML = '<i class="fas fa-user-slash"></i> DAR DE BAJA';
+                    newButton.addEventListener('click', function() {
+                        darDeBaja(idUsuario, nickname, newButton);
+                    });
+                    
+                    // Reemplazar el botón en el contenedor
+                    const buttonContainer = button.parentNode;
+                    buttonContainer.removeChild(button);
+                    buttonContainer.appendChild(newButton);
                     
                     // Actualizar estadísticas
                     updateStats(1, 0);

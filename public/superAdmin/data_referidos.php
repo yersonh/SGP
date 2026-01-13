@@ -576,6 +576,7 @@ foreach ($barrios as $barrio) {
                             <th>Oferta</th>
                             <th>Grupo</th>
                             <th>Barrio</th>
+                            <th>Referenciador</th> <!-- NUEVA COLUMNA -->
                             <th>Fecha Registro</th>
                         </tr>
                     </thead>
@@ -604,6 +605,7 @@ foreach ($barrios as $barrio) {
                             <td><?php echo isset($referenciado['id_oferta_apoyo']) && isset($ofertasMap[$referenciado['id_oferta_apoyo']]) ? htmlspecialchars($ofertasMap[$referenciado['id_oferta_apoyo']]) : 'N/A'; ?></td>
                             <td><?php echo isset($referenciado['id_grupo_poblacional']) && isset($gruposMap[$referenciado['id_grupo_poblacional']]) ? htmlspecialchars($gruposMap[$referenciado['id_grupo_poblacional']]) : 'N/A'; ?></td>
                             <td><?php echo isset($referenciado['id_barrio']) && isset($barriosMap[$referenciado['id_barrio']]) ? htmlspecialchars($barriosMap[$referenciado['id_barrio']]) : 'N/A'; ?></td>
+                            <td><?php echo htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A'); ?></td> <!-- NUEVA CELDA -->
                             <td><?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i', strtotime($referenciado['fecha_registro'])) : ''; ?></td>
                         </tr>
                         <?php endforeach; ?>

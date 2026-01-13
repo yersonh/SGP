@@ -205,7 +205,7 @@ class ReferenciadoModel {
         $stmt->execute();
         return $stmt->fetchColumn() > 0;
     }
-    public function getAllReferenciados() {
+public function getAllReferenciados() {
     $sql = "SELECT r.*, 
             d.nombre as departamento_nombre,
             m.nombre as municipio_nombre,
@@ -215,7 +215,7 @@ class ReferenciadoModel {
             z.nombre as zona_nombre,
             s.nombre as sector_nombre,
             pv.nombre as puesto_votacion_nombre,
-            u.nombre as referenciador_nombre
+            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre
             FROM referenciados r
             LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
             LEFT JOIN municipio m ON r.id_municipio = m.id_municipio

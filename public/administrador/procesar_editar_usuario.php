@@ -153,7 +153,7 @@ try {
         $foto_perfil = null;
     } elseif (isset($_FILES['foto']) && $_FILES['foto']['error'] == UPLOAD_ERR_OK) {
         // Subir nueva foto
-        $directorio_fotos = __DIR__ . '/../uploads/usuarios/';
+        $directorio_fotos = __DIR__ . '/../../uploads/usuarios/';
         
         // Crear directorio si no existe
         if (!file_exists($directorio_fotos)) {
@@ -194,7 +194,7 @@ try {
             $foto_perfil = 'uploads/usuarios/' . $nombre_archivo;
             
             // Redimensionar imagen si es muy grande (opcional)
-            $this->redimensionarImagen($ruta_destino, 500, 500);
+            redimensionarImagen($ruta_destino, 500, 500);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al subir la imagen']);
             exit();

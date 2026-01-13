@@ -329,7 +329,8 @@ class UsuarioModel {
         $stmt->execute([$nickname]);
         $usuario = $stmt->fetch();
         
-        if ($usuario && $password === $usuario['password']) {
+        // Usar password_verify() si las contraseñas están hasheadas
+        if ($usuario && password_verify($password, $usuario['password'])) {
             // Agregar URL de foto
             $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
             return $usuario;

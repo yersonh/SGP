@@ -14,14 +14,6 @@ $usuarioModel = new UsuarioModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
-
-// Obtener estadísticas de usuarios
-$total_usuarios = $usuarioModel->countUsuarios();
-$usuarios_activos = $usuarioModel->countUsuariosActivos();
-$administradores = $usuarioModel->countAdministradores();
-$referenciadores = $usuarioModel->countReferenciadores();
-$descargadores = $usuarioModel->countDescargadores();
-$superadmin = $usuarioModel->countSuperAdmin();
 ?>
 
 <!DOCTYPE html>
@@ -457,177 +449,6 @@ $superadmin = $usuarioModel->countSuperAdmin();
                 font-size: 0.9rem;
             }
         }
-
-        /* ESTILOS PARA LOS BOTONES DE ACCIONES (COPIADOS DE LA VISTA DE USUARIOS) */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .btn-action {
-            padding: 8px 15px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-        
-        .btn-view {
-            background-color: rgba(155, 89, 182, 0.1);
-            color: #9b59b6;
-            border: 1px solid rgba(155, 89, 182, 0.2);
-        }
-
-        .btn-view:hover {
-            background-color: rgba(155, 89, 182, 0.2);
-            color: #9b59b6;
-        }
-        
-        .btn-edit {
-            background-color: rgba(52, 152, 219, 0.1);
-            color: var(--secondary-color);
-            border: 1px solid rgba(52, 152, 219, 0.2);
-        }
-        
-        .btn-edit:hover {
-            background-color: rgba(52, 152, 219, 0.2);
-            color: var(--secondary-color);
-        }
-        
-        .btn-deactivate {
-            background-color: rgba(243, 156, 18, 0.1);
-            color: var(--warning-color);
-            border: 1px solid rgba(243, 156, 18, 0.2);
-        }
-        
-        .btn-deactivate:hover {
-            background-color: rgba(243, 156, 18, 0.2);
-            color: var(--warning-color);
-        }
-        
-        .btn-activate {
-            background-color: rgba(39, 174, 96, 0.1);
-            color: var(--success-color);
-            border: 1px solid rgba(39, 174, 96, 0.2);
-        }
-        
-        .btn-activate:hover {
-            background-color: rgba(39, 174, 96, 0.2);
-            color: var(--success-color);
-        }
-
-        /* SECCIÓN DE ESTADÍSTICAS */
-        .stats-container {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 15px 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            text-align: center;
-            min-width: 120px;
-        }
-        
-        .stat-number {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2c3e50;
-            line-height: 1;
-        }
-        
-        .stat-label {
-            color: #7f8c8d;
-            font-size: 0.85rem;
-            margin-top: 5px;
-        }
-
-        /* SECCIÓN DE ACCIONES RÁPIDAS */
-        .quick-actions-section {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            margin-bottom: 40px;
-        }
-
-        .quick-actions-section h3 {
-            color: #2c3e50;
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .quick-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .quick-action-item {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            transition: all 0.3s;
-        }
-
-        .quick-action-item:hover {
-            background: white;
-            border-color: #3498db;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .quick-action-icon {
-            font-size: 2rem;
-            color: #3498db;
-            margin-bottom: 10px;
-        }
-
-        .quick-action-title {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .quick-action-desc {
-            color: #666;
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        /* Colores para iconos */
-        .action-icon-users {
-            color: #3498db;
-        }
-
-        .action-icon-edit {
-            color: #9b59b6;
-        }
-
-        .action-icon-eye {
-            color: #27ae60;
-        }
-
-        .action-icon-admin {
-            color: #e74c3c;
-        }
     </style>
 </head>
 <body>
@@ -671,82 +492,6 @@ $superadmin = $usuarioModel->countSuperAdmin();
                 Seleccione el tipo de data que desea gestionar y consultar. 
                 Acceda a toda la información de referenciación y descarga del sistema.
             </p>
-        </div>
-
-        <!-- Sección de Estadísticas -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $total_usuarios; ?></div>
-                <div class="stat-label">Total Usuarios</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $usuarios_activos; ?></div>
-                <div class="stat-label">Usuarios Activos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $administradores; ?></div>
-                <div class="stat-label">Administradores</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $referenciadores; ?></div>
-                <div class="stat-label">Referenciadores</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $descargadores; ?></div>
-                <div class="stat-label">Descargadores</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $superadmin; ?></div>
-                <div class="stat-label">Super Admin</div>
-            </div>
-        </div>
-
-        <!-- Sección de Acciones Rápidas -->
-        <div class="quick-actions-section">
-            <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
-            <div class="action-buttons" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
-                <!-- BOTÓN DE VER MI PERFIL -->
-                <button class="btn-action btn-view" 
-                        onclick="window.location.href='../administrador/ver_usuario.php?id=<?php echo $_SESSION['id_usuario']; ?>'"
-                        title="Ver mi perfil">
-                    <i class="fas fa-eye"></i> VER MI PERFIL
-                </button>
-                
-                <!-- BOTÓN DE EDITAR MI PERFIL -->
-                <button class="btn-action btn-edit" 
-                        onclick="window.location.href='../administrador/editar_usuario.php?id=<?php echo $_SESSION['id_usuario']; ?>'"
-                        title="Editar mi perfil">
-                    <i class="fas fa-edit"></i> EDITAR PERFIL
-                </button>
-                
-                <!-- BOTÓN DE GESTIÓN DE USUARIOS -->
-                <button class="btn-action btn-edit" 
-                        onclick="window.location.href='../administrador/usuarios.php'"
-                        title="Gestionar todos los usuarios">
-                    <i class="fas fa-users"></i> GESTIÓN USUARIOS
-                </button>
-                
-                <!-- BOTÓN DE PANEL SUPER ADMIN -->
-                <button class="btn-action btn-view" 
-                        onclick="window.location.href='../superadmin_dashboard.php'"
-                        title="Volver al panel principal">
-                    <i class="fas fa-tachometer-alt"></i> PANEL PRINCIPAL
-                </button>
-                
-                <!-- BOTÓN PARA IR A DATA REFERIDOS -->
-                <button class="btn-action btn-activate" 
-                        onclick="window.location.href='data_referidos.php'"
-                        title="Ir a Data Referidos">
-                    <i class="fas fa-users"></i> DATA REFERIDOS
-                </button>
-                
-                <!-- BOTÓN PARA IR A DATA DESCARGADORES -->
-                <button class="btn-action btn-activate" 
-                        onclick="window.location.href='data_descargadores.php'"
-                        title="Ir a Data Descargadores">
-                    <i class="fas fa-user-check"></i> DATA DESCARGADORES
-                </button>
-            </div>
         </div>
         
         <!-- Grid de 2 columnas -->
@@ -818,25 +563,16 @@ $superadmin = $usuarioModel->countSuperAdmin();
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Efecto hover mejorado en tarjetas
+            // Aquí puedes agregar funcionalidad para cargar estadísticas reales
+            // Por ahora son números estáticos de ejemplo
+            
+            // Efecto hover mejorado
             $('.data-option').hover(
                 function() {
                     $(this).css('transform', 'translateY(-8px)');
                 },
                 function() {
                     $(this).css('transform', 'translateY(0)');
-                }
-            );
-            
-            // Efecto hover en botones de acción
-            $('.btn-action').hover(
-                function() {
-                    $(this).css('transform', 'translateY(-2px)');
-                    $(this).css('box-shadow', '0 4px 8px rgba(0,0,0,0.1)');
-                },
-                function() {
-                    $(this).css('transform', 'translateY(0)');
-                    $(this).css('box-shadow', 'none');
                 }
             );
             

@@ -542,6 +542,16 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        .btn-view {
+            background-color: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+            border: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        .btn-view:hover {
+            background-color: rgba(155, 89, 182, 0.2);
+            color: #9b59b6;
+        }
     </style>
 </head>
 <body>
@@ -675,7 +685,14 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             </td>
                             
                             <td>
+
                                 <div class="action-buttons">
+                                    <!-- BOTÓN DE VER DETALLE -->
+                                    <button class="btn-action btn-view" 
+                                            onclick="window.location.href='administrador/ver_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"
+                                            title="Ver detalle del usuario">
+                                        <i class="fas fa-eye"></i> VER
+                                    </button>
                                     <!-- BOTÓN DE EDITAR -->
                                     <button class="btn-action btn-edit" 
                                             onclick="window.location.href='administrador/editar_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"

@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '7../../models/UsuarioModel.php';
 
 // Verificar permisos (solo administradores pueden editar usuarios)
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {
@@ -224,7 +224,7 @@ try {
         echo json_encode([
             'success' => true,
             'message' => 'Usuario actualizado correctamente',
-            'redirect' => 'dashboard.php?success=usuario_actualizado'
+            'redirect' => '../dashboard.php?success=usuario_actualizado'
         ]);
     } else {
         echo json_encode([

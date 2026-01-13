@@ -464,13 +464,13 @@ $barrios = $barrioModel->getAll();
                         </div>
                     </div>
                     <!-- Barra de Progreso del Formulario (MOVIDA AQUÍ, ANTES DEL BOTÓN) -->
-                    <div class="progress-container" style="margin: 30px 0 20px 0; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px;">
-                        <div class="progress-header" style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #333;">
+                    <div class="progress-container" style="margin: 30px 0 20px 0;">
+                        <div class="progress-header">
                             <span>Progreso del formulario</span>
                             <span id="progress-percentage">0%</span>
                         </div>
-                        <div class="progress-bar" style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden;">
-                            <div class="progress-fill" style="height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.5s ease; border-radius: 4px;" id="progress-fill"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
                         </div>
                     </div>
                     <!-- Botón de Envío -->

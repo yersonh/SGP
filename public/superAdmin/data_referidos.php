@@ -492,11 +492,12 @@ foreach ($barrios as $barrio) {
         .action-buttons {
             display: flex;
             gap: 8px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            justify-content: center;
         }
         
         .btn-action {
-            padding: 6px 12px;
+            padding: 8px;
             border-radius: 6px;
             border: none;
             font-weight: 500;
@@ -506,9 +507,9 @@ foreach ($barrios as $barrio) {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            white-space: nowrap;
-            min-width: 70px;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
         }
         
         .btn-view {
@@ -533,15 +534,15 @@ foreach ($barrios as $barrio) {
             color: #3498db;
         }
         
-        .btn-delete {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: #e74c3c;
-            border: 1px solid rgba(231, 76, 60, 0.2);
+        .btn-deactivate {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: #f39c12;
+            border: 1px solid rgba(243, 156, 18, 0.2);
         }
         
-        .btn-delete:hover {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
+        .btn-deactivate:hover {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
         }
     </style>
 </head>
@@ -676,10 +677,10 @@ foreach ($barrios as $barrio) {
                                             title="Editar referido">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <!-- BOTÓN DE ELIMINAR -->
-                                    <button class="btn-action btn-delete" 
-                                            title="Eliminar referido">
-                                        <i class="fas fa-trash"></i>
+                                    <!-- BOTÓN DE DESACTIVAR -->
+                                    <button class="btn-action btn-deactivate" 
+                                            title="Desactivar referido">
+                                        <i class="fas fa-user-slash"></i>
                                     </button>
                                 </div>
                             </td>
@@ -735,7 +736,7 @@ foreach ($barrios as $barrio) {
                         targets: -1, // Última columna (Acciones)
                         orderable: false,
                         searchable: false,
-                        width: '180px'
+                        width: '130px'
                     }
                 ]
             });

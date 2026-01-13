@@ -479,5 +479,19 @@ public function countTodosLosTipos() {
     $stmt = $this->pdo->query($query);
     return $stmt->fetchAll();
 }
+public function verificarExistencia($nickname, $cedula) {
+    // Verificar si el nickname ya existe
+    if ($this->nicknameExiste($nickname)) {
+        return true;
+    }
+    
+    // Verificar si la cédula ya existe
+    if ($this->cedulaExiste($cedula)) {
+        return true;
+    }
+    
+    // Ninguno existe
+    return false;
+}
 }
 ?>

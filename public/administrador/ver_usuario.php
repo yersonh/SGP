@@ -1,4 +1,8 @@
 <?php
+// Habilitar errores para debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
@@ -40,21 +44,35 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 // Verificar si el usuario logueado es administrador
 $es_administrador = ($usuario_logueado['tipo_usuario'] === 'Administrador');
 
-// Cargar datos de zona, sector y puesto si existen
-$zona_usuario = null;
-$sector_usuario = null;
-$puesto_usuario = null;
+// Obtener todas las zonas, sectores y puestos
+$zonas = $zonaModel->getAll();
+$sectores = $sectorModel->getAll();
+$puestos = $puestoModel->getAll();
 
-if ($usuario_ver['id_zona']) {
-    $zona_usuario = $zonaModel->getUsuarioById($usuario_ver['id_zona']);
+// Buscar los nombres de zona, sector y puesto del usuario
+$zona_nombre = 'No asignada';
+$sector_nombre = 'No asignado';
+$puesto_nombre = 'No asignado';
+
+foreach ($zonas as $zona) {
+    if ($zona['id_zona'] == $usuario_ver['id_zona']) {
+        $zona_nombre = $zona['nombre'];
+        break;
+    }
 }
 
-if ($usuario_ver['id_sector']) {
-    $sector_usuario = $sectorModel->getUsuarioById($usuario_ver['id_sector']);
+foreach ($sectores as $sector) {
+    if ($sector['id_sector'] == $usuario_ver['id_sector']) {
+        $sector_nombre = $sector['nombre'];
+        break;
+    }
 }
 
-if ($usuario_ver['id_puesto']) {
-    $puesto_usuario = $puestoModel->getUsuarioById($usuario_ver['id_puesto']);
+foreach ($puestos as $puesto) {
+    if ($puesto['id_puesto'] == $usuario_ver['id_puesto']) {
+        $puesto_nombre = $puesto['nombre'];
+        break;
+    }
 }
 
 // Formatear fecha de creación
@@ -715,7 +733,7 @@ $ultimo_registro_formateada = !empty($usuario_ver['ultimo_registro']) ?
                     <i class="fas fa-map"></i> Zona
                 </label>
                 <div class="view-value">
-                    <?php echo htmlspecialchars($zona_usuario['nombre'] ?? 'No asignada'); ?>
+                    <?php echo htmlspecialchars($zona_nombre); ?>
                 </div>
             </div>
             
@@ -725,7 +743,7 @@ $ultimo_registro_formateada = !empty($usuario_ver['ultimo_registro']) ?
                     <i class="fas fa-th"></i> Sector
                 </label>
                 <div class="view-value">
-                    <?php echo htmlspecialchars($sector_usuario['nombre'] ?? 'No asignado'); ?>
+                    <?php echo htmlspecialchars($sector_nombre); ?>
                 </div>
             </div>
             
@@ -735,7 +753,7 @@ $ultimo_registro_formateada = !empty($usuario_ver['ultimo_registro']) ?
                     <i class="fas fa-building"></i> Puesto de Votación
                 </label>
                 <div class="view-value">
-                    <?php echo htmlspecialchars($puesto_usuario['nombre'] ?? 'No asignado'); ?>
+                    <?php echo htmlspecialchars($puesto_nombre); ?>
                 </div>
             </div>
             

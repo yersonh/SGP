@@ -1084,21 +1084,6 @@ $editando_a_si_mismo = ($usuario_logueado['id_usuario'] == $usuario_editar['id_u
                     </div>
                 </div>
                 
-                <!-- Estado Activo/Inactivo -->
-                <div class="form-group">
-                    <label class="form-label" for="activo">
-                        <i class="fas fa-toggle-on"></i> Estado del Usuario
-                    </label>
-                    <select id="activo" name="activo" class="form-select">
-                        <option value="1" <?php echo ($usuario_editar['activo'] == true || $usuario_editar['activo'] == 't' || $usuario_editar['activo'] == 1) ? 'selected' : ''; ?>>Activo</option>
-                        <option value="0" <?php echo ($usuario_editar['activo'] == false || $usuario_editar['activo'] == 'f' || $usuario_editar['activo'] == 0) ? 'selected' : ''; ?>>Inactivo</option>
-                    </select>
-                    <?php if ($editando_a_si_mismo): ?>
-                    <span class="field-hint" style="color: #f39c12;">
-                        <i class="fas fa-exclamation-triangle"></i> No puede desactivar su propia cuenta
-                    </span>
-                    <?php endif; ?>
-                </div>
                 
                 <!-- Botones -->
                 <div class="form-group full-width form-actions">

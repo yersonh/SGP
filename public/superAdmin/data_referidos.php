@@ -487,6 +487,62 @@ foreach ($barrios as $barrio) {
                 font-size: 0.85rem;
             }
         }
+
+        /* ESTILOS PARA LOS BOTONES DE ACCIONES */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            white-space: nowrap;
+            min-width: 70px;
+        }
+        
+        .btn-view {
+            background-color: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+            border: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        .btn-view:hover {
+            background-color: rgba(155, 89, 182, 0.2);
+            color: #9b59b6;
+        }
+        
+        .btn-edit {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+        
+        .btn-edit:hover {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+        }
+        
+        .btn-delete {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+        
+        .btn-delete:hover {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
     </style>
 </head>
 <body>
@@ -576,8 +632,9 @@ foreach ($barrios as $barrio) {
                             <th>Oferta</th>
                             <th>Grupo</th>
                             <th>Barrio</th>
-                            <th>Referenciador</th> <!-- NUEVA COLUMNA -->
+                            <th>Referenciador</th>
                             <th>Fecha Registro</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -605,8 +662,27 @@ foreach ($barrios as $barrio) {
                             <td><?php echo isset($referenciado['id_oferta_apoyo']) && isset($ofertasMap[$referenciado['id_oferta_apoyo']]) ? htmlspecialchars($ofertasMap[$referenciado['id_oferta_apoyo']]) : 'N/A'; ?></td>
                             <td><?php echo isset($referenciado['id_grupo_poblacional']) && isset($gruposMap[$referenciado['id_grupo_poblacional']]) ? htmlspecialchars($gruposMap[$referenciado['id_grupo_poblacional']]) : 'N/A'; ?></td>
                             <td><?php echo isset($referenciado['id_barrio']) && isset($barriosMap[$referenciado['id_barrio']]) ? htmlspecialchars($barriosMap[$referenciado['id_barrio']]) : 'N/A'; ?></td>
-                            <td><?php echo htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A'); ?></td> <!-- NUEVA CELDA -->
+                            <td><?php echo htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A'); ?></td>
                             <td><?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i', strtotime($referenciado['fecha_registro'])) : ''; ?></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <!-- BOTÓN DE VER DETALLE -->
+                                    <button class="btn-action btn-view" 
+                                            title="Ver detalle del referido">
+                                        <i class="fas fa-eye"></i> VER
+                                    </button>
+                                    <!-- BOTÓN DE EDITAR -->
+                                    <button class="btn-action btn-edit" 
+                                            title="Editar referido">
+                                        <i class="fas fa-edit"></i> EDITAR
+                                    </button>
+                                    <!-- BOTÓN DE ELIMINAR -->
+                                    <button class="btn-action btn-delete" 
+                                            title="Eliminar referido">
+                                        <i class="fas fa-trash"></i> ELIMINAR
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -653,7 +729,15 @@ foreach ($barrios as $barrio) {
                 initComplete: function() {
                     // Ajustar columnas después de inicializar
                     this.api().columns.adjust();
-                }
+                },
+                columnDefs: [
+                    {
+                        targets: -1, // Última columna (Acciones)
+                        orderable: false,
+                        searchable: false,
+                        width: '180px'
+                    }
+                ]
             });
             
             // Botón de búsqueda
@@ -672,6 +756,18 @@ foreach ($barrios as $barrio) {
             $(window).resize(function() {
                 $('#referidosTable').DataTable().columns.adjust();
             });
+
+            // Efecto hover en botones de acción
+            $('.btn-action').hover(
+                function() {
+                    $(this).css('transform', 'translateY(-2px)');
+                    $(this).css('box-shadow', '0 3px 6px rgba(0,0,0,0.1)');
+                },
+                function() {
+                    $(this).css('transform', 'translateY(0)');
+                    $(this).css('box-shadow', 'none');
+                }
+            );
         });
     </script>
 </body>

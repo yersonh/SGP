@@ -616,15 +616,27 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $total_usuarios; ?></div>
-                    <div class="stat-label">Usuarios totales</div>
+                    <div class="stat-label">Total Usuarios</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $usuarios_activos; ?></div>
-                    <div class="stat-label">Usuarios activos</div>
+                    <div class="stat-label">Usuarios Activos</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $administradores; ?></div>
                     <div class="stat-label">Administradores</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $referenciadores; ?></div>
+                    <div class="stat-label">Referenciadores</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $descargadores; ?></div>
+                    <div class="stat-label">Descargadores</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $superadmin; ?></div>
+                    <div class="stat-label">Super Admin</div>
                 </div>
             </div>
         </div>

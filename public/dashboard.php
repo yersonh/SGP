@@ -267,6 +267,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         .action-buttons {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .btn-action {
@@ -280,6 +281,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             display: flex;
             align-items: center;
             gap: 5px;
+            white-space: nowrap;
         }
         
         .btn-edit {
@@ -393,10 +395,12 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             
             .action-buttons {
                 flex-direction: column;
+                gap: 5px;
             }
             
             .btn-action {
                 justify-content: center;
+                width: 100%;
             }
         }
         
@@ -672,6 +676,13 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             
                             <td>
                                 <div class="action-buttons">
+                                    <!-- BOTÓN DE EDITAR -->
+                                    <button class="btn-action btn-edit" 
+                                            onclick="window.location.href='administrador/editar_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"
+                                            title="Editar usuario">
+                                        <i class="fas fa-edit"></i> EDITAR
+                                    </button>
+                                    
                                     <?php if ($esta_activo): ?>
                                         <button class="btn-action btn-deactivate" 
                                                 title="Dar de baja al usuario"
@@ -918,6 +929,52 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             row.addEventListener('mouseleave', function() {
                 this.style.backgroundColor = '';
             });
+        });
+        
+        // Manejar parámetros de éxito/error en la URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('success')) {
+                const successType = urlParams.get('success');
+                let message = '';
+                
+                switch(successType) {
+                    case 'usuario_creado':
+                        message = 'Usuario creado correctamente';
+                        break;
+                    case 'usuario_actualizado':
+                        message = 'Usuario actualizado correctamente';
+                        break;
+                    default:
+                        message = 'Operación realizada correctamente';
+                }
+                
+                if (message) {
+                    showNotification(message, 'success');
+                    // Limpiar parámetro de la URL sin recargar la página
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+            
+            if (urlParams.has('error')) {
+                const errorType = urlParams.get('error');
+                let message = '';
+                
+                switch(errorType) {
+                    case 'usuario_no_encontrado':
+                        message = 'Usuario no encontrado';
+                        break;
+                    default:
+                        message = 'Ocurrió un error en la operación';
+                }
+                
+                if (message) {
+                    showNotification(message, 'error');
+                    // Limpiar parámetro de la URL sin recargar la página
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
         });
     </script>
 </body>

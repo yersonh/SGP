@@ -382,5 +382,6 @@ class UsuarioModel {
         
         return $result['existe'] > 0;
     }
+    
 }
 ?>

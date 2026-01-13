@@ -772,9 +772,6 @@ $editando_a_si_mismo = ($usuario_logueado['id_usuario'] == $usuario_editar['id_u
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="../dashboard.php" class="header-btn">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </a>
                     <a href="../logout.php" class="header-btn">
                         <i class="fas fa-sign-out-alt"></i> Salir
                     </a>

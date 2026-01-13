@@ -598,9 +598,6 @@ $ultimo_registro_formateada = !empty($usuario_ver['ultimo_registro']) ?
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="../dashboard.php" class="header-btn">
-                        <i class="fas fa-arrow-left"></i> Volver al Dashboard
-                    </a>
                     <a href="../logout.php" class="header-btn">
                         <i class="fas fa-sign-out-alt"></i> Salir
                     </a>

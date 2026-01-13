@@ -339,12 +339,12 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
         <div class="logout-actions">
             <a href="logout.php?confirm=true" class="btn btn-logout">
                 <i class="fas fa-sign-out-alt"></i>
-                <span>Sí, Cerrar Sesión</span>
+                <span>Cerrar Sesión</span>
             </a>
             
             <button type="button" class="btn btn-cancel" id="btn-cancel">
                 <i class="fas fa-arrow-left"></i>
-                <span>Cancelar y Volver</span>
+                <span>Volver</span>
             </button>
         </div>
         

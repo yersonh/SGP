@@ -1251,6 +1251,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         usuarioForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Obtener tipo de usuario seleccionado
+            const tipoUsuario = document.getElementById('tipo_usuario').value;
+            const isReferenciador = tipoUsuario === 'Referenciador';
+            
             // Validar campos obligatorios
             const requiredFields = [
                 'nombres', 'apellidos', 'cedula', 'nickname', 
@@ -1312,20 +1316,19 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // 🔥 VALIDACIÓN DEL TOPE
-            const tipoUsuario = document.getElementById('tipo_usuario').value;
-            const topeInput = document.getElementById('tope');
-            
-            if (tipoUsuario === 'Referenciador') {
-                // Para Referenciador, validar que el tope sea válido
+            // 🔥 VALIDACIÓN DEL TOPE - SOLO PARA REFERENCIADOR
+            if (isReferenciador) {
+                const topeInput = document.getElementById('tope');
                 const tope = parseInt(topeInput.value) || 0;
+                
+                // Para Referenciador, validar que el tope sea válido
                 if (tope < 1) {
                     showNotification('Para usuarios Referenciador, el tope debe ser al menos 1.', 'error');
                     topeInput.focus();
                     return;
                 }
             }
-            // Para otros tipos, no se necesita validación (ya se estableció en 0)
+            // Para otros tipos, NO se valida el tope
             
             // Crear FormData para enviar (incluye archivos)
             const formData = new FormData(usuarioForm);
@@ -1334,7 +1337,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             formData.set('cedula', cedula);
             
             // 🔥 AJUSTAR TOPE SEGÚN TIPO DE USUARIO
-            if (tipoUsuario !== 'Referenciador') {
+            if (!isReferenciador) {
                 // Para otros tipos, establecer tope = 0
                 formData.set('tope', '0');
             } else {

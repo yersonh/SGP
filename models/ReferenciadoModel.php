@@ -257,5 +257,118 @@ public function getEstadoReferenciado($id_referenciado) {
     $result = $stmt->fetch();
     return $result ? $result['activo'] : null;
 }
+/**
+ * Actualizar un referenciado existente
+ */
+public function actualizarReferenciado($id_referenciado, $data) {
+    // Asegurar que afinidad sea válida (1-5)
+    $afinidad = max(1, min(5, intval($data['afinidad'])));
+    
+    // Iniciar transacción
+    $this->pdo->beginTransaction();
+    
+    try {
+        // SQL para actualizar el referenciado
+        $sql = "UPDATE referenciados SET
+                nombre = :nombre,
+                apellido = :apellido,
+                cedula = :cedula,
+                direccion = :direccion,
+                email = :email,
+                telefono = :telefono,
+                afinidad = :afinidad,
+                id_zona = :id_zona,
+                id_sector = :id_sector,
+                id_puesto_votacion = :id_puesto_votacion,
+                mesa = :mesa,
+                id_departamento = :id_departamento,
+                id_municipio = :id_municipio,
+                id_barrio = :id_barrio,
+                id_oferta_apoyo = :id_oferta_apoyo,
+                id_grupo_poblacional = :id_grupo_poblacional,
+                compromiso = :compromiso,
+                fecha_actualizacion = NOW()
+                WHERE id_referenciado = :id_referenciado";
+        
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Asignar valores
+        $stmt->bindValue(':nombre', $data['nombre']);
+        $stmt->bindValue(':apellido', $data['apellido']);
+        $stmt->bindValue(':cedula', $data['cedula']);
+        $stmt->bindValue(':direccion', $data['direccion']);
+        $stmt->bindValue(':email', $data['email']);
+        $stmt->bindValue(':telefono', $data['telefono']);
+        $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
+        $stmt->bindValue(':id_zona', !empty($data['id_zona']) ? $data['id_zona'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_sector', !empty($data['id_sector']) ? $data['id_sector'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_puesto_votacion', !empty($data['id_puesto_votacion']) ? $data['id_puesto_votacion'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':mesa', !empty($data['mesa']) ? $data['mesa'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_departamento', !empty($data['id_departamento']) ? $data['id_departamento'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_municipio', !empty($data['id_municipio']) ? $data['id_municipio'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_barrio', !empty($data['id_barrio']) ? $data['id_barrio'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_oferta_apoyo', !empty($data['id_oferta_apoyo']) ? $data['id_oferta_apoyo'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_grupo_poblacional', !empty($data['id_grupo_poblacional']) ? $data['id_grupo_poblacional'] : null, PDO::PARAM_INT);
+        $stmt->bindValue(':compromiso', $data['compromiso']);
+        $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        
+        // Si hay insumos nuevos, agregarlos
+        if (!empty($data['insumos_nuevos'])) {
+            $this->agregarInsumosReferenciado($id_referenciado, $data['insumos_nuevos'], $data);
+        }
+        
+        // Si hay insumos a eliminar, removerlos
+        if (!empty($data['insumos_eliminar'])) {
+            $this->eliminarInsumosReferenciado($id_referenciado, $data['insumos_eliminar']);
+        }
+        
+        // Confirmar la transacción
+        $this->pdo->commit();
+        
+        return true;
+        
+    } catch (Exception $e) {
+        // Revertir la transacción en caso de error
+        $this->pdo->rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * Agregar nuevos insumos al referenciado
+ */
+private function agregarInsumosReferenciado($id_referenciado, $insumos_nuevos, $data) {
+    $sql = "INSERT INTO referenciado_insumo (id_referenciado, id_insumo, cantidad, observaciones, fecha_registro) 
+            VALUES (:id_referenciado, :id_insumo, :cantidad, :observaciones, NOW())";
+    
+    $stmt = $this->pdo->prepare($sql);
+    
+    foreach ($insumos_nuevos as $id_insumo) {
+        $cantidad = isset($data["cantidad_$id_insumo"]) ? $data["cantidad_$id_insumo"] : 1;
+        $observaciones = isset($data["observaciones_$id_insumo"]) ? $data["observaciones_$id_insumo"] : null;
+        
+        $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
+        $stmt->bindValue(':id_insumo', $id_insumo, PDO::PARAM_INT);
+        $stmt->bindValue(':cantidad', $cantidad, PDO::PARAM_INT);
+        $stmt->bindValue(':observaciones', $observaciones);
+        $stmt->execute();
+    }
+}
+
+/**
+ * Eliminar insumos del referenciado
+ */
+private function eliminarInsumosReferenciado($id_referenciado, $insumos_eliminar) {
+    $placeholders = implode(',', array_fill(0, count($insumos_eliminar), '?'));
+    $sql = "DELETE FROM referenciado_insumo WHERE id_referenciado = ? AND id_insumo IN ($placeholders)";
+    
+    $stmt = $this->pdo->prepare($sql);
+    
+    // El primer parámetro es el id_referenciado
+    $params = array_merge([$id_referenciado], $insumos_eliminar);
+    $stmt->execute($params);
+}
 }
 ?>

@@ -83,12 +83,100 @@ function isChecked($insumo_id, $insumos_referenciado) {
     return '';
 }
 
+// Variables para mensajes
+$error_message = '';
+$success_message = '';
+
+// Verificar si hay mensaje de éxito en la URL
+if (isset($_GET['success'])) {
+    $success_message = 'Referenciado actualizado correctamente.';
+}
+
 // Procesar el formulario cuando se envíe
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Aquí iría el código para procesar la actualización
-    // Por ahora solo redirigimos
-    header('Location: ver_referenciado.php?id=' . $id_referenciado . '&success=1');
-    exit();
+    try {
+        // Recopilar datos del formulario
+        $datos_actualizar = [
+            'nombre' => $_POST['nombre'] ?? '',
+            'apellido' => $_POST['apellido'] ?? '',
+            'cedula' => $_POST['cedula'] ?? '',
+            'direccion' => $_POST['direccion'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'telefono' => $_POST['telefono'] ?? '',
+            'afinidad' => $_POST['afinidad'] ?? 1,
+            'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
+            'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
+            'id_puesto_votacion' => !empty($_POST['id_puesto_votacion']) ? $_POST['id_puesto_votacion'] : null,
+            'mesa' => !empty($_POST['mesa']) ? $_POST['mesa'] : null,
+            'id_departamento' => !empty($_POST['id_departamento']) ? $_POST['id_departamento'] : null,
+            'id_municipio' => !empty($_POST['id_municipio']) ? $_POST['id_municipio'] : null,
+            'id_barrio' => !empty($_POST['id_barrio']) ? $_POST['id_barrio'] : null,
+            'id_oferta_apoyo' => !empty($_POST['id_oferta_apoyo']) ? $_POST['id_oferta_apoyo'] : null,
+            'id_grupo_poblacional' => !empty($_POST['id_grupo_poblacional']) ? $_POST['id_grupo_poblacional'] : null,
+            'compromiso' => $_POST['compromiso'] ?? '',
+            'insumos_nuevos' => $_POST['insumos_nuevos'] ?? [],
+            'insumos_eliminar' => $_POST['insumos_eliminar'] ?? []
+        ];
+        
+        // Agregar campos de cantidad y observaciones para los insumos
+        foreach ($_POST as $key => $value) {
+            if (strpos($key, 'cantidad_') === 0) {
+                $insumo_id = str_replace('cantidad_', '', $key);
+                $datos_actualizar["cantidad_$insumo_id"] = $value;
+            }
+            if (strpos($key, 'observaciones_') === 0) {
+                $insumo_id = str_replace('observaciones_', '', $key);
+                $datos_actualizar["observaciones_$insumo_id"] = $value;
+            }
+        }
+        
+        // Validaciones básicas
+        if (empty($datos_actualizar['nombre'])) {
+            throw new Exception('El nombre es requerido.');
+        }
+        
+        if (empty($datos_actualizar['apellido'])) {
+            throw new Exception('El apellido es requerido.');
+        }
+        
+        if (empty($datos_actualizar['cedula'])) {
+            throw new Exception('La cédula es requerida.');
+        }
+        
+        // Validar formato de cédula (solo números)
+        if (!preg_match('/^\d+$/', $datos_actualizar['cedula'])) {
+            throw new Exception('La cédula debe contener solo números.');
+        }
+        
+        // Validar que la cédula no esté duplicada (excluyendo el actual referenciado)
+        if ($referenciadoModel->cedulaExiste($datos_actualizar['cedula'], $id_referenciado)) {
+            throw new Exception('La cédula ya está registrada para otro referenciado.');
+        }
+        
+        // Validar afinidad (1-5)
+        $afinidad = intval($datos_actualizar['afinidad']);
+        if ($afinidad < 1 || $afinidad > 5) {
+            throw new Exception('La afinidad debe estar entre 1 y 5.');
+        }
+        
+        // Actualizar el referenciado
+        $resultado = $referenciadoModel->actualizarReferenciado($id_referenciado, $datos_actualizar);
+        
+        if ($resultado) {
+            // Redirigir con mensaje de éxito
+            header('Location: ver_referenciado.php?id=' . $id_referenciado . '&success=1');
+            exit();
+        } else {
+            throw new Exception('No se pudo actualizar el referenciado.');
+        }
+        
+    } catch (Exception $e) {
+        $error_message = 'Error al actualizar: ' . $e->getMessage();
+        // Mantener los datos del formulario en caso de error
+        if (isset($datos_actualizar)) {
+            $referenciado = array_merge($referenciado, $datos_actualizar);
+        }
+    }
 }
 ?>
 
@@ -1163,48 +1251,316 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        // Script para las estrellas de afinidad
-        document.addEventListener('DOMContentLoaded', function() {
-            const estrellas = document.querySelectorAll('.estrellas-afinidad .estrella');
-            const valorInput = document.getElementById('afinidad-valor');
-            const valorSpan = document.getElementById('valor-afinidad');
-            
-            // Establecer estrellas iniciales
-            const valorInicial = parseInt(valorInput.value);
-            actualizarEstrellas(valorInicial);
-            
-            // Agregar event listeners a las estrellas
-            estrellas.forEach(estrella => {
-                estrella.addEventListener('click', function() {
-                    const valor = parseInt(this.getAttribute('data-value'));
-                    valorInput.value = valor;
-                    actualizarEstrellas(valor);
-                });
-            });
-            
-            function actualizarEstrellas(valor) {
-                estrellas.forEach(estrella => {
-                    const estrellaValor = parseInt(estrella.getAttribute('data-value'));
-                    if (estrellaValor <= valor) {
-                        estrella.classList.add('active');
-                        estrella.classList.remove('far');
-                        estrella.classList.add('fas');
-                    } else {
-                        estrella.classList.remove('active');
-                        estrella.classList.remove('fas');
-                        estrella.classList.add('far');
-                    }
-                });
-                valorSpan.textContent = valor + '/5';
-            }
-            
-            // Validación del formulario
-            const form = document.querySelector('form');
-            form.addEventListener('submit', function(e) {
-                // Aquí podrías agregar validaciones adicionales
-                console.log('Formulario enviado');
+    // Script para las estrellas de afinidad
+    document.addEventListener('DOMContentLoaded', function() {
+        const estrellas = document.querySelectorAll('.estrellas-afinidad .estrella');
+        const valorInput = document.getElementById('afinidad-valor');
+        const valorSpan = document.getElementById('valor-afinidad');
+        
+        // Establecer estrellas iniciales
+        const valorInicial = parseInt(valorInput.value);
+        actualizarEstrellas(valorInicial);
+        
+        // Agregar event listeners a las estrellas
+        estrellas.forEach(estrella => {
+            estrella.addEventListener('click', function() {
+                const valor = parseInt(this.getAttribute('data-value'));
+                valorInput.value = valor;
+                actualizarEstrellas(valor);
             });
         });
-    </script>
+        
+        function actualizarEstrellas(valor) {
+            estrellas.forEach(estrella => {
+                const estrellaValor = parseInt(estrella.getAttribute('data-value'));
+                if (estrellaValor <= valor) {
+                    estrella.classList.add('active');
+                    estrella.classList.remove('far');
+                    estrella.classList.add('fas');
+                } else {
+                    estrella.classList.remove('active');
+                    estrella.classList.remove('fas');
+                    estrella.classList.add('far');
+                }
+            });
+            valorSpan.textContent = valor + '/5';
+        }
+        
+        // Manejar botones de eliminar insumo
+        document.querySelectorAll('.btn-remove-insumo').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const insumoId = this.getAttribute('data-insumo-id');
+                const insumoCard = this.closest('.insumo-card-asignado');
+                
+                if (confirm('¿Está seguro de quitar este insumo?')) {
+                    // Crear campo hidden para marcar el insumo como eliminado
+                    const deleteInput = document.createElement('input');
+                    deleteInput.type = 'hidden';
+                    deleteInput.name = 'insumos_eliminar[]';
+                    deleteInput.value = insumoId;
+                    document.querySelector('form').appendChild(deleteInput);
+                    
+                    // Eliminar visualmente el card
+                    insumoCard.style.opacity = '0.5';
+                    insumoCard.style.transform = 'translateX(-20px)';
+                    
+                    setTimeout(() => {
+                        insumoCard.remove();
+                        showNotification('Insumo marcado para eliminar. Guarde los cambios para aplicar.', 'warning');
+                        
+                        // Actualizar contador de insumos asignados
+                        actualizarContadorInsumos();
+                    }, 300);
+                }
+            });
+        });
+        
+        // Mostrar/ocultar campos de detalle al seleccionar insumos nuevos
+        document.querySelectorAll('.insumo-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const detailsForm = this.parentElement.querySelector('.insumo-details-form');
+                if (detailsForm) {
+                    if (this.checked) {
+                        detailsForm.style.display = 'block';
+                    } else {
+                        detailsForm.style.display = 'none';
+                    }
+                }
+            });
+        });
+        
+        // Función para actualizar contador de insumos asignados
+        function actualizarContadorInsumos() {
+            const insumosAsignados = document.querySelectorAll('.insumo-card-asignado').length;
+            const contadorElement = document.querySelector('.insumos-asignados-contador');
+            if (contadorElement) {
+                contadorElement.textContent = insumosAsignados + ' asignados';
+            }
+        }
+        
+        // Mostrar notificaciones
+        function showNotification(message, type = 'info') {
+            // Eliminar notificación anterior si existe
+            const oldNotification = document.querySelector('.notification-temp');
+            if (oldNotification) {
+                oldNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification-temp notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+                <button class="notification-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Estilos para la notificación
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-width: 300px;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 2000;
+                animation: slideIn 0.3s ease-out;
+                background: ${type === 'warning' ? '#fff3cd' : 
+                            type === 'error' ? '#f8d7da' : 
+                            type === 'success' ? '#d4edda' : '#d1ecf1'};
+                color: ${type === 'warning' ? '#856404' : 
+                        type === 'error' ? '#721c24' : 
+                        type === 'success' ? '#155724' : '#0c5460'};
+                border: 1px solid ${type === 'warning' ? '#ffeaa7' : 
+                              type === 'error' ? '#f5c6cb' : 
+                              type === 'success' ? '#c3e6cb' : '#bee5eb'};
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Botón para cerrar
+            notification.querySelector('.notification-close').addEventListener('click', () => {
+                notification.remove();
+            });
+            
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+            
+            // Animación slideIn
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Validación del formulario
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            // Limpiar estilos de error previos
+            document.querySelectorAll('.form-control').forEach(field => {
+                field.style.borderColor = '';
+            });
+            
+            // Validar cédula (solo números)
+            const cedula = document.querySelector('input[name="cedula"]').value;
+            if (!/^\d+$/.test(cedula)) {
+                e.preventDefault();
+                showNotification('La cédula debe contener solo números', 'warning');
+                document.querySelector('input[name="cedula"]').style.borderColor = '#e74c3c';
+                document.querySelector('input[name="cedula"]').focus();
+                return false;
+            }
+            
+            // Validar afinidad (1-5)
+            const afinidad = parseInt(document.getElementById('afinidad-valor').value);
+            if (afinidad < 1 || afinidad > 5) {
+                e.preventDefault();
+                showNotification('La afinidad debe estar entre 1 y 5', 'warning');
+                return false;
+            }
+            
+            // Validar email si está presente
+            const email = document.querySelector('input[name="email"]').value;
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                e.preventDefault();
+                showNotification('Por favor ingrese un email válido', 'warning');
+                document.querySelector('input[name="email"]').style.borderColor = '#e74c3c';
+                document.querySelector('input[name="email"]').focus();
+                return false;
+            }
+            
+            // Validar teléfono si está presente (solo números, mínimo 7 dígitos)
+            const telefono = document.querySelector('input[name="telefono"]').value;
+            if (telefono && !/^\d{7,15}$/.test(telefono)) {
+                e.preventDefault();
+                showNotification('El teléfono debe contener entre 7 y 15 dígitos numéricos', 'warning');
+                document.querySelector('input[name="telefono"]').style.borderColor = '#e74c3c';
+                document.querySelector('input[name="telefono"]').focus();
+                return false;
+            }
+            
+            // Validar mesa si está presente (número positivo)
+            const mesa = document.querySelector('input[name="mesa"]').value;
+            if (mesa && (parseInt(mesa) < 1 || isNaN(parseInt(mesa)))) {
+                e.preventDefault();
+                showNotification('La mesa debe ser un número positivo', 'warning');
+                document.querySelector('input[name="mesa"]').style.borderColor = '#e74c3c';
+                document.querySelector('input[name="mesa"]').focus();
+                return false;
+            }
+            
+            // Validar que los campos requeridos no estén vacíos
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            let firstInvalidField = null;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#e74c3c';
+                    if (!firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                showNotification('Por favor complete todos los campos requeridos (*)', 'warning');
+                if (firstInvalidField) {
+                    firstInvalidField.focus();
+                }
+                return false;
+            }
+            
+            // Validar que se haya seleccionado al menos una opción válida en selects si tienen valor
+            const selects = form.querySelectorAll('select.form-control');
+            selects.forEach(select => {
+                if (select.value && select.value !== '' && select.options[select.selectedIndex].value === '') {
+                    e.preventDefault();
+                    showNotification('Por favor seleccione una opción válida para ' + select.previousElementSibling.textContent, 'warning');
+                    select.style.borderColor = '#e74c3c';
+                    select.focus();
+                    return false;
+                }
+            });
+            
+            // Mostrar mensaje de confirmación
+            if (!confirm('¿Está seguro de guardar los cambios?')) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Mostrar indicador de carga
+            const saveBtn = form.querySelector('.save-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            saveBtn.disabled = true;
+            
+            // Restaurar botón después de 3 segundos (por si hay error en el servidor)
+            setTimeout(() => {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }, 3000);
+            
+            return true;
+        });
+        
+        // Mostrar mensaje de éxito si existe
+        <?php if ($success_message): ?>
+            setTimeout(() => {
+                showNotification('<?php echo addslashes($success_message); ?>', 'success');
+            }, 500);
+        <?php endif; ?>
+        
+        // Mostrar mensaje de error si existe
+        <?php if ($error_message): ?>
+            setTimeout(() => {
+                showNotification('<?php echo addslashes($error_message); ?>', 'error');
+            }, 500);
+        <?php endif; ?>
+        
+        // Mejorar experiencia de usuario en campos numéricos
+        const numericFields = document.querySelectorAll('input[type="number"]');
+        numericFields.forEach(field => {
+            field.addEventListener('input', function() {
+                if (this.value < 0) {
+                    this.value = Math.abs(this.value);
+                }
+            });
+        });
+        
+        // Agregar efecto de hover a todos los cards de insumos
+        document.querySelectorAll('.insumo-card, .insumo-card-asignado').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px)';
+                this.style.transition = 'all 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Inicializar contador de insumos
+        actualizarContadorInsumos();
+    });
+</script>
 </body>
 </html>

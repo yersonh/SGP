@@ -744,7 +744,7 @@ foreach ($barrios as $barrio) {
                                     <!-- BOTÓN DE VER DETALLE -->
                                     <button class="btn-action btn-view" 
                                             title="Ver detalle del referido"
-                                            onclick="window.location.href='ver_referenciado.php?id=<?php echo $referido['id']; ?>'">
+                                            onclick="window.location.href='ver_referenciado.php?id=<?php echo $referenciado['id_referenciado']; ?>'">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <!-- BOTÓN DE EDITAR -->

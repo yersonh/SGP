@@ -626,6 +626,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 font-size: 1.1rem;
             }
         }
+        /* Estilos para insumos asignados */
+.insumo-card-asignado {
+    background: rgba(79, 195, 247, 0.1);
+    border: 1px solid rgba(79, 195, 247, 0.3);
+    border-radius: 10px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    position: relative;
+}
+
+.insumo-card-asignado:hover {
+    background: rgba(79, 195, 247, 0.15);
+    border-color: rgba(79, 195, 247, 0.5);
+    transform: translateY(-2px);
+}
+
+.insumo-actions {
+    margin-left: auto;
+}
+
+.btn-remove-insumo {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-remove-insumo:hover {
+    background: rgba(231, 76, 60, 0.3);
+    transform: scale(1.1);
+}
+
+/* Estilos para insumos nuevos */
+.insumo-item-nuevo {
+    position: relative;
+}
+
+.insumo-check-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    background: rgba(39, 174, 96, 0.2);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #27ae60;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+.insumo-checkbox:checked + .insumo-label .insumo-check-indicator {
+    opacity: 1;
+}
+
+.insumo-checkbox:checked + .insumo-label .insumo-card {
+    border-color: rgba(39, 174, 96, 0.5);
+    background: rgba(39, 174, 96, 0.1);
+}
+
+.insumo-checkbox:checked + .insumo-label + .insumo-details-form {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
     </style>
 </head>
 <body>
@@ -916,19 +1000,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="section-title">
                         <i class="fas fa-box-open"></i> Insumos Asignados
                     </div>
-                    
+
                     <div class="insumos-section">
-                        <div class="insumos-grid">
-                            <?php foreach ($insumos_disponibles as $insumo): ?>
-                                <div>
-                                    <input type="checkbox" 
-                                           class="insumo-checkbox" 
-                                           id="insumo_<?php echo $insumo['id_insumo']; ?>" 
-                                           name="insumos[]" 
-                                           value="<?php echo $insumo['id_insumo']; ?>"
-                                           <?php echo isChecked($insumo['id_insumo'], $insumos_referenciado); ?>>
-                                    <label class="insumo-label" for="insumo_<?php echo $insumo['id_insumo']; ?>">
-                                        <div class="insumo-card">
+                        <!-- Subsección: Insumos Actuales -->
+                        <div style="margin-bottom: 30px;">
+                            <h4 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-check-circle"></i> Insumos Actualmente Asignados
+                                <span style="background: rgba(79, 195, 247, 0.2); color: #4fc3f7; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 10px;">
+                                    <?php echo count($insumos_referenciado); ?> asignados
+                                </span>
+                            </h4>
+                            
+                            <?php if (!empty($insumos_referenciado)): ?>
+                                <div class="insumos-grid">
+                                    <?php foreach ($insumos_referenciado as $insumo): ?>
+                                        <div class="insumo-card-asignado">
                                             <div class="insumo-icon">
                                                 <i class="fas fa-<?php 
                                                     $iconos = [
@@ -944,11 +1030,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             </div>
                                             <div class="insumo-info">
                                                 <div class="insumo-name"><?php echo htmlspecialchars($insumo['nombre']); ?></div>
+                                                <div class="insumo-details">
+                                                    <?php if (!empty($insumo['cantidad'])): ?>
+                                                        <span style="color: #90a4ae; font-size: 0.85rem;">
+                                                            <i class="fas fa-hashtag"></i> Cantidad: <?php echo htmlspecialchars($insumo['cantidad']); ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($insumo['observaciones'])): ?>
+                                                        <div style="color: #90a4ae; font-size: 0.85rem; margin-top: 4px;">
+                                                            <i class="fas fa-sticky-note"></i> <?php echo htmlspecialchars($insumo['observaciones']); ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="insumo-actions">
+                                                <button type="button" class="btn-remove-insumo" 
+                                                        data-insumo-id="<?php echo $insumo['id_insumo']; ?>"
+                                                        title="Quitar insumo">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="insumos_asignados[]" value="<?php echo $insumo['id_insumo']; ?>">
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="no-insumos" style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <i class="fas fa-inbox" style="font-size: 2rem; color: #90a4ae; margin-bottom: 10px;"></i>
+                                    <p style="color: #90a4ae;">Este referenciado no tiene insumos asignados</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Subsección: Agregar Nuevos Insumos -->
+                        <div>
+                            <h4 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-plus-circle"></i> Agregar Nuevos Insumos
+                                <span style="background: rgba(39, 174, 96, 0.2); color: #27ae60; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 10px;">
+                                    <?php echo count($insumos_disponibles); ?> disponibles
+                                </span>
+                            </h4>
+                            
+                            <div class="insumos-grid">
+                                <?php 
+                                // Filtrar insumos que ya están asignados
+                                $insumos_asignados_ids = array_column($insumos_referenciado, 'id_insumo');
+                                ?>
+                                
+                                <?php foreach ($insumos_disponibles as $insumo): ?>
+                                    <?php if (!in_array($insumo['id_insumo'], $insumos_asignados_ids)): ?>
+                                        <div class="insumo-item-nuevo">
+                                            <input type="checkbox" 
+                                                class="insumo-checkbox" 
+                                                id="insumo_<?php echo $insumo['id_insumo']; ?>" 
+                                                name="insumos_nuevos[]" 
+                                                value="<?php echo $insumo['id_insumo']; ?>">
+                                            <label class="insumo-label" for="insumo_<?php echo $insumo['id_insumo']; ?>">
+                                                <div class="insumo-card">
+                                                    <div class="insumo-icon">
+                                                        <i class="fas fa-<?php 
+                                                            $iconos = [
+                                                                'carro' => 'car',
+                                                                'caballo' => 'horse',
+                                                                'cicla' => 'bicycle',
+                                                                'moto' => 'motorcycle',
+                                                                'motocarro' => 'truck-pickup',
+                                                                'publicidad' => 'bullhorn'
+                                                            ];
+                                                            echo $iconos[strtolower($insumo['nombre'])] ?? 'box';
+                                                        ?>"></i>
+                                                    </div>
+                                                    <div class="insumo-info">
+                                                        <div class="insumo-name"><?php echo htmlspecialchars($insumo['nombre']); ?></div>
+                                                    </div>
+                                                    <div class="insumo-check-indicator">
+                                                        <i class="fas fa-check-circle"></i>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <!-- Campos adicionales para cantidad y observaciones -->
+                                            <div class="insumo-details-form" style="display: none; margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                                    <div>
+                                                        <label style="font-size: 0.8rem; color: #90a4ae; display: block; margin-bottom: 5px;">
+                                                            <i class="fas fa-hashtag"></i> Cantidad
+                                                        </label>
+                                                        <input type="number" 
+                                                            name="cantidad_<?php echo $insumo['id_insumo']; ?>" 
+                                                            min="1" 
+                                                            value="1"
+                                                            class="form-control" 
+                                                            style="padding: 6px 10px; font-size: 0.9rem;">
+                                                    </div>
+                                                    <div>
+                                                        <label style="font-size: 0.8rem; color: #90a4ae; display: block; margin-bottom: 5px;">
+                                                            <i class="fas fa-sticky-note"></i> Observaciones
+                                                        </label>
+                                                        <input type="text" 
+                                                            name="observaciones_<?php echo $insumo['id_insumo']; ?>" 
+                                                            class="form-control" 
+                                                            style="padding: 6px 10px; font-size: 0.9rem;"
+                                                            placeholder="Opcional">
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </label>
-                                </div>
-                            <?php endforeach; ?>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                
+                                <?php if (count($insumos_disponibles) == count($insumos_asignados_ids)): ?>
+                                    <div style="grid-column: 1 / -1; text-align: center; padding: 20px;">
+                                        <i class="fas fa-check-circle" style="font-size: 2rem; color: #27ae60; margin-bottom: 10px;"></i>
+                                        <p style="color: #90a4ae;">Todos los insumos disponibles ya están asignados</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                     

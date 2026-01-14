@@ -17,31 +17,31 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
 // Obtener estadísticas reales
 try {
-    // 1. Total de referidos (de la tabla referenciados)
-    $queryTotalReferidos = "SELECT COUNT(*) as total_referidos FROM referenciados";
+    // 1. Total de referidos ACTIVOS (solo activos)
+    $queryTotalReferidos = "SELECT COUNT(*) as total_referidos FROM referenciados WHERE activo = true";
     $stmtTotal = $pdo->query($queryTotalReferidos);
     $resultTotal = $stmtTotal->fetch();
     $totalReferidos = $resultTotal['total_referidos'] ?? 0;
 
-    // 2. Suma de todos los topes de usuarios
-    $querySumaTopes = "SELECT SUM(tope) as suma_topes FROM usuario WHERE tope IS NOT NULL";
+    // 2. Suma de todos los topes de usuarios ACTIVOS
+    $querySumaTopes = "SELECT SUM(tope) as suma_topes FROM usuario WHERE tope IS NOT NULL AND activo = true";
     $stmtTopes = $pdo->query($querySumaTopes);
     $resultTopes = $stmtTopes->fetch();
     $sumaTopes = $resultTopes['suma_topes'] ?? 0;
     
-    // 3. Contar usuarios con rol "Descargador"
-    $queryDescargadores = "SELECT COUNT(*) as total_descargadores FROM usuario WHERE tipo_usuario = 'Descargador'";
+    // 3. Contar usuarios con rol "Descargador" ACTIVOS
+    $queryDescargadores = "SELECT COUNT(*) as total_descargadores FROM usuario WHERE tipo_usuario = 'Descargador' AND activo = true";
     $stmtDescargadores = $pdo->query($queryDescargadores);
     $resultDescargadores = $stmtDescargadores->fetch();
     $totalDescargadores = $resultDescargadores['total_descargadores'] ?? 0;
     
-    // 4. Contar referenciadores activos
+    // 4. Contar referenciadores ACTIVOS
     $queryReferenciadores = "SELECT COUNT(*) as total_referenciadores FROM usuario WHERE tipo_usuario = 'Referenciador' AND activo = true";
     $stmtReferenciadores = $pdo->query($queryReferenciadores);
     $resultReferenciadores = $stmtReferenciadores->fetch();
     $totalReferenciadores = $resultReferenciadores['total_referenciadores'] ?? 0;
     
-    // Calcular porcentaje de avance (Total Referidos vs Tope Total)
+    // Calcular porcentaje de avance (Total Referidos ACTIVOS vs Tope Total de ACTIVOS)
     $porcentajeAvance = 0;
     if ($sumaTopes > 0) {
         $porcentajeAvance = round(($totalReferidos / $sumaTopes) * 100, 2);
@@ -381,7 +381,8 @@ try {
         .progress-bar {
             height: 100%;
             border-radius: 6px;
-            transition: width 0.5s ease-in-out;
+            /* REMOVEMOS LA TRANSICIÓN PARA QUE NO SE ANIME AL PASAR EL MOUSE */
+            /* transition: width 0.5s ease-in-out; */
         }
         
         .data-referidos .progress-bar {
@@ -404,6 +405,15 @@ try {
         .progress-target {
             font-weight: 600;
             color: #666;
+        }
+        
+        /* Nota sobre estadísticas */
+        .stats-note {
+            font-size: 0.75rem;
+            color: #999;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
         }
         
         /* Data Descargadores - mantener estadísticas originales */
@@ -640,8 +650,11 @@ try {
                         <div class="progress-bar" style="width: <?php echo $porcentajeAvance; ?>%"></div>
                     </div>
                     <div class="progress-stats">
-                        <span class="progress-current"><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos</span>
+                        <span class="progress-current"><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos activos</span>
                         <span class="progress-target">Meta: <?php echo number_format($sumaTopes, 0, ',', '.'); ?></span>
+                    </div>
+                    <div class="stats-note">
+                        <i class="fas fa-info-circle"></i> Solo se cuentan referidos y usuarios activos
                     </div>
                 </div>
             </a>
@@ -661,12 +674,15 @@ try {
                 <div class="data-stats">
                     <div class="stat-item">
                         <span class="stat-number"><?php echo number_format($totalDescargadores, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Total Descargadores</span>
+                        <span class="stat-label">Descargadores Activos</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number"><?php echo number_format($totalReferenciadores, 0, ',', '.'); ?></span>
                         <span class="stat-label">Referenciadores Activos</span>
                     </div>
+                </div>
+                <div class="stats-note">
+                    <i class="fas fa-info-circle"></i> Solo se cuentan usuarios activos
                 </div>
             </a>
         </div>
@@ -698,20 +714,6 @@ try {
                     $(this).css('transform', 'translateY(0)');
                 }
             );
-            
-            // Animación de la barra de progreso
-            $('.data-referidos').mouseenter(function() {
-                const progressBar = $(this).find('.progress-bar');
-                const currentWidth = progressBar.width();
-                const containerWidth = $(this).find('.progress-container').width();
-                const targetWidth = parseFloat(progressBar.css('width'));
-                
-                // Restablecer y animar
-                progressBar.css('width', '0%');
-                setTimeout(() => {
-                    progressBar.css('width', targetWidth + '%');
-                }, 100);
-            });
             
             // Breadcrumb navigation
             $('.breadcrumb a').click(function(e) {

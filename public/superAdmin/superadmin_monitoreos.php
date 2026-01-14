@@ -557,7 +557,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             </div>
             <p class="dashboard-subtitle">
                 Acceda a los módulos especializados de análisis y seguimiento del sistema de gestión política.
-                Supervise el avance y obtenga insights avanzados.
+                Supervise el avance de referenciadores.
             </p>
         </div>
         

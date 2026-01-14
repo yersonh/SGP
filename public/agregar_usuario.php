@@ -1099,45 +1099,12 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
     }
     
-    // ==================== MANEJO DE VISIBILIDAD DEL TOPE ====================
-    function handleTipoUsuarioChange() {
-        const tipoUsuarioSelect = document.getElementById('tipo_usuario');
-        const topeContainer = document.getElementById('tope-container');
-        const topeInput = document.getElementById('tope');
-        
-        function updateTopeVisibility() {
-            const tipoUsuario = tipoUsuarioSelect.value;
-            const isReferenciador = tipoUsuario === 'Referenciador';
-            
-            if (isReferenciador) {
-                // Mostrar el campo Tope si es Referenciador
-                topeContainer.style.display = 'block';
-                topeInput.required = true;
-                topeInput.value = topeInput.value || '100'; // Valor por defecto
-            } else {
-                // Ocultar el campo Tope para otros tipos
-                topeContainer.style.display = 'none';
-                topeInput.required = false;
-                topeInput.value = '0'; // Establecer valor a 0 para otros tipos
-            }
-        }
-        
-        // Ejecutar al cambiar el tipo de usuario
-        tipoUsuarioSelect.addEventListener('change', updateTopeVisibility);
-        
-        // Ejecutar al cargar la página (para estado inicial)
-        updateTopeVisibility();
-    }
-    
     // ==================== INICIALIZACIÓN ====================
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM cargado - Inicializando formulario de agregar usuario...');
         
         // Configurar selects dependientes (USANDO LOS MISMOS ARCHIVOS AJAX)
         setupDependentSelects();
-        
-        // Configurar manejo del campo tope
-        handleTipoUsuarioChange();
         
         // Foto de perfil
         const photoPreview = document.getElementById('photoPreview');
@@ -1244,16 +1211,12 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         passwordInput.addEventListener('input', validatePasswordMatch);
         confirmPasswordInput.addEventListener('input', validatePasswordMatch);
         
-        // 🔥 VALIDACIÓN DEL FORMULARIO ====================
+        // 🔥 VALIDACIÓN SIMPLIFICADA DEL FORMULARIO (SIN VALIDACIÓN DE TELÉFONO)
         const usuarioForm = document.getElementById('usuario-form');
         const submitBtn = document.getElementById('submit-btn');
         
         usuarioForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            // Obtener tipo de usuario seleccionado
-            const tipoUsuario = document.getElementById('tipo_usuario').value;
-            const isReferenciador = tipoUsuario === 'Referenciador';
             
             // Validar campos obligatorios
             const requiredFields = [
@@ -1303,7 +1266,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // Validar teléfono
+            // 🔥 NO VALIDAR TELÉFONO - Solo asegurar que no esté vacío
             const telefono = telefonoInput.value.trim();
             if (!telefono) {
                 showNotification('El teléfono es obligatorio.', 'error');
@@ -1316,34 +1279,15 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // 🔥 VALIDACIÓN DEL TOPE - SOLO PARA REFERENCIADOR
-            if (isReferenciador) {
-                const topeInput = document.getElementById('tope');
-                const tope = parseInt(topeInput.value) || 0;
-                
-                // Para Referenciador, validar que el tope sea válido
-                if (tope < 1) {
-                    showNotification('Para usuarios Referenciador, el tope debe ser al menos 1.', 'error');
-                    topeInput.focus();
-                    return;
-                }
-            }
-            // Para otros tipos, NO se valida el tope
-            
             // Crear FormData para enviar (incluye archivos)
             const formData = new FormData(usuarioForm);
             
             // Asegurar que los valores numéricos estén limpios
             formData.set('cedula', cedula);
+            // El teléfono se envía como está (la validación fuerte está en el servidor)
             
-            // 🔥 AJUSTAR TOPE SEGÚN TIPO DE USUARIO
-            if (!isReferenciador) {
-                // Para otros tipos, establecer tope = 0
-                formData.set('tope', '0');
-            } else {
-                // Para Referenciador, usar el valor del input
-                const topeValue = parseInt(document.getElementById('tope').value) || 100;
-                formData.set('tope', Math.max(1, topeValue).toString());
+            if (formData.get('tope')) {
+                formData.set('tope', formData.get('tope').replace(/\D/g, ''));
             }
             
             // Mostrar estado de carga
@@ -1374,10 +1318,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     
                     // Resetear selects dependientes
                     resetDependentSelects();
-                    
-                    // Resetear visibilidad del tope
-                    document.getElementById('tope-container').style.display = 'none';
-                    document.getElementById('tope').value = '0';
                     
                     // Redirigir después de 2 segundos
                     setTimeout(() => {
@@ -1414,7 +1354,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         // Inicializar
         passwordStrength.style.display = 'none';
         
-        console.log('Formulario de agregar usuario inicializado correctamenteamente.');
+        console.log('Formulario de agregar usuario inicializado correctamente');
     });
 </script>
 </body>

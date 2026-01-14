@@ -813,9 +813,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="ver_referenciado.php?id=<?php echo $id_referenciado; ?>" class="header-btn">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </a>
                     <a href="../logout.php" class="header-btn">
                         <i class="fas fa-sign-out-alt"></i> Salir
                     </a>

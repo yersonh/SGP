@@ -308,7 +308,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         
         .option-title {
             font-size: 1.6rem;
-            font-weight: 800;
+            font-weight: normal;
             margin-bottom: 15px;
             color: #2c3e50;
             letter-spacing: 0.5px;
@@ -334,7 +334,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             padding: 6px 12px;
             font-size: 0.8rem;
             color: #666;
-            font-weight: 500;
+            font-weight: normal;
             transition: all 0.3s ease;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -584,8 +584,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 </div>
                 <div class="option-title">AVANCE REFERENCIADOS</div>
                 <div class="option-description">
-                    Monitoreo en tiempo real del progreso de referenciadores, 
-                    métricas de rendimiento, gráficas comparativas y análisis 
+                    Monitoreo en tiempo real del progreso de referenciadores y análisis 
                     detallado de avances por zona, sector y puesto.
                 </div>
             </a>
@@ -595,9 +594,6 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 <div class="access-indicator">
                     <i class="fas fa-brain"></i> INICIAR ANÁLISIS
                 </div>
-                <div class="ai-badge">
-                    <i class="fas fa-microchip"></i> INTELIGENCIA ARTIFICIAL
-                </div>
                 <div class="option-icon-wrapper">
                     <div class="option-icon">
                         <i class="fas fa-robot"></i>
@@ -606,8 +602,6 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 <div class="option-title">ANÁLISIS IA</div>
                 <div class="option-description">
                     Análisis predictivo y prescriptivo utilizando inteligencia artificial. 
-                    Detección de patrones, predicción de tendencias, recomendaciones 
-                    automatizadas y visualización avanzada de datos.
                 </div>
             </a>
         </div>

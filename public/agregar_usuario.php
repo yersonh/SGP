@@ -900,7 +900,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                             min="1"
                             step="1"
                             value="100"
-                            required
                             autocomplete="off">
                     </div>
                     <span class="field-hint">Número máximo de referenciados permitidos (mínimo 1)</span>

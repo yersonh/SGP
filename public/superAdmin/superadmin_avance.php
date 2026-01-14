@@ -581,6 +581,251 @@ try {
                 text-align: center;
             }
         }
+        /* Estadísticas Globales - MEJORADO */
+        .global-stats {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eaeaea;
+        }
+
+        .stats-title {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Primera fila: Estadísticas en línea */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .stats-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .stats-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            background: #fff;
+        }
+
+        .stats-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stats-content {
+            flex: 1;
+        }
+
+        .stats-value {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .stats-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Segunda fila: Barra de progreso */
+        .progress-row {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-title {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .progress-percentage {
+            font-size: 1.2rem;
+            color: #3498db;
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            margin-bottom: 15px;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 16px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            border-radius: 8px;
+            position: relative;
+            transition: width 1s ease-in-out;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .progress-markers {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 5px;
+        }
+
+        .progress-markers::before {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+
+        .marker {
+            font-size: 0.8rem;
+            color: #666;
+            position: relative;
+            transform: translateX(-50%);
+        }
+
+        .marker:nth-child(1) { left: 0%; }
+        .marker:nth-child(2) { left: 25%; }
+        .marker:nth-child(3) { left: 50%; }
+        .marker:nth-child(4) { left: 75%; }
+        .marker:nth-child(5) { left: 100%; }
+
+        .progress-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .progress-current {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .progress-target {
+            font-weight: 500;
+        }
+
+        /* Responsive para estadísticas */
+        @media (max-width: 1200px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 767px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-box {
+                padding: 15px;
+            }
+            
+            .stats-value {
+                font-size: 1.6rem;
+            }
+            
+            .progress-row {
+                padding: 20px;
+            }
+            
+            .progress-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .progress-footer {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .global-stats {
+                padding: 15px;
+            }
+            
+            .stats-title {
+                font-size: 1.1rem;
+                margin-bottom: 20px;
+            }
+            
+            .stats-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .progress-row {
+                padding: 15px;
+            }
+            
+            .progress-track {
+                height: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -626,47 +871,80 @@ try {
             </p>
         </div>
         
-        <!-- Estadísticas Globales -->
+        <!-- Estadísticas Globales - MEJORADA -->
         <div class="global-stats">
             <div class="stats-title">
                 <i class="fas fa-chart-bar"></i>
-                <span>Estadísticas Globales</span>
+                <span>Resumen del Avance Global</span>
             </div>
             
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $totalReferenciadores; ?></div>
-                    <div class="stat-label">Referenciadores Activos</div>
+            <!-- Grid de 2 filas: Estadísticas principales arriba, barra abajo -->
+            <div class="stats-main-container">
+                <!-- Primera fila: 4 estadísticas en línea -->
+                <div class="stats-row">
+                    <div class="stats-box">
+                        <div class="stats-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stats-content">
+                            <div class="stats-value"><?php echo $totalReferenciadores; ?></div>
+                            <div class="stats-label">Referenciadores Activos</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-box">
+                        <div class="stats-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stats-content">
+                            <div class="stats-value"><?php echo number_format($totalReferidos, 0, ',', '.'); ?></div>
+                            <div class="stats-label">Referidos Registrados</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-box">
+                        <div class="stats-icon">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <div class="stats-content">
+                            <div class="stats-value"><?php echo number_format($totalTope, 0, ',', '.'); ?></div>
+                            <div class="stats-label">Meta Total</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-box">
+                        <div class="stats-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stats-content">
+                            <div class="stats-value"><?php echo $porcentajeGlobal; ?>%</div>
+                            <div class="stats-label">Avance Global</div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo number_format($totalReferidos, 0, ',', '.'); ?></div>
-                    <div class="stat-label">Total Referidos Registrados</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo number_format($totalTope, 0, ',', '.'); ?></div>
-                    <div class="stat-label">Meta Total de Referidos</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $porcentajeGlobal; ?>%</div>
-                    <div class="stat-label">Avance Global</div>
-                </div>
-            </div>
-            
-            <!-- Barra de Progreso Global -->
-            <div class="global-progress">
-                <div class="progress-info">
-                    <span class="progress-label">Progreso Global del Sistema</span>
-                    <span class="progress-percentage"><?php echo $porcentajeGlobal; ?>%</span>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-bar" style="width: <?php echo $porcentajeGlobal; ?>%"></div>
-                </div>
-                <div class="progress-stats">
-                    <span><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos</span>
-                    <span>Meta: <?php echo number_format($totalTope, 0, ',', '.'); ?> referidos</span>
+                <!-- Segunda fila: Barra de progreso completa -->
+                <div class="progress-row">
+                    <div class="progress-header">
+                        <span class="progress-title">Progreso Global del Sistema</span>
+                        <span class="progress-percentage"><?php echo $porcentajeGlobal; ?>%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: <?php echo $porcentajeGlobal; ?>%"></div>
+                        </div>
+                        <div class="progress-markers">
+                            <span class="marker">0%</span>
+                            <span class="marker">25%</span>
+                            <span class="marker">50%</span>
+                            <span class="marker">75%</span>
+                            <span class="marker">100%</span>
+                        </div>
+                    </div>
+                    <div class="progress-footer">
+                        <span class="progress-current"><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos registrados</span>
+                        <span class="progress-target">Meta: <?php echo number_format($totalTope, 0, ',', '.'); ?> referidos</span>
+                    </div>
                 </div>
             </div>
         </div>

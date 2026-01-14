@@ -1,11 +1,11 @@
 <?php
 session_start();
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/UsuarioModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit();
 }
 
@@ -539,7 +539,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                         <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
                     </div>
                 </div>
-                <a href="logout.php" class="logout-btn">
+                <a href="../logout.php" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </a>
             </div>

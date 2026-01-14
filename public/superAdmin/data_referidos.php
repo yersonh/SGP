@@ -751,7 +751,7 @@ foreach ($barrios as $barrio) {
                                     <button type="button" 
                                             class="btn-action btn-edit" 
                                             title="Editar referido"
-                                            onclick="location.href='editar_referenciado.php?id=<?php echo (int)$referenciado['id_referenciado']; ?>'">
+                                            onclick="location.href='editar_referenciador.php?id=<?php echo (int)$referenciado['id_referenciado']; ?>'">
                                         <i class="fas fa-edit"></i>
                                     </button>>
                                     <!-- BOTÓN DE ACTIVAR/DESACTIVAR -->

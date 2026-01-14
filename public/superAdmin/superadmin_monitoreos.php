@@ -307,10 +307,12 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         }
         
         .option-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 15px;
             color: #2c3e50;
+            letter-spacing: 0.5px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .option-description {
@@ -324,10 +326,17 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         
         /* Indicador de acceso */
         .access-indicator {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #2c3e50;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .dashboard-option:hover .access-indicator {
@@ -592,7 +601,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 </div>
                 <div class="option-title">ANÁLISIS IA</div>
                 <div class="option-description">
-                    Análisis predictivo y prescriptivo utilizando inteligencia artificial. 
+                    Análisis predictivo y prescriptivo utilizando inteligencia artificial.
                 </div>
             </a>
         </div>

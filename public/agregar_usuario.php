@@ -850,7 +850,21 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                         <option value="">Primero seleccione un sector</option>
                     </select>
                 </div>
-                
+                <!-- Tipo de Usuario -->
+                <div class="form-group">
+                    <label class="form-label" for="tipo_usuario">
+                        <i class="fas fa-user-tag"></i> Tipo de Usuario *
+                    </label>
+                    <select id="tipo_usuario" name="tipo_usuario" class="form-select" required>
+                        <option value="">Seleccione un tipo</option>
+                        <?php foreach ($tipos_usuario as $tipo): ?>
+                        <option value="<?php echo htmlspecialchars($tipo); ?>">
+                            <?php echo htmlspecialchars($tipo); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
                 <!-- Tope -->
                 <div class="form-group">
                     <label class="form-label" for="tope">
@@ -868,21 +882,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                                autocomplete="off">
                     </div>
                     <span class="field-hint">Número máximo de referenciados permitidos</span>
-                </div>
-                
-                <!-- Tipo de Usuario -->
-                <div class="form-group">
-                    <label class="form-label" for="tipo_usuario">
-                        <i class="fas fa-user-tag"></i> Tipo de Usuario *
-                    </label>
-                    <select id="tipo_usuario" name="tipo_usuario" class="form-select" required>
-                        <option value="">Seleccione un tipo</option>
-                        <?php foreach ($tipos_usuario as $tipo): ?>
-                        <option value="<?php echo htmlspecialchars($tipo); ?>">
-                            <?php echo htmlspecialchars($tipo); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
                 </div>
                 
                 <!-- Contraseña -->

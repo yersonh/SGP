@@ -65,31 +65,49 @@ $barrios = $barrioModel->getAll();
     .textarea-counter { text-align: right; font-size: 12px; color: #666; margin-top: 5px; }
     .limit-exceeded { color: #e74c3c; }
     
-    /* Estilos para el botón de buscar mesa en el header */
-    .mesa-search-header {
+    /* Estilos para el botón de buscar mesa en el form-header */
+    .form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+    
+    .form-header h2 {
+        margin: 0;
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-left: auto;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
     }
     
     .btn-mesa-search {
         background: #3498db;
         color: white;
         border: none;
-        padding: 8px 15px;
-        border-radius: 5px;
+        padding: 10px 18px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         gap: 8px;
         cursor: pointer;
         transition: all 0.3s;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        font-weight: 500;
     }
     
     .btn-mesa-search:hover {
         background: #2980b9;
         transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-mesa-search i {
+        font-size: 1rem;
     }
 </style>
 </head>
@@ -104,12 +122,6 @@ $barrios = $barrioModel->getAll();
                     <i class="fas fa-user-circle"></i>
                     <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
                 </div>
-            </div>
-            <!-- BOTÓN DE BUSCAR MESA MOVIDO AQUÍ -->
-            <div class="mesa-search-header">
-                <button type="button" class="btn-mesa-search" onclick="abrirConsultaCenso()">
-                    <i class="fas fa-search"></i> Buscar Mesa
-                </button>
             </div>
             <a href="logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
@@ -132,9 +144,12 @@ $barrios = $barrioModel->getAll();
     <!-- Main Form -->
     <div class="main-container">
         <div class="form-card">
+            <!-- BOTÓN DE BUSCAR MESA AHORA ESTÁ AQUÍ, AL LADO DEL TÍTULO -->
             <div class="form-header">
                 <h2><i class="fas fa-edit"></i> Datos Personales del Referido</h2>
-                <!-- NOTA: Ya no va aquí la lupa, se movió al header -->
+                <button type="button" class="btn-mesa-search" onclick="abrirConsultaCenso()">
+                    <i class="fas fa-search"></i> Buscar Mesa
+                </button>
             </div>
             
             <form id="referenciacion-form">

@@ -988,7 +988,7 @@ function getAfinidadIcon($afinidad) {
                     <a href="data_referidos.php" class="back-btn">
                         <i class="fas fa-arrow-left"></i> Volver a la Lista
                     </a>
-                    <a href="editar_referenciado.php?id=<?php echo $id_referenciado; ?>" class="edit-btn">
+                    <a href="editar_referenciador.php?id=<?php echo $id_referenciado; ?>" class="edit-btn">
                         <i class="fas fa-edit"></i> Editar Referenciado
                     </a>
                 </div>

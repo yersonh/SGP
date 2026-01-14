@@ -14,31 +14,6 @@ $usuarioModel = new UsuarioModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
-
-// Obtener estadísticas reales
-// 1. Total de referidos (de la tabla referenciados)
-$queryTotalReferidos = "SELECT COUNT(*) as total_referidos FROM referenciados";
-$stmtTotal = $pdo->query($queryTotalReferidos);
-$resultTotal = $stmtTotal->fetch();
-$totalReferidos = $resultTotal['total_referidos'] ?? 0;
-
-// 2. Suma de todos los topes de usuarios
-$querySumaTopes = "SELECT SUM(tope) as suma_topes FROM usuario WHERE tope IS NOT NULL";
-$stmtTopes = $pdo->query($querySumaTopes);
-$resultTopes = $stmtTopes->fetch();
-$sumaTopes = $resultTopes['suma_topes'] ?? 0;
-
-// 3. Para Data Descargadores: Ya votaron (contar referidos con descarga)
-$queryYaVotaron = "SELECT COUNT(*) as ya_votaron FROM referenciados WHERE descarga = true OR ya_voto = true";
-$stmtVotaron = $pdo->query($queryYaVotaron);
-$resultVotaron = $stmtVotaron->fetch();
-$yaVotaron = $resultVotaron['ya_votaron'] ?? 0;
-
-// 4. Calcular efectividad (porcentaje de referidos que ya votaron)
-$efectividad = 0;
-if ($totalReferidos > 0) {
-    $efectividad = round(($yaVotaron / $totalReferidos) * 100, 2);
-}
 ?>
 
 <!DOCTYPE html>
@@ -535,12 +510,12 @@ if ($totalReferidos > 0) {
                 </div>
                 <div class="data-stats">
                     <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($totalReferidos, 0, ',', '.'); ?></span>
+                        <span class="stat-number">1,245</span>
                         <span class="stat-label">Total Referidos</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($sumaTopes, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Tope Referidos</span>
+                        <span class="stat-number">832</span>
+                        <span class="stat-label">Por Votar</span>
                     </div>
                 </div>
             </a>
@@ -559,11 +534,11 @@ if ($totalReferidos > 0) {
                 </div>
                 <div class="data-stats">
                     <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($yaVotaron, 0, ',', '.'); ?></span>
+                        <span class="stat-number">413</span>
                         <span class="stat-label">Ya Votaron</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number"><?php echo $efectividad; ?>%</span>
+                        <span class="stat-number">67%</span>
                         <span class="stat-label">Efectividad</span>
                     </div>
                 </div>
@@ -588,6 +563,9 @@ if ($totalReferidos > 0) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Aquí puedes agregar funcionalidad para cargar estadísticas reales
+            // Por ahora son números estáticos de ejemplo
+            
             // Efecto hover mejorado
             $('.data-option').hover(
                 function() {

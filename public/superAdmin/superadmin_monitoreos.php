@@ -1,11 +1,11 @@
 <?php
 session_start();
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../models/UsuarioModel.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/UsuarioModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
-    header('Location: ../index.php');
+    header('Location: index.php');
     exit();
 }
 
@@ -32,7 +32,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         
         body {
             background-color: #f5f7fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* FUENTE PRINCIPAL */
             color: #333;
             margin: 0;
             padding: 0;
@@ -76,6 +76,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             font-size: 1.2rem;
             font-weight: 600;
             margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .user-info {
@@ -85,6 +86,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             background: rgba(255,255,255,0.1);
             padding: 5px 10px;
             border-radius: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .user-info i {
@@ -103,11 +105,48 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             text-decoration: none;
             transition: all 0.3s;
             font-size: 0.8rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .logout-btn:hover {
             background: rgba(255,255,255,0.2);
             color: white;
+        }
+        
+        /* Breadcrumb Navigation (IGUAL AL DE DATA REFERIDOS) */
+        .breadcrumb-nav {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            padding: 0 15px;
+        }
+        
+        .breadcrumb {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .breadcrumb-item a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .breadcrumb-item a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-item.active {
+            color: #666;
+        }
+        
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: "›";
+            color: #95a5a6;
+            padding: 0 8px;
         }
         
         /* Main Container - CENTRADO Y MÁS AMPLIO */
@@ -123,7 +162,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         /* Dashboard Header con título destacado */
         .dashboard-header {
             text-align: center;
-            margin: 30px 0 40px;
+            margin: 20px 0 40px;
             padding: 0 20px;
         }
         
@@ -136,6 +175,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             align-items: center;
             justify-content: center;
             gap: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .dashboard-subtitle {
@@ -144,6 +184,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         /* Grid de 2 columnas para los botones */
@@ -271,6 +312,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             margin-bottom: 15px;
             color: #2c3e50;
             letter-spacing: 0.5px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .option-description {
@@ -279,6 +321,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             line-height: 1.6;
             max-width: 90%;
             margin: 0 auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         /* Indicador de acceso */
@@ -293,6 +336,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             color: #666;
             font-weight: 500;
             transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .dashboard-option:hover .access-indicator {
@@ -312,6 +356,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             font-size: 0.75rem;
             font-weight: 600;
             letter-spacing: 0.5px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         /* Footer (igual al referenciador) */
@@ -330,6 +375,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         .system-footer p {
             margin: 8px 0;
             color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         /* Animación sutil al cargar */
@@ -401,6 +447,16 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
             .logout-btn {
                 order: 2;
                 align-self: flex-end;
+            }
+            
+            /* Breadcrumb responsive */
+            .breadcrumb-nav {
+                padding: 0 10px;
+                margin-bottom: 15px;
+            }
+            
+            .breadcrumb {
+                font-size: 0.85rem;
             }
             
             .dashboard-header {
@@ -483,12 +539,21 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                         <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
                     </div>
                 </div>
-                <a href="../logout.php" class="logout-btn">
+                <a href="logout.php" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </a>
             </div>
         </div>
     </header>
+
+    <!-- Breadcrumb Navigation (IGUAL AL DE DATA REFERIDOS) -->
+    <div class="breadcrumb-nav">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><i class="fas fa-home"></i> Panel Super Admin</li>
+            </ol>
+        </nav>
+    </div>
 
     <!-- Main Content -->
     <div class="main-container">
@@ -601,6 +666,17 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                             this.style.pointerEvents = 'auto';
                         }, 3000);
                     }
+                });
+            });
+            
+            // Breadcrumb hover effect
+            const breadcrumbLinks = document.querySelectorAll('.breadcrumb-item a');
+            breadcrumbLinks.forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    this.style.textDecoration = 'underline';
+                });
+                link.addEventListener('mouseleave', function() {
+                    this.style.textDecoration = 'none';
                 });
             });
         });

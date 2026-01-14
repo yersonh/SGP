@@ -395,7 +395,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         <!-- Grid de 2 columnas -->
         <div class="dashboard-grid">
             <!-- Monitoreos -->
-            <a href="superadmin_monitoreos.php" class="dashboard-option">
+            <a href="superAdmin/superadmin_monitoreos.php" class="dashboard-option">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
                 </div>

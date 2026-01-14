@@ -64,17 +64,27 @@ function getEstadoActividad($activo) {
 }
 
 // Función para mostrar icono de afinidad
+// Función para mostrar icono de afinidad con estrellas
 function getAfinidadIcon($afinidad) {
-    $colors = [
-        1 => '#ff6b6b', // Rojo
-        2 => '#ffa726', // Naranja
-        3 => '#ffd166', // Amarillo
-        4 => '#06d6a0', // Verde
-        5 => '#118ab2'  // Azul
-    ];
+    $afinidad = intval($afinidad);
+    $afinidad = max(1, min(5, $afinidad)); // Asegurar que esté entre 1 y 5
     
-    $color = $colors[$afinidad] ?? '#cccccc';
-    return '<span class="afinidad-badge" style="background-color: ' . $color . '">' . $afinidad . '</span>';
+    $html = '<div class="estrellas-afinidad">';
+    
+    // Estrellas llenas
+    for ($i = 1; $i <= $afinidad; $i++) {
+        $html .= '<i class="fas fa-star estrella-llena"></i>';
+    }
+    
+    // Estrellas vacías
+    for ($i = $afinidad + 1; $i <= 5; $i++) {
+        $html .= '<i class="far fa-star estrella-vacia"></i>';
+    }
+    
+    $html .= '<span class="valor-afinidad">' . $afinidad . '/5</span>';
+    $html .= '</div>';
+    
+    return $html;
 }
 ?>
 
@@ -634,6 +644,33 @@ function getAfinidadIcon($afinidad) {
                 font-size: 1.1rem;
             }
         }
+        .estrellas-afinidad {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.estrella-llena {
+    color: #FFD700; /* Oro */
+    font-size: 1.1rem;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.estrella-vacia {
+    color: #666; /* Gris */
+    font-size: 1.1rem;
+}
+
+.valor-afinidad {
+    margin-left: 10px;
+    color: #FFD700;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
     </style>
 </head>
 <body>

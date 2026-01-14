@@ -1414,7 +1414,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         // Inicializar
         passwordStrength.style.display = 'none';
         
-        console.log('Formulario de agregar usuario inicializado correctamente');
+        console.log('Formulario de agregar usuario inicializado correctamenteamente.');
     });
 </script>
 </body>

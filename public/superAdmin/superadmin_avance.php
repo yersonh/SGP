@@ -852,7 +852,11 @@ try {
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
-                <li class="breadcrumb-item active"><i class="fas fa-chart-line"></i> Avance Referenciadores</li>
+                <li class="breadcrumb-item">
+                    <a href="superadmin_avance.php" class="text-decoration-none">
+                        <i class="fas fa-chart-line"></i> Avance Referenciadores
+                    </a>
+                </li>
             </ol>
         </nav>
     </div>

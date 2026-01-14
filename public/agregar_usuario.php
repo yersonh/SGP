@@ -1112,12 +1112,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
             if (isReferenciador) {
                 // Mostrar el campo Tope si es Referenciador
                 topeContainer.style.display = 'block';
-                topeInput.required = true;
                 topeInput.value = topeInput.value || '100'; // Valor por defecto
             } else {
                 // Ocultar el campo Tope para otros tipos
                 topeContainer.style.display = 'none';
-                topeInput.required = false;
                 topeInput.value = '0'; // Establecer valor a 0 para otros tipos
             }
         }
@@ -1377,7 +1375,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     
                     // Resetear visibilidad del tope
                     document.getElementById('tope-container').style.display = 'none';
-                    document.getElementById('tope').value = '0';
+                    document.getElementById('tope').value = '100';
                     
                     // Redirigir después de 2 segundos
                     setTimeout(() => {

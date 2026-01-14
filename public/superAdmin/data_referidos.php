@@ -28,6 +28,23 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 // Obtener todos los referenciados
 $referenciados = $referenciadoModel->getAllReferenciados();
 
+// Calcular estadísticas
+$totalReferidos = count($referenciados);
+$totalActivos = 0;
+$totalInactivos = 0;
+
+// Contar activos e inactivos
+foreach ($referenciados as $referenciado) {
+    $activo = $referenciado['activo'] ?? true;
+    $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+    
+    if ($esta_activo) {
+        $totalActivos++;
+    } else {
+        $totalInactivos++;
+    }
+}
+
 // Inicializar modelos para obtener nombres de relaciones
 $zonaModel = new ZonaModel($pdo);
 $sectorModel = new SectorModel($pdo);
@@ -253,8 +270,20 @@ foreach ($barrios as $barrio) {
         .stat-number {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #3498db;
             display: block;
+        }
+        
+        /* Colores para las estadísticas */
+        .stat-total .stat-number {
+            color: #3498db;
+        }
+        
+        .stat-activos .stat-number {
+            color: #27ae60;
+        }
+        
+        .stat-fecha .stat-number {
+            color: #9b59b6;
         }
         
         .stat-label {
@@ -436,6 +465,7 @@ foreach ($barrios as $barrio) {
             
             .stats-summary {
                 flex-wrap: wrap;
+                gap: 15px;
             }
             
             .stat-item {
@@ -470,11 +500,12 @@ foreach ($barrios as $barrio) {
             }
             
             .stats-summary {
+                flex-direction: column;
                 gap: 10px;
             }
             
             .stat-item {
-                min-width: 80px;
+                min-width: 100%;
                 padding: 8px 12px;
             }
             
@@ -659,11 +690,15 @@ foreach ($barrios as $barrio) {
                 <span>Data de Referidos</span>
             </div>
             <div class="stats-summary">
-                <div class="stat-item">
-                    <span class="stat-number"><?php echo count($referenciados); ?></span>
+                <div class="stat-item stat-total">
+                    <span class="stat-number"><?php echo $totalReferidos; ?></span>
                     <span class="stat-label">Total Referidos</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item stat-activos">
+                    <span class="stat-number"><?php echo $totalActivos; ?></span>
+                    <span class="stat-label">Referidos Activos</span>
+                </div>
+                <div class="stat-item stat-fecha">
                     <span class="stat-number"><?php echo date('d/m/Y'); ?></span>
                     <span class="stat-label">Fecha Actual</span>
                 </div>
@@ -676,6 +711,11 @@ foreach ($barrios as $barrio) {
                 <div class="table-title">
                     <i class="fas fa-table"></i>
                     <span>Listado de Referidos Registrados</span>
+                    <?php if ($totalInactivos > 0): ?>
+                        <small style="font-size: 0.9rem; color: #f39c12; margin-left: 10px;">
+                            <i class="fas fa-info-circle"></i> <?php echo $totalInactivos; ?> referido(s) inactivo(s)
+                        </small>
+                    <?php endif; ?>
                 </div>
                 <div class="table-actions">
                     <button class="btn-search">
@@ -691,6 +731,7 @@ foreach ($barrios as $barrio) {
                 <table id="referidosTable" class="table table-hover" style="width:100%">
                     <thead>
                         <tr>
+                            <th>Estado</th>
                             <th>Nombre</th>
                             <th>Apellido</th>
                             <th>Cédula</th>
@@ -713,8 +754,22 @@ foreach ($barrios as $barrio) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($referenciados as $referenciado): ?>
-                        <tr>
+                        <?php foreach ($referenciados as $referenciado): 
+                            $activo = $referenciado['activo'] ?? true;
+                            $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                        ?>
+                        <tr <?php echo !$esta_activo ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : ''; ?>>
+                            <td>
+                                <?php if ($esta_activo): ?>
+                                    <span style="color: #27ae60; font-size: 0.8rem;">
+                                        <i class="fas fa-check-circle"></i> Activo
+                                    </span>
+                                <?php else: ?>
+                                    <span style="color: #e74c3c; font-size: 0.8rem;">
+                                        <i class="fas fa-times-circle"></i> Inactivo
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo htmlspecialchars($referenciado['nombre'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($referenciado['apellido'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($referenciado['cedula'] ?? ''); ?></td>
@@ -753,13 +808,9 @@ foreach ($barrios as $barrio) {
                                             title="Editar referido"
                                             onclick="location.href='editar_referenciador.php?id=<?php echo (int)$referenciado['id_referenciado']; ?>'">
                                         <i class="fas fa-edit"></i>
-                                    </button>>
+                                    </button>
                                     <!-- BOTÓN DE ACTIVAR/DESACTIVAR -->
-                                    <?php 
-                                    $activo = $referenciado['activo'] ?? true;
-                                    $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
-                                    
-                                    if ($esta_activo): ?>
+                                    <?php if ($esta_activo): ?>
                                         <button class="btn-action btn-deactivate" 
                                                 title="Desactivar referido"
                                                 onclick="desactivarReferenciado(
@@ -789,7 +840,7 @@ foreach ($barrios as $barrio) {
         
         <!-- Info Footer -->
         <div style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 20px;">
-            <p><i class="fas fa-info-circle"></i> Esta tabla muestra todos los referidos registrados en el sistema. Use la barra de búsqueda para filtrar resultados.</p>
+            <p><i class="fas fa-info-circle"></i> Mostrando <?php echo $totalReferidos; ?> referidos (<?php echo $totalActivos; ?> activos, <?php echo $totalInactivos; ?> inactivos)</p>
         </div>
     </div>
 
@@ -819,7 +870,7 @@ foreach ($barrios as $barrio) {
                 },
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-                order: [[0, 'asc']], // Ordenar por nombre por defecto
+                order: [[18, 'desc']], // Ordenar por fecha de registro descendente por defecto
                 responsive: true,
                 scrollX: true, // Permitir scroll horizontal
                 dom: '<"top"f>rt<"bottom"lip><"clear">',
@@ -833,6 +884,11 @@ foreach ($barrios as $barrio) {
                         orderable: false,
                         searchable: false,
                         width: '130px'
+                    },
+                    {
+                        targets: 0, // Columna de Estado
+                        width: '100px',
+                        searchable: true
                     }
                 ]
             });
@@ -899,8 +955,17 @@ foreach ($barrios as $barrio) {
                     // Cambiar event listener para reactivar
                     button.setAttribute('onclick', `reactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
                     
+                    // Actualizar estado visual en la tabla
+                    const row = button.closest('tr');
+                    row.style.backgroundColor = '#f8f9fa';
+                    row.style.opacity = '0.8';
+                    row.cells[0].innerHTML = '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>';
+                    
                     // Mostrar notificación
                     showNotification('Referenciado desactivado correctamente', 'success');
+                    
+                    // Actualizar contador
+                    updateStats(-1, 1); // Disminuir activos, aumentar inactivos
                 } else {
                     showNotification('Error: ' + (data.message || 'No se pudo desactivar el referenciado'), 'error');
                     button.innerHTML = originalIcon;
@@ -947,8 +1012,17 @@ foreach ($barrios as $barrio) {
                     // Cambiar event listener para desactivar
                     button.setAttribute('onclick', `desactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
                     
+                    // Actualizar estado visual en la tabla
+                    const row = button.closest('tr');
+                    row.style.backgroundColor = '';
+                    row.style.opacity = '';
+                    row.cells[0].innerHTML = '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
+                    
                     // Mostrar notificación
                     showNotification('Referenciado reactivado correctamente', 'success');
+                    
+                    // Actualizar contador
+                    updateStats(1, -1); // Aumentar activos, disminuir inactivos
                 } else {
                     showNotification('Error: ' + data.message, 'error');
                     button.innerHTML = originalIcon;
@@ -960,6 +1034,25 @@ foreach ($barrios as $barrio) {
                 button.innerHTML = originalIcon;
                 button.className = originalClass;
                 button.disabled = false;
+            }
+        }
+
+        // Función para actualizar estadísticas en tiempo real
+        function updateStats(activosChange, inactivosChange) {
+            // Actualizar los números en las estadísticas
+            const totalElement = document.querySelector('.stat-total .stat-number');
+            const activosElement = document.querySelector('.stat-activos .stat-number');
+            
+            if (activosElement) {
+                let currentActivos = parseInt(activosElement.textContent);
+                activosElement.textContent = currentActivos + activosChange;
+            }
+            
+            // También podríamos actualizar el texto del pie de página
+            const infoFooter = document.querySelector('.table-title small');
+            if (infoFooter) {
+                const currentInactivos = <?php echo $totalInactivos; ?> + inactivosChange;
+                infoFooter.innerHTML = `<i class="fas fa-info-circle"></i> ${currentInactivos} referido(s) inactivo(s)`;
             }
         }
 

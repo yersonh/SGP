@@ -738,7 +738,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Main Content -->
     <div class="main-container">
-        <form method="POST" action="editar_referenciado.php?id=<?php echo $id_referenciado; ?>">
+        <form method="POST" action="editar_referenciador.php?id=<?php echo $id_referenciado; ?>">
             <div class="card-container">
                 <!-- Card Header -->
                 <div class="card-header">

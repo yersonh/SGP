@@ -731,7 +731,7 @@ function getAfinidadIcon($afinidad) {
                         </div>
                     </div>
                     
-                    <div class="form-group full-width">
+                    <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-home"></i> Dirección
                         </label>

@@ -662,6 +662,26 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 font-size: 1.5rem;
             }
         }
+                /* Agrega esto en tu sección de estilos CSS */
+        #tope-container {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        #tope-container[style*="display: block"] {
+            animation: fadeInDown 0.3s ease;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -866,22 +886,24 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 </div>
 
                 <!-- Tope -->
-                <div class="form-group">
+                <div class="form-group" id="tope-container" style="display: none;">
                     <label class="form-label" for="tope">
-                        <i class="fas fa-chart-line"></i> Tope
+                        <i class="fas fa-chart-line"></i> Tope *
                     </label>
                     <div class="input-with-icon">
                         <i class="fas fa-chart-line input-icon"></i>
                         <input type="number" 
-                               id="tope" 
-                               name="tope" 
-                               class="form-control" 
-                               placeholder="Ej: 100"
-                               min="0"
-                               step="1"
-                               autocomplete="off">
+                            id="tope" 
+                            name="tope" 
+                            class="form-control" 
+                            placeholder="Ej: 100"
+                            min="1"
+                            step="1"
+                            value="100"
+                            required
+                            autocomplete="off">
                     </div>
-                    <span class="field-hint">Número máximo de referenciados permitidos</span>
+                    <span class="field-hint">Número máximo de referenciados permitidos (mínimo 1)</span>
                 </div>
                 
                 <!-- Contraseña -->
@@ -1077,12 +1099,45 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
     }
     
+    // ==================== MANEJO DE VISIBILIDAD DEL TOPE ====================
+    function handleTipoUsuarioChange() {
+        const tipoUsuarioSelect = document.getElementById('tipo_usuario');
+        const topeContainer = document.getElementById('tope-container');
+        const topeInput = document.getElementById('tope');
+        
+        function updateTopeVisibility() {
+            const tipoUsuario = tipoUsuarioSelect.value;
+            const isReferenciador = tipoUsuario === 'Referenciador';
+            
+            if (isReferenciador) {
+                // Mostrar el campo Tope si es Referenciador
+                topeContainer.style.display = 'block';
+                topeInput.required = true;
+                topeInput.value = topeInput.value || '100'; // Valor por defecto
+            } else {
+                // Ocultar el campo Tope para otros tipos
+                topeContainer.style.display = 'none';
+                topeInput.required = false;
+                topeInput.value = '0'; // Establecer valor a 0 para otros tipos
+            }
+        }
+        
+        // Ejecutar al cambiar el tipo de usuario
+        tipoUsuarioSelect.addEventListener('change', updateTopeVisibility);
+        
+        // Ejecutar al cargar la página (para estado inicial)
+        updateTopeVisibility();
+    }
+    
     // ==================== INICIALIZACIÓN ====================
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM cargado - Inicializando formulario de agregar usuario...');
         
         // Configurar selects dependientes (USANDO LOS MISMOS ARCHIVOS AJAX)
         setupDependentSelects();
+        
+        // Configurar manejo del campo tope
+        handleTipoUsuarioChange();
         
         // Foto de perfil
         const photoPreview = document.getElementById('photoPreview');
@@ -1189,7 +1244,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         passwordInput.addEventListener('input', validatePasswordMatch);
         confirmPasswordInput.addEventListener('input', validatePasswordMatch);
         
-        // 🔥 VALIDACIÓN SIMPLIFICADA DEL FORMULARIO (SIN VALIDACIÓN DE TELÉFONO)
+        // 🔥 VALIDACIÓN DEL FORMULARIO ====================
         const usuarioForm = document.getElementById('usuario-form');
         const submitBtn = document.getElementById('submit-btn');
         
@@ -1244,7 +1299,7 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
-            // 🔥 NO VALIDAR TELÉFONO - Solo asegurar que no esté vacío
+            // Validar teléfono
             const telefono = telefonoInput.value.trim();
             if (!telefono) {
                 showNotification('El teléfono es obligatorio.', 'error');
@@ -1257,15 +1312,35 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                 return;
             }
             
+            // 🔥 VALIDACIÓN DEL TOPE
+            const tipoUsuario = document.getElementById('tipo_usuario').value;
+            const topeInput = document.getElementById('tope');
+            
+            if (tipoUsuario === 'Referenciador') {
+                // Para Referenciador, validar que el tope sea válido
+                const tope = parseInt(topeInput.value) || 0;
+                if (tope < 1) {
+                    showNotification('Para usuarios Referenciador, el tope debe ser al menos 1.', 'error');
+                    topeInput.focus();
+                    return;
+                }
+            }
+            // Para otros tipos, no se necesita validación (ya se estableció en 0)
+            
             // Crear FormData para enviar (incluye archivos)
             const formData = new FormData(usuarioForm);
             
             // Asegurar que los valores numéricos estén limpios
             formData.set('cedula', cedula);
-            // El teléfono se envía como está (la validación fuerte está en el servidor)
             
-            if (formData.get('tope')) {
-                formData.set('tope', formData.get('tope').replace(/\D/g, ''));
+            // 🔥 AJUSTAR TOPE SEGÚN TIPO DE USUARIO
+            if (tipoUsuario !== 'Referenciador') {
+                // Para otros tipos, establecer tope = 0
+                formData.set('tope', '0');
+            } else {
+                // Para Referenciador, usar el valor del input
+                const topeValue = parseInt(document.getElementById('tope').value) || 100;
+                formData.set('tope', Math.max(1, topeValue).toString());
             }
             
             // Mostrar estado de carga
@@ -1296,6 +1371,10 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
                     
                     // Resetear selects dependientes
                     resetDependentSelects();
+                    
+                    // Resetear visibilidad del tope
+                    document.getElementById('tope-container').style.display = 'none';
+                    document.getElementById('tope').value = '0';
                     
                     // Redirigir después de 2 segundos
                     setTimeout(() => {

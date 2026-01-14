@@ -29,23 +29,24 @@ try {
     $resultTopes = $stmtTopes->fetch();
     $sumaTopes = $resultTopes['suma_topes'] ?? 0;
     
-    // 3. Para Data Descargadores: Ya votaron (contar referidos con ya_voto = true)
-    $queryYaVotaron = "SELECT COUNT(*) as ya_votaron FROM referenciados WHERE ya_voto = true";
-    $stmtVotaron = $pdo->query($queryYaVotaron);
-    $resultVotaron = $stmtVotaron->fetch();
-    $yaVotaron = $resultVotaron['ya_votaron'] ?? 0;
+    // 3. Contar usuarios con rol "Descargador"
+    $queryDescargadores = "SELECT COUNT(*) as total_descargadores FROM usuario WHERE tipo_usuario = 'Descargador'";
+    $stmtDescargadores = $pdo->query($queryDescargadores);
+    $resultDescargadores = $stmtDescargadores->fetch();
+    $totalDescargadores = $resultDescargadores['total_descargadores'] ?? 0;
     
-    // 4. Calcular efectividad (porcentaje de referidos que ya votaron)
-    $efectividad = 0;
-    if ($totalReferidos > 0) {
-        $efectividad = round(($yaVotaron / $totalReferidos) * 100, 2);
-    }
+    // 4. Contar referenciadores activos
+    $queryReferenciadores = "SELECT COUNT(*) as total_referenciadores FROM usuario WHERE tipo_usuario = 'Referenciador' AND activo = true";
+    $stmtReferenciadores = $pdo->query($queryReferenciadores);
+    $resultReferenciadores = $stmtReferenciadores->fetch();
+    $totalReferenciadores = $resultReferenciadores['total_referenciadores'] ?? 0;
+    
 } catch (Exception $e) {
     // En caso de error, usar valores por defecto
     $totalReferidos = 0;
     $sumaTopes = 0;
-    $yaVotaron = 0;
-    $efectividad = 0;
+    $totalDescargadores = 0;
+    $totalReferenciadores = 0;
     error_log("Error al obtener estadísticas: " . $e->getMessage());
 }
 ?>
@@ -563,17 +564,17 @@ try {
                 </div>
                 <div class="data-title">DATA DESCARGADORES</div>
                 <div class="data-description">
-                    Información detallada de quienes ya han votado. 
-                    Control y seguimiento de la descarga de votos verificados.
+                    Información detallada de usuarios con rol Descargador. 
+                    Gestión de permisos y acceso a datos de descarga.
                 </div>
                 <div class="data-stats">
                     <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($yaVotaron, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Ya Votaron</span>
+                        <span class="stat-number"><?php echo number_format($totalDescargadores, 0, ',', '.'); ?></span>
+                        <span class="stat-label">Total Descargadores</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number"><?php echo $efectividad; ?>%</span>
-                        <span class="stat-label">Efectividad</span>
+                        <span class="stat-number"><?php echo number_format($totalReferenciadores, 0, ',', '.'); ?></span>
+                        <span class="stat-label">Referenciadores Activos</span>
                     </div>
                 </div>
             </a>

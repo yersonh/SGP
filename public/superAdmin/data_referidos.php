@@ -748,10 +748,12 @@ foreach ($barrios as $barrio) {
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <!-- BOTÓN DE EDITAR -->
-                                    <button class="btn-action btn-edit" 
-                                            title="Editar referido">
+                                    <button type="button" 
+                                            class="btn-action btn-edit" 
+                                            title="Editar referido"
+                                            onclick="location.href='editar_referenciado.php?id=<?php echo (int)$referenciado['id_referenciado']; ?>'">
                                         <i class="fas fa-edit"></i>
-                                    </button>
+                                    </button>>
                                     <!-- BOTÓN DE ACTIVAR/DESACTIVAR -->
                                     <?php 
                                     $activo = $referenciado['activo'] ?? true;

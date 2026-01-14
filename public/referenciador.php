@@ -64,6 +64,33 @@ $barrios = $barrioModel->getAll();
     
     .textarea-counter { text-align: right; font-size: 12px; color: #666; margin-top: 5px; }
     .limit-exceeded { color: #e74c3c; }
+    
+    /* Estilos para el botón de buscar mesa en el header */
+    .mesa-search-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+    
+    .btn-mesa-search {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+    
+    .btn-mesa-search:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+    }
 </style>
 </head>
 <body>
@@ -77,6 +104,12 @@ $barrios = $barrioModel->getAll();
                     <i class="fas fa-user-circle"></i>
                     <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
                 </div>
+            </div>
+            <!-- BOTÓN DE BUSCAR MESA MOVIDO AQUÍ -->
+            <div class="mesa-search-header">
+                <button type="button" class="btn-mesa-search" onclick="abrirConsultaCenso()">
+                    <i class="fas fa-search"></i> Buscar Mesa
+                </button>
             </div>
             <a href="logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
@@ -101,6 +134,7 @@ $barrios = $barrioModel->getAll();
         <div class="form-card">
             <div class="form-header">
                 <h2><i class="fas fa-edit"></i> Datos Personales del Referido</h2>
+                <!-- NOTA: Ya no va aquí la lupa, se movió al header -->
             </div>
             
             <form id="referenciacion-form">
@@ -299,24 +333,19 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Mesa -->
+                    <!-- Mesa (SIMPLIFICADO - sin lupa) -->
                     <div class="form-group">
                         <label class="form-label" for="mesa">
                             <i class="fas fa-users"></i> Mesa
                         </label>
-                        <div class="input-with-icon">
-                            <input type="number" 
-                                   id="mesa" 
-                                   name="mesa" 
-                                   class="form-control" 
-                                   placeholder="Número de mesa"
-                                   min="1"
-                                   data-progress="3"
-                                   disabled>
-                            <span class="input-suffix" onclick="abrirConsultaCenso()" title="Consultar censo electoral">
-                                <i class="fas fa-search"></i>
-                            </span>
-                        </div>
+                        <input type="number" 
+                               id="mesa" 
+                               name="mesa" 
+                               class="form-control" 
+                               placeholder="Número de mesa"
+                               min="1"
+                               data-progress="3"
+                               disabled>
                         <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
                     </div>
                     

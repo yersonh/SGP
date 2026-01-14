@@ -46,8 +46,8 @@ if (!$referenciado) {
 // Obtener insumos del referenciado
 $insumos_referenciado = $insumoModel->getInsumosByReferenciado($id_referenciado);
 
-// Obtener todos los insumos disponibles
-$insumos_disponibles = $insumoModel->getAll();
+// Obtener información del referenciador
+$referenciador = $usuarioModel->getUsuarioById($referenciado['id_referenciador'] ?? 0);
 
 // Función para obtener nombre de campo o mostrar "N/A"
 function getFieldValue($value) {
@@ -106,26 +106,18 @@ function getAfinidadIcon($afinidad) {
         
         body {
             min-height: 100vh;
-            background: 
-                linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
-                url('/imagenes/fondo.jpg') no-repeat center center fixed;
-            background-size: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            flex-direction: column;
         }
         
         .main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(30, 30, 40, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             padding: 15px 0;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
             z-index: 1000;
         }
         
@@ -151,18 +143,17 @@ function getAfinidadIcon($afinidad) {
             font-size: 1.5rem;
             font-weight: 600;
             margin: 0;
-            color: white;
+            color: #2c3e50;
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.1);
+            background: #f8f9fa;
             padding: 8px 15px;
             border-radius: 20px;
-            backdrop-filter: blur(5px);
-            color: white;
+            color: #495057;
         }
         
         .header-actions {
@@ -171,117 +162,122 @@ function getAfinidadIcon($afinidad) {
         }
         
         .header-btn {
-            color: white;
+            color: #495057;
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 8px;
             padding: 8px 15px;
-            background: rgba(255, 255, 255, 0.1);
+            background: #f8f9fa;
             border-radius: 6px;
             transition: all 0.3s;
             font-size: 0.9rem;
+            border: 1px solid #dee2e6;
         }
         
         .header-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: #e9ecef;
+            color: #212529;
             transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
         
-        .form-container {
-            background: rgba(30, 30, 40, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        .main-container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
             width: 100%;
-            max-width: 1200px;
-            padding: 40px;
-            animation: fadeIn 0.5s ease-out;
-            margin-top: 80px;
-            margin-bottom: 40px;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .form-header {
-            text-align: center;
+        .card-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
             margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .form-header h2 {
-            color: #ffffff;
+        .card-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 25px 30px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header-left h2 {
             font-size: 1.8rem;
             font-weight: 600;
+            margin-bottom: 5px;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 10px;
-            margin-bottom: 10px;
         }
         
-        .form-header h2 i {
-            color: #4fc3f7;
-        }
-        
-        .form-header p {
-            color: #b0bec5;
+        .header-left p {
+            color: rgba(255, 255, 255, 0.9);
             font-size: 0.95rem;
-            line-height: 1.5;
+            margin-bottom: 0;
         }
         
-        .user-view-info {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 25px;
+        .header-right {
             display: flex;
-            align-items: center;
             gap: 15px;
-            flex-wrap: wrap;
+            align-items: center;
         }
         
-        .user-view-info i {
-            color: #4fc3f7;
-            font-size: 1.5rem;
-        }
-        
-        .user-view-info span {
-            color: #ffffff;
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
             font-weight: 500;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .status-active {
-            background-color: rgba(39, 174, 96, 0.2);
+            background: rgba(39, 174, 96, 0.2);
             color: #27ae60;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
         }
         
         .status-inactive {
-            background-color: rgba(231, 76, 60, 0.2);
+            background: rgba(231, 76, 60, 0.2);
             color: #e74c3c;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+        }
+        
+        .form-sections {
+            padding: 30px;
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: #3498db;
         }
         
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 25px;
+            margin-bottom: 30px;
         }
         
         .form-group {
@@ -295,8 +291,8 @@ function getAfinidadIcon($afinidad) {
         .form-label {
             display: block;
             margin-bottom: 8px;
-            color: #cfd8dc;
-            font-weight: 600;
+            color: #495057;
+            font-weight: 500;
             font-size: 0.9rem;
             display: flex;
             align-items: center;
@@ -304,44 +300,25 @@ function getAfinidadIcon($afinidad) {
         }
         
         .form-label i {
-            color: #90a4ae;
-            font-size: 1rem;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-            background: rgba(30, 30, 40, 0.9);
-            color: #ffffff;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        
-        .form-control:disabled {
-            background-color: rgba(30, 30, 40, 0.5);
-            color: #b0bec5;
-            cursor: not-allowed;
-            border-color: rgba(255, 255, 255, 0.05);
+            color: #6c757d;
+            font-size: 0.9rem;
+            width: 20px;
         }
         
         .field-value {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
             padding: 12px 15px;
             font-size: 0.95rem;
-            color: #ffffff;
+            color: #212529;
             min-height: 46px;
             display: flex;
             align-items: center;
         }
         
         .na-text {
-            color: #90a4ae;
+            color: #6c757d;
             font-style: italic;
         }
         
@@ -349,16 +326,29 @@ function getAfinidadIcon($afinidad) {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 1rem;
             color: white;
         }
         
+        .compromiso-text {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 120px;
+            color: #212529;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        
         .insumos-section {
-            background: rgba(255, 255, 255, 0.05);
+            background: #f8f9fa;
             border-radius: 10px;
             padding: 25px;
             margin-top: 20px;
@@ -372,31 +362,32 @@ function getAfinidadIcon($afinidad) {
         }
         
         .insumo-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: white;
+            border: 1px solid #dee2e6;
             border-radius: 8px;
             padding: 15px;
             display: flex;
             align-items: center;
             gap: 12px;
             transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
         .insumo-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(79, 195, 247, 0.3);
+            border-color: #3498db;
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.1);
         }
         
         .insumo-icon {
             width: 40px;
             height: 40px;
             border-radius: 8px;
-            background: rgba(79, 195, 247, 0.2);
+            background: #e3f2fd;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #4fc3f7;
+            color: #3498db;
             font-size: 1.2rem;
         }
         
@@ -405,43 +396,42 @@ function getAfinidadIcon($afinidad) {
         }
         
         .insumo-name {
-            color: #ffffff;
+            color: #2c3e50;
             font-weight: 500;
             font-size: 0.95rem;
             margin-bottom: 3px;
         }
         
         .insumo-details {
-            color: #b0bec5;
+            color: #6c757d;
             font-size: 0.85rem;
         }
         
         .no-insumos {
             text-align: center;
-            color: #90a4ae;
+            color: #6c757d;
             font-style: italic;
             padding: 30px;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.5);
             border-radius: 8px;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border: 1px dashed #dee2e6;
         }
         
         .form-actions {
-            grid-column: 1 / -1;
             display: flex;
             gap: 15px;
             justify-content: center;
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid #dee2e6;
         }
         
         .edit-btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
-            padding: 15px 40px;
-            border-radius: 10px;
+            padding: 12px 30px;
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -450,7 +440,6 @@ function getAfinidadIcon($afinidad) {
             align-items: center;
             justify-content: center;
             gap: 10px;
-            min-width: 200px;
             text-decoration: none;
             box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
         }
@@ -463,11 +452,11 @@ function getAfinidadIcon($afinidad) {
         }
         
         .back-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 15px 40px;
-            border-radius: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -476,65 +465,25 @@ function getAfinidadIcon($afinidad) {
             align-items: center;
             justify-content: center;
             gap: 10px;
-            min-width: 200px;
             text-decoration: none;
-            backdrop-filter: blur(5px);
         }
         
         .back-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: #545b62;
             transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
             color: white;
         }
         
-        .info-group {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .info-row {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .info-label {
-            min-width: 120px;
-            color: #cfd8dc;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        
-        .info-value {
-            flex: 1;
-            color: #ffffff;
-            font-size: 0.95rem;
-        }
-        
-        .compromiso-text {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            min-height: 100px;
-            color: #ffffff;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
-        
         .referenciador-info {
-            background: rgba(79, 195, 247, 0.1);
-            border: 1px solid rgba(79, 195, 247, 0.2);
-            border-radius: 10px;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
             padding: 15px;
-            margin-top: 10px;
         }
         
         .referenciador-name {
-            color: #4fc3f7;
+            color: #1565c0;
             font-weight: 600;
             font-size: 1rem;
             display: flex;
@@ -543,7 +492,7 @@ function getAfinidadIcon($afinidad) {
         }
         
         .timestamp-info {
-            color: #90a4ae;
+            color: #6c757d;
             font-size: 0.85rem;
             margin-top: 5px;
             display: flex;
@@ -551,31 +500,43 @@ function getAfinidadIcon($afinidad) {
             gap: 8px;
         }
         
+        .info-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            color: #495057;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .info-value {
+            color: #212529;
+            font-size: 0.95rem;
+        }
+        
         @media (max-width: 768px) {
-            .form-container {
-                padding: 25px;
-                margin-top: 100px;
-                margin-bottom: 30px;
-                max-width: 95%;
+            .main-container {
+                padding: 0 15px;
+            }
+            
+            .form-sections {
+                padding: 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
             }
             
             .form-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
-            }
-            
-            .header-title h1 {
-                font-size: 1.2rem;
-            }
-            
-            .header-actions {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .header-btn {
-                padding: 6px 10px;
-                font-size: 0.8rem;
             }
             
             .form-actions {
@@ -584,7 +545,6 @@ function getAfinidadIcon($afinidad) {
             
             .edit-btn, .back-btn {
                 width: 100%;
-                min-width: auto;
                 padding: 12px;
             }
             
@@ -593,35 +553,28 @@ function getAfinidadIcon($afinidad) {
             }
             
             .info-row {
-                flex-direction: column;
-                align-items: flex-start;
+                grid-template-columns: 1fr;
                 gap: 5px;
+                margin-bottom: 20px;
             }
             
             .info-label {
-                min-width: auto;
+                margin-bottom: 0;
             }
         }
         
         @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            
-            .form-container {
+            .card-header {
                 padding: 20px;
-                margin-top: 90px;
-                margin-bottom: 20px;
             }
             
-            .form-header h2 {
+            .header-left h2 {
                 font-size: 1.5rem;
             }
             
-            .user-view-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -650,197 +603,257 @@ function getAfinidadIcon($afinidad) {
         </div>
     </header>
 
-    <!-- Main Form -->
-    <div class="form-container">
-        <div class="form-header">
-            <h2><i class="fas fa-eye"></i> Detalle del Referenciado</h2>
-            <p>Información completa del referenciado registrado en el sistema</p>
-        </div>
-        
-        <!-- Información del referenciado -->
-        <div class="user-view-info">
-            <i class="fas fa-user"></i>
-            <span>Referenciado: <strong><?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?></strong></span>
-            <span>Cédula: <strong><?php echo htmlspecialchars($referenciado['cedula']); ?></strong></span>
-            <span><?php echo getEstadoActividad($referenciado['activo'] ?? true); ?></span>
-        </div>
-        
-        <div class="form-grid">
-            <!-- Información Personal -->
-            <div class="form-group full-width">
-                <div class="info-group">
-                    <h3 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-id-card"></i> Información Personal
-                    </h3>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Nombres:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['nombre']); ?></span>
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="card-container">
+            <!-- Card Header -->
+            <div class="card-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h2><i class="fas fa-eye"></i> Detalle del Referenciado</h2>
+                        <p>Información completa del referenciado registrado en el sistema</p>
                     </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Apellidos:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['apellido']); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Cédula:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['cedula']); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Email:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['email']); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Teléfono:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['telefono']); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Dirección:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['direccion']); ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Información de Ubicación -->
-            <div class="form-group full-width">
-                <div class="info-group">
-                    <h3 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-map-marker-alt"></i> Información de Ubicación
-                    </h3>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Departamento:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['departamento_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Municipio:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['municipio_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Barrio:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['barrio_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Zona:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['zona_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Sector:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['sector_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Puesto de votación:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['puesto_votacion_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Mesa:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['mesa']); ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Información Adicional -->
-            <div class="form-group full-width">
-                <div class="info-group">
-                    <h3 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-info-circle"></i> Información Adicional
-                    </h3>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Afinidad:</span>
-                        <span class="info-value"><?php echo getAfinidadIcon($referenciado['afinidad'] ?? 1); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Grupo poblacional:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['grupo_poblacional_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Oferta de apoyo:</span>
-                        <span class="info-value"><?php echo getFieldValue($referenciado['oferta_apoyo_nombre'] ?? ''); ?></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Compromiso:</span>
-                        <div class="info-value" style="flex: 1;">
-                            <div class="compromiso-text">
-                                <?php echo getFieldValue($referenciado['compromiso']); ?>
-                            </div>
+                    <div class="header-right">
+                        <div class="status-badge">
+                            <?php echo getEstadoActividad($referenciado['activo'] ?? true); ?>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Insumos Asignados -->
-            <div class="form-group full-width insumos-section">
-                <h3 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-box-open"></i> Insumos Asignados
-                </h3>
+            <!-- Form Sections -->
+            <div class="form-sections">
+                <!-- Sección 1: Información Personal -->
+                <div class="section-title">
+                    <i class="fas fa-id-card"></i> Información Personal
+                </div>
                 
-                <?php if (!empty($insumos_referenciado)): ?>
-                    <div class="insumos-grid">
-                        <?php foreach ($insumos_referenciado as $insumo): ?>
-                            <div class="insumo-card">
-                                <div class="insumo-icon">
-                                    <i class="fas fa-<?php 
-                                        $iconos = [
-                                            'carro' => 'car',
-                                            'caballo' => 'horse',
-                                            'cicla' => 'bicycle',
-                                            'moto' => 'motorcycle',
-                                            'motocarro' => 'truck-pickup',
-                                            'publicidad' => 'bullhorn'
-                                        ];
-                                        echo $iconos[strtolower($insumo['nombre'])] ?? 'box';
-                                    ?>"></i>
-                                </div>
-                                <div class="insumo-info">
-                                    <div class="insumo-name"><?php echo htmlspecialchars($insumo['nombre']); ?></div>
-                                    <div class="insumo-details">
-                                        <?php if (!empty($insumo['cantidad'])): ?>
-                                            Cantidad: <?php echo htmlspecialchars($insumo['cantidad']); ?>
-                                        <?php endif; ?>
-                                        <?php if (!empty($insumo['observaciones'])): ?>
-                                            <br><?php echo htmlspecialchars($insumo['observaciones']); ?>
-                                        <?php endif; ?>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i> Nombres
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['nombre']); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i> Apellidos
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['apellido']); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-id-card"></i> Cédula
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['cedula']); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['email']); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-phone"></i> Teléfono
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['telefono']); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-home"></i> Dirección
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['direccion']); ?>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección 2: Información de Ubicación -->
+                <div class="section-title">
+                    <i class="fas fa-map-marker-alt"></i> Información de Ubicación
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-flag"></i> Departamento
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['departamento_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-city"></i> Municipio
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['municipio_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-map"></i> Barrio
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['barrio_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-compass"></i> Zona
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['zona_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-th-large"></i> Sector
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['sector_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-vote-yea"></i> Puesto de votación
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['puesto_votacion_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-table"></i> Mesa
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['mesa']); ?>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección 3: Información Adicional -->
+                <div class="section-title">
+                    <i class="fas fa-info-circle"></i> Información Adicional
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-heart"></i> Afinidad
+                        </label>
+                        <div class="field-value">
+                            <?php echo getAfinidadIcon($referenciado['afinidad'] ?? 1); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-users"></i> Grupo poblacional
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['grupo_poblacional_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-hands-helping"></i> Oferta de apoyo
+                        </label>
+                        <div class="field-value">
+                            <?php echo getFieldValue($referenciado['oferta_apoyo_nombre'] ?? ''); ?>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-comment-alt"></i> Compromiso
+                        </label>
+                        <div class="compromiso-text">
+                            <?php echo getFieldValue($referenciado['compromiso']); ?>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección 4: Insumos Asignados -->
+                <div class="section-title">
+                    <i class="fas fa-box-open"></i> Insumos Asignados
+                </div>
+                
+                <div class="insumos-section">
+                    <?php if (!empty($insumos_referenciado)): ?>
+                        <div class="insumos-grid">
+                            <?php foreach ($insumos_referenciado as $insumo): ?>
+                                <div class="insumo-card">
+                                    <div class="insumo-icon">
+                                        <i class="fas fa-<?php 
+                                            $iconos = [
+                                                'carro' => 'car',
+                                                'caballo' => 'horse',
+                                                'cicla' => 'bicycle',
+                                                'moto' => 'motorcycle',
+                                                'motocarro' => 'truck-pickup',
+                                                'publicidad' => 'bullhorn'
+                                            ];
+                                            echo $iconos[strtolower($insumo['nombre'])] ?? 'box';
+                                        ?>"></i>
+                                    </div>
+                                    <div class="insumo-info">
+                                        <div class="insumo-name"><?php echo htmlspecialchars($insumo['nombre']); ?></div>
+                                        <div class="insumo-details">
+                                            <?php if (!empty($insumo['cantidad'])): ?>
+                                                Cantidad: <?php echo htmlspecialchars($insumo['cantidad']); ?>
+                                            <?php endif; ?>
+                                            <?php if (!empty($insumo['observaciones'])): ?>
+                                                <br><?php echo htmlspecialchars($insumo['observaciones']); ?>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="no-insumos">
-                        <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-                        <p>Este referenciado no tiene insumos asignados</p>
-                    </div>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Información de Registro -->
-            <div class="form-group full-width">
-                <div class="info-group">
-                    <h3 style="color: #4fc3f7; margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-history"></i> Información de Registro
-                    </h3>
-                    
-                    <div class="info-row">
-                        <span class="info-label">Referenciador:</span>
-                        <div class="info-value">
-                            <?php 
-                            // Necesitarías obtener el nombre del referenciador
-                            $referenciador = $usuarioModel->getUsuarioById($referenciado['id_referenciador'] ?? 0);
-                            if ($referenciador): ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="no-insumos">
+                            <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                            <p>Este referenciado no tiene insumos asignados</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Sección 5: Información de Registro -->
+                <div class="section-title">
+                    <i class="fas fa-history"></i> Información de Registro
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user-tie"></i> Referenciador
+                        </label>
+                        <div class="field-value">
+                            <?php if ($referenciador): ?>
                                 <div class="referenciador-info">
                                     <div class="referenciador-name">
                                         <i class="fas fa-user-tie"></i>
@@ -857,39 +870,34 @@ function getAfinidadIcon($afinidad) {
                         </div>
                     </div>
                     
-                    <div class="info-row">
-                        <span class="info-label">Fecha de registro:</span>
-                        <div class="info-value">
-                            <div class="timestamp-info">
-                                <i class="fas fa-calendar-alt"></i>
-                                <?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i:s', strtotime($referenciado['fecha_registro'])) : 'N/A'; ?>
-                            </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-alt"></i> Fecha de registro
+                        </label>
+                        <div class="field-value">
+                            <?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i:s', strtotime($referenciado['fecha_registro'])) : 'N/A'; ?>
                         </div>
                     </div>
                     
-                    <div class="info-row">
-                        <span class="info-label">Última actualización:</span>
-                        <div class="info-value">
-                            <div class="timestamp-info">
-                                <i class="fas fa-clock"></i>
-                                <?php 
-                                $fecha_actualizacion = $referenciado['fecha_registro']; // Podrías tener un campo fecha_actualizacion
-                                echo date('d/m/Y H:i:s', strtotime($fecha_actualizacion)); 
-                                ?>
-                            </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-clock"></i> Última actualización
+                        </label>
+                        <div class="field-value">
+                            <?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i:s', strtotime($referenciado['fecha_registro'])) : 'N/A'; ?>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Botones de Acción -->
-            <div class="form-group full-width form-actions">
-                <a href="data_referidos.php" class="back-btn">
-                    <i class="fas fa-arrow-left"></i> Volver a la Lista
-                </a>
-                <a href="editar_referenciado.php?id=<?php echo $id_referenciado; ?>" class="edit-btn">
-                    <i class="fas fa-edit"></i> Editar Referenciado
-                </a>
+                
+                <!-- Botones de Acción -->
+                <div class="form-actions">
+                    <a href="data_referidos.php" class="back-btn">
+                        <i class="fas fa-arrow-left"></i> Volver a la Lista
+                    </a>
+                    <a href="editar_referenciado.php?id=<?php echo $id_referenciado; ?>" class="edit-btn">
+                        <i class="fas fa-edit"></i> Editar Referenciado
+                    </a>
+                </div>
             </div>
         </div>
     </div>

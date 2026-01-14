@@ -18,10 +18,12 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 // Obtener todos los referenciadores con sus estadísticas
 try {
     // Obtener solo usuarios referenciadores activos
-    $referenciadores = $usuarioModel->buscarUsuarios([
-        'tipo_usuario' => 'Referenciador',
-        'activo' => true
-    ]);
+    $referenciadores = $usuarioModel->getAllUsuarios();
+
+    // Luego filtra manualmente:
+    $referenciadores = array_filter($referenciadores, function($usuario) {
+        return $usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true;
+    });
     
     // Calcular estadísticas globales
     $totalReferenciadores = count($referenciadores);

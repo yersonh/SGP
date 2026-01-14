@@ -991,6 +991,38 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         }, 5000);
     }
     
+    // ==================== MANEJO DE VISIBILIDAD DEL TOPE ====================
+    function handleTipoUsuarioChange() {
+        const tipoUsuarioSelect = document.getElementById('tipo_usuario');
+        const topeContainer = document.getElementById('tope-container');
+        const topeInput = document.getElementById('tope');
+        
+        function updateTopeVisibility() {
+            const tipoUsuario = tipoUsuarioSelect.value;
+            const isReferenciador = tipoUsuario === 'Referenciador';
+            
+            if (isReferenciador) {
+                // Mostrar el campo Tope si es Referenciador
+                topeContainer.style.display = 'block';
+                topeInput.value = topeInput.value || '100';
+                // Restaurar atributos de validación
+                topeInput.setAttribute('min', '1');
+            } else {
+                // Ocultar el campo Tope para otros tipos
+                topeContainer.style.display = 'none';
+                topeInput.value = '0';
+                // Remover atributo min para evitar validación cuando está oculto
+                topeInput.removeAttribute('min');
+            }
+        }
+        
+        // Ejecutar al cambiar el tipo de usuario
+        tipoUsuarioSelect.addEventListener('change', updateTopeVisibility);
+        
+        // Ejecutar al cargar la página (para estado inicial)
+        updateTopeVisibility();
+    }
+    
     // ==================== SELECTS DEPENDIENTES ====================
     function setupDependentSelects() {
         console.log('Configurando selects dependientes...');
@@ -1098,34 +1130,6 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         puestoSelect.innerHTML = '<option value="">Primero seleccione un sector</option>';
     }
     
-    // ==================== MANEJO DE VISIBILIDAD DEL TOPE ====================
-    function handleTipoUsuarioChange() {
-        const tipoUsuarioSelect = document.getElementById('tipo_usuario');
-        const topeContainer = document.getElementById('tope-container');
-        const topeInput = document.getElementById('tope');
-        
-        function updateTopeVisibility() {
-            const tipoUsuario = tipoUsuarioSelect.value;
-            const isReferenciador = tipoUsuario === 'Referenciador';
-            
-            if (isReferenciador) {
-                // Mostrar el campo Tope si es Referenciador
-                topeContainer.style.display = 'block';
-                topeInput.value = topeInput.value || '100'; // Valor por defecto
-            } else {
-                // Ocultar el campo Tope para otros tipos
-                topeContainer.style.display = 'none';
-                topeInput.value = '0'; // Establecer valor a 0 para otros tipos
-            }
-        }
-        
-        // Ejecutar al cambiar el tipo de usuario
-        tipoUsuarioSelect.addEventListener('change', updateTopeVisibility);
-        
-        // Ejecutar al cargar la página (para estado inicial)
-        updateTopeVisibility();
-    }
-    
     // ==================== INICIALIZACIÓN ====================
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM cargado - Inicializando formulario de agregar usuario...');
@@ -1135,6 +1139,9 @@ $tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin']
         
         // Configurar manejo del campo tope
         handleTipoUsuarioChange();
+        
+        // Deshabilitar validación HTML5 nativa del formulario
+        document.getElementById('usuario-form').setAttribute('novalidate', 'novalidate');
         
         // Foto de perfil
         const photoPreview = document.getElementById('photoPreview');

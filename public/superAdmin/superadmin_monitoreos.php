@@ -307,12 +307,10 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
         }
         
         .option-title {
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin-bottom: 15px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
             color: #2c3e50;
-            letter-spacing: 0.5px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .option-description {

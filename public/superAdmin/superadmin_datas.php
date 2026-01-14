@@ -41,12 +41,21 @@ try {
     $resultReferenciadores = $stmtReferenciadores->fetch();
     $totalReferenciadores = $resultReferenciadores['total_referenciadores'] ?? 0;
     
+    // Calcular porcentaje de avance (Total Referidos vs Tope Total)
+    $porcentajeAvance = 0;
+    if ($sumaTopes > 0) {
+        $porcentajeAvance = round(($totalReferidos / $sumaTopes) * 100, 2);
+        // Limitar al 100% si se supera
+        $porcentajeAvance = min($porcentajeAvance, 100);
+    }
+    
 } catch (Exception $e) {
     // En caso de error, usar valores por defecto
     $totalReferidos = 0;
     $sumaTopes = 0;
     $totalDescargadores = 0;
     $totalReferenciadores = 0;
+    $porcentajeAvance = 0;
     error_log("Error al obtener estadísticas: " . $e->getMessage());
 }
 ?>
@@ -332,6 +341,72 @@ try {
             margin: 0 auto 20px;
         }
         
+        /* Barra de progreso para Data Referidos */
+        .progress-section {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .progress-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .progress-percentage {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #3498db;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .data-referidos .progress-container {
+            border: 1px solid #e0e0e0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .data-referidos .progress-bar {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+        
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .progress-current {
+            font-weight: 600;
+            color: #3498db;
+        }
+        
+        .progress-target {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        /* Data Descargadores - mantener estadísticas originales */
         .data-stats {
             display: flex;
             justify-content: center;
@@ -347,10 +422,6 @@ try {
             font-size: 1.8rem;
             font-weight: 700;
             display: block;
-        }
-        
-        .data-referidos .stat-number {
-            color: #3498db;
         }
         
         .data-descargadores .stat-number {
@@ -445,9 +516,8 @@ try {
                 font-size: 1.4rem;
             }
             
-            .data-stats {
-                flex-direction: column;
-                gap: 10px;
+            .progress-container {
+                height: 10px;
             }
             
             .stat-number {
@@ -482,6 +552,22 @@ try {
             
             .data-description {
                 font-size: 0.9rem;
+            }
+            
+            .progress-container {
+                height: 8px;
+            }
+            
+            .progress-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+                margin-bottom: 10px;
+            }
+            
+            .data-stats {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
@@ -543,14 +629,19 @@ try {
                     Gestión completa de todos los referidos registrados en el sistema. 
                     Consulta, edición y administración de información de referenciación.
                 </div>
-                <div class="data-stats">
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($totalReferidos, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Total Referidos</span>
+                
+                <!-- Barra de progreso para Data Referidos -->
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span class="progress-label">Avance de Referidos</span>
+                        <span class="progress-percentage"><?php echo $porcentajeAvance; ?>%</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($sumaTopes, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Tope Total</span>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: <?php echo $porcentajeAvance; ?>%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span class="progress-current"><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos</span>
+                        <span class="progress-target">Meta: <?php echo number_format($sumaTopes, 0, ',', '.'); ?></span>
                     </div>
                 </div>
             </a>
@@ -607,6 +698,20 @@ try {
                     $(this).css('transform', 'translateY(0)');
                 }
             );
+            
+            // Animación de la barra de progreso
+            $('.data-referidos').mouseenter(function() {
+                const progressBar = $(this).find('.progress-bar');
+                const currentWidth = progressBar.width();
+                const containerWidth = $(this).find('.progress-container').width();
+                const targetWidth = parseFloat(progressBar.css('width'));
+                
+                // Restablecer y animar
+                progressBar.css('width', '0%');
+                setTimeout(() => {
+                    progressBar.css('width', targetWidth + '%');
+                }, 100);
+            });
             
             // Breadcrumb navigation
             $('.breadcrumb a').click(function(e) {

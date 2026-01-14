@@ -321,7 +321,7 @@ if (isset($_GET['cancel']) && $_GET['cancel'] == 'true') {
 <body>
     <div class="logout-container">
         <div class="logout-icon">
-            <i class="fas fa-power-off"></i>
+            <i class="fas fa-sign-out-alt"></i>
         </div>
         
         <h1 class="logout-title">¿Cerrar Sesión?</h1>

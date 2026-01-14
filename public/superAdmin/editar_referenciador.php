@@ -952,53 +952,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     
-                    <!-- Sección 5: Información de Registro (solo lectura) -->
-                    <div class="section-title">
-                        <i class="fas fa-history"></i> Información de Registro
-                    </div>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-user-tie"></i> Referenciador
-                            </label>
-                            <div class="form-control" style="background: rgba(255, 255, 255, 0.03); cursor: not-allowed;">
-                                <?php if ($referenciador): ?>
-                                    <div class="referenciador-info">
-                                        <div class="referenciador-name">
-                                            <i class="fas fa-user-tie"></i>
-                                            <?php echo htmlspecialchars($referenciador['nombres'] . ' ' . $referenciador['apellidos']); ?>
-                                        </div>
-                                        <div class="timestamp-info">
-                                            <i class="fas fa-user-tag"></i>
-                                            <?php echo htmlspecialchars($referenciador['tipo_usuario']); ?>
-                                        </div>
-                                    </div>
-                                <?php else: ?>
-                                    <span class="na-text">N/A</span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-calendar-alt"></i> Fecha de registro
-                            </label>
-                            <div class="form-control" style="background: rgba(255, 255, 255, 0.03); cursor: not-allowed;">
-                                <?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i:s', strtotime($referenciado['fecha_registro'])) : 'N/A'; ?>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-clock"></i> Última actualización
-                            </label>
-                            <div class="form-control" style="background: rgba(255, 255, 255, 0.03); cursor: not-allowed;">
-                                <?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i:s', strtotime($referenciado['fecha_registro'])) : 'N/A'; ?>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Botones de Acción -->
                     <div class="form-actions">
                         <a href="ver_referenciado.php?id=<?php echo $id_referenciado; ?>" class="cancel-btn">

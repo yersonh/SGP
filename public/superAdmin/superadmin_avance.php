@@ -37,16 +37,53 @@ $filtros = [
 
 // Obtener todos los referenciadores con sus estadísticas (SIN FILTROS para estadísticas globales)
 try {
+    // DEPURACIÓN 1: Antes de obtener usuarios
+    error_log("=== DEPURACIÓN INICIO - " . date('Y-m-d H:i:s') . " ===");
+    
     // Obtener todos los usuarios con estadísticas para cálculo global
-    $todosUsuarios = $usuarioModel->getAllUsuarios();
+    $todosReferenciadores = $usuarioModel->getAllUsuarios();
+    
+    // DEPURACIÓN 2: Después de obtener usuarios
+    error_log("Total usuarios obtenidos de getAllUsuarios(): " . count($todosReferenciadores));
+    
+    // Mostrar todos los usuarios con sus IDs
+    foreach ($todosReferenciadores as $index => $usuario) {
+        error_log("Usuario [$index]: ID=" . $usuario['id_usuario'] . 
+                  ", Nombre=" . $usuario['nombres'] . " " . $usuario['apellidos'] . 
+                  ", Tipo=" . $usuario['tipo_usuario'] . 
+                  ", Activo=" . $usuario['activo'] .
+                  ", Tope=" . ($usuario['tope'] ?? 0) .
+                  ", Referidos=" . ($usuario['total_referenciados'] ?? 0));
+    }
+    
+    // Verificar duplicados por ID
+    $ids = array_column($todosReferenciadores, 'id_usuario');
+    $idsUnicos = array_unique($ids);
+    $duplicados = array_diff_assoc($ids, $idsUnicos);
+    
+    if (!empty($duplicados)) {
+        error_log("¡DUPLICADOS ENCONTRADOS en getAllUsuarios()! IDs: " . implode(', ', array_unique($duplicados)));
+        
+        // Mostrar qué usuarios están duplicados
+        foreach ($duplicados as $duplicadoId) {
+            foreach ($todosReferenciadores as $index => $usuario) {
+                if ($usuario['id_usuario'] == $duplicadoId) {
+                    error_log("  - Usuario duplicado en índice $index: ID=" . $usuario['id_usuario'] . 
+                              ", Nombre=" . $usuario['nombres'] . " " . $usuario['apellidos']);
+                }
+            }
+        }
+    } else {
+        error_log("No hay duplicados en getAllUsuarios()");
+    }
     
     // Filtrar solo referenciadores activos para estadísticas globales
-    $referenciadoresGlobales = [];
-    foreach ($todosUsuarios as $usuario) {
-        if ($usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true) {
-            $referenciadoresGlobales[] = $usuario;
-        }
-    }
+    $referenciadoresGlobales = array_filter($todosReferenciadores, function($usuario) {
+        return $usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true;
+    });
+    
+    // DEPURACIÓN 3: Después de filtrar para estadísticas globales
+    error_log("Referenciadores globales (activos): " . count($referenciadoresGlobales));
     
     // Calcular estadísticas globales (SIEMPRE con todos los referenciadores)
     $totalReferenciadores = count($referenciadoresGlobales);
@@ -75,22 +112,16 @@ try {
         $porcentajeGlobal = min($porcentajeGlobal, 100);
     }
     
-    // Ahora aplicar filtros solo para la lista de referenciadores
-    $referenciadores = [];
-    $idsProcesados = []; // Para evitar duplicados
+    // DEPURACIÓN 4: Antes de aplicar filtros para lista
+    error_log("=== ANTES DE APLICAR FILTROS PARA LISTA ===");
+    error_log("Filtros aplicados: " . print_r($filtros, true));
     
-    foreach ($todosUsuarios as $usuario) {
-        // Verificar si ya procesamos este ID
-        if (in_array($usuario['id_usuario'], $idsProcesados)) {
-            continue;
-        }
-        
+    // Ahora aplicar filtros solo para la lista de referenciadores
+    $referenciadores = array_filter($todosReferenciadores, function($usuario) use ($filtros, $zonaModel, $sectorModel, $puestoVotacionModel, $usuarioModel) {
         // Filtrar por tipo de usuario y activo
         if ($usuario['tipo_usuario'] !== 'Referenciador' || $usuario['activo'] != true) {
-            continue;
+            return false;
         }
-        
-        $idsProcesados[] = $usuario['id_usuario'];
         
         // Filtrar por nombre (nombres o apellidos) - búsqueda en tiempo real
         if (!empty($filtros['nombre'])) {
@@ -98,18 +129,18 @@ try {
             if (stripos($nombreCompleto, $filtros['nombre']) === false && 
                 stripos($usuario['nombres'], $filtros['nombre']) === false &&
                 stripos($usuario['apellidos'], $filtros['nombre']) === false) {
-                continue;
+                return false;
             }
         }
         
         // Filtrar por zona
         if (!empty($filtros['id_zona']) && $usuario['id_zona'] != $filtros['id_zona']) {
-            continue;
+            return false;
         }
         
         // Filtrar por sector
         if (!empty($filtros['id_sector']) && $usuario['id_sector'] != $filtros['id_sector']) {
-            continue;
+            return false;
         }
         
         // Filtrar por puesto de votación
@@ -120,7 +151,7 @@ try {
                 // Obtener el usuario completo con sus relaciones
                 $usuarioCompleto = $usuarioModel->getUsuarioById($usuario['id_usuario']);
                 if ($usuarioCompleto && $usuarioCompleto['id_sector'] != $puesto['id_sector']) {
-                    continue;
+                    return false;
                 }
             }
         }
@@ -132,13 +163,65 @@ try {
             
             // Comparar solo la fecha (sin horas/minutos)
             if ($fechaUltimoAcceso->format('Y-m-d') != $fechaFiltro->format('Y-m-d')) {
-                continue;
+                return false;
             }
         }
         
-        // Si pasa todos los filtros, agregar al array
-        $referenciadores[] = $usuario;
+        return true;
+    });
+
+    // DEPURACIÓN 5: Después de array_filter
+    error_log("=== DESPUÉS DE array_filter ===");
+    error_log("Total referenciadores después de filtro (antes de array_values): " . count($referenciadores));
+    
+    // Ver qué usuarios quedaron después del filtro
+    foreach ($referenciadores as $index => $usuario) {
+        error_log("Referenciador filtrado [$index]: ID=" . $usuario['id_usuario'] . 
+                  ", Nombre=" . $usuario['nombres'] . " " . $usuario['apellidos'] .
+                  ", Índice original: $index");
     }
+    
+    // Verificar duplicados después del filtro
+    $idsFiltrados = array_column($referenciadores, 'id_usuario');
+    $idsFiltradosUnicos = array_unique($idsFiltrados);
+    $duplicadosFiltrados = array_diff_assoc($idsFiltrados, $idsFiltradosUnicos);
+    
+    if (!empty($duplicadosFiltrados)) {
+        error_log("¡DUPLICADOS DESPUÉS DE array_filter! IDs: " . implode(', ', array_unique($duplicadosFiltrados)));
+    }
+
+    // Reindexar array después del filtro
+    $referenciadores = array_values($referenciadores);
+    
+    // DEPURACIÓN 6: Después de array_values
+    error_log("=== DESPUÉS DE array_values ===");
+    error_log("Total referenciadores después de array_values: " . count($referenciadores));
+    
+    // Ver índices después de array_values
+    foreach ($referenciadores as $index => $usuario) {
+        error_log("Referenciador reindexado [$index]: ID=" . $usuario['id_usuario'] . 
+                  ", Nombre=" . $usuario['nombres'] . " " . $usuario['apellidos']);
+    }
+    
+    // SOLUCIÓN TEMPORAL: Eliminar duplicados explícitamente
+    error_log("=== APLICANDO ELIMINACIÓN DE DUPLICADOS ===");
+    $idsVistos = [];
+    $referenciadoresUnicos = [];
+    
+    foreach ($referenciadores as $index => $usuario) {
+        $id = $usuario['id_usuario'];
+        
+        if (in_array($id, $idsVistos)) {
+            error_log("ELIMINANDO DUPLICADO: ID " . $id . " - " . $usuario['nombres'] . " (índice $index)");
+            continue;
+        }
+        
+        $idsVistos[] = $id;
+        $referenciadoresUnicos[] = $usuario;
+    }
+    
+    $referenciadores = $referenciadoresUnicos;
+    error_log("Referenciadores después de eliminar duplicados: " . count($referenciadores));
     
     // Calcular estadísticas solo para los filtrados (para mostrar en resultados)
     $referenciadoresFiltradosCount = count($referenciadores);
@@ -166,6 +249,17 @@ try {
         $porcentajeFiltrado = round(($totalReferidosFiltrados / $totalTopeFiltrados) * 100, 2);
         $porcentajeFiltrado = min($porcentajeFiltrado, 100);
     }
+    
+    // DEPURACIÓN FINAL
+    error_log("=== DEPURACIÓN FINAL ===");
+    error_log("Total referenciadores a mostrar: " . $referenciadoresFiltradosCount);
+    error_log("Último usuario en el array: " . 
+              (isset($referenciadores[count($referenciadores)-1]) ? 
+               "ID=" . $referenciadores[count($referenciadores)-1]['id_usuario'] . 
+               ", Nombre=" . $referenciadores[count($referenciadores)-1]['nombres'] . 
+               " " . $referenciadores[count($referenciadores)-1]['apellidos'] : 
+               "No hay usuarios"));
+    error_log("=== FIN DEPURACIÓN ===");
     
 } catch (Exception $e) {
     $referenciadores = [];
@@ -233,6 +327,21 @@ try {
             <p class="dashboard-subtitle">
                 Visualice el progreso de todos los referenciadores activos del sistema. 
                 Compare el avance individual y global vs las metas establecidas.
+            </p>
+        </div>
+        
+        <!-- DEPURACIÓN EN PANTALLA (solo para desarrollo) -->
+        <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 10px; margin-bottom: 20px; color: #721c24;">
+            <h5><i class="fas fa-bug"></i> INFO DEPURACIÓN</h5>
+            <p><strong>Total referenciadores activos:</strong> <?php echo $totalReferenciadores; ?></p>
+            <p><strong>Referenciadores a mostrar:</strong> <?php echo $referenciadoresFiltradosCount; ?></p>
+            <p><strong>Último usuario ID:</strong> 
+                <?php if (!empty($referenciadores)): ?>
+                    <?php echo $referenciadores[count($referenciadores)-1]['id_usuario'] ?? 'N/A'; ?> - 
+                    <?php echo $referenciadores[count($referenciadores)-1]['nombres'] ?? 'N/A'; ?>
+                <?php else: ?>
+                    No hay usuarios
+                <?php endif; ?>
             </p>
         </div>
         
@@ -503,7 +612,15 @@ try {
                 </div>
                 <?php endif; ?>
             <?php else: ?>
-                <?php foreach ($referenciadores as $referenciador): ?>
+                <?php 
+                // DEPURACIÓN FINAL EN HTML (comentario para ver en fuente)
+                echo "<!-- DEPURACIÓN: Total referenciadores a mostrar: " . count($referenciadores) . " -->\n";
+                echo "<!-- DEPURACIÓN: Último usuario ID: " . 
+                     (isset($referenciadores[count($referenciadores)-1]['id_usuario']) ? 
+                      $referenciadores[count($referenciadores)-1]['id_usuario'] : 'N/A') . " -->\n";
+                ?>
+                
+                <?php foreach ($referenciadores as $index => $referenciador): ?>
                     <?php 
                     $porcentaje = $referenciador['porcentaje_tope'] ?? 0;
                     
@@ -514,7 +631,15 @@ try {
                     elseif ($porcentaje >= 25) $progressClass = 'progress-medio';
                     ?>
                     
-                    <div class="referenciador-card">
+                    <div class="referenciador-card" data-user-id="<?php echo $referenciador['id_usuario']; ?>">
+                        <!-- DEPURACIÓN EN HTML (solo para desarrollo) -->
+                        <div style="background: #e3f2fd; padding: 5px 10px; margin-bottom: 10px; border-radius: 3px; font-size: 0.8rem; color: #1976d2;">
+                            <i class="fas fa-bug"></i> 
+                            Índice: <?php echo $index; ?> | 
+                            ID: <?php echo $referenciador['id_usuario']; ?> | 
+                            Total: <?php echo count($referenciadores); ?>
+                        </div>
+                        
                         <div class="referenciador-header">
                             <div class="user-info-section">
                                 <div class="user-avatar">
@@ -675,6 +800,31 @@ try {
             
             // Mejorar UX: Auto-focus en el campo de búsqueda
             $('#nombre').focus();
+            
+            // DEPURACIÓN EN CONSOLA
+            console.log("=== DEPURACIÓN CLIENTE ===");
+            console.log("Total tarjetas de referenciadores: " + $('.referenciador-card').length);
+            
+            // Verificar IDs duplicados en el cliente
+            var ids = [];
+            var duplicados = [];
+            
+            $('.referenciador-card').each(function() {
+                var id = $(this).data('user-id');
+                if (ids.includes(id)) {
+                    duplicados.push(id);
+                    console.log("¡DUPLICADO EN CLIENTE! ID: " + id);
+                }
+                ids.push(id);
+            });
+            
+            if (duplicados.length > 0) {
+                console.log("IDs duplicados encontrados: " + duplicados.join(', '));
+            } else {
+                console.log("No hay duplicados en el cliente");
+            }
+            
+            console.log("=== FIN DEPURACIÓN CLIENTE ===");
             
             // Actualizar estadísticas cada 30 segundos (opcional)
             setInterval(function() {

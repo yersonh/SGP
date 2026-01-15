@@ -38,12 +38,15 @@ $filtros = [
 // Obtener todos los referenciadores con sus estadísticas (SIN FILTROS para estadísticas globales)
 try {
     // Obtener todos los usuarios con estadísticas para cálculo global
-    $todosReferenciadores = $usuarioModel->getAllUsuarios();
+    $todosUsuarios = $usuarioModel->getAllUsuarios();
     
     // Filtrar solo referenciadores activos para estadísticas globales
-    $referenciadoresGlobales = array_filter($todosReferenciadores, function($usuario) {
-        return $usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true;
-    });
+    $referenciadoresGlobales = [];
+    foreach ($todosUsuarios as $usuario) {
+        if ($usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true) {
+            $referenciadoresGlobales[] = $usuario;
+        }
+    }
     
     // Calcular estadísticas globales (SIEMPRE con todos los referenciadores)
     $totalReferenciadores = count($referenciadoresGlobales);
@@ -73,11 +76,21 @@ try {
     }
     
     // Ahora aplicar filtros solo para la lista de referenciadores
-    $referenciadores = array_filter($todosReferenciadores, function($usuario) use ($filtros, $zonaModel, $sectorModel, $puestoVotacionModel, $usuarioModel) {
+    $referenciadores = [];
+    $idsProcesados = []; // Para evitar duplicados
+    
+    foreach ($todosUsuarios as $usuario) {
+        // Verificar si ya procesamos este ID
+        if (in_array($usuario['id_usuario'], $idsProcesados)) {
+            continue;
+        }
+        
         // Filtrar por tipo de usuario y activo
         if ($usuario['tipo_usuario'] !== 'Referenciador' || $usuario['activo'] != true) {
-            return false;
+            continue;
         }
+        
+        $idsProcesados[] = $usuario['id_usuario'];
         
         // Filtrar por nombre (nombres o apellidos) - búsqueda en tiempo real
         if (!empty($filtros['nombre'])) {
@@ -85,18 +98,18 @@ try {
             if (stripos($nombreCompleto, $filtros['nombre']) === false && 
                 stripos($usuario['nombres'], $filtros['nombre']) === false &&
                 stripos($usuario['apellidos'], $filtros['nombre']) === false) {
-                return false;
+                continue;
             }
         }
         
         // Filtrar por zona
         if (!empty($filtros['id_zona']) && $usuario['id_zona'] != $filtros['id_zona']) {
-            return false;
+            continue;
         }
         
         // Filtrar por sector
         if (!empty($filtros['id_sector']) && $usuario['id_sector'] != $filtros['id_sector']) {
-            return false;
+            continue;
         }
         
         // Filtrar por puesto de votación
@@ -107,7 +120,7 @@ try {
                 // Obtener el usuario completo con sus relaciones
                 $usuarioCompleto = $usuarioModel->getUsuarioById($usuario['id_usuario']);
                 if ($usuarioCompleto && $usuarioCompleto['id_sector'] != $puesto['id_sector']) {
-                    return false;
+                    continue;
                 }
             }
         }
@@ -119,15 +132,13 @@ try {
             
             // Comparar solo la fecha (sin horas/minutos)
             if ($fechaUltimoAcceso->format('Y-m-d') != $fechaFiltro->format('Y-m-d')) {
-                return false;
+                continue;
             }
         }
         
-        return true;
-    });
-
-    // Reindexar array después del filtro
-    $referenciadores = array_values($referenciadores);
+        // Si pasa todos los filtros, agregar al array
+        $referenciadores[] = $usuario;
+    }
     
     // Calcular estadísticas solo para los filtrados (para mostrar en resultados)
     $referenciadoresFiltradosCount = count($referenciadores);

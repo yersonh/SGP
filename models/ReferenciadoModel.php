@@ -206,7 +206,7 @@ class ReferenciadoModel {
         return $stmt->fetchColumn() > 0;
     }
 public function getAllReferenciados() {
-    $sql = "SELECT r.*, 
+    $sql = "SELECT DISTINCT r.id_referenciado, r.*, 
             d.nombre as departamento_nombre,
             m.nombre as municipio_nombre,
             b.nombre as barrio_nombre,
@@ -231,6 +231,32 @@ public function getAllReferenciados() {
     $stmt = $this->pdo->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+// Método para contar todos los referenciados
+public function countAllReferenciados() {
+    $sql = "SELECT COUNT(*) as total FROM referenciados";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total'];
+}
+
+// Método para contar referenciados activos
+public function countReferenciadosActivos() {
+    $sql = "SELECT COUNT(*) as activos FROM referenciados WHERE activo = true";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['activos'];
+}
+
+// Método para contar referenciados inactivos
+public function countReferenciadosInactivos() {
+    $sql = "SELECT COUNT(*) as inactivos FROM referenciados WHERE activo = false";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['inactivos'];
 }
 public function desactivarReferenciado($id_referenciado) {
     $query = "UPDATE referenciados SET activo = false WHERE id_referenciado = ?";

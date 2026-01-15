@@ -206,7 +206,7 @@ class ReferenciadoModel {
         return $stmt->fetchColumn() > 0;
     }
 public function getAllReferenciados() {
-    $sql = "SELECT DISTINCT r.id_referenciado, r.*, 
+    $sql = "SELECT r.*, 
             d.nombre as departamento_nombre,
             m.nombre as municipio_nombre,
             b.nombre as barrio_nombre,

@@ -16,6 +16,7 @@ $usuarioModel = new UsuarioModel($pdo);
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
 // Obtener estadísticas reales
+// En tu primera vista (data_referidos.php), cambia:
 try {
     // 1. Total de referidos ACTIVOS (solo activos)
     $queryTotalReferidos = "SELECT COUNT(*) as total_referidos FROM referenciados WHERE activo = true";
@@ -23,20 +24,32 @@ try {
     $resultTotal = $stmtTotal->fetch();
     $totalReferidos = $resultTotal['total_referidos'] ?? 0;
 
-    // 2. Suma de todos los topes de usuarios ACTIVOS
-    $querySumaTopes = "SELECT SUM(tope) as suma_topes FROM usuario WHERE tope IS NOT NULL AND activo = true";
+    // 2. Suma de todos los topes de usuarios ACTIVOS - ¡CAMBIAR AQUÍ!
+    // Cambia para sumar solo topes de REFERENCIADORES activos
+    $querySumaTopes = "SELECT SUM(tope) as suma_topes 
+                       FROM usuario 
+                       WHERE tope IS NOT NULL 
+                         AND activo = true 
+                         AND tipo_usuario = 'Referenciador'";  // <-- FILTRO CLAVE
     $stmtTopes = $pdo->query($querySumaTopes);
     $resultTopes = $stmtTopes->fetch();
     $sumaTopes = $resultTopes['suma_topes'] ?? 0;
     
     // 3. Contar usuarios con rol "Descargador" ACTIVOS
-    $queryDescargadores = "SELECT COUNT(*) as total_descargadores FROM usuario WHERE tipo_usuario = 'Descargador' AND activo = true";
+    // También filtra por tipo_usuario
+    $queryDescargadores = "SELECT COUNT(*) as total_descargadores 
+                           FROM usuario 
+                           WHERE tipo_usuario = 'Descargador' 
+                             AND activo = true";
     $stmtDescargadores = $pdo->query($queryDescargadores);
     $resultDescargadores = $stmtDescargadores->fetch();
     $totalDescargadores = $resultDescargadores['total_descargadores'] ?? 0;
     
     // 4. Contar referenciadores ACTIVOS
-    $queryReferenciadores = "SELECT COUNT(*) as total_referenciadores FROM usuario WHERE tipo_usuario = 'Referenciador' AND activo = true";
+    $queryReferenciadores = "SELECT COUNT(*) as total_referenciadores 
+                             FROM usuario 
+                             WHERE tipo_usuario = 'Referenciador' 
+                               AND activo = true";
     $stmtReferenciadores = $pdo->query($queryReferenciadores);
     $resultReferenciadores = $stmtReferenciadores->fetch();
     $totalReferenciadores = $resultReferenciadores['total_referenciadores'] ?? 0;

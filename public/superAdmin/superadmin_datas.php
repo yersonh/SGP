@@ -593,6 +593,25 @@ try {
                 gap: 10px;
             }
         }
+                .container.text-center.mb-3 img {
+            max-width: 320px;
+            height: auto;
+            transition: max-width 0.3s ease;
+        }
+
+        /* Para dispositivos móviles */
+        @media (max-width: 768px) {
+            .container.text-center.mb-3 img {
+                max-width: 220px;
+            }
+        }
+
+        /* Para dispositivos muy pequeños */
+        @media (max-width: 400px) {
+            .container.text-center.mb-3 img {
+                max-width: 200px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -703,6 +722,10 @@ try {
 
     <!-- Footer -->
     <footer class="system-footer">
+        <!-- Logo centrado -->
+        <div class="container text-center mb-3">
+            <img src="../imagenes/Logo-artguru.png" alt="Logo">
+        </div>
         <div class="container">
             <p>© Derechos de autor Reservados. 
                 Ing. Rubén Darío González García • 

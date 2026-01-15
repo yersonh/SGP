@@ -469,6 +469,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         .system-footer {
             text-align: center;
             margin-top: 40px;
+            background: white;
             padding: 20px 0;
             border-top: 1px solid #eaeaea;
             color: #7f8c8d;
@@ -555,6 +556,26 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         .btn-view:hover {
             background-color: rgba(155, 89, 182, 0.2);
             color: #9b59b6;
+        }
+        /* Estilos para el logo en el footer */
+        .container.text-center.mb-3 img {
+            max-width: 320px;
+            height: auto;
+            transition: max-width 0.3s ease;
+        }
+
+        /* Para dispositivos móviles */
+        @media (max-width: 768px) {
+            .container.text-center.mb-3 img {
+                max-width: 220px;
+            }
+        }
+
+        /* Para dispositivos muy pequeños */
+        @media (max-width: 400px) {
+            .container.text-center.mb-3 img {
+                max-width: 200px;
+            }
         }
     </style>
 </head>
@@ -750,6 +771,10 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         
         <!-- Footer del sistema -->
         <footer class="system-footer">
+            <!-- Logo centrado -->
+        <div class="container text-center mb-3">
+            <img src="imagenes/Logo-artguru.png" alt="Logo">
+        </div>
             <p>© Derechos de autor Reservados. 
                 <strong>Ing. Rubén Darío González García</strong> • 
                 SISGONTech • Colombia © • <?php echo date('Y'); ?>

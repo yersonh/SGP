@@ -49,67 +49,6 @@ $barrios = $barrioModel->getAll();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
-    <style>
-    /* SOLO MANTÉN ESTOS ESTILOS EN EL HTML */
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; }
-    .main-header { background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; padding: 15px 0; }
-    .form-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.08); margin: 20px auto; max-width: 1200px; }
-    .form-control, .form-select { border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; }
-    .submit-btn { background: linear-gradient(135deg, #27ae60, #219653); color: white; border: none; padding: 15px 30px; border-radius: 8px; width: 100%; }
-    
-    .input-with-icon { position: relative; }
-    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; }
-    .input-with-icon .form-control { padding-left: 40px; }
-    .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #3498db; }
-    
-    .textarea-counter { text-align: right; font-size: 12px; color: #666; margin-top: 5px; }
-    .limit-exceeded { color: #e74c3c; }
-    
-    /* Estilos para el botón de buscar mesa en el form-header */
-    .form-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #f1f5f9;
-    }
-    
-    .form-header h2 {
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2c3e50;
-    }
-    
-    .btn-mesa-search {
-        background: #3498db;
-        color: white;
-        border: none;
-        padding: 10px 18px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 0.95rem;
-        font-weight: 500;
-    }
-    
-    .btn-mesa-search:hover {
-        background: #2980b9;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    
-    .btn-mesa-search i {
-        font-size: 1rem;
-    }
-</style>
 </head>
 <body>
     <!-- Header -->
@@ -220,6 +159,7 @@ $barrios = $barrioModel->getAll();
                     </div>
                     
                     <!-- Teléfono -->
+                                        <!-- Teléfono -->
                     <div class="form-group">
                         <label class="form-label" for="telefono">
                             <i class="fas fa-phone"></i> Teléfono *
@@ -234,6 +174,7 @@ $barrios = $barrioModel->getAll();
                                    required
                                    pattern="[0-9]{7,10}"
                                    title="Ingrese un número de teléfono válido"
+                                   maxlength="10"
                                    data-progress="5">
                         </div>
                     </div>
@@ -254,7 +195,39 @@ $barrios = $barrioModel->getAll();
                                    data-progress="5">
                         </div>
                     </div>
+                    <!-- Sexo (NUEVO CAMPO) -->
+                    <div class="form-group">
+                        <label class="form-label" for="sexo">
+                            <i class="fas fa-venus-mars"></i> Sexo
+                        </label>
+                        <select id="sexo" name="sexo" class="form-select" data-progress="3">
+                            <option value="">Seleccione sexo</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
                     
+                    <!-- Vota Fuera (NUEVO CAMPO) -->
+                    <div class="form-group">
+                        <label class="form-label" for="vota_fuera_switch">
+                            <i class="fas fa-person-booth"></i> Vota Fuera
+                        </label>
+                        <div class="switch-container">
+                            <input type="checkbox" 
+                                   id="vota_fuera_switch" 
+                                   name="vota_fuera_switch" 
+                                   class="switch-checkbox"
+                                   data-progress="3">
+                            <label for="vota_fuera_switch" class="switch-label">
+                                <div class="switch-slider">
+                                    <span class="switch-text-off">No</span>
+                                    <span class="switch-text-on">Sí</span>
+                                </div>
+                            </label>
+                            <input type="hidden" id="vota_fuera" name="vota_fuera" value="No">
+                        </div>
+                    </div>
                     <!-- Barrio -->
                     <div class="form-group">
                         <label class="form-label" for="barrio">
@@ -530,6 +503,10 @@ $barrios = $barrioModel->getAll();
 
     <!-- Footer -->
     <footer class="system-footer">
+        <!-- Logo centrado -->
+        <div class="container text-center mb-3">
+            <img src="imagenes/Logo-artguru.png" alt="Logo">
+        </div>
         <div class="container">
             <p>© Derechos de autor Reservados. 
                 <strong>Ing. Rubén Darío González García</strong> • 

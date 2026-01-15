@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar selects dependientes
     setupDependentSelects();
     
+    // Configurar switch de Vota Fuera
+    setupVotaFueraSwitch();
+    
     // Configurar eventos del formulario
     setupFormEvents();
     
@@ -244,6 +247,12 @@ function configurarCampoMesa(puestoId) {
     const mesaInput = document.getElementById('mesa');
     const mesaInfo = document.getElementById('mesa-info');
     
+    // Limpiar mensajes de error existentes
+    if (mesaInfo) {
+        const existingErrors = mesaInfo.querySelectorAll('.error-message');
+        existingErrors.forEach(error => error.remove());
+    }
+    
     if (!puestoId) {
         mesaInput.disabled = true;
         mesaInput.placeholder = "Número de mesa";
@@ -258,6 +267,7 @@ function configurarCampoMesa(puestoId) {
         return;
     }
     
+    // Resto de la función se mantiene igual...
     // Obtener información del puesto seleccionado
     const puestoSelect = document.getElementById('puesto_votacion');
     const selectedOption = puestoSelect.options[puestoSelect.selectedIndex];
@@ -295,6 +305,7 @@ function configurarCampoMesa(puestoId) {
     
     // Mostrar información sobre el total de mesas
     if (mesaInfo) {
+        // Crear el contenido HTML limpio
         mesaInfo.innerHTML = `<i class="fas fa-info-circle"></i> <strong>${puestoNombre}</strong> tiene <strong>${numMesas}</strong> mesa${numMesas !== 1 ? 's' : ''} disponible${numMesas !== 1 ? 's' : ''}`;
         mesaInfo.style.color = '#27ae60';
         mesaInfo.style.fontWeight = '500';
@@ -311,7 +322,14 @@ function validarNumeroMesa(input) {
     if (isNaN(value) || value < 1) {
         input.value = "";
         if (mesaInfo) {
-            mesaInfo.innerHTML += ' <span style="color:#e74c3c">(Ingrese un número válido)</span>';
+            // Solo mostrar el mensaje si no existe ya
+            if (!mesaInfo.querySelector('.error-message')) {
+                const errorSpan = document.createElement('span');
+                errorSpan.className = 'error-message';
+                errorSpan.style.color = '#e74c3c';
+                errorSpan.textContent = ' (Ingrese un número válido)';
+                mesaInfo.appendChild(errorSpan);
+            }
         }
         return;
     }
@@ -319,7 +337,22 @@ function validarNumeroMesa(input) {
     if (value > maxMesasPuestoActual) {
         input.value = maxMesasPuestoActual;
         if (mesaInfo) {
-            mesaInfo.innerHTML += ' <span style="color:#e74c3c">(Máximo permitido: ' + maxMesasPuestoActual + ')</span>';
+            // Limpiar mensajes de error previos
+            const existingErrors = mesaInfo.querySelectorAll('.error-message');
+            existingErrors.forEach(error => error.remove());
+            
+            // Agregar solo un mensaje de error
+            const errorSpan = document.createElement('span');
+            errorSpan.className = 'error-message';
+            errorSpan.style.color = '#e74c3c';
+            errorSpan.textContent = ` (Máximo permitido: ${maxMesasPuestoActual})`;
+            mesaInfo.appendChild(errorSpan);
+        }
+    } else {
+        // Si el valor es válido, eliminar mensajes de error
+        if (mesaInfo) {
+            const existingErrors = mesaInfo.querySelectorAll('.error-message');
+            existingErrors.forEach(error => error.remove());
         }
     }
 }
@@ -530,6 +563,26 @@ function setupDependentSelects() {
     });
 }
 
+// ==================== MANEJO DEL SWITCH VOTA FUERA ====================
+function setupVotaFueraSwitch() {
+    const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+    const votaFueraHidden = document.getElementById('vota_fuera');
+    
+    if (!votaFueraSwitch || !votaFueraHidden) {
+        console.log('Elementos de Vota Fuera no encontrados');
+        return;
+    }
+    
+    votaFueraSwitch.addEventListener('change', function() {
+        // Cambiar a 'Si' o 'No' según corresponda
+        votaFueraHidden.value = this.checked ? 'Si' : 'No';
+        console.log('Vota Fuera cambiado a:', votaFueraHidden.value);
+        updateProgress();
+    });
+    
+    console.log('Switch Vota Fuera configurado correctamente');
+}
+
 // ==================== EVENTOS DEL FORMULARIO ====================
 function setupFormEvents() {
     // Escuchar cambios en todos los campos para actualizar progreso
@@ -703,8 +756,17 @@ function resetForm() {
         star.classList.remove('selected', 'hover');
     });
     
+    // Resetear switch de Vota Fuera
+    const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+    const votaFueraHidden = document.getElementById('vota_fuera');
+    if (votaFueraSwitch) votaFueraSwitch.checked = false;
+    if (votaFueraHidden) votaFueraHidden.value = 'No';
+    
     // Resetear contador de caracteres
-    setupCharCounter();
+    const compromisoTextarea = document.getElementById('compromiso');
+    const compromisoChars = document.getElementById('compromiso-chars');
+    if (compromisoTextarea) compromisoTextarea.value = '';
+    if (compromisoChars) compromisoChars.textContent = '0';
     
     // Resetear selects dependientes
     document.getElementById('sector').disabled = true;
@@ -713,6 +775,7 @@ function resetForm() {
     document.getElementById('puesto_votacion').innerHTML = '<option value="">Primero seleccione un sector</option>';
     document.getElementById('municipio').disabled = true;
     document.getElementById('municipio').innerHTML = '<option value="">Primero seleccione un departamento</option>';
+    document.getElementById('sexo').selectedIndex = 0; // Resetear combo sexo
     
     // Resetear campo de mesas
     const mesaInput = document.getElementById('mesa');

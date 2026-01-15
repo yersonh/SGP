@@ -22,6 +22,8 @@ $data = [
     'direccion' => trim($_POST['direccion'] ?? ''),
     'email' => trim($_POST['email'] ?? ''),
     'telefono' => trim($_POST['telefono'] ?? ''),
+    'sexo' => trim($_POST['sexo'] ?? ''), // NUEVO CAMPO
+    'vota_fuera' => trim($_POST['vota_fuera'] ?? 'No'), // NUEVO CAMPO (valor por defecto 'No')
     'afinidad' => intval($_POST['afinidad'] ?? 0),
     'id_zona' => !empty($_POST['zona']) ? intval($_POST['zona']) : null,
     'id_sector' => !empty($_POST['sector']) ? intval($_POST['sector']) : null,
@@ -29,12 +31,12 @@ $data = [
     'mesa' => !empty($_POST['mesa']) ? intval($_POST['mesa']) : null,
     'id_departamento' => !empty($_POST['departamento']) ? intval($_POST['departamento']) : null,
     'id_municipio' => !empty($_POST['municipio']) ? intval($_POST['municipio']) : null,
-    'id_barrio' => !empty($_POST['barrio']) ? intval($_POST['barrio']) : null, // NUEVO
+    'id_barrio' => !empty($_POST['barrio']) ? intval($_POST['barrio']) : null,
     'id_oferta_apoyo' => !empty($_POST['apoyo']) ? intval($_POST['apoyo']) : null,
     'id_grupo_poblacional' => !empty($_POST['grupo_poblacional']) ? intval($_POST['grupo_poblacional']) : null,
     'compromiso' => trim($_POST['compromiso'] ?? ''),
     'id_referenciador' => $_POST['id_referenciador'] ?? $_SESSION['id_usuario'],
-    'insumos' => $_POST['insumos'] ?? [] // NUEVO: Array de insumos seleccionados
+    'insumos' => $_POST['insumos'] ?? [] // Array de insumos seleccionados
 ];
 
 // Debug: Ver qué datos llegan
@@ -63,6 +65,16 @@ if (!empty($data['cedula']) && !preg_match('/^\d+$/', $data['cedula'])) {
 // Validar email
 if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
     $errors[] = 'El email no tiene un formato válido';
+}
+
+// Validar sexo (si se seleccionó)
+if (!empty($data['sexo']) && !in_array($data['sexo'], ['Masculino', 'Femenino', 'Otro'])) {
+    $errors[] = 'El sexo seleccionado no es válido';
+}
+
+// Validar vota_fuera (debe ser 'Si' o 'No')
+if (!in_array($data['vota_fuera'], ['Si', 'No'])) {
+    $errors[] = 'El campo "Vota Fuera" debe ser Si o No';
 }
 
 // Si hay errores, retornarlos

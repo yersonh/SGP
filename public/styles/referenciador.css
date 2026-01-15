@@ -619,3 +619,150 @@
     border-radius: 6px;
     transition: width 0.3s ease;
 }
+/* SOLO MANTÉN ESTOS ESTILOS EN EL HTML */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; }
+    .main-header { background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; padding: 15px 0; }
+    .form-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.08); margin: 20px auto; max-width: 1200px; }
+    .form-control, .form-select { border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; }
+    .submit-btn { background: linear-gradient(135deg, #27ae60, #219653); color: white; border: none; padding: 15px 30px; border-radius: 8px; width: 100%; }
+    
+    .input-with-icon { position: relative; }
+    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; }
+    .input-with-icon .form-control { padding-left: 40px; }
+    .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #3498db; }
+    
+    .textarea-counter { text-align: right; font-size: 12px; color: #666; margin-top: 5px; }
+    .limit-exceeded { color: #e74c3c; }
+    
+    /* Estilos para el botón de buscar mesa en el form-header */
+    .form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+    
+    .btn-mesa-search {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+    
+    .btn-mesa-search:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-mesa-search i {
+        font-size: 1rem;
+    }
+    /* Estilo para el switch de Vota Fuera */
+.switch-container {
+    margin-top: 8px;
+}
+
+.switch-checkbox {
+    display: none;
+}
+
+.switch-label {
+    display: inline-block;
+    cursor: pointer;
+    width: 70px;
+    height: 34px;
+    background: #ccc;
+    border-radius: 34px;
+    position: relative;
+    transition: background 0.3s;
+}
+
+.switch-checkbox:checked + .switch-label {
+    background: #4CAF50;
+}
+
+.switch-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 30px;
+    height: 30px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.switch-checkbox:checked + .switch-label .switch-slider {
+    transform: translateX(36px);
+}
+
+.switch-text-off,
+.switch-text-on {
+    position: absolute;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    user-select: none;
+}
+
+.switch-text-off {
+    left: 40px;
+    color: #333;
+}
+
+.switch-text-on {
+    right: 40px;
+    color: white;
+}
+
+.switch-checkbox:checked + .switch-label .switch-text-off {
+    color: white;
+}
+
+.switch-checkbox:checked + .switch-label .switch-text-on {
+    color: #333;
+}
+/* Estilos para el logo en el footer */
+.container.text-center.mb-3 img {
+    max-width: 320px;
+    height: auto;
+    transition: max-width 0.3s ease;
+}
+
+/* Para dispositivos móviles */
+@media (max-width: 768px) {
+    .container.text-center.mb-3 img {
+        max-width: 220px;
+    }
+}
+
+/* Para dispositivos muy pequeños */
+@media (max-width: 400px) {
+    .container.text-center.mb-3 img {
+        max-width: 200px;
+    }
+}

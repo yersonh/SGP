@@ -966,3 +966,22 @@
                 height: 12px;
             }
         }
+            .container.text-center.mb-3 img {
+            max-width: 320px;
+            height: auto;
+            transition: max-width 0.3s ease;
+        }
+
+        /* Para dispositivos móviles */
+        @media (max-width: 768px) {
+            .container.text-center.mb-3 img {
+                max-width: 220px;
+            }
+        }
+
+        /* Para dispositivos muy pequeños */
+        @media (max-width: 400px) {
+            .container.text-center.mb-3 img {
+                max-width: 200px;
+            }
+        }

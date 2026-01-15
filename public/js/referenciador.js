@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar switch de Vota Fuera
     setupVotaFueraSwitch();
     
+    // Configurar validación de cédula (NUEVO)
+    setupCedulaValidation();
+    
     // Configurar eventos del formulario
     setupFormEvents();
     
@@ -744,9 +747,19 @@ function resetForm() {
     const ratingValue = document.getElementById('rating-value');
     const afinidadInput = document.getElementById('afinidad');
     const stars = document.querySelectorAll('.star');
+    const cedulaInput = document.getElementById('cedula');
+    const cedulaValidationMessage = document.getElementById('cedula-validation-message');
     
     if (ratingValue) ratingValue.textContent = '0/5';
     if (afinidadInput) afinidadInput.value = '0';
+    if (cedulaInput) {
+        cedulaInput.classList.remove('error', 'success');
+        cedulaInput.value = '';
+    }
+    
+    if (cedulaValidationMessage) {
+        cedulaValidationMessage.style.display = 'none';
+    }
     
     stars.forEach(star => {
         const icon = star.querySelector('i');
@@ -807,4 +820,159 @@ function resetForm() {
     
     // Resetear progreso
     updateProgress();
+}
+// ==================== VALIDACIÓN DE CÉDULA ====================
+
+// Configurar validación de cédula
+function setupCedulaValidation() {
+    const cedulaInput = document.getElementById('cedula');
+    const validationMessage = document.getElementById('cedula-validation-message');
+    
+    if (!cedulaInput || !validationMessage) {
+        console.log('Elementos de validación de cédula no encontrados');
+        return;
+    }
+    
+    // Variable para controlar el timeout de validación
+    let validationTimeout = null;
+    let lastValidatedCedula = '';
+    let isChecking = false;
+    
+    // Permitir solo números en el campo de cédula
+    cedulaInput.addEventListener('input', function(e) {
+        // Remover caracteres no numéricos
+        this.value = this.value.replace(/[^\d]/g, '');
+        
+        // Validar longitud mínima y máxima
+        const value = this.value;
+        if (value.length < 6 || value.length > 10) {
+            this.classList.add('error');
+            this.classList.remove('success');
+            hideValidationMessage();
+        } else {
+            this.classList.remove('error');
+            this.classList.remove('success');
+        }
+    });
+    
+    // Validar cédula cuando el usuario termina de escribir
+    cedulaInput.addEventListener('keyup', function(e) {
+        const cedula = this.value.trim();
+        
+        // Limpiar timeout anterior
+        if (validationTimeout) {
+            clearTimeout(validationTimeout);
+        }
+        
+        // Validaciones básicas
+        if (cedula.length < 6 || cedula.length > 10) {
+            return;
+        }
+        
+        // Si la cédula no ha cambiado, no validar de nuevo
+        if (cedula === lastValidatedCedula) {
+            return;
+        }
+        
+        // Esperar 1 segundo después de que el usuario termine de escribir
+        validationTimeout = setTimeout(() => {
+            checkCedulaInDatabase(cedula);
+        }, 1000);
+    });
+    
+    // También validar cuando el campo pierde el foco
+    cedulaInput.addEventListener('blur', function() {
+        const cedula = this.value.trim();
+        
+        if (cedula.length >= 6 && cedula.length <= 10 && cedula !== lastValidatedCedula) {
+            checkCedulaInDatabase(cedula);
+        }
+    });
+    
+    // Función para verificar cédula en la base de datos
+    function checkCedulaInDatabase(cedula) {
+        if (isChecking || !cedula) return;
+        
+        isChecking = true;
+        lastValidatedCedula = cedula;
+        
+        // Mostrar estado de carga
+        showValidationMessage('Validando cédula...', 'loading');
+        
+        // Hacer petición AJAX al servidor
+        fetch('ajax/verificar_cedula.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `cedula=${encodeURIComponent(cedula)}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la conexión');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (data.exists) {
+                    // Cédula ya existe
+                    cedulaInput.classList.add('error');
+                    cedulaInput.classList.remove('success');
+                    showValidationMessage('Esta cédula ya está registrada en el sistema', 'error');
+                } else {
+                    // Cédula disponible
+                    cedulaInput.classList.remove('error');
+                    cedulaInput.classList.add('success');
+                    showValidationMessage('Cédula disponible', 'success');
+                }
+            } else {
+                // Error en la validación
+                cedulaInput.classList.remove('error', 'success');
+                showValidationMessage('Error al validar la cédula', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            cedulaInput.classList.remove('error', 'success');
+            showValidationMessage('Error de conexión al validar', 'error');
+        })
+        .finally(() => {
+            isChecking = false;
+        });
+    }
+    
+    // Función para mostrar mensaje de validación
+    function showValidationMessage(message, type) {
+        if (!validationMessage) return;
+        
+        validationMessage.innerHTML = '';
+        
+        let icon = '';
+        if (type === 'error') {
+            icon = '<i class="fas fa-exclamation-circle"></i>';
+            validationMessage.className = 'validation-message error';
+        } else if (type === 'success') {
+            icon = '<i class="fas fa-check-circle"></i>';
+            validationMessage.className = 'validation-message success';
+        } else if (type === 'loading') {
+            icon = '<div class="spinner-small" style="border-top-color: #666;"></div>';
+            validationMessage.className = 'validation-message';
+        }
+        
+        validationMessage.innerHTML = `
+            ${icon}
+            <span>${message}</span>
+        `;
+        validationMessage.style.display = 'flex';
+    }
+    
+    // Función para ocultar mensaje de validación
+    function hideValidationMessage() {
+        if (validationMessage) {
+            validationMessage.style.display = 'none';
+        }
+    }
+    
+    console.log('Validación de cédula configurada correctamente');
 }

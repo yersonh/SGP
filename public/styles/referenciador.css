@@ -766,3 +766,63 @@
         max-width: 200px;
     }
 }
+/* ========== ESTILOS PARA VALIDACIÓN DE CÉDULA ========== */
+
+/* Mensaje de validación */
+.validation-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+}
+
+.validation-message.error {
+    background-color: #fee;
+    color: #d32f2f;
+    border-left: 3px solid #d32f2f;
+}
+
+.validation-message.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-left: 3px solid #2e7d32;
+}
+
+.validation-message i {
+    font-size: 14px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilo para input con error */
+.form-control.error {
+    border-color: #d32f2f;
+    background-color: #fff5f5;
+}
+
+.form-control.success {
+    border-color: #2e7d32;
+    background-color: #f8fff8;
+}
+
+/* Spinner para carga de validación */
+.spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

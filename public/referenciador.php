@@ -136,8 +136,13 @@ $barrios = $barrioModel->getAll();
                                    required
                                    maxlength="10"
                                    pattern="\d{6,10}"
-                                   title="Ingrese un número de cédula válido"
+                                   title="Ingrese un número de cédula válido (solo números)"
                                    data-progress="5">
+                        </div>
+                        <!-- Mensaje de validación para cédula duplicada -->
+                        <div id="cedula-validation-message" class="validation-message" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>Esta cédula ya está registrada en el sistema</span>
                         </div>
                     </div>
                     

@@ -100,13 +100,13 @@ try {
         }
         
         // Filtrar por puesto de votación
+        // Filtrar por puesto de votación - VERSIÓN CORREGIDA
         if (!empty($filtros['id_puesto_votacion'])) {
             // Obtener el sector del puesto de votación
             $puesto = $puestoVotacionModel->getById($filtros['id_puesto_votacion']);
             if ($puesto && isset($puesto['id_sector'])) {
-                // Obtener el usuario completo con sus relaciones
-                $usuarioCompleto = $usuarioModel->getUsuarioById($usuario['id_usuario']);
-                if ($usuarioCompleto && $usuarioCompleto['id_sector'] != $puesto['id_sector']) {
+                // Usar los datos del usuario que YA TENEMOS, no hacer otra consulta
+                if ($usuario['id_sector'] != $puesto['id_sector']) {
                     return false;
                 }
             }

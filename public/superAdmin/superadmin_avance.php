@@ -2,6 +2,9 @@
 session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
+require_once __DIR__ . '/../../models/ZonaModel.php';
+require_once __DIR__ . '/../../models/SectorModel.php';
+require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -11,21 +14,100 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
 
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
+$zonaModel = new ZonaModel($pdo);
+$sectorModel = new SectorModel($pdo);
+$puestoVotacionModel = new PuestoVotacionModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
+// Obtener listas para los filtros
+$zonas = $zonaModel->getAll();
+$sectores = $sectorModel->getAll();
+$puestosVotacion = $puestoVotacionModel->getAll();
+
+// Procesar filtros del formulario
+$filtros = [
+    'nombre' => $_GET['nombre'] ?? '',
+    'id_zona' => $_GET['id_zona'] ?? '',
+    'id_sector' => $_GET['id_sector'] ?? '',
+    'id_puesto_votacion' => $_GET['id_puesto_votacion'] ?? '',
+    'fecha_desde' => $_GET['fecha_desde'] ?? '',
+    'fecha_hasta' => $_GET['fecha_hasta'] ?? ''
+];
+
 // Obtener todos los referenciadores con sus estadísticas
 try {
-    // Obtener solo usuarios referenciadores activos
+    // Obtener todos los usuarios con estadísticas
     $referenciadores = $usuarioModel->getAllUsuarios();
 
-    // Luego filtra manualmente:
-    $referenciadores = array_filter($referenciadores, function($usuario) {
-        return $usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true;
+    // Aplicar filtros
+    $referenciadores = array_filter($referenciadores, function($usuario) use ($filtros, $zonaModel, $sectorModel, $puestoVotacionModel) {
+        // Filtrar por tipo de usuario y activo
+        if ($usuario['tipo_usuario'] !== 'Referenciador' || $usuario['activo'] != true) {
+            return false;
+        }
+        
+        // Filtrar por nombre (nombres o apellidos)
+        if (!empty($filtros['nombre'])) {
+            $nombreCompleto = $usuario['nombres'] . ' ' . $usuario['apellidos'];
+            if (stripos($nombreCompleto, $filtros['nombre']) === false && 
+                stripos($usuario['nombres'], $filtros['nombre']) === false &&
+                stripos($usuario['apellidos'], $filtros['nombre']) === false) {
+                return false;
+            }
+        }
+        
+        // Filtrar por zona
+        if (!empty($filtros['id_zona']) && $usuario['id_zona'] != $filtros['id_zona']) {
+            return false;
+        }
+        
+        // Filtrar por sector
+        if (!empty($filtros['id_sector']) && $usuario['id_sector'] != $filtros['id_sector']) {
+            return false;
+        }
+        
+        // Filtrar por puesto de votación
+        if (!empty($filtros['id_puesto_votacion'])) {
+            // Obtener el sector del puesto de votación
+            $puesto = $puestoVotacionModel->getById($filtros['id_puesto_votacion']);
+            if ($puesto && isset($puesto['id_sector'])) {
+                // Obtener el usuario completo con sus relaciones
+                $usuarioCompleto = $usuarioModel->getUsuarioById($usuario['id_usuario']);
+                if ($usuarioCompleto && $usuarioCompleto['id_sector'] != $puesto['id_sector']) {
+                    return false;
+                }
+            }
+        }
+        
+        // Filtrar por rango de fecha de último acceso
+        if (!empty($filtros['fecha_desde']) && !empty($usuario['ultimo_registro'])) {
+            $fechaUltimoAcceso = new DateTime($usuario['ultimo_registro']);
+            $fechaDesde = new DateTime($filtros['fecha_desde']);
+            
+            if ($fechaUltimoAcceso < $fechaDesde) {
+                return false;
+            }
+        }
+        
+        if (!empty($filtros['fecha_hasta']) && !empty($usuario['ultimo_registro'])) {
+            $fechaUltimoAcceso = new DateTime($usuario['ultimo_registro']);
+            $fechaHasta = new DateTime($filtros['fecha_hasta']);
+            $fechaHasta->modify('+1 day'); // Incluir el día completo
+            
+            if ($fechaUltimoAcceso > $fechaHasta) {
+                return false;
+            }
+        }
+        
+        return true;
     });
+
+    // Reindexar array después del filtro
+    $referenciadores = array_values($referenciadores);
     
-    // Calcular estadísticas globales
+    // Calcular estadísticas globales (SOLO de los filtrados)
     $totalReferenciadores = count($referenciadores);
     $totalReferidos = 0;
     $totalTope = 0;
@@ -70,6 +152,7 @@ try {
     <title>Avance Referenciadores - Super Admin - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         * {
             box-sizing: border-box;
@@ -216,6 +299,198 @@ try {
             max-width: 800px;
             margin: 0 auto;
             line-height: 1.5;
+        }
+        
+        /* NUEVO: Filtros de Búsqueda */
+        .filtros-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eaeaea;
+        }
+        
+        .filtros-title {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filtros-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+        
+        .form-group label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+            display: block;
+            font-weight: 500;
+        }
+        
+        .form-control, .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+            outline: none;
+        }
+        
+        .filtros-actions {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .btn-buscar {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-buscar:hover {
+            background: linear-gradient(135deg, #2980b9, #1c6ea4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-limpiar {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-limpiar:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .filter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 5px 5px 5px 0;
+        }
+        
+        .filter-badge .close {
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+        
+        .filter-badge .close:hover {
+            opacity: 1;
+        }
+        
+        .active-filters {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .filter-section-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* NUEVO: Indicador de resultados filtrados */
+        .resultados-info {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .resultados-text {
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .resultados-count {
+            font-weight: 600;
+            color: #3498db;
+        }
+        
+        /* NUEVO: Mensaje cuando no hay resultados con filtros */
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .no-results i {
+            font-size: 3rem;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+        }
+        
+        .no-results p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        
+        .btn-reset-filters {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-reset-filters:hover {
+            background: #2980b9;
+            color: white;
         }
         
         /* Estadísticas Globales */
@@ -488,6 +763,11 @@ try {
                 width: 100%;
                 justify-content: space-around;
             }
+            
+            /* Responsive para filtros */
+            .filtros-form {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         
         @media (max-width: 767px) {
@@ -561,10 +841,24 @@ try {
                 padding: 20px 15px;
                 font-size: 0.85rem;
             }
+            
+            /* Responsive para filtros */
+            .filtros-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .filtros-actions {
+                flex-direction: column;
+            }
+            
+            .btn-buscar, .btn-limpiar {
+                width: 100%;
+                justify-content: center;
+            }
         }
         
         @media (max-width: 480px) {
-            .global-stats, .referenciadores-list {
+            .global-stats, .referenciadores-list, .filtros-container {
                 padding: 15px;
             }
             
@@ -877,11 +1171,188 @@ try {
             </p>
         </div>
         
+        <!-- NUEVO: Filtros de Búsqueda -->
+        <div class="filtros-container">
+            <div class="filtros-title">
+                <i class="fas fa-filter"></i>
+                <span>Filtrar Referenciadores</span>
+            </div>
+            
+            <form method="GET" action="" class="filtros-form">
+                <!-- Nombre -->
+                <div class="form-group">
+                    <label for="nombre"><i class="fas fa-user"></i> Nombre</label>
+                    <input type="text" 
+                           id="nombre" 
+                           name="nombre" 
+                           class="form-control" 
+                           placeholder="Buscar por nombre..." 
+                           value="<?php echo htmlspecialchars($filtros['nombre']); ?>">
+                </div>
+                
+                <!-- Zona -->
+                <div class="form-group">
+                    <label for="id_zona"><i class="fas fa-map-marker-alt"></i> Zona</label>
+                    <select id="id_zona" name="id_zona" class="form-select">
+                        <option value="">Todas las zonas</option>
+                        <?php foreach ($zonas as $zona): ?>
+                            <option value="<?php echo $zona['id_zona']; ?>" 
+                                <?php echo $filtros['id_zona'] == $zona['id_zona'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($zona['nombre']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Sector -->
+                <div class="form-group">
+                    <label for="id_sector"><i class="fas fa-th-large"></i> Sector</label>
+                    <select id="id_sector" name="id_sector" class="form-select">
+                        <option value="">Todos los sectores</option>
+                        <?php foreach ($sectores as $sector): ?>
+                            <option value="<?php echo $sector['id_sector']; ?>" 
+                                <?php echo $filtros['id_sector'] == $sector['id_sector'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($sector['nombre']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Puesto de Votación -->
+                <div class="form-group">
+                    <label for="id_puesto_votacion"><i class="fas fa-vote-yea"></i> Puesto de Votación</label>
+                    <select id="id_puesto_votacion" name="id_puesto_votacion" class="form-select">
+                        <option value="">Todos los puestos</option>
+                        <?php foreach ($puestosVotacion as $puesto): ?>
+                            <option value="<?php echo $puesto['id_puesto']; ?>" 
+                                <?php echo $filtros['id_puesto_votacion'] == $puesto['id_puesto'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($puesto['nombre'] . ' (' . $puesto['sector_nombre'] . ')'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Fecha Desde -->
+                <div class="form-group">
+                    <label for="fecha_desde"><i class="fas fa-calendar-alt"></i> Último acceso desde</label>
+                    <input type="date" 
+                           id="fecha_desde" 
+                           name="fecha_desde" 
+                           class="form-control" 
+                           value="<?php echo htmlspecialchars($filtros['fecha_desde']); ?>">
+                </div>
+                
+                <!-- Fecha Hasta -->
+                <div class="form-group">
+                    <label for="fecha_hasta"><i class="fas fa-calendar-alt"></i> Último acceso hasta</label>
+                    <input type="date" 
+                           id="fecha_hasta" 
+                           name="fecha_hasta" 
+                           class="form-control" 
+                           value="<?php echo htmlspecialchars($filtros['fecha_hasta']); ?>">
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="form-group filtros-actions">
+                    <button type="submit" class="btn-buscar">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a href="superadmin_avance.php" class="btn-limpiar">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+            
+            <!-- Filtros activos -->
+            <?php 
+            $filtrosActivos = array_filter($filtros, function($valor) {
+                return !empty($valor);
+            });
+            
+            if (!empty($filtrosActivos)): ?>
+            <div class="active-filters">
+                <div class="filter-section-title">
+                    <i class="fas fa-check-circle"></i> Filtros aplicados:
+                </div>
+                <div>
+                    <?php foreach ($filtrosActivos as $clave => $valor): 
+                        $etiqueta = '';
+                        $valorMostrar = htmlspecialchars($valor);
+                        
+                        switch($clave) {
+                            case 'nombre':
+                                $etiqueta = "Nombre: $valorMostrar";
+                                break;
+                            case 'id_zona':
+                                $zonaNombre = '';
+                                foreach ($zonas as $zona) {
+                                    if ($zona['id_zona'] == $valor) {
+                                        $zonaNombre = $zona['nombre'];
+                                        break;
+                                    }
+                                }
+                                $etiqueta = "Zona: " . htmlspecialchars($zonaNombre);
+                                break;
+                            case 'id_sector':
+                                $sectorNombre = '';
+                                foreach ($sectores as $sector) {
+                                    if ($sector['id_sector'] == $valor) {
+                                        $sectorNombre = $sector['nombre'];
+                                        break;
+                                    }
+                                }
+                                $etiqueta = "Sector: " . htmlspecialchars($sectorNombre);
+                                break;
+                            case 'id_puesto_votacion':
+                                $puestoNombre = '';
+                                foreach ($puestosVotacion as $puesto) {
+                                    if ($puesto['id_puesto'] == $valor) {
+                                        $puestoNombre = $puesto['nombre'] . ' (' . $puesto['sector_nombre'] . ')';
+                                        break;
+                                    }
+                                }
+                                $etiqueta = "Puesto: " . htmlspecialchars($puestoNombre);
+                                break;
+                            case 'fecha_desde':
+                                $etiqueta = "Desde: " . date('d/m/Y', strtotime($valor));
+                                break;
+                            case 'fecha_hasta':
+                                $etiqueta = "Hasta: " . date('d/m/Y', strtotime($valor));
+                                break;
+                        }
+                        
+                        if (!empty($etiqueta)):
+                    ?>
+                        <span class="filter-badge">
+                            <?php echo $etiqueta; ?>
+                            <a href="?<?php echo http_build_query(array_diff_key($_GET, [$clave => ''])); ?>" class="close">&times;</a>
+                        </span>
+                    <?php 
+                        endif;
+                    endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- NUEVO: Resultados de búsqueda -->
+        <?php if (!empty($filtrosActivos)): ?>
+        <div class="resultados-info">
+            <div class="resultados-text">
+                <i class="fas fa-info-circle"></i>
+                <span>
+                    Mostrando <span class="resultados-count"><?php echo $totalReferenciadores; ?></span> 
+                    referenciador(es) que coinciden con los filtros aplicados
+                </span>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <!-- Estadísticas Globales - MEJORADA -->
         <div class="global-stats">
             <div class="stats-title">
                 <i class="fas fa-chart-bar"></i>
-                <span>Resumen del Avance Global</span>
+                <span>Resumen del Avance <?php echo !empty($filtrosActivos) ? '(Filtrado)' : '(Global)'; ?></span>
             </div>
             
             <!-- Grid de 2 filas: Estadísticas principales arriba, barra abajo -->
@@ -894,7 +1365,7 @@ try {
                         </div>
                         <div class="stats-content">
                             <div class="stats-value"><?php echo $totalReferenciadores; ?></div>
-                            <div class="stats-label">Referenciadores Activos</div>
+                            <div class="stats-label">Referenciadores <?php echo !empty($filtrosActivos) ? 'Filtrados' : 'Activos'; ?></div>
                         </div>
                     </div>
                     
@@ -924,7 +1395,7 @@ try {
                         </div>
                         <div class="stats-content">
                             <div class="stats-value"><?php echo $porcentajeGlobal; ?>%</div>
-                            <div class="stats-label">Avance Global</div>
+                            <div class="stats-label">Avance <?php echo !empty($filtrosActivos) ? 'Filtrado' : 'Global'; ?></div>
                         </div>
                     </div>
                 </div>
@@ -932,7 +1403,7 @@ try {
                 <!-- Segunda fila: Barra de progreso completa -->
                 <div class="progress-row">
                     <div class="progress-header">
-                        <span class="progress-title">Progreso Global del Sistema</span>
+                        <span class="progress-title">Progreso <?php echo !empty($filtrosActivos) ? 'Filtrado' : 'Global del Sistema'; ?></span>
                         <span class="progress-percentage"><?php echo $porcentajeGlobal; ?>%</span>
                     </div>
                     <div class="progress-bar-container">
@@ -959,14 +1430,24 @@ try {
         <div class="referenciadores-list">
             <div class="list-title">
                 <i class="fas fa-list-ol"></i>
-                <span>Progreso Individual por Referenciador</span>
+                <span>Progreso Individual por Referenciador <?php echo !empty($filtrosActivos) ? '(Filtrados)' : ''; ?></span>
             </div>
             
             <?php if (empty($referenciadores)): ?>
+                <?php if (!empty($filtrosActivos)): ?>
+                <div class="no-results">
+                    <i class="fas fa-search"></i>
+                    <p>No se encontraron referenciadores con los filtros aplicados.</p>
+                    <a href="superadmin_avance.php" class="btn-reset-filters">
+                        <i class="fas fa-times"></i> Limpiar filtros
+                    </a>
+                </div>
+                <?php else: ?>
                 <div class="no-data">
                     <i class="fas fa-users-slash"></i>
                     <p>No hay referenciadores activos registrados en el sistema.</p>
                 </div>
+                <?php endif; ?>
             <?php else: ?>
                 <?php foreach ($referenciadores as $referenciador): ?>
                     <?php 
@@ -998,6 +1479,9 @@ try {
                                     <div class="user-info-text">
                                         <span>Cédula: <?php echo htmlspecialchars($referenciador['cedula'] ?? 'N/A'); ?></span>
                                         <span>Usuario: <?php echo htmlspecialchars($referenciador['nickname'] ?? 'N/A'); ?></span>
+                                        <?php if (!empty($referenciador['ultimo_registro'])): ?>
+                                        <span>Último acceso: <?php echo date('d/m/Y H:i', strtotime($referenciador['ultimo_registro'])); ?></span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -1081,11 +1565,25 @@ try {
                 }
             );
             
+            // Validar que fecha desde no sea mayor que fecha hasta
+            $('#fecha_desde, #fecha_hasta').change(function() {
+                var fechaDesde = $('#fecha_desde').val();
+                var fechaHasta = $('#fecha_hasta').val();
+                
+                if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+                    alert('La fecha "Desde" no puede ser mayor que la fecha "Hasta"');
+                    $(this).val('');
+                }
+            });
+            
             // Actualizar estadísticas cada 30 segundos (opcional)
             setInterval(function() {
                 // Aquí podrías agregar una llamada AJAX para actualizar en tiempo real
                 // si necesitas datos en vivo
             }, 30000);
+            
+            // Mejorar UX: Auto-focus en el campo de búsqueda
+            $('#nombre').focus();
         });
     </script>
 </body>

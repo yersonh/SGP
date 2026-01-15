@@ -1551,95 +1551,203 @@ try {
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        // Timer para búsqueda en tiempo real
-        var timer;
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // Timer para búsqueda en tiempo real
+    var timer;
+    
+    // Indicador de carga
+    var isLoading = false;
+    
+    // Función para mostrar/ocultar indicador de carga
+    function toggleLoading(mostrar) {
+        if (mostrar) {
+            $('#contenidoReferenciadores').css('opacity', '0.5');
+            isLoading = true;
+        } else {
+            $('#contenidoReferenciadores').css('opacity', '1');
+            isLoading = false;
+        }
+    }
+    
+    // Función para buscar con AJAX (sin recargar)
+    function buscarConAjax() {
+        if (isLoading) return;
         
-        // Función para actualizar filtros (búsqueda en tiempo real)
-        function actualizarFiltros() {
-            clearTimeout(timer);
-            timer = setTimeout(function() {
-                // Obtener valores del formulario
-                var nombre = $('#nombre').val();
-                var id_zona = $('#id_zona').val();
-                var id_sector = $('#id_sector').val();
-                var id_puesto_votacion = $('#id_puesto_votacion').val();
-                var fecha_acceso = $('#fecha_acceso').val();
-                
-                // Construir query string
-                var params = [];
-                if (nombre) params.push('nombre=' + encodeURIComponent(nombre));
-                if (id_zona) params.push('id_zona=' + encodeURIComponent(id_zona));
-                if (id_sector) params.push('id_sector=' + encodeURIComponent(id_sector));
-                if (id_puesto_votacion) params.push('id_puesto_votacion=' + encodeURIComponent(id_puesto_votacion));
-                if (fecha_acceso) params.push('fecha_acceso=' + encodeURIComponent(fecha_acceso));
-                
-                // Recargar la página con los nuevos parámetros
-                var url = 'superadmin_avance.php';
-                if (params.length > 0) {
-                    url += '?' + params.join('&');
+        clearTimeout(timer);
+        timer = setTimeout(function() {
+            // Obtener valores del formulario
+            var nombre = $('#nombre').val();
+            var id_zona = $('#id_zona').val();
+            var id_sector = $('#id_sector').val();
+            var id_puesto_votacion = $('#id_puesto_votacion').val();
+            var fecha_acceso = $('#fecha_acceso').val();
+            
+            // Mostrar indicador de carga
+            toggleLoading(true);
+            
+            // Hacer petición AJAX
+            $.ajax({
+                url: '../ajax/buscar_referenciadores.php',
+                type: 'GET',
+                data: {
+                    nombre: nombre,
+                    id_zona: id_zona,
+                    id_sector: id_sector,
+                    id_puesto_votacion: id_puesto_votacion,
+                    fecha_acceso: fecha_acceso
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Actualizar el contenido de referenciadores
+                        $('#contenidoReferenciadores').html(response.html);
+                        
+                        // Actualizar los badges de filtros activos
+                        actualizarBadgesFiltros(response.filtros_activos, response.tiene_filtros);
+                        
+                        // Aplicar animaciones a las nuevas barras de progreso
+                        animarBarrasProgreso();
+                        
+                        // Restaurar eventos hover en las nuevas tarjetas
+                        restaurarEventosHover();
+                    } else {
+                        console.error('Error en la búsqueda:', response.error);
+                        alert('Error al realizar la búsqueda');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error AJAX:', error);
+                    alert('Error de conexión. Por favor, intente nuevamente.');
+                },
+                complete: function() {
+                    // Ocultar indicador de carga
+                    toggleLoading(false);
                 }
-                
-                window.location.href = url;
-            }, 800); // 800ms de delay para evitar múltiples peticiones
-        }
+            });
+        }, 500); // 500ms de delay para evitar múltiples peticiones
+    }
+    
+    // Función para actualizar los badges de filtros activos
+    function actualizarBadgesFiltros(filtrosActivos, tieneFiltros) {
+        var container = $('#activeFiltersContainer');
+        var listContainer = $('#filtrosActivosList');
         
-        // Función para limpiar todos los filtros
-        function limpiarFiltros() {
-            window.location.href = 'superadmin_avance.php';
-        }
-        
-        // Función para eliminar un filtro específico
-        function eliminarFiltro(filtro) {
-            // Obtener parámetros actuales
-            var urlParams = new URLSearchParams(window.location.search);
+        if (tieneFiltros && Object.keys(filtrosActivos).length > 0) {
+            var html = '<div class="filter-section-title">';
+            html += '<i class="fas fa-check-circle"></i> Filtros aplicados:';
+            html += '</div>';
+            html += '<div id="filtrosActivosList">';
             
-            // Eliminar el filtro específico
-            urlParams.delete(filtro);
-            
-            // Construir nueva URL
-            var newUrl = 'superadmin_avance.php';
-            if (urlParams.toString()) {
-                newUrl += '?' + urlParams.toString();
+            for (var clave in filtrosActivos) {
+                if (filtrosActivos.hasOwnProperty(clave)) {
+                    var filtro = filtrosActivos[clave];
+                    html += '<span class="filter-badge" id="filtro-' + clave + '">';
+                    html += filtro.etiqueta;
+                    html += '<span class="close" onclick="eliminarFiltro(\'' + clave + '\')">&times;</span>';
+                    html += '</span>';
+                }
             }
             
-            window.location.href = newUrl;
+            html += '</div>';
+            container.html(html).show();
+        } else {
+            container.html('').hide();
+        }
+    }
+    
+    // Función para limpiar todos los filtros
+    function limpiarFiltros() {
+        $('#nombre').val('');
+        $('#id_zona').val('');
+        $('#id_sector').val('');
+        $('#id_puesto_votacion').val('');
+        $('#fecha_acceso').val('');
+        
+        buscarConAjax();
+    }
+    
+    // Función para eliminar un filtro específico
+    function eliminarFiltro(filtro) {
+        switch(filtro) {
+            case 'nombre':
+                $('#nombre').val('');
+                break;
+            case 'id_zona':
+                $('#id_zona').val('');
+                break;
+            case 'id_sector':
+                $('#id_sector').val('');
+                break;
+            case 'id_puesto_votacion':
+                $('#id_puesto_votacion').val('');
+                break;
+            case 'fecha_acceso':
+                $('#fecha_acceso').val('');
+                break;
         }
         
-        $(document).ready(function() {
-            // Efecto de animación para las barras de progreso al cargar
-            $('.progress-bar-small').each(function() {
-                var width = $(this).css('width');
-                $(this).css('width', '0');
-                
-                setTimeout(() => {
-                    $(this).animate({
-                        width: width
-                    }, 1000);
-                }, 300);
-            });
+        buscarConAjax();
+    }
+    
+    // Función para animar las barras de progreso
+    function animarBarrasProgreso() {
+        $('.progress-bar-small').each(function() {
+            var width = $(this).css('width');
+            $(this).css('width', '0');
             
-            // Efecto hover en tarjetas
-            $('.referenciador-card').hover(
-                function() {
-                    $(this).css('transform', 'translateY(-5px)');
-                },
-                function() {
-                    $(this).css('transform', 'translateY(0)');
-                }
-            );
-            
-            // Mejorar UX: Auto-focus en el campo de búsqueda
-            $('#nombre').focus();
-            
-            // Actualizar estadísticas cada 30 segundos (opcional)
-            setInterval(function() {
-                // Aquí podrías agregar una llamada AJAX para actualizar en tiempo real
-                // si necesitas datos en vivo
-            }, 30000);
+            setTimeout(() => {
+                $(this).animate({
+                    width: width
+                }, 1000);
+            }, 300);
         });
-    </script>
+    }
+    
+    // Función para restaurar eventos hover en las tarjetas
+    function restaurarEventosHover() {
+        $('.referenciador-card').hover(
+            function() {
+                $(this).css('transform', 'translateY(-5px)');
+            },
+            function() {
+                $(this).css('transform', 'translateY(0)');
+            }
+        );
+    }
+    
+    $(document).ready(function() {
+        // Efecto de animación para las barras de progreso al cargar
+        animarBarrasProgreso();
+        
+        // Efecto hover en tarjetas
+        restaurarEventosHover();
+        
+        // Mejorar UX: Auto-focus en el campo de búsqueda
+        $('#nombre').focus();
+        
+        // Configurar eventos para búsqueda en tiempo real
+        $('#nombre').on('keyup', buscarConAjax);
+        $('#id_zona').on('change', buscarConAjax);
+        $('#id_sector').on('change', buscarConAjax);
+        $('#id_puesto_votacion').on('change', buscarConAjax);
+        $('#fecha_acceso').on('change', buscarConAjax);
+        
+        // Configurar botones
+        $('.btn-buscar').on('click', buscarConAjax);
+        $('.btn-limpiar').on('click', limpiarFiltros);
+        
+        // Ocultar contenedor de filtros activos si no hay filtros inicialmente
+        if ($('#filtrosActivosList').children().length === 0) {
+            $('#activeFiltersContainer').hide();
+        }
+        
+        // Actualizar estadísticas cada 30 segundos (opcional)
+        setInterval(function() {
+            // Aquí podrías agregar una llamada AJAX para actualizar en tiempo real
+            // si necesitas datos en vivo
+        }, 30000);
+    });
+</script>
 </body>
 </html>

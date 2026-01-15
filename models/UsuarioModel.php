@@ -9,32 +9,47 @@ class UsuarioModel {
     }
     
     // Obtener todos los usuarios con datos completos
-    public function getAllUsuarios() {
-        $query = "SELECT 
-                    u.*,
-                    COALESCE(r.total_referenciados, 0) as total_referenciados,
-                    CASE 
-                        WHEN u.tope > 0 THEN 
-                            ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
-                        ELSE 0 
-                    END as porcentaje_tope
-                  FROM usuario u 
-                  LEFT JOIN (
-                      SELECT id_referenciador, COUNT(*) as total_referenciados 
-                      FROM referenciados 
-                      GROUP BY id_referenciador
-                  ) r ON u.id_usuario = r.id_referenciador
-                  ORDER BY u.fecha_creacion DESC";
-        $stmt = $this->pdo->query($query);
-        $usuarios = $stmt->fetchAll();
-        
-        // Agregar URLs de fotos
-        foreach ($usuarios as &$usuario) {
-            $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
-        }
-        
-        return $usuarios;
+public function getAllUsuarios() {
+    $query = "SELECT 
+                u.*,
+                COALESCE(r.total_referenciados, 0) as total_referenciados,
+                CASE 
+                    WHEN u.tope > 0 THEN 
+                        ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                    ELSE 0 
+                END as porcentaje_tope
+              FROM usuario u 
+              LEFT JOIN (
+                  SELECT id_referenciador, COUNT(*) as total_referenciados 
+                  FROM referenciados 
+                  GROUP BY id_referenciador
+              ) r ON u.id_usuario = r.id_referenciador
+              ORDER BY u.fecha_creacion DESC";
+    
+    error_log("=== EJECUTANDO CONSULTA getAllUsuarios() ===");
+    error_log("SQL: " . $query);
+    
+    $stmt = $this->pdo->query($query);
+    $usuarios = $stmt->fetchAll();
+    
+    error_log("Total filas obtenidas: " . count($usuarios));
+    
+    // Agregar URLs de fotos
+    foreach ($usuarios as &$usuario) {
+        $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
     }
+    
+    // Verificar duplicados
+    $ids = array_column($usuarios, 'id_usuario');
+    $idsUnicos = array_unique($ids);
+    
+    if (count($ids) !== count($idsUnicos)) {
+        error_log("¡ADVERTENCIA! Hay duplicados en la consulta SQL");
+        error_log("IDs totales: " . count($ids) . ", IDs únicos: " . count($idsUnicos));
+    }
+    
+    return $usuarios;
+}
     
     // Obtener usuario por ID CON estadísticas de referenciados y foto
     public function getUsuarioById($id_usuario) {

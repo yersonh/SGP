@@ -21,7 +21,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar switch de Vota Fuera
     setupVotaFueraSwitch();
     
-    // Configurar validación de cédula (NUEVO)
+    // Configurar campos de votación dependientes
+    setupVotacionCampos();
+    
+    // Configurar validación de cédula
     setupCedulaValidation();
     
     // Configurar eventos del formulario
@@ -148,6 +151,12 @@ function updateProgress() {
     
     // Campos con data-progress
     document.querySelectorAll('[data-progress]').forEach(element => {
+        // Verificar si el campo está visible
+        const fieldContainer = element.closest('.form-group');
+        if (fieldContainer && fieldContainer.style.display === 'none') {
+            return; // Saltar campos ocultos
+        }
+        
         const progressValue = parseInt(element.getAttribute('data-progress')) || 0;
         const value = element.value;
         
@@ -360,6 +369,24 @@ function validarNumeroMesa(input) {
     }
 }
 
+// Validar número de mesa fuera (máximo 40)
+function validarNumeroMesaFuera(input) {
+    const value = parseInt(input.value);
+    
+    if (isNaN(value) || value < 1) {
+        input.value = "";
+        return false;
+    }
+    
+    if (value > 40) {
+        input.value = 40;
+        showNotification('El número máximo de mesas fuera es 40', 'warning');
+        return false;
+    }
+    
+    return true;
+}
+
 // ==================== INSUMOS ====================
 function setupInsumos() {
     const insumosCheckboxes = document.querySelectorAll('.insumo-checkbox');
@@ -433,6 +460,12 @@ function setupDependentSelects() {
         const puestoSelect = document.getElementById('puesto_votacion');
         const mesaInput = document.getElementById('mesa');
         
+        // Verificar si el campo zona está visible
+        const zonaContainer = this.closest('.form-group');
+        if (zonaContainer && zonaContainer.style.display === 'none') {
+            return; // No hacer nada si el campo está oculto
+        }
+        
         if (zonaId) {
             sectorSelect.disabled = false;
             sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
@@ -473,6 +506,12 @@ function setupDependentSelects() {
         const sectorId = this.value;
         const puestoSelect = document.getElementById('puesto_votacion');
         const mesaInput = document.getElementById('mesa');
+        
+        // Verificar si el campo sector está visible
+        const sectorContainer = this.closest('.form-group');
+        if (sectorContainer && sectorContainer.style.display === 'none') {
+            return; // No hacer nada si el campo está oculto
+        }
         
         if (sectorId) {
             puestoSelect.disabled = false;
@@ -526,6 +565,13 @@ function setupDependentSelects() {
     // Puesto -> Configurar campo Mesa
     document.getElementById('puesto_votacion').addEventListener('change', function() {
         const puestoId = this.value;
+        
+        // Verificar si el campo puesto está visible
+        const puestoContainer = this.closest('.form-group');
+        if (puestoContainer && puestoContainer.style.display === 'none') {
+            return; // No hacer nada si el campo está oculto
+        }
+        
         configurarCampoMesa(puestoId);
     });
     
@@ -586,6 +632,181 @@ function setupVotaFueraSwitch() {
     console.log('Switch Vota Fuera configurado correctamente');
 }
 
+// ==================== MANEJO DE CAMPOS VOTACIÓN DEPENDIENTES ====================
+function setupVotacionCampos() {
+    const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+    const votaFueraHidden = document.getElementById('vota_fuera');
+    
+    if (!votaFueraSwitch || !votaFueraHidden) {
+        console.log('Elementos de Vota Fuera no encontrados');
+        return;
+    }
+    
+    // Agregar clase a los campos que dependen del switch
+    agregarClaseCamposVotacion();
+    
+    // Configurar evento change del switch
+    votaFueraSwitch.addEventListener('change', function() {
+        const votaFueraValor = this.checked ? 'Si' : 'No';
+        votaFueraHidden.value = votaFueraValor;
+        
+        // Mostrar/ocultar campos según el estado
+        toggleCamposVotacion(votaFueraValor);
+        
+        console.log('Vota Fuera cambiado a:', votaFueraValor);
+        updateProgress();
+    });
+    
+    // Inicializar estado al cargar
+    const estadoInicial = votaFueraSwitch.checked ? 'Si' : 'No';
+    toggleCamposVotacion(estadoInicial);
+    
+    console.log('Campos de votación configurados correctamente');
+}
+
+// Agregar clase a los campos que dependen de Vota Fuera
+function agregarClaseCamposVotacion() {
+    const camposIds = ['zona', 'sector', 'puesto_votacion', 'mesa'];
+    const camposFueraIds = ['puesto_votacion_fuera', 'mesa_fuera'];
+    
+    // Campos para votación normal
+    camposIds.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            const container = campo.closest('.form-group');
+            if (container) {
+                container.classList.add('campo-votacion');
+            }
+        }
+    });
+    
+    // Campos para votación fuera
+    camposFueraIds.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            const container = campo.closest('.form-group');
+            if (container) {
+                container.classList.add('campo-fuera');
+            }
+        }
+    });
+}
+
+// Mostrar/ocultar campos de votación según el estado de Vota Fuera
+function toggleCamposVotacion(votaFueraEstado) {
+    const camposVotacion = document.querySelectorAll('.campo-votacion');
+    const camposFuera = document.querySelectorAll('.campo-fuera');
+    
+    if (votaFueraEstado === 'Si') {
+        // Si vota fuera -> OCULTAR campos normales y MOSTRAR campos fuera
+        camposVotacion.forEach(campo => {
+            campo.style.display = 'none';
+            
+            // Obtener el input/select dentro del campo
+            const input = campo.querySelector('select, input');
+            if (input) {
+                input.disabled = true;
+                input.required = false;
+                
+                // Limpiar valores si están ocultos
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                } else if (input.tagName === 'INPUT') {
+                    input.value = '';
+                }
+            }
+        });
+        
+        // Mostrar campos fuera
+        camposFuera.forEach(campo => {
+            campo.style.display = 'block';
+            
+            // Obtener el input/select dentro del campo
+            const input = campo.querySelector('select, input');
+            if (input) {
+                input.disabled = false;
+                input.required = true;
+            }
+        });
+        
+        // Resetear información de mesa
+        const mesaInfo = document.getElementById('mesa-info');
+        if (mesaInfo) {
+            mesaInfo.textContent = 'Este campo está oculto porque el referido vota fuera';
+            mesaInfo.style.color = '#666';
+        }
+        
+    } else {
+        // Si NO vota fuera -> MOSTRAR campos normales y OCULTAR campos fuera
+        camposVotacion.forEach(campo => {
+            campo.style.display = 'block';
+            
+            // Obtener el input/select dentro del campo
+            const input = campo.querySelector('select, input');
+            if (input) {
+                const id = input.id;
+                
+                // Habilitar/deshabilitar según la lógica de dependencias
+                if (id === 'zona' || id === 'mesa') {
+                    // Zona y mesa son campos principales
+                    if (id === 'mesa') {
+                        // Mesa depende de puesto_votacion
+                        const puestoSelect = document.getElementById('puesto_votacion');
+                        input.disabled = !puestoSelect || !puestoSelect.value;
+                    } else {
+                        input.disabled = false;
+                        input.required = true;
+                    }
+                } else if (id === 'sector') {
+                    // Sector depende de zona
+                    const zonaSelect = document.getElementById('zona');
+                    input.disabled = !zonaSelect || !zonaSelect.value;
+                } else if (id === 'puesto_votacion') {
+                    // Puesto depende de sector
+                    const sectorSelect = document.getElementById('sector');
+                    input.disabled = !sectorSelect || !sectorSelect.value;
+                }
+            }
+        });
+        
+        // Ocultar campos fuera
+        camposFuera.forEach(campo => {
+            campo.style.display = 'none';
+            
+            // Obtener el input/select dentro del campo
+            const input = campo.querySelector('select, input');
+            if (input) {
+                input.disabled = true;
+                input.required = false;
+                input.value = ''; // Limpiar valores
+            }
+        });
+        
+        // Restaurar información de mesa si está configurada
+        const mesaInfo = document.getElementById('mesa-info');
+        if (mesaInfo && mesaInfo.textContent.includes('oculto')) {
+            mesaInfo.textContent = 'Seleccione un puesto de votación para ver las mesas disponibles';
+        }
+    }
+    
+    // Actualizar validación de campo mesa
+    const mesaInput = document.getElementById('mesa');
+    if (mesaInput) {
+        const puestoSelect = document.getElementById('puesto_votacion');
+        if (puestoSelect && puestoSelect.value) {
+            configurarCampoMesa(puestoSelect.value);
+        }
+    }
+    
+    // Configurar validación para mesa fuera
+    const mesaFueraInput = document.getElementById('mesa_fuera');
+    if (mesaFueraInput) {
+        mesaFueraInput.addEventListener('input', function() {
+            validarNumeroMesaFuera(this);
+        });
+    }
+}
+
 // ==================== EVENTOS DEL FORMULARIO ====================
 function setupFormEvents() {
     // Escuchar cambios en todos los campos para actualizar progreso
@@ -599,6 +820,14 @@ function setupFormEvents() {
     if (mesaInput) {
         mesaInput.addEventListener('blur', function() {
             validarNumeroMesa(this);
+        });
+    }
+    
+    // Validar campo de mesa fuera cuando se pierde el foco
+    const mesaFueraInput = document.getElementById('mesa_fuera');
+    if (mesaFueraInput) {
+        mesaFueraInput.addEventListener('blur', function() {
+            validarNumeroMesaFuera(this);
         });
     }
     
@@ -623,14 +852,52 @@ function setupFormEvents() {
             }
         });
         
-        // Validar mesa si está habilitada
-        const mesaInput = document.getElementById('mesa');
-        if (mesaInput && !mesaInput.disabled) {
-            const mesaValue = parseInt(mesaInput.value);
-            if (isNaN(mesaValue) || mesaValue < 1 || mesaValue > maxMesasPuestoActual) {
+        // Validación según si vota fuera o no
+        const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+        
+        if (votaFueraSwitch.checked) {
+            // Validar campos de votación fuera
+            const puestoVotacionFuera = document.getElementById('puesto_votacion_fuera');
+            const mesaFuera = document.getElementById('mesa_fuera');
+            
+            if (!puestoVotacionFuera || !puestoVotacionFuera.value.trim()) {
                 isValid = false;
-                errorMessage = `Por favor ingrese un número de mesa válido (1-${maxMesasPuestoActual})`;
-                mesaInput.focus();
+                errorMessage = 'Por favor ingrese el puesto de votación fuera';
+                if (puestoVotacionFuera) puestoVotacionFuera.focus();
+            } else if (!mesaFuera || !mesaFuera.value || parseInt(mesaFuera.value) < 1) {
+                isValid = false;
+                errorMessage = 'Por favor ingrese un número de mesa válido (1-40)';
+                if (mesaFuera) mesaFuera.focus();
+            } else if (parseInt(mesaFuera.value) > 40) {
+                isValid = false;
+                errorMessage = 'El número de mesa fuera no puede ser mayor a 40';
+                if (mesaFuera) mesaFuera.focus();
+            }
+            
+        } else {
+            // Validar campos de votación normal
+            const zonaSelect = document.getElementById('zona');
+            if (!zonaSelect || !zonaSelect.value) {
+                isValid = false;
+                errorMessage = 'Por favor seleccione la zona de votación cuando el referido NO vota fuera';
+                if (zonaSelect) zonaSelect.focus();
+            }
+            
+            const mesaInput = document.getElementById('mesa');
+            if (mesaInput && !mesaInput.disabled) {
+                const mesaValue = parseInt(mesaInput.value);
+                if (isNaN(mesaValue) || mesaValue < 1 || mesaValue > maxMesasPuestoActual) {
+                    isValid = false;
+                    errorMessage = `Por favor ingrese un número de mesa válido (1-${maxMesasPuestoActual}) cuando el referido NO vota fuera`;
+                    mesaInput.focus();
+                }
+            } else if (mesaInput && mesaInput.disabled) {
+                const puestoSelect = document.getElementById('puesto_votacion');
+                if (puestoSelect && puestoSelect.value) {
+                    isValid = false;
+                    errorMessage = 'Por favor ingrese el número de mesa cuando el referido NO vota fuera';
+                    mesaInput.focus();
+                }
             }
         }
         
@@ -772,7 +1039,12 @@ function resetForm() {
     // Resetear switch de Vota Fuera
     const votaFueraSwitch = document.getElementById('vota_fuera_switch');
     const votaFueraHidden = document.getElementById('vota_fuera');
-    if (votaFueraSwitch) votaFueraSwitch.checked = false;
+    if (votaFueraSwitch) {
+        votaFueraSwitch.checked = false;
+        // Forzar actualización de campos de votación
+        const event = new Event('change');
+        votaFueraSwitch.dispatchEvent(event);
+    }
     if (votaFueraHidden) votaFueraHidden.value = 'No';
     
     // Resetear contador de caracteres
@@ -790,7 +1062,7 @@ function resetForm() {
     document.getElementById('municipio').innerHTML = '<option value="">Primero seleccione un departamento</option>';
     document.getElementById('sexo').selectedIndex = 0; // Resetear combo sexo
     
-    // Resetear campo de mesas
+    // Resetear campo de mesas normal
     const mesaInput = document.getElementById('mesa');
     const mesaInfo = document.getElementById('mesa-info');
     if (mesaInput) {
@@ -803,6 +1075,16 @@ function resetForm() {
     if (mesaInfo) {
         mesaInfo.innerHTML = 'Seleccione un puesto de votación para ver las mesas disponibles';
         mesaInfo.style.color = '#666';
+    }
+    
+    // Resetear campos fuera
+    const puestoVotacionFuera = document.getElementById('puesto_votacion_fuera');
+    const mesaFuera = document.getElementById('mesa_fuera');
+    if (puestoVotacionFuera) {
+        puestoVotacionFuera.value = '';
+    }
+    if (mesaFuera) {
+        mesaFuera.value = '';
     }
     
     maxMesasPuestoActual = 0;
@@ -821,6 +1103,7 @@ function resetForm() {
     // Resetear progreso
     updateProgress();
 }
+
 // ==================== VALIDACIÓN DE CÉDULA ====================
 
 // Configurar validación de cédula

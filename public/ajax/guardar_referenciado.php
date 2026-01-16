@@ -23,7 +23,9 @@ $data = [
     'email' => trim($_POST['email'] ?? ''),
     'telefono' => trim($_POST['telefono'] ?? ''),
     'sexo' => trim($_POST['sexo'] ?? ''), // NUEVO CAMPO
-    'vota_fuera' => trim($_POST['vota_fuera'] ?? 'No'), // NUEVO CAMPO (valor por defecto 'No')
+    'vota_fuera' => trim($_POST['vota_fuera'] ?? 'No'), // 'Si' o 'No'
+    'puesto_votacion_fuera' => trim($_POST['puesto_votacion_fuera'] ?? ''), // NUEVO CAMPO
+    'mesa_fuera' => !empty($_POST['mesa_fuera']) ? intval($_POST['mesa_fuera']) : null, // NUEVO CAMPO
     'afinidad' => intval($_POST['afinidad'] ?? 0),
     'id_zona' => !empty($_POST['zona']) ? intval($_POST['zona']) : null,
     'id_sector' => !empty($_POST['sector']) ? intval($_POST['sector']) : null,
@@ -41,6 +43,9 @@ $data = [
 
 // Debug: Ver qué datos llegan
 error_log("Datos recibidos: " . print_r($data, true));
+error_log("Vota fuera: " . $data['vota_fuera']);
+error_log("Puesto votación fuera: " . $data['puesto_votacion_fuera']);
+error_log("Mesa fuera: " . $data['mesa_fuera']);
 error_log("Insumos recibidos: " . print_r($data['insumos'], true));
 
 // Validaciones básicas
@@ -75,6 +80,29 @@ if (!empty($data['sexo']) && !in_array($data['sexo'], ['Masculino', 'Femenino', 
 // Validar vota_fuera (debe ser 'Si' o 'No')
 if (!in_array($data['vota_fuera'], ['Si', 'No'])) {
     $errors[] = 'El campo "Vota Fuera" debe ser Si o No';
+}
+
+// Validaciones condicionales según si vota fuera o no
+if ($data['vota_fuera'] === 'Si') {
+    // Validar campos específicos cuando vota fuera
+    if (empty($data['puesto_votacion_fuera'])) {
+        $errors[] = 'El puesto de votación fuera es obligatorio cuando el referido vota fuera';
+    }
+    if (empty($data['mesa_fuera']) || $data['mesa_fuera'] < 1) {
+        $errors[] = 'El número de mesa fuera es obligatorio y debe ser mayor a 0';
+    }
+    if ($data['mesa_fuera'] > 40) {
+        $errors[] = 'El número de mesa fuera no puede ser mayor a 40';
+    }
+} else {
+    // Validar campos específicos cuando NO vota fuera
+    if (empty($data['id_zona'])) {
+        $errors[] = 'La zona es obligatoria cuando el referido NO vota fuera';
+    }
+    // Validar mesa normal si se seleccionó puesto de votación
+    if (!empty($data['id_puesto_votacion']) && empty($data['mesa'])) {
+        $errors[] = 'El número de mesa es obligatorio cuando se selecciona un puesto de votación';
+    }
 }
 
 // Si hay errores, retornarlos
@@ -132,6 +160,9 @@ if (!empty($data['insumos']) && is_array($data['insumos'])) {
     }
 }
 
+// Debug: Mostrar datos que se enviarán al modelo
+error_log("Datos a enviar al modelo: " . print_r($data, true));
+
 try {
     // Guardar el referenciado (ahora retorna el ID en lugar de true/false)
     $id_referenciado = $referenciadoModel->guardarReferenciado($data);
@@ -144,10 +175,18 @@ try {
             $mensaje .= ' con ' . count($data['insumos']) . ' insumo(s)';
         }
         
+        // Agregar info sobre tipo de votación
+        if ($data['vota_fuera'] === 'Si') {
+            $mensaje .= '. Referido que vota fuera.';
+        } else {
+            $mensaje .= '. Referido que vota en su lugar de residencia.';
+        }
+        
         echo json_encode([
             'success' => true, 
             'message' => $mensaje,
-            'id_referenciado' => $id_referenciado
+            'id_referenciado' => $id_referenciado,
+            'vota_fuera' => $data['vota_fuera']
         ]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error al guardar el referenciado']);
@@ -160,12 +199,24 @@ try {
     if (strpos($errorMessage, 'duplicate key') !== false || 
         strpos($errorMessage, 'Duplicate entry') !== false ||
         strpos($errorMessage, '23505') !== false ||
-        strpos($errorMessage, 'cedula') !== false) {
+        strpos($errorMessage, 'cedula') !== false ||
+        strpos(strtolower($errorMessage), 'unique constraint') !== false) {
         
         echo json_encode(['success' => false, 'message' => 'La cédula ya está registrada']);
     } else {
         // Mensaje más amigable para el usuario
-        echo json_encode(['success' => false, 'message' => 'Error al guardar el registro. Por favor intente nuevamente.']);
+        $mensajeError = 'Error al guardar el registro. ';
+        
+        // Intentar hacer el mensaje más específico
+        if (strpos($errorMessage, 'puesto de votación fuera') !== false) {
+            $mensajeError .= 'Verifique los datos de votación fuera.';
+        } elseif (strpos($errorMessage, 'zona') !== false) {
+            $mensajeError .= 'Verifique los datos de ubicación de votación.';
+        } else {
+            $mensajeError .= 'Por favor intente nuevamente.';
+        }
+        
+        echo json_encode(['success' => false, 'message' => $mensajeError]);
     }
 }
 

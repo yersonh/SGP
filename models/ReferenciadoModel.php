@@ -10,23 +10,60 @@ class ReferenciadoModel {
         // Asegurar que afinidad sea válida (1-5)
         $afinidad = max(1, min(5, intval($data['afinidad'])));
         
+        // Determinar valores según si vota fuera o no
+        $votaFuera = $data['vota_fuera'] ?? 'No';
+        
+        if ($votaFuera === 'Si') {
+            // Cuando vota fuera, los campos normales de votación deben ser nulos
+            $id_zona = null;
+            $id_sector = null;
+            $id_puesto_votacion = null;
+            $mesa = null;
+            $puesto_votacion_fuera = $data['puesto_votacion_fuera'] ?? '';
+            $mesa_fuera = $data['mesa_fuera'] ?? null;
+            
+            // Validar que los campos fuera estén presentes
+            if (empty($puesto_votacion_fuera)) {
+                throw new Exception('El puesto de votación fuera es requerido cuando vota fuera');
+            }
+            if (empty($mesa_fuera) || $mesa_fuera < 1) {
+                throw new Exception('El número de mesa fuera es requerido y debe ser mayor a 0');
+            }
+            if ($mesa_fuera > 40) {
+                throw new Exception('El número de mesa fuera no puede ser mayor a 40');
+            }
+        } else {
+            // Cuando NO vota fuera, los campos fuera deben ser nulos
+            $id_zona = $data['id_zona'] ?? null;
+            $id_sector = $data['id_sector'] ?? null;
+            $id_puesto_votacion = $data['id_puesto_votacion'] ?? null;
+            $mesa = $data['mesa'] ?? null;
+            $puesto_votacion_fuera = null;
+            $mesa_fuera = null;
+            
+            // Validar que los campos normales estén presentes
+            if (empty($id_zona)) {
+                throw new Exception('La zona es requerida cuando no vota fuera');
+            }
+        }
+        
         // Iniciar transacción para asegurar que todo se guarde o nada
         $this->pdo->beginTransaction();
         
         try {
-            // SQL con los nuevos campos sexo y vota_fuera al final
+            // SQL actualizado con los nuevos campos
             $sql = "INSERT INTO referenciados (
                 nombre, apellido, cedula, direccion, email, telefono, 
                 afinidad, id_zona, id_sector, id_puesto_votacion, mesa,
                 id_departamento, id_municipio, id_barrio, id_oferta_apoyo, id_grupo_poblacional,
                 compromiso, id_referenciador, fecha_registro,
-                sexo, vota_fuera  -- NUEVOS CAMPOS AL FINAL
+                sexo, vota_fuera, puesto_votacion_fuera, mesa_fuera  -- NUEVOS CAMPOS
             ) VALUES (
                 :nombre, :apellido, :cedula, :direccion, :email, :telefono,
                 :afinidad, :id_zona, :id_sector, :id_puesto_votacion, :mesa,
                 :id_departamento, :id_municipio, :id_barrio, :id_oferta_apoyo, :id_grupo_poblacional,
                 :compromiso, :id_referenciador, NOW(),
-                :sexo, :vota_fuera  -- NUEVOS CAMPOS AL FINAL
+                :sexo, :vota_fuera, :puesto_votacion_fuera, :mesa_fuera  -- NUEVOS CAMPOS
             ) RETURNING id_referenciado";
             
             $stmt = $this->pdo->prepare($sql);
@@ -40,22 +77,28 @@ class ReferenciadoModel {
             $stmt->bindValue(':telefono', $data['telefono']);
             $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
             
-            // Campos opcionales
-            $stmt->bindValue(':id_zona', $data['id_zona'], PDO::PARAM_INT);
-            $stmt->bindValue(':id_sector', $data['id_sector'], PDO::PARAM_INT);
-            $stmt->bindValue(':id_puesto_votacion', $data['id_puesto_votacion'], PDO::PARAM_INT);
-            $stmt->bindValue(':mesa', $data['mesa'], PDO::PARAM_INT);
-            $stmt->bindValue(':id_departamento', $data['id_departamento'], PDO::PARAM_INT);
-            $stmt->bindValue(':id_municipio', $data['id_municipio'], PDO::PARAM_INT);
+            // Campos de votación normales
+            $stmt->bindValue(':id_zona', $id_zona, PDO::PARAM_INT);
+            $stmt->bindValue(':id_sector', $id_sector, PDO::PARAM_INT);
+            $stmt->bindValue(':id_puesto_votacion', $id_puesto_votacion, PDO::PARAM_INT);
+            $stmt->bindValue(':mesa', $mesa, PDO::PARAM_INT);
+            
+            // Campos de ubicación
+            $stmt->bindValue(':id_departamento', $data['id_departamento'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':id_municipio', $data['id_municipio'] ?? null, PDO::PARAM_INT);
             $stmt->bindValue(':id_barrio', $data['id_barrio'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'], PDO::PARAM_INT);
-            $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'], PDO::PARAM_INT);
-            $stmt->bindValue(':compromiso', $data['compromiso']);
+            $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':compromiso', $data['compromiso'] ?? '');
             $stmt->bindValue(':id_referenciador', $data['id_referenciador'], PDO::PARAM_INT);
             
-            // NUEVOS CAMPOS - valores directos como los recibe del formulario
+            // Campos de información personal
             $stmt->bindValue(':sexo', $data['sexo'] ?? null);
-            $stmt->bindValue(':vota_fuera', $data['vota_fuera'] ?? 'No'); // 'Si' o 'No'
+            $stmt->bindValue(':vota_fuera', $votaFuera);
+            
+            // NUEVOS CAMPOS: Datos de votación fuera
+            $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
+            $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
             
             $stmt->execute();
             
@@ -119,7 +162,15 @@ class ReferenciadoModel {
                 oa.nombre as oferta_apoyo_nombre,
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
-                pv.nombre as puesto_votacion_nombre
+                pv.nombre as puesto_votacion_nombre,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                    ELSE pv.nombre
+                END as puesto_votacion_display,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                    ELSE r.mesa
+                END as mesa_display
                 FROM referenciados r
                 LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
                 LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
@@ -166,7 +217,15 @@ class ReferenciadoModel {
                 oa.nombre as oferta_apoyo_nombre,
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
-                pv.nombre as puesto_votacion_nombre
+                pv.nombre as puesto_votacion_nombre,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                    ELSE pv.nombre
+                END as puesto_votacion_display,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                    ELSE r.mesa
+                END as mesa_display
                 FROM referenciados r
                 LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
                 LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
@@ -222,7 +281,15 @@ class ReferenciadoModel {
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
                 pv.nombre as puesto_votacion_nombre,
-                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                    ELSE pv.nombre
+                END as puesto_votacion_display,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                    ELSE r.mesa
+                END as mesa_display
                 FROM referenciados r
                 LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
                 LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
@@ -239,11 +306,12 @@ class ReferenciadoModel {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
     /**
- * Obtiene todos los referenciados con cálculo de porcentaje de avance del referenciador
- */
-public function getAllReferenciadosConAvance() {
-    $sql = "SELECT 
+     * Obtiene todos los referenciados con cálculo de porcentaje de avance del referenciador
+     */
+    public function getAllReferenciadosConAvance() {
+        $sql = "SELECT 
                 r.*, 
                 d.nombre as departamento_nombre,
                 m.nombre as municipio_nombre,
@@ -255,6 +323,14 @@ public function getAllReferenciadosConAvance() {
                 pv.nombre as puesto_votacion_nombre,
                 CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
                 u.tope as referenciador_tope,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                    ELSE pv.nombre
+                END as puesto_votacion_display,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                    ELSE r.mesa
+                END as mesa_display,
                 -- Calcular conteo de referenciados por usuario
                 COUNT(*) OVER (PARTITION BY r.id_referenciador) as total_referidos_usuario,
                 -- Calcular porcentaje de avance
@@ -275,10 +351,10 @@ public function getAllReferenciadosConAvance() {
             LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
             ORDER BY r.fecha_registro DESC";
     
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     
     // Método para contar todos los referenciados
     public function countAllReferenciados() {
@@ -340,11 +416,48 @@ public function getAllReferenciadosConAvance() {
         // Asegurar que afinidad sea válida (1-5)
         $afinidad = max(1, min(5, intval($data['afinidad'])));
         
+        // Determinar valores según si vota fuera o no
+        $votaFuera = $data['vota_fuera'] ?? 'No';
+        
+        if ($votaFuera === 'Si') {
+            // Cuando vota fuera, los campos normales de votación deben ser nulos
+            $id_zona = null;
+            $id_sector = null;
+            $id_puesto_votacion = null;
+            $mesa = null;
+            $puesto_votacion_fuera = $data['puesto_votacion_fuera'] ?? '';
+            $mesa_fuera = $data['mesa_fuera'] ?? null;
+            
+            // Validar que los campos fuera estén presentes
+            if (empty($puesto_votacion_fuera)) {
+                throw new Exception('El puesto de votación fuera es requerido cuando vota fuera');
+            }
+            if (empty($mesa_fuera) || $mesa_fuera < 1) {
+                throw new Exception('El número de mesa fuera es requerido y debe ser mayor a 0');
+            }
+            if ($mesa_fuera > 40) {
+                throw new Exception('El número de mesa fuera no puede ser mayor a 40');
+            }
+        } else {
+            // Cuando NO vota fuera, los campos fuera deben ser nulos
+            $id_zona = $data['id_zona'] ?? null;
+            $id_sector = $data['id_sector'] ?? null;
+            $id_puesto_votacion = $data['id_puesto_votacion'] ?? null;
+            $mesa = $data['mesa'] ?? null;
+            $puesto_votacion_fuera = null;
+            $mesa_fuera = null;
+            
+            // Validar que los campos normales estén presentes
+            if (empty($id_zona)) {
+                throw new Exception('La zona es requerida cuando no vota fuera');
+            }
+        }
+        
         // Iniciar transacción
         $this->pdo->beginTransaction();
         
         try {
-            // SQL para actualizar el referenciado con los nuevos campos al final
+            // SQL actualizado para incluir los nuevos campos
             $sql = "UPDATE referenciados SET
                     nombre = :nombre,
                     apellido = :apellido,
@@ -364,9 +477,10 @@ public function getAllReferenciadosConAvance() {
                     id_grupo_poblacional = :id_grupo_poblacional,
                     compromiso = :compromiso,
                     fecha_actualizacion = NOW(),
-                    -- NUEVOS CAMPOS
                     sexo = :sexo,
-                    vota_fuera = :vota_fuera
+                    vota_fuera = :vota_fuera,
+                    puesto_votacion_fuera = :puesto_votacion_fuera,
+                    mesa_fuera = :mesa_fuera
                     WHERE id_referenciado = :id_referenciado";
             
             $stmt = $this->pdo->prepare($sql);
@@ -379,21 +493,29 @@ public function getAllReferenciadosConAvance() {
             $stmt->bindValue(':email', $data['email']);
             $stmt->bindValue(':telefono', $data['telefono']);
             $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
-            $stmt->bindValue(':id_zona', !empty($data['id_zona']) ? $data['id_zona'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_sector', !empty($data['id_sector']) ? $data['id_sector'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_puesto_votacion', !empty($data['id_puesto_votacion']) ? $data['id_puesto_votacion'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':mesa', !empty($data['mesa']) ? $data['mesa'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_departamento', !empty($data['id_departamento']) ? $data['id_departamento'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_municipio', !empty($data['id_municipio']) ? $data['id_municipio'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_barrio', !empty($data['id_barrio']) ? $data['id_barrio'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_oferta_apoyo', !empty($data['id_oferta_apoyo']) ? $data['id_oferta_apoyo'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_grupo_poblacional', !empty($data['id_grupo_poblacional']) ? $data['id_grupo_poblacional'] : null, PDO::PARAM_INT);
-            $stmt->bindValue(':compromiso', $data['compromiso']);
+            
+            // Campos de votación
+            $stmt->bindValue(':id_zona', $id_zona, PDO::PARAM_INT);
+            $stmt->bindValue(':id_sector', $id_sector, PDO::PARAM_INT);
+            $stmt->bindValue(':id_puesto_votacion', $id_puesto_votacion, PDO::PARAM_INT);
+            $stmt->bindValue(':mesa', $mesa, PDO::PARAM_INT);
+            
+            // Campos de ubicación
+            $stmt->bindValue(':id_departamento', $data['id_departamento'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':id_municipio', $data['id_municipio'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':id_barrio', $data['id_barrio'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(':compromiso', $data['compromiso'] ?? '');
             $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
             
-            // NUEVOS CAMPOS - valores directos
+            // Campos personales
             $stmt->bindValue(':sexo', $data['sexo'] ?? null);
-            $stmt->bindValue(':vota_fuera', $data['vota_fuera'] ?? 'No'); // 'Si' o 'No'
+            $stmt->bindValue(':vota_fuera', $votaFuera);
+            
+            // Nuevos campos
+            $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
+            $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
             
             $stmt->execute();
             
@@ -452,6 +574,23 @@ public function getAllReferenciadosConAvance() {
         // El primer parámetro es el id_referenciado
         $params = array_merge([$id_referenciado], $insumos_eliminar);
         $stmt->execute($params);
+    }
+    
+    /**
+     * Método para obtener estadísticas de votación
+     */
+    public function getEstadisticasVotacion() {
+        $sql = "SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN vota_fuera = 'Si' THEN 1 ELSE 0 END) as total_vota_fuera,
+                SUM(CASE WHEN vota_fuera = 'No' THEN 1 ELSE 0 END) as total_vota_aqui,
+                ROUND(AVG(CASE WHEN vota_fuera = 'Si' THEN mesa_fuera ELSE mesa END)::numeric, 1) as promedio_mesas
+                FROM referenciados
+                WHERE activo = true";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
 ?>

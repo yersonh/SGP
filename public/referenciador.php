@@ -213,26 +213,6 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Vota Fuera (NUEVO CAMPO) -->
-                    <div class="form-group">
-                        <label class="form-label" for="vota_fuera_switch">
-                            <i class="fas fa-person-booth"></i> Vota Fuera
-                        </label>
-                        <div class="switch-container">
-                            <input type="checkbox" 
-                                   id="vota_fuera_switch" 
-                                   name="vota_fuera_switch" 
-                                   class="switch-checkbox"
-                                   data-progress="3">
-                            <label for="vota_fuera_switch" class="switch-label">
-                                <div class="switch-slider">
-                                    <span class="switch-text-off">No</span>
-                                    <span class="switch-text-on">Sí</span>
-                                </div>
-                            </label>
-                            <input type="hidden" id="vota_fuera" name="vota_fuera" value="No">
-                        </div>
-                    </div>
                     <!-- Barrio -->
                     <div class="form-group">
                         <label class="form-label" for="barrio">
@@ -290,9 +270,60 @@ $barrios = $barrioModel->getAll();
                             <input type="hidden" id="afinidad" name="afinidad" value="0" data-progress="5">
                         </div>
                     </div>
-                    
-                    <!-- Zona -->
+                                        <!-- Vota Fuera (NUEVO CAMPO) -->
                     <div class="form-group">
+                        <label class="form-label" for="vota_fuera_switch">
+                            <i class="fas fa-person-booth"></i> Vota Fuera
+                        </label>
+                        <div class="switch-container">
+                            <input type="checkbox" 
+                                   id="vota_fuera_switch" 
+                                   name="vota_fuera_switch" 
+                                   class="switch-checkbox"
+                                   data-progress="3">
+                            <label for="vota_fuera_switch" class="switch-label">
+                                <div class="switch-slider">
+                                    <span class="switch-text-off">No</span>
+                                    <span class="switch-text-on">Sí</span>
+                                </div>
+                            </label>
+                            <input type="hidden" id="vota_fuera" name="vota_fuera" value="No">
+                        </div>
+                    </div>
+
+                    <!-- Campos para cuando Vota Fuera es SÍ (NUEVOS) -->
+                    <div class="form-group campo-fuera" style="display: none;">
+                        <label class="form-label" for="puesto_votacion_fuera">
+                            <i class="fas fa-vote-yea"></i> Puesto de Votación Fuera *
+                        </label>
+                        <input type="text" 
+                               id="puesto_votacion_fuera" 
+                               name="puesto_votacion_fuera" 
+                               class="form-control" 
+                               placeholder="Ingrese el puesto de votación fuera"
+                               maxlength="100"
+                               data-progress="3">
+                    </div>
+
+                    <div class="form-group campo-fuera" style="display: none;">
+                        <label class="form-label" for="mesa_fuera">
+                            <i class="fas fa-users"></i> Mesa Fuera *
+                        </label>
+                        <input type="number" 
+                               id="mesa_fuera" 
+                               name="mesa_fuera" 
+                               class="form-control" 
+                               placeholder="Número de mesa (1-40)"
+                               min="1"
+                               max="40"
+                               data-progress="3">
+                        <div class="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Máximo: 40 mesas
+                        </div>
+                    </div>
+
+                    <!-- Zona -->
+                    <div class="form-group campo-votacion">
                         <label class="form-label" for="zona">
                             <i class="fas fa-map"></i> Zona
                         </label>
@@ -305,9 +336,8 @@ $barrios = $barrioModel->getAll();
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    
                     <!-- Sector -->
-                    <div class="form-group">
+                    <div class="form-group campo-votacion">
                         <label class="form-label" for="sector">
                             <i class="fas fa-th"></i> Sector
                         </label>
@@ -315,9 +345,9 @@ $barrios = $barrioModel->getAll();
                             <option value="">Primero seleccione una zona</option>
                         </select>
                     </div>
-                    
+
                     <!-- Puesto de Votación -->
-                    <div class="form-group">
+                    <div class="form-group campo-votacion">
                         <label class="form-label" for="puesto_votacion">
                             <i class="fas fa-vote-yea"></i> Puesto de Votación
                         </label>
@@ -325,20 +355,20 @@ $barrios = $barrioModel->getAll();
                             <option value="">Primero seleccione un sector</option>
                         </select>
                     </div>
-                    
-                    <!-- Mesa (SIMPLIFICADO - sin lupa) -->
-                    <div class="form-group">
+
+                    <!-- Mesa -->
+                    <div class="form-group campo-votacion">
                         <label class="form-label" for="mesa">
                             <i class="fas fa-users"></i> Mesa
                         </label>
                         <input type="number" 
-                               id="mesa" 
-                               name="mesa" 
-                               class="form-control" 
-                               placeholder="Número de mesa"
-                               min="1"
-                               data-progress="3"
-                               disabled>
+                            id="mesa" 
+                            name="mesa" 
+                            class="form-control" 
+                            placeholder="Número de mesa"
+                            min="1"
+                            data-progress="3"
+                            disabled>
                         <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
                     </div>
                     

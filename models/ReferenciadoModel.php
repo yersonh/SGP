@@ -239,6 +239,46 @@ class ReferenciadoModel {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    /**
+ * Obtiene todos los referenciados con cálculo de porcentaje de avance del referenciador
+ */
+public function getAllReferenciadosConAvance() {
+    $sql = "SELECT 
+                r.*, 
+                d.nombre as departamento_nombre,
+                m.nombre as municipio_nombre,
+                b.nombre as barrio_nombre,
+                gp.nombre as grupo_poblacional_nombre,
+                oa.nombre as oferta_apoyo_nombre,
+                z.nombre as zona_nombre,
+                s.nombre as sector_nombre,
+                pv.nombre as puesto_votacion_nombre,
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                u.tope as referenciador_tope,
+                -- Calcular conteo de referenciados por usuario
+                COUNT(*) OVER (PARTITION BY r.id_referenciador) as total_referidos_usuario,
+                -- Calcular porcentaje de avance
+                CASE 
+                    WHEN u.tope > 0 THEN 
+                        ROUND((COUNT(*) OVER (PARTITION BY r.id_referenciador) * 100.0) / u.tope, 2)
+                    ELSE 0 
+                END as porcentaje_avance
+            FROM referenciados r
+            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+            ORDER BY r.fecha_registro DESC";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
     
     // Método para contar todos los referenciados
     public function countAllReferenciados() {

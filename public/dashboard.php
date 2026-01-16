@@ -3,6 +3,12 @@ session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 
+header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
+header("Pragma: no-cache"); // HTTP 1.0
+header("Expires: 0"); // Proxies
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: DENY");
+header("X-XSS-Protection: 1; mode=block");
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
     header('Location: index.php');
@@ -296,7 +302,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
     min-width: 40px; /* Ancho mínimo para cada botón */
     height: 32px;
 }
-
         
         .btn-edit {
             background-color: rgba(52, 152, 219, 0.1);

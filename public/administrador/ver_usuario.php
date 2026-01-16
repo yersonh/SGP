@@ -10,6 +10,12 @@ require_once __DIR__ . '/../../models/ZonaModel.php';
 require_once __DIR__ . '/../../models/SectorModel.php';
 require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
 
+header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
+header("Pragma: no-cache"); // HTTP 1.0
+header("Expires: 0"); // Proxies
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: DENY");
+header("X-XSS-Protection: 1; mode=block");
 // Verificar permisos (todos los usuarios pueden ver detalles, pero solo administradores pueden editar)
 if (!isset($_SESSION['id_usuario'])) {
     header('Location: ../index.php');

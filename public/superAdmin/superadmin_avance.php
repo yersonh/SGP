@@ -32,7 +32,9 @@ $filtros = [
     'id_zona' => $_GET['id_zona'] ?? '',
     'id_sector' => $_GET['id_sector'] ?? '',
     'id_puesto_votacion' => $_GET['id_puesto_votacion'] ?? '',
-    'fecha_acceso' => $_GET['fecha_acceso'] ?? ''
+    'fecha_acceso' => $_GET['fecha_acceso'] ?? '',
+    'porcentaje_minimo' => $_GET['porcentaje_minimo'] ?? '',
+    'ordenar_por' => $_GET['ordenar_por'] ?? 'fecha_creacion' // Nuevo: campo para ordenar
 ];
 
 // Obtener todos los referenciadores con sus estadísticas (SIN FILTROS para estadísticas globales)
@@ -123,11 +125,60 @@ try {
             }
         }
         
+        // Filtrar por porcentaje mínimo
+        if (!empty($filtros['porcentaje_minimo'])) {
+            $porcentaje_usuario = 0;
+            if (isset($usuario['porcentaje_tope'])) {
+                $porcentaje_usuario = $usuario['porcentaje_tope'];
+            } elseif ($usuario['tope'] > 0) {
+                $porcentaje_usuario = round(($usuario['total_referenciados'] / $usuario['tope']) * 100, 2);
+            }
+            
+            if ($porcentaje_usuario < (float)$filtros['porcentaje_minimo']) {
+                return false;
+            }
+        }
+        
         return true;
     });
 
     // Reindexar array después del filtro
     $referenciadores = array_values($referenciadores);
+    
+    // Ordenar según el filtro seleccionado
+    usort($referenciadores, function($a, $b) use ($filtros) {
+        switch ($filtros['ordenar_por']) {
+            case 'porcentaje_desc':
+                $porcentaje_a = 0;
+                $porcentaje_b = 0;
+                
+                if (isset($a['porcentaje_tope'])) {
+                    $porcentaje_a = $a['porcentaje_tope'];
+                } elseif ($a['tope'] > 0) {
+                    $porcentaje_a = round(($a['total_referenciados'] / $a['tope']) * 100, 2);
+                }
+                
+                if (isset($b['porcentaje_tope'])) {
+                    $porcentaje_b = $b['porcentaje_tope'];
+                } elseif ($b['tope'] > 0) {
+                    $porcentaje_b = round(($b['total_referenciados'] / $b['tope']) * 100, 2);
+                }
+                
+                return $porcentaje_b <=> $porcentaje_a; // Descendente
+                
+            case 'referidos_desc':
+                $referidos_a = $a['total_referenciados'] ?? 0;
+                $referidos_b = $b['total_referenciados'] ?? 0;
+                return $referidos_b <=> $referidos_a; // Descendente
+                
+            case 'fecha_creacion':
+            default:
+                // Ordenar por fecha de creación (más viejo primero)
+                $fecha_a = strtotime($a['fecha_creacion'] ?? '2000-01-01');
+                $fecha_b = strtotime($b['fecha_creacion'] ?? '2000-01-01');
+                return $fecha_a <=> $fecha_b; // Ascendente (más viejo primero)
+        }
+    });
     
     // Calcular estadísticas solo para los filtrados (para mostrar en resultados)
     $referenciadoresFiltradosCount = count($referenciadores);
@@ -166,6 +217,20 @@ try {
     $referenciadoresFiltradosCount = 0;
     error_log("Error al obtener referenciadores: " . $e->getMessage());
 }
+
+// Determinar texto del orden actual
+$orden_texto = '';
+switch($filtros['ordenar_por']) {
+    case 'fecha_creacion':
+        $orden_texto = 'Fecha de creación (más antiguo primero)';
+        break;
+    case 'porcentaje_desc':
+        $orden_texto = '% Avance (Descendente)';
+        break;
+    case 'referidos_desc':
+        $orden_texto = 'Cantidad de Referidos (Descendente)';
+        break;
+}
 ?>
 
 <!DOCTYPE html>
@@ -177,6 +242,39 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/superadmin_avance.css">
+    <style>
+        /* Estilos adicionales para los nuevos filtros */
+        .form-group.filtro-orden {
+            position: relative;
+        }
+        
+        .badge-orden {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #4caf50;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-left: 5px;
+        }
+        
+        .orden-activo {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .orden-activo span {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -307,7 +405,7 @@ try {
         <div class="filtros-container">
             <div class="filtros-title">
                 <i class="fas fa-filter"></i>
-                <span>Filtrar Referenciadores</span>
+                <span>Filtrar y Ordenar Referenciadores</span>
             </div>
             
             <form method="GET" action="" class="filtros-form" id="filtrosForm">
@@ -365,6 +463,30 @@ try {
                     </select>
                 </div>
                 
+                <!-- Filtro por Porcentaje Mínimo de Avance -->
+                <div class="form-group">
+                    <label for="porcentaje_minimo"><i class="fas fa-percentage"></i> % Avance Mínimo</label>
+                    <select id="porcentaje_minimo" name="porcentaje_minimo" class="form-select" onchange="actualizarFiltros()">
+                        <option value="">Todos los porcentajes</option>
+                        <option value="100" <?php echo $filtros['porcentaje_minimo'] == '100' ? 'selected' : ''; ?>>100% (Completado)</option>
+                        <option value="90" <?php echo $filtros['porcentaje_minimo'] == '90' ? 'selected' : ''; ?>>90% o más</option>
+                        <option value="75" <?php echo $filtros['porcentaje_minimo'] == '75' ? 'selected' : ''; ?>>75% o más</option>
+                        <option value="50" <?php echo $filtros['porcentaje_minimo'] == '50' ? 'selected' : ''; ?>>50% o más</option>
+                        <option value="25" <?php echo $filtros['porcentaje_minimo'] == '25' ? 'selected' : ''; ?>>25% o más</option>
+                        <option value="0" <?php echo $filtros['porcentaje_minimo'] == '0' ? 'selected' : ''; ?>>Con algún avance</option>
+                    </select>
+                </div>
+                
+                <!-- NUEVO: Ordenar por -->
+                <div class="form-group filtro-orden">
+                    <label for="ordenar_por"><i class="fas fa-sort-amount-down"></i> Ordenar por</label>
+                    <select id="ordenar_por" name="ordenar_por" class="form-select" onchange="actualizarFiltros()">
+                        <option value="fecha_creacion" <?php echo $filtros['ordenar_por'] == 'fecha_creacion' ? 'selected' : ''; ?>>Fecha de creación</option>
+                        <option value="porcentaje_desc" <?php echo $filtros['ordenar_por'] == 'porcentaje_desc' ? 'selected' : ''; ?>>% Avance</option>
+                        <option value="referidos_desc" <?php echo $filtros['ordenar_por'] == 'referidos_desc' ? 'selected' : ''; ?>>Cantidad de Referidos</option>
+                    </select>
+                </div>
+                
                 <!-- Última Fecha de Acceso (solo una fecha) -->
                 <div class="form-group">
                     <label for="fecha_acceso"><i class="fas fa-calendar-alt"></i> Último acceso</label>
@@ -389,11 +511,11 @@ try {
             
             <!-- Filtros activos -->
             <?php 
-            $filtrosActivos = array_filter($filtros, function($valor) {
-                return !empty($valor);
-            });
+            $filtrosActivos = array_filter($filtros, function($valor, $clave) {
+                return !empty($valor) && $clave != 'ordenar_por';
+            }, ARRAY_FILTER_USE_BOTH);
             
-            if (!empty($filtrosActivos)): ?>
+            if (!empty($filtrosActivos) || $filtros['ordenar_por'] != 'fecha_creacion'): ?>
             <div class="active-filters">
                 <div class="filter-section-title">
                     <i class="fas fa-check-circle"></i> Filtros aplicados:
@@ -440,6 +562,19 @@ try {
                             case 'fecha_acceso':
                                 $etiqueta = "Último acceso: " . date('d/m/Y', strtotime($valor));
                                 break;
+                            case 'porcentaje_minimo':
+                                $porcentaje_texto = '';
+                                switch($valor) {
+                                    case '100': $porcentaje_texto = '100% (Completado)'; break;
+                                    case '90': $porcentaje_texto = '90% o más'; break;
+                                    case '75': $porcentaje_texto = '75% o más'; break;
+                                    case '50': $porcentaje_texto = '50% o más'; break;
+                                    case '25': $porcentaje_texto = '25% o más'; break;
+                                    case '0': $porcentaje_texto = 'Con algún avance'; break;
+                                    default: $porcentaje_texto = $valor . '% o más';
+                                }
+                                $etiqueta = "Avance mínimo: " . $porcentaje_texto;
+                                break;
                         }
                         
                         if (!empty($etiqueta)):
@@ -450,7 +585,25 @@ try {
                         </span>
                     <?php 
                         endif;
-                    endforeach; ?>
+                    endforeach; 
+                    
+                    // Mostrar filtro de orden si no es el por defecto
+                    if ($filtros['ordenar_por'] != 'fecha_creacion'):
+                        $orden_texto_badge = '';
+                        switch($filtros['ordenar_por']) {
+                            case 'porcentaje_desc':
+                                $orden_texto_badge = 'Orden: % Avance (Descendente)';
+                                break;
+                            case 'referidos_desc':
+                                $orden_texto_badge = 'Orden: Cantidad de Referidos (Descendente)';
+                                break;
+                        }
+                    ?>
+                        <span class="filter-badge filter-badge-orden" id="filtro-orden">
+                            <?php echo $orden_texto_badge; ?>
+                            <span class="close" onclick="eliminarFiltro('ordenar_por')">&times;</span>
+                        </span>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endif; ?>
@@ -518,10 +671,20 @@ try {
                                 <div class="user-details">
                                     <div class="user-name">
                                         <?php echo htmlspecialchars($referenciador['nombres'] . ' ' . $referenciador['apellidos']); ?>
+                                        <?php if ($porcentaje >= 100): ?>
+                                            <span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;">
+                                                <i class="fas fa-check-circle"></i> Completado
+                                            </span>
+                                        <?php elseif ($porcentaje >= 75): ?>
+                                            <span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;">
+                                                <i class="fas fa-trophy"></i> Avanzado
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="user-info-text">
                                         <span>Cédula: <?php echo htmlspecialchars($referenciador['cedula'] ?? 'N/A'); ?></span>
                                         <span>Usuario: <?php echo htmlspecialchars($referenciador['nickname'] ?? 'N/A'); ?></span>
+                                        <span>Fecha registro: <?php echo date('d/m/Y', strtotime($referenciador['fecha_creacion'])); ?></span>
                                         <?php if (!empty($referenciador['ultimo_registro'])): ?>
                                         <span>Último acceso: <?php echo date('d/m/Y H:i', strtotime($referenciador['ultimo_registro'])); ?></span>
                                         <?php endif; ?>
@@ -530,7 +693,7 @@ try {
                             </div>
                             
                             <div class="user-stats">
-                                <div class="stat-item">
+                                <div class="stat-item <?php echo $filtros['ordenar_por'] == 'referidos_desc' ? 'stat-destacado' : ''; ?>">
                                     <div class="stat-number"><?php echo $referenciador['total_referenciados'] ?? 0; ?></div>
                                     <div class="stat-desc">Referidos</div>
                                 </div>
@@ -538,8 +701,10 @@ try {
                                     <div class="stat-number"><?php echo $referenciador['tope'] ?? 0; ?></div>
                                     <div class="stat-desc">Tope</div>
                                 </div>
-                                <div class="stat-item">
-                                    <div class="stat-number"><?php echo $porcentaje; ?>%</div>
+                                <div class="stat-item <?php echo $filtros['ordenar_por'] == 'porcentaje_desc' ? 'stat-destacado' : ''; ?>">
+                                    <div class="stat-number <?php echo $porcentaje >= 100 ? 'text-success' : ($porcentaje >= 75 ? 'text-primary' : ''); ?>">
+                                        <?php echo $porcentaje; ?>%
+                                    </div>
                                     <div class="stat-desc">Avance</div>
                                 </div>
                             </div>
@@ -549,6 +714,9 @@ try {
                         <div class="individual-progress">
                             <div class="progress-label-small">
                                 Progreso individual: <?php echo $referenciador['total_referenciados'] ?? 0; ?> de <?php echo $referenciador['tope'] ?? 0; ?> referidos
+                                <span style="float: right; font-weight: bold; color: <?php echo $porcentaje >= 100 ? '#4caf50' : ($porcentaje >= 75 ? '#2196f3' : '#666'); ?>">
+                                    <?php echo $porcentaje; ?>%
+                                </span>
                             </div>
                             <div class="progress-container-small">
                                 <div class="progress-bar-small <?php echo $progressClass; ?>" 
@@ -584,7 +752,7 @@ try {
                 Email: sisgonnet@gmail.com
             </p>
         </div>
-    </footer>
+</footer>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -601,6 +769,8 @@ try {
                 var id_zona = $('#id_zona').val();
                 var id_sector = $('#id_sector').val();
                 var id_puesto_votacion = $('#id_puesto_votacion').val();
+                var porcentaje_minimo = $('#porcentaje_minimo').val();
+                var ordenar_por = $('#ordenar_por').val();
                 var fecha_acceso = $('#fecha_acceso').val();
                 
                 // Construir query string
@@ -609,6 +779,8 @@ try {
                 if (id_zona) params.push('id_zona=' + encodeURIComponent(id_zona));
                 if (id_sector) params.push('id_sector=' + encodeURIComponent(id_sector));
                 if (id_puesto_votacion) params.push('id_puesto_votacion=' + encodeURIComponent(id_puesto_votacion));
+                if (porcentaje_minimo) params.push('porcentaje_minimo=' + encodeURIComponent(porcentaje_minimo));
+                if (ordenar_por && ordenar_por != 'fecha_creacion') params.push('ordenar_por=' + encodeURIComponent(ordenar_por));
                 if (fecha_acceso) params.push('fecha_acceso=' + encodeURIComponent(fecha_acceso));
                 
                 // Recargar la página con los nuevos parámetros
@@ -643,6 +815,12 @@ try {
             window.location.href = newUrl;
         }
         
+        // Función para aplicar orden rápido
+        function ordenarPor(opcion) {
+            $('#ordenar_por').val(opcion);
+            actualizarFiltros();
+        }
+        
         $(document).ready(function() {
             // Efecto de animación para las barras de progreso al cargar
             $('.progress-bar-small').each(function() {
@@ -660,11 +838,21 @@ try {
             $('.referenciador-card').hover(
                 function() {
                     $(this).css('transform', 'translateY(-5px)');
+                    $(this).css('box-shadow', '0 5px 15px rgba(0,0,0,0.1)');
                 },
                 function() {
                     $(this).css('transform', 'translateY(0)');
+                    $(this).css('box-shadow', '0 2px 5px rgba(0,0,0,0.05)');
                 }
             );
+            
+            // Destacar estadísticas según el orden actual
+            $('.stat-destacado').each(function() {
+                $(this).css('background', 'rgba(33, 150, 243, 0.1)');
+                $(this).css('border-radius', '5px');
+                $(this).css('padding', '5px');
+                $(this).find('.stat-number').css('font-weight', 'bold');
+            });
             
             // Mejorar UX: Auto-focus en el campo de búsqueda
             $('#nombre').focus();

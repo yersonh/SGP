@@ -19,6 +19,7 @@ header("Expires: 0"); // Proxies
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
+
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
     header('Location: ../index.php');
@@ -109,6 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'direccion' => $_POST['direccion'] ?? '',
             'email' => $_POST['email'] ?? '',
             'telefono' => $_POST['telefono'] ?? '',
+            'sexo' => $_POST['sexo'] ?? '',
+            'vota_fuera' => $_POST['vota_fuera'] ?? 'No',
             'afinidad' => $_POST['afinidad'] ?? 1,
             'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
             'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
@@ -123,6 +126,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'insumos_nuevos' => $_POST['insumos_nuevos'] ?? [],
             'insumos_eliminar' => $_POST['insumos_eliminar'] ?? []
         ];
+        
+        // Agregar campos de votación fuera si están presentes
+        if (isset($_POST['puesto_votacion_fuera'])) {
+            $datos_actualizar['puesto_votacion_fuera'] = $_POST['puesto_votacion_fuera'];
+        }
+        
+        if (isset($_POST['mesa_fuera']) && !empty($_POST['mesa_fuera'])) {
+            $datos_actualizar['mesa_fuera'] = $_POST['mesa_fuera'];
+        }
         
         // Agregar campos de cantidad y observaciones para los insumos
         foreach ($_POST as $key => $value) {
@@ -165,6 +177,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('La afinidad debe estar entre 1 y 5.');
         }
         
+        // Validar sexo si está presente
+        if (!empty($datos_actualizar['sexo']) && !in_array($datos_actualizar['sexo'], ['Masculino', 'Femenino', 'Otro'])) {
+            throw new Exception('El sexo seleccionado no es válido.');
+        }
+        
+        // Validar vota_fuera
+        if (!in_array($datos_actualizar['vota_fuera'], ['Si', 'No'])) {
+            throw new Exception('El campo "Vota Fuera" debe ser Si o No.');
+        }
+        
+        // Validaciones condicionales según si vota fuera o no
+        if ($datos_actualizar['vota_fuera'] === 'Si') {
+            // Validar campos para cuando vota fuera
+            if (empty($datos_actualizar['puesto_votacion_fuera'])) {
+                throw new Exception('El puesto de votación fuera es obligatorio cuando el referido vota fuera.');
+            }
+            if (empty($datos_actualizar['mesa_fuera']) || $datos_actualizar['mesa_fuera'] < 1) {
+                throw new Exception('El número de mesa fuera es obligatorio y debe ser mayor a 0.');
+            }
+            if ($datos_actualizar['mesa_fuera'] > 40) {
+                throw new Exception('El número de mesa fuera no puede ser mayor a 40.');
+            }
+        } else {
+            // Validar campos para cuando NO vota fuera
+            if (empty($datos_actualizar['id_zona'])) {
+                throw new Exception('La zona es obligatoria cuando el referido NO vota fuera.');
+            }
+        }
+        
         // Actualizar el referenciado
         $resultado = $referenciadoModel->actualizarReferenciado($id_referenciado, $datos_actualizar);
         
@@ -193,617 +234,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Referenciado - SGP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../styles/editar_referenciado.css">
     <style>
-        :root {
-            --primary-dark: #1a1a2e;
-            --secondary-dark: #16213e;
-            --accent-blue: #0f3460;
-            --highlight-blue: #4fc3f7;
-            --text-light: #e6e6e6;
-            --text-muted: #b0bec5;
-            --success-color: #27ae60;
-            --danger-color: #e74c3c;
-            --warning-color: #f39c12;
-            --card-bg: rgba(30, 30, 40, 0.85);
-            --card-border: rgba(255, 255, 255, 0.15);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            min-height: 100vh;
-            background: 
-                linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85));
-            background-size: cover;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(79, 195, 247, 0.2);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-        
-        .header-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .header-title h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin: 0;
-            color: white;
-            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(79, 195, 247, 0.1);
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 1px solid rgba(79, 195, 247, 0.2);
-            color: white;
-        }
-        
-        .header-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .header-btn {
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 15px;
-            background: rgba(79, 195, 247, 0.1);
-            border-radius: 6px;
-            transition: all 0.3s;
-            font-size: 0.9rem;
-            border: 1px solid rgba(79, 195, 247, 0.2);
-        }
-        
-        .header-btn:hover {
-            background: rgba(79, 195, 247, 0.2);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.2);
-            border-color: rgba(79, 195, 247, 0.4);
-        }
-        
-        .main-container {
-            flex: 1;
-            max-width: 1400px;
-            margin: 80px auto 40px;
-            padding: 0 20px;
-            width: 100%;
-        }
-        
-        .card-container {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid var(--card-border);
-            box-shadow: 
-                0 20px 50px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            margin-bottom: 30px;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(41, 182, 246, 0.1));
-            border-bottom: 1px solid rgba(79, 195, 247, 0.3);
-            padding: 25px 30px;
-        }
-        
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        .header-left h2 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .header-left h2 i {
-            color: #4fc3f7;
-        }
-        
-        .header-left p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 0;
-        }
-        
-        .header-right {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .status-active {
-            background: rgba(39, 174, 96, 0.2);
-            color: #27ae60;
-            border: 1px solid rgba(39, 174, 96, 0.3);
-        }
-        
-        .status-inactive {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-            border: 1px solid rgba(231, 76, 60, 0.3);
-        }
-        
-        .form-sections {
-            padding: 30px;
-        }
-        
-        .section-title {
-            color: #4fc3f7;
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+        .switch-container {
             display: flex;
             align-items: center;
             gap: 10px;
         }
         
-        .section-title i {
-            color: #4fc3f7;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 35px;
-        }
-        
-        .form-group {
-            margin-bottom: 0;
-        }
-        
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .form-label i {
-            color: #90a4ae;
-            font-size: 0.9rem;
-            width: 20px;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-light);
-            backdrop-filter: blur(5px);
-        }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: rgba(79, 195, 247, 0.5);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
-        }
-        
-        select.form-control {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2390a4ae' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            padding-right: 40px;
-        }
-        
-        textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
-            line-height: 1.5;
-        }
-        
-        .na-text {
-            color: #90a4ae;
-            font-style: italic;
-        }
-        
-        .estrellas-afinidad {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .estrellas-afinidad .estrella {
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #666;
-        }
-        
-        .estrellas-afinidad .estrella:hover,
-        .estrellas-afinidad .estrella.active {
-            color: #FFD700;
-            transform: scale(1.2);
-        }
-        
-        .valor-afinidad {
-            margin-left: 10px;
-            color: #FFD700;
-            font-weight: 600;
-            font-size: 0.9rem;
-            background: rgba(255, 215, 0, 0.1);
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(255, 215, 0, 0.2);
-        }
-        
-        .insumos-section {
-            background: rgba(79, 195, 247, 0.05);
-            border: 1px solid rgba(79, 195, 247, 0.1);
-            border-radius: 12px;
-            padding: 25px;
-            margin-top: 20px;
-        }
-        
-        .insumos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .insumo-checkbox {
+        .switch-checkbox {
             display: none;
         }
         
-        .insumo-label {
+        .switch-label {
+            position: relative;
+            display: inline-block;
+            width: 70px;
+            height: 34px;
+        }
+        
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e0e0e0;
+            border-radius: 34px;
+            transition: .4s;
+        }
+        
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+        
+        .switch-checkbox:checked + .switch-label .switch-slider {
+            background-color: #4CAF50;
+        }
+        
+        .switch-checkbox:checked + .switch-label .switch-slider:before {
+            transform: translateX(36px);
+        }
+        
+        .switch-text-on, .switch-text-off {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .switch-text-on {
+            left: 8px;
+            display: none;
+        }
+        
+        .switch-text-off {
+            right: 8px;
+        }
+        
+        .switch-checkbox:checked + .switch-label .switch-text-on {
             display: block;
-            cursor: pointer;
         }
         
-        .insumo-card {
-            background: rgba(30, 30, 40, 0.7);
-            border: 1px solid rgba(79, 195, 247, 0.1);
-            border-radius: 10px;
-            padding: 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.3s;
-            backdrop-filter: blur(10px);
+        .switch-checkbox:checked + .switch-label .switch-text-off {
+            display: none;
         }
         
-        .insumo-checkbox:checked + .insumo-label .insumo-card {
-            border-color: rgba(79, 195, 247, 0.5);
-            background: rgba(79, 195, 247, 0.1);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.2);
+        .campo-fuera, .campo-votacion {
+            transition: all 0.3s ease;
         }
         
-        .insumo-card:hover {
-            border-color: rgba(79, 195, 247, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.1);
+        .campo-fuera.hidden, .campo-votacion.hidden {
+            display: none;
         }
-        
-        .insumo-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            background: rgba(79, 195, 247, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4fc3f7;
-            font-size: 1.3rem;
-            border: 1px solid rgba(79, 195, 247, 0.2);
-        }
-        
-        .insumo-info {
-            flex: 1;
-        }
-        
-        .insumo-name {
-            color: white;
-            font-weight: 500;
-            font-size: 0.95rem;
-            margin-bottom: 4px;
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 40px;
-            padding-top: 25px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .save-btn {
-            background: linear-gradient(135deg, #27ae60, #219653);
-            color: white;
-            border: none;
-            padding: 14px 35px;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-decoration: none;
-            backdrop-filter: blur(10px);
-        }
-        
-        .save-btn:hover {
-            background: linear-gradient(135deg, #219653, #1e874b);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3);
-        }
-        
-        .cancel-btn {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-light);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 14px 35px;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-decoration: none;
-            backdrop-filter: blur(10px);
-        }
-        
-        .cancel-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-            border-color: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        
-        .referenciador-info {
-            background: rgba(79, 195, 247, 0.1);
-            border: 1px solid rgba(79, 195, 247, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-        }
-        
-        .referenciador-name {
-            color: #4fc3f7;
-            font-weight: 600;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .timestamp-info {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        @media (max-width: 768px) {
-            .main-container {
-                padding: 0 15px;
-                margin-top: 90px;
-                margin-bottom: 20px;
-            }
-            
-            .form-sections {
-                padding: 20px;
-            }
-            
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-            
-            .save-btn, .cancel-btn {
-                width: 100%;
-                padding: 12px;
-            }
-            
-            .insumos-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .card-header {
-                padding: 20px;
-            }
-            
-            .header-left h2 {
-                font-size: 1.5rem;
-            }
-            
-            .header-actions {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .section-title {
-                font-size: 1.1rem;
-            }
-        }
-        /* Estilos para insumos asignados */
-.insumo-card-asignado {
-    background: rgba(79, 195, 247, 0.1);
-    border: 1px solid rgba(79, 195, 247, 0.3);
-    border-radius: 10px;
-    padding: 18px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: all 0.3s;
-    backdrop-filter: blur(10px);
-    position: relative;
-}
-
-.insumo-card-asignado:hover {
-    background: rgba(79, 195, 247, 0.15);
-    border-color: rgba(79, 195, 247, 0.5);
-    transform: translateY(-2px);
-}
-
-.insumo-actions {
-    margin-left: auto;
-}
-
-.btn-remove-insumo {
-    background: rgba(231, 76, 60, 0.2);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-    border-radius: 6px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-remove-insumo:hover {
-    background: rgba(231, 76, 60, 0.3);
-    transform: scale(1.1);
-}
-
-/* Estilos para insumos nuevos */
-.insumo-item-nuevo {
-    position: relative;
-}
-
-.insumo-check-indicator {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 20px;
-    height: 20px;
-    background: rgba(39, 174, 96, 0.2);
-    border: 1px solid rgba(39, 174, 96, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #27ae60;
-    font-size: 0.7rem;
-    opacity: 0;
-    transition: all 0.3s;
-}
-
-.insumo-checkbox:checked + .insumo-label .insumo-check-indicator {
-    opacity: 1;
-}
-
-.insumo-checkbox:checked + .insumo-label .insumo-card {
-    border-color: rgba(39, 174, 96, 0.5);
-    background: rgba(39, 174, 96, 0.1);
-}
-
-.insumo-checkbox:checked + .insumo-label + .insumo-details-form {
-    display: block;
-    animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
     </style>
 </head>
 <body>
@@ -909,6 +423,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         <div class="form-group">
                             <label class="form-label">
+                                <i class="fas fa-venus-mars"></i> Sexo
+                            </label>
+                            <select class="form-control" name="sexo">
+                                <option value="">Seleccionar...</option>
+                                <option value="Masculino" <?php echo isSelected('Masculino', $referenciado['sexo'] ?? ''); ?>>Masculino</option>
+                                <option value="Femenino" <?php echo isSelected('Femenino', $referenciado['sexo'] ?? ''); ?>>Femenino</option>
+                                <option value="Otro" <?php echo isSelected('Otro', $referenciado['sexo'] ?? ''); ?>>Otro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
                                 <i class="fas fa-home"></i> Dirección
                             </label>
                             <input type="text" 
@@ -968,12 +494,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        
+                    </div>
+                    
+                    <!-- Sección 3: Información de Votación -->
+                    <div class="section-title">
+                        <i class="fas fa-vote-yea"></i> Información de Votación
+                    </div>
+                    
+                    <div class="form-grid">
+                        <!-- Campo Vota Fuera -->
                         <div class="form-group">
                             <label class="form-label">
-                                <i class="fas fa-compass"></i> Zona
+                                <i class="fas fa-person-booth"></i> Vota Fuera
                             </label>
-                            <select class="form-control" name="id_zona">
+                            <div class="switch-container">
+                                <input type="checkbox" 
+                                       class="switch-checkbox" 
+                                       id="vota_fuera_switch" 
+                                       name="vota_fuera_switch" 
+                                       <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'checked' : ''; ?>>
+                                <label for="vota_fuera_switch" class="switch-label">
+                                    <div class="switch-slider">
+                                        <span class="switch-text-on">Sí</span>
+                                        <span class="switch-text-off">No</span>
+                                    </div>
+                                </label>
+                                <input type="hidden" id="vota_fuera" name="vota_fuera" value="<?php echo htmlspecialchars($referenciado['vota_fuera'] ?? 'No'); ?>">
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para cuando vota fuera (inicialmente ocultos) -->
+                        <div class="form-group campo-fuera <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? '' : 'hidden'; ?>">
+                            <label class="form-label">
+                                <i class="fas fa-vote-yea"></i> Puesto de votación fuera *
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="puesto_votacion_fuera" 
+                                   name="puesto_votacion_fuera" 
+                                   value="<?php echo htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? ''); ?>"
+                                   <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'required' : ''; ?>>
+                        </div>
+                        
+                        <div class="form-group campo-fuera <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? '' : 'hidden'; ?>">
+                            <label class="form-label">
+                                <i class="fas fa-table"></i> Mesa fuera *
+                            </label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="mesa_fuera" 
+                                   name="mesa_fuera" 
+                                   min="1" 
+                                   max="40" 
+                                   value="<?php echo htmlspecialchars($referenciado['mesa_fuera'] ?? ''); ?>"
+                                   <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'required' : ''; ?>>
+                        </div>
+                        
+                        <!-- Campos para cuando NO vota fuera (inicialmente visibles) -->
+                        <div class="form-group campo-votacion <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'hidden' : ''; ?>">
+                            <label class="form-label">
+                                <i class="fas fa-compass"></i> Zona *
+                            </label>
+                            <select class="form-control" name="id_zona" id="id_zona">
                                 <option value="">Seleccionar...</option>
                                 <?php foreach ($zonas as $zona): ?>
                                     <option value="<?php echo $zona['id_zona']; ?>" 
@@ -984,11 +566,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group campo-votacion <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'hidden' : ''; ?>">
                             <label class="form-label">
                                 <i class="fas fa-th-large"></i> Sector
                             </label>
-                            <select class="form-control" name="id_sector">
+                            <select class="form-control" name="id_sector" id="id_sector" <?php echo empty($referenciado['id_zona']) ? 'disabled' : ''; ?>>
                                 <option value="">Seleccionar...</option>
                                 <?php foreach ($sectores as $sector): ?>
                                     <option value="<?php echo $sector['id_sector']; ?>" 
@@ -999,11 +581,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group campo-votacion <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'hidden' : ''; ?>">
                             <label class="form-label">
                                 <i class="fas fa-vote-yea"></i> Puesto de votación
                             </label>
-                            <select class="form-control" name="id_puesto_votacion">
+                            <select class="form-control" name="id_puesto_votacion" id="id_puesto_votacion" <?php echo empty($referenciado['id_sector']) ? 'disabled' : ''; ?>>
                                 <option value="">Seleccionar...</option>
                                 <?php foreach ($puestos as $puesto): ?>
                                     <option value="<?php echo $puesto['id_puesto']; ?>" 
@@ -1014,7 +596,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group campo-votacion <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'hidden' : ''; ?>">
                             <label class="form-label">
                                 <i class="fas fa-table"></i> Mesa
                             </label>
@@ -1022,11 +604,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    class="form-control" 
                                    name="mesa" 
                                    min="1" 
-                                   value="<?php echo htmlspecialchars($referenciado['mesa'] ?? ''); ?>">
+                                   value="<?php echo htmlspecialchars($referenciado['mesa'] ?? ''); ?>"
+                                   id="mesa">
                         </div>
                     </div>
                     
-                    <!-- Sección 3: Información Adicional -->
+                    <!-- Sección 4: Información Adicional -->
                     <div class="section-title">
                         <i class="fas fa-info-circle"></i> Información Adicional
                     </div>
@@ -1087,7 +670,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     
-                    <!-- Sección 4: Insumos Asignados -->
+                    <!-- Sección 5: Insumos Asignados -->
                     <div class="section-title">
                         <i class="fas fa-box-open"></i> Insumos Asignados
                     </div>
@@ -1289,6 +872,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             valorSpan.textContent = valor + '/5';
         }
         
+        // Manejar el switch de Vota Fuera
+        const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+        const votaFueraHidden = document.getElementById('vota_fuera');
+        const camposFuera = document.querySelectorAll('.campo-fuera');
+        const camposVotacion = document.querySelectorAll('.campo-votacion');
+        
+        function toggleCamposVotacion() {
+            const votaFuera = votaFueraSwitch.checked ? 'Si' : 'No';
+            votaFueraHidden.value = votaFuera;
+            
+            if (votaFuera === 'Si') {
+                // Mostrar campos fuera, ocultar campos normales
+                camposFuera.forEach(campo => {
+                    campo.classList.remove('hidden');
+                    const input = campo.querySelector('input');
+                    if (input) input.required = true;
+                });
+                
+                camposVotacion.forEach(campo => {
+                    campo.classList.add('hidden');
+                    const input = campo.querySelector('input, select');
+                    if (input) input.required = false;
+                    if (input) input.disabled = true;
+                });
+            } else {
+                // Mostrar campos normales, ocultar campos fuera
+                camposFuera.forEach(campo => {
+                    campo.classList.add('hidden');
+                    const input = campo.querySelector('input');
+                    if (input) input.required = false;
+                });
+                
+                camposVotacion.forEach(campo => {
+                    campo.classList.remove('hidden');
+                    // El campo zona siempre es requerido cuando NO vota fuera
+                    const input = campo.querySelector('input, select');
+                    if (input && input.name === 'id_zona') {
+                        input.required = true;
+                        input.disabled = false;
+                    }
+                });
+            }
+        }
+        
+        // Inicializar estado
+        toggleCamposVotacion();
+        
+        // Agregar evento change al switch
+        votaFueraSwitch.addEventListener('change', toggleCamposVotacion);
+        
+        // Manejar dependencias entre selects de votación
+        const zonaSelect = document.getElementById('id_zona');
+        const sectorSelect = document.getElementById('id_sector');
+        const puestoSelect = document.getElementById('id_puesto_votacion');
+        
+        zonaSelect.addEventListener('change', function() {
+            if (this.value) {
+                sectorSelect.disabled = false;
+                sectorSelect.required = false;
+            } else {
+                sectorSelect.disabled = true;
+                sectorSelect.value = '';
+                sectorSelect.required = false;
+                puestoSelect.disabled = true;
+                puestoSelect.value = '';
+                puestoSelect.required = false;
+            }
+        });
+        
+        sectorSelect.addEventListener('change', function() {
+            if (this.value) {
+                puestoSelect.disabled = false;
+                puestoSelect.required = false;
+            } else {
+                puestoSelect.disabled = true;
+                puestoSelect.value = '';
+                puestoSelect.required = false;
+            }
+        });
+        
         // Manejar botones de eliminar insumo
         document.querySelectorAll('.btn-remove-insumo').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -1458,14 +1121,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return false;
             }
             
-            // Validar mesa si está presente (número positivo)
-            const mesa = document.querySelector('input[name="mesa"]').value;
-            if (mesa && (parseInt(mesa) < 1 || isNaN(parseInt(mesa)))) {
-                e.preventDefault();
-                showNotification('La mesa debe ser un número positivo', 'warning');
-                document.querySelector('input[name="mesa"]').style.borderColor = '#e74c3c';
-                document.querySelector('input[name="mesa"]').focus();
-                return false;
+            // Validaciones condicionales según si vota fuera o no
+            const votaFuera = document.getElementById('vota_fuera').value;
+            
+            if (votaFuera === 'Si') {
+                // Validar campos de votación fuera
+                const puestoFuera = document.getElementById('puesto_votacion_fuera');
+                const mesaFuera = document.getElementById('mesa_fuera');
+                
+                if (!puestoFuera.value.trim()) {
+                    e.preventDefault();
+                    showNotification('El puesto de votación fuera es obligatorio cuando vota fuera', 'warning');
+                    puestoFuera.style.borderColor = '#e74c3c';
+                    puestoFuera.focus();
+                    return false;
+                }
+                
+                if (!mesaFuera.value || parseInt(mesaFuera.value) < 1) {
+                    e.preventDefault();
+                    showNotification('La mesa fuera es obligatoria y debe ser mayor a 0', 'warning');
+                    mesaFuera.style.borderColor = '#e74c3c';
+                    mesaFuera.focus();
+                    return false;
+                }
+                
+                if (parseInt(mesaFuera.value) > 40) {
+                    e.preventDefault();
+                    showNotification('La mesa fuera no puede ser mayor a 40', 'warning');
+                    mesaFuera.style.borderColor = '#e74c3c';
+                    mesaFuera.focus();
+                    return false;
+                }
+            } else {
+                // Validar campos de votación normal
+                const zona = document.getElementById('id_zona');
+                if (!zona.value) {
+                    e.preventDefault();
+                    showNotification('La zona es obligatoria cuando NO vota fuera', 'warning');
+                    zona.style.borderColor = '#e74c3c';
+                    zona.focus();
+                    return false;
+                }
+                
+                // Validar mesa normal si está presente
+                const mesa = document.querySelector('input[name="mesa"]');
+                if (mesa.value && (parseInt(mesa.value) < 1 || isNaN(parseInt(mesa.value)))) {
+                    e.preventDefault();
+                    showNotification('La mesa debe ser un número positivo', 'warning');
+                    mesa.style.borderColor = '#e74c3c';
+                    mesa.focus();
+                    return false;
+                }
             }
             
             // Validar que los campos requeridos no estén vacíos
@@ -1564,6 +1270,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Inicializar contador de insumos
         actualizarContadorInsumos();
     });
-</script>
+    </script>
 </body>
 </html>

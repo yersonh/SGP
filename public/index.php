@@ -429,7 +429,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
         
         <div class="footer-links">
-            <a href="#"><i class="fas fa-question-circle"></i> ¿Olvidó su contraseña?</a>
+            <a href="recuperar.php"><i class="fas fa-question-circle"></i> ¿Olvidó su contraseña?</a>
         </div>
         
         <div class="system-info">

@@ -268,25 +268,35 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         }
         
         /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+       .action-buttons {
+    display: flex;
+    gap: 5px; /* Reducido de 10px */
+    flex-wrap: nowrap; /* ¡CRÍTICO! Cambiado de wrap a nowrap */
+    justify-content: flex-start;
+    align-items: center;
+    min-width: 160px; /* Ancho mínimo para 3 botones */
+    max-width: 100%; /* Ocupa todo el espacio disponible */
+    overflow: hidden; /* Evita que se desborden */
+}
         
         .btn-action {
-            padding: 8px 15px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-        }
+    padding: 4px 8px; /* Reducido de 8px 15px */
+    border-radius: 4px;
+    border: none;
+    font-weight: 500;
+    font-size: 0.75rem; /* Reducido de 0.85rem */
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0; /* ¡IMPORTANTE! No permite que se encojan */
+    min-width: 40px; /* Ancho mínimo para cada botón */
+    height: 32px;
+}
+
         
         .btn-edit {
             background-color: rgba(52, 152, 219, 0.1);
@@ -577,6 +587,42 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 max-width: 200px;
             }
         }
+        /* Agrega estos estilos en la sección de CSS */
+        .password-field {
+            min-width: 200px;
+        }
+
+        .password-input {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        /* Asteriscos cuando está oculto */
+        .password-input[type="password"] {
+            color: transparent;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            background-image: linear-gradient(45deg, #999 25%, transparent 25%, transparent 50%, #999 50%, #999 75%, transparent 75%, transparent);
+            background-size: 10px 10px;
+        }
+
+        /* Texto normal cuando está visible */
+        .password-input[type="text"] {
+            color: #dc3545; /* Rojo para que destaque */
+            font-weight: 500;
+            background-color: #fff8f8 !important;
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .toggle-password-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            min-width: 40px;
+        }
+
+        .toggle-password-btn:hover {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -675,6 +721,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         <tr>
                             <th>NICKNAME</th>
                             <th>NOMBRE COMPLETO</th>
+                            <th>CONTRASEÑA</th>
                             <th>TIPO</th>
                             <th>ESTADO</th>
                             <th>ACCIONES</th>
@@ -704,6 +751,24 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                                     ?>
                                 </div>
                             </td>
+                            <td>
+                                <div class="password-field d-flex align-items-center gap-2">
+                                    <div class="input-group input-group-sm" style="width: 180px;">
+                                        <input type="password" 
+                                            value="<?php echo htmlspecialchars($usuario['password']); ?>" 
+                                            class="form-control password-input" 
+                                            readonly
+                                            id="password-input-<?php echo $usuario['id_usuario']; ?>"
+                                            style="background: #f8f9fa; border: 1px solid #dee2e6;">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary toggle-password-btn"
+                                                data-user-id="<?php echo $usuario['id_usuario']; ?>"
+                                                title="Mostrar/ocultar contraseña">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
                             
                             <td>
                                 <span class="user-type"><?php echo htmlspecialchars($usuario['tipo_usuario']); ?></span>
@@ -728,26 +793,26 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                                     <button class="btn-action btn-view" 
                                             onclick="window.location.href='administrador/ver_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"
                                             title="Ver detalle del usuario">
-                                        <i class="fas fa-eye"></i> VER
+                                        <i class="fas fa-eye"></i>
                                     </button>
                                     <!-- BOTÓN DE EDITAR -->
                                     <button class="btn-action btn-edit" 
                                             onclick="window.location.href='administrador/editar_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"
                                             title="Editar usuario">
-                                        <i class="fas fa-edit"></i> EDITAR
+                                        <i class="fas fa-edit"></i>
                                     </button>
                                     
                                     <?php if ($esta_activo): ?>
                                         <button class="btn-action btn-deactivate" 
                                                 title="Dar de baja al usuario"
                                                 onclick="darDeBaja(<?php echo $usuario['id_usuario']; ?>, '<?php echo htmlspecialchars($usuario['nickname']); ?>', this)">
-                                            <i class="fas fa-user-slash"></i> DAR DE BAJA
+                                            <i class="fas fa-user-slash"></i>
                                         </button>
                                     <?php else: ?>
                                         <button class="btn-action btn-activate" 
                                                 title="Reactivar usuario"
                                                 onclick="reactivarUsuario(<?php echo $usuario['id_usuario']; ?>, '<?php echo htmlspecialchars($usuario['nickname']); ?>', this)">
-                                            <i class="fas fa-user-check"></i> REACTIVAR
+                                            <i class="fas fa-user-check"></i>
                                         </button>
                                     <?php endif; ?>
                                 </div>
@@ -991,7 +1056,45 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 }
             }
         }
-        
+// Función para mostrar/ocultar contraseña
+function togglePassword(userId) {
+    const passwordInput = document.getElementById(`password-input-${userId}`);
+    const button = document.querySelector(`[data-user-id="${userId}"]`);
+    const icon = button.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        // Mostrar contraseña
+        passwordInput.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+        button.title = 'Ocultar contraseña';
+        button.classList.add('btn-warning');
+        button.classList.remove('btn-outline-secondary');
+    } else {
+        // Ocultar contraseña
+        passwordInput.type = 'password';
+        icon.className = 'fas fa-eye';
+        button.title = 'Mostrar contraseña';
+        button.classList.remove('btn-warning');
+        button.classList.add('btn-outline-secondary');
+    }
+}
+
+// Inicializar event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Asignar evento a todos los botones de mostrar/ocultar
+    document.querySelectorAll('.toggle-password-btn').forEach(button => {
+        const userId = button.getAttribute('data-user-id');
+        button.addEventListener('click', () => togglePassword(userId));
+    });
+    
+    // Prevenir selección de texto en campos de contraseña oculta
+    document.querySelectorAll('.password-input[type="password"]').forEach(input => {
+        input.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            this.blur();
+        });
+    });
+});
         // Efecto hover en filas de la tabla
         document.querySelectorAll('.users-table tbody tr').forEach(row => {
             row.addEventListener('mouseenter', function() {
@@ -1048,6 +1151,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 }
             }
         });
+        
     </script>
 </body>
 </html>

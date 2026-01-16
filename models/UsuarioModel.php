@@ -323,20 +323,38 @@ class UsuarioModel {
     }
     
     // Verificar si usuario existe y está activo
-    public function verificarCredenciales($nickname, $password) {
-        $query = "SELECT * FROM usuario WHERE nickname = ? AND activo = true";
-        $stmt = $this->pdo->prepare($query);
-        $stmt->execute([$nickname]);
-        $usuario = $stmt->fetch();
-        
-        if ($usuario && $password === $usuario['password']) {
+public function verificarCredenciales($nickname, $password) {
+    $query = "SELECT * FROM usuario WHERE nickname = ? AND activo = true";
+    $stmt = $this->pdo->prepare($query);
+    $stmt->execute([$nickname]);
+    $usuario = $stmt->fetch();
+    
+    if (!$usuario) {
+        return false;
+    }
+    
+    $db_password = $usuario['password'];
+    
+    // INTENTO 1: Verificar si es contraseña hasheada (nueva)
+    // Los hashes de password_hash() empiezan con '$2y$'
+    if (strpos($db_password, '$2y$') === 0) {
+        if (password_verify($password, $db_password)) {
             // Agregar URL de foto
             $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
             return $usuario;
         }
-        
-        return false;
+        return false; // Hash no coincide
     }
+    
+    // INTENTO 2: Verificar contraseña en texto plano (antigua)
+    if ($password === $db_password) {
+        // Agregar URL de foto
+        $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
+        return $usuario;
+    }
+    
+    return false;
+}
     
     // Obtener estadísticas detalladas de referenciados
     public function getEstadisticasReferenciados($id_usuario) {
@@ -492,6 +510,19 @@ public function verificarExistencia($nickname, $cedula) {
     
     // Ninguno existe
     return false;
+}
+public function getUsuarioByNickname($nickname) {
+    $sql = "SELECT * FROM usuario WHERE nickname = :nickname AND activo = true";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':nickname', $nickname);
+    $stmt->execute();
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($usuario) {
+        $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto'] ?? null);
+    }
+    
+    return $usuario;
 }
 }
 ?>

@@ -13,6 +13,7 @@ apt-get install -y \
     php-mbstring \
     php-xml \
     php-zip \
+    php-curl \
     gettext-base
 
 # 2. Verificar instalación de extensiones

@@ -628,6 +628,16 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         .toggle-password-btn:hover {
             background-color: #f8f9fa;
         }
+        .btn-view-referrals {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .btn-view-referrals:hover {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
     </style>
 </head>
 <body>
@@ -794,6 +804,12 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             <td>
 
                                 <div class="action-buttons">
+                                    <!-- BOTÓN DE VER PERSONAS REFERENCIADAS -->
+                                    <button class="btn-action btn-view-referrals" 
+                                            onclick="window.location.href='administrador/ver_referenciados.php?id=<?php echo $usuario['id_usuario']; ?>&nickname=<?php echo urlencode($usuario['nickname']); ?>'"
+                                            title="Ver personas referenciadas por este usuario">
+                                        <i class="fas fa-users"></i>
+                                    </button>
                                     <!-- BOTÓN DE VER DETALLE -->
                                     <button class="btn-action btn-view" 
                                             onclick="window.location.href='administrador/ver_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"

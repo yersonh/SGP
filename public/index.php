@@ -374,17 +374,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow-wrap: break-word;
         }
     }
+    /* Estilos responsivos para el logo */
+.logo-img {
+    width: 320px;
+    height: auto;
+    max-width: 100%;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .logo-img {
+        width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 25px 20px;
+        max-width: 350px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+    
+    .logo-img {
+        width: 280px;
+    }
+    
+    .logo-section h1 {
+        font-size: 1.1rem;
+        letter-spacing: 0.1px;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        padding: 0 2px;
+    }
+    
+    .logo-section p {
+        font-size: 0.8rem;
+    }
+    
+    .login-btn {
+        padding: 12px;
+    }
+    
+    .system-info p {
+        font-size: 0.7rem;
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 380px) {
+    .logo-img {
+        width: 240px;
+    }
+    
+    .logo-section h1 {
+        font-size: 1.05rem;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+    }
+    
+    .system-info p {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 350px) {
+    .login-container {
+        max-width: 320px;
+        padding: 20px 15px;
+    }
+    
+    .logo-img {
+        width: 220px;
+    }
+    
+    .logo-section h1 {
+        font-size: 1rem;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+    }
+}
 </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="logo-section">
-            <div class="logo">
-                <i class="fas fa-user-shield"></i>
-            </div>
-            <h1>SGP-Sistema de Gestión de Política</h1>
-            <p>Plataforma de confirmación de usuario autorizado para acceso al software SGP.</p>
-        </div>
+        <div class="logo-section text-center">
+    <div class="logo mb-0">
+        <img src="imagenes/image_no_bg.png" alt="Logo" class="logo-img">
+    </div>
+        <p class="mt-0">Plataforma de confirmación de usuario autorizado para acceso al software SGP.</p> 
+    </div>
         
         <?php if ($error): ?>
         <div class="error-message">
@@ -433,11 +512,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         
         <div class="system-info">
-            <p>© Derechos de autor Reservados. 
-            Ing. Rubén Darío González García • 
-            SISGONTech • Colombia © • <?php echo date('Y'); ?>
-            </p>
-            <p><span class="contact-line">Contacto: +57 3106310227 • Email: sisgonnet@gmail.com</span>
+            <p>
+                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
+                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
             </p>
         </div>
     </div>

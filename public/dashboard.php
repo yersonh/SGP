@@ -841,17 +841,16 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         
         <!-- Footer del sistema -->
         <footer class="system-footer">
-            <!-- Logo centrado -->
-        <div class="container text-center mb-3">
-            <img src="imagenes/Logo-artguru.png" alt="Logo">
-        </div>
-            <p>© Derechos de autor Reservados. 
-                <strong>Ing. Rubén Darío González García</strong> • 
-                SISGONTech • Colombia © • <?php echo date('Y'); ?>
-            </p>
-            <p>Contacto: <strong>+57 3106310227</strong> • 
-                Email: <strong>sisgonnet@gmail.com</strong>
-            </p>
+            <div class="container text-center mb-3">
+                <img src="imagenes/Logo-artguru.png" alt="Logo">
+            </div>
+
+            <div class="container text-center">
+                <p>
+                    © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
+                    Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+                </p>
+            </div>
         </footer>
     </div>
 

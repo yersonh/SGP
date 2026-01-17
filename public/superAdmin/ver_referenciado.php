@@ -357,7 +357,7 @@ function getAfinidadIcon($afinidad) {
                 <!-- Mostrar información condicional según si vota fuera o no -->
                 <?php if (isset($referenciado['vota_fuera']) && $referenciado['vota_fuera'] === 'Si'): ?>
                     <!-- Cuando VOTA FUERA -->
-                     <div class="form-group">
+                    <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-person-booth"></i> Vota Fuera
                         </label>
@@ -390,6 +390,14 @@ function getAfinidadIcon($afinidad) {
                     <!-- Cuando NO vota fuera -->
                     <div class="voting-info-section">
                         <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label-votarfuera">
+                                    <i class="fas fa-person-booth"></i> Vota Fuera
+                                </label>
+                                <div class="field-value">
+                                    <?php echo isset($referenciado['vota_fuera']) ? getVotaFueraSwitch($referenciado['vota_fuera']) : '<span class="na-text">N/A</span>'; ?>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-compass"></i> Zona

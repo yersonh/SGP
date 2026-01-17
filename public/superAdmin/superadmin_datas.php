@@ -722,20 +722,17 @@ try {
 
     <!-- Footer -->
     <footer class="system-footer">
-        <!-- Logo centrado -->
-        <div class="container text-center mb-3">
-            <img src="../imagenes/Logo-artguru.png" alt="Logo">
-        </div>
-        <div class="container">
-            <p>© Derechos de autor Reservados. 
-                Ing. Rubén Darío González García • 
-                SISGONTech • Colombia © • <?php echo date('Y'); ?>
-            </p>
-            <p>Contacto: +57 3106310227 • 
-                Email: sisgonnet@gmail.com
-            </p>
-        </div>
-    </footer>
+            <div class="container text-center mb-3">
+                <img src="../imagenes/Logo-artguru.png" alt="Logo">
+            </div>
+
+            <div class="container text-center">
+                <p>
+                    © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
+                    Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+                </p>
+            </div>
+        </footer>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

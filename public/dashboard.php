@@ -197,6 +197,68 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             margin-top: 5px;
         }
         
+        /* Search Bar */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .search-btn:hover {
+            background: #2980b9;
+        }
+        
+        .clear-search-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .clear-search-btn:hover {
+            background: #7f8c8d;
+        }
+        
         /* Table Container */
         .table-container {
             background: white;
@@ -204,7 +266,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             padding: 0;
             box-shadow: 0 3px 15px rgba(0,0,0,0.08);
             overflow: hidden;
-            margin-top: 20px;
+            margin-top: 10px;
         }
         
         .table-header {
@@ -338,11 +400,16 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         
         /* User Status */
         .user-status {
-            display: inline-block;
-            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 500;
+            white-space: nowrap;
+            max-width: 100px;
+            justify-content: center;
         }
         
         .status-active {
@@ -403,6 +470,14 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             .users-table {
                 display: block;
                 overflow-x: auto;
+            }
+            
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                width: 100%;
             }
         }
         
@@ -638,6 +713,17 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             background-color: rgba(46, 204, 113, 0.2);
             color: #2ecc71;
         }
+        
+        /* Buscador resultados */
+        .search-results {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid var(--secondary-color);
+        }
     </style>
 </head>
 <body>
@@ -722,6 +808,26 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 </div>
             </div>
         </div>
+        
+        <!-- Buscador -->
+        <div class="search-container">
+            <input type="text" 
+                   class="search-input" 
+                   id="search-input" 
+                   placeholder="Buscar por nombre, apellido o nickname..."
+                   onkeyup="buscarUsuarios()">
+            <button class="search-btn" onclick="buscarUsuarios()">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+            <button class="clear-search-btn" onclick="limpiarBusqueda()">
+                <i class="fas fa-times"></i> Limpiar
+            </button>
+        </div>
+        
+        <!-- Resultados de búsqueda -->
+        <div class="search-results" id="search-results">
+            Mostrando <?php echo $total_usuarios; ?> usuarios
+        </div>
 
         <!-- Tabla de usuarios -->
         <div class="table-container">
@@ -731,7 +837,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             
             <?php if ($total_usuarios > 0): ?>
             <div class="table-responsive">
-                <table class="users-table">
+                <table class="users-table" id="users-table">
                     <thead>
                         <tr>
                             <th>NICKNAME</th>
@@ -742,7 +848,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                             <th>ACCIONES</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="users-table-body">
                         <?php foreach ($usuarios as $usuario): ?>
                         <?php 
                         $activo = $usuario['activo'];
@@ -874,6 +980,42 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Función para buscar usuarios
+        function buscarUsuarios() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#users-table-body tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                // Obtener texto combinado de nickname y nombre completo
+                const nickname = row.querySelector('.user-nickname').textContent.toLowerCase();
+                const fullname = row.querySelector('.user-fullname')?.textContent.toLowerCase() || '';
+                const text = nickname + ' ' + fullname;
+                
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Actualizar mensaje de resultados
+            const resultsElement = document.getElementById('search-results');
+            if (searchTerm.trim() === '') {
+                resultsElement.textContent = `Mostrando ${rows.length} usuarios`;
+            } else {
+                resultsElement.textContent = `Mostrando ${visibleCount} de ${rows.length} usuarios (búsqueda: "${searchTerm}")`;
+            }
+        }
+        
+        // Función para limpiar búsqueda
+        function limpiarBusqueda() {
+            document.getElementById('search-input').value = '';
+            buscarUsuarios();
+            document.getElementById('search-input').focus();
+        }
+        
         // Actualizar hora en tiempo real
         function updateCurrentTime() {
             const now = new Date();

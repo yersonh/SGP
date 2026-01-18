@@ -50,5 +50,28 @@ class LlamadaModel {
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+     public function tieneLlamadaRegistrada($idReferenciado) {
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) as total 
+            FROM llamadas_tracking 
+            WHERE id_referenciado = ?
+        ");
+        $stmt->execute([$idReferenciado]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] > 0;
+    }
+    
+
+    public function obtenerUltimaLlamada($idReferenciado) {
+        $stmt = $this->pdo->prepare("
+            SELECT fecha_llamada, rating, observaciones, id_resultado 
+            FROM llamada
+            WHERE id_referenciado = ? 
+            ORDER BY fecha_llamada DESC 
+            LIMIT 1
+        ");
+        $stmt->execute([$idReferenciado]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
 ?>

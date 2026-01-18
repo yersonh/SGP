@@ -30,6 +30,7 @@ $nickname = isset($_GET['nickname']) ? htmlspecialchars($_GET['nickname']) : 'Us
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
+$llamadaModel = new LlamadaModel($pdo); // Agregar modelo de llamada
 
 // Obtener datos del referenciador
 $referenciador = $usuarioModel->getUsuarioById($id_referenciador);
@@ -46,6 +47,13 @@ if ($referenciador['tipo_usuario'] !== 'Referenciador') {
 
 // Obtener los referenciados de este usuario
 $referenciados = $referenciadoModel->getReferenciadosByUsuario($id_referenciador);
+
+// Verificar qué referenciados ya tienen llamada registrada
+$referenciadosConLlamada = [];
+foreach ($referenciados as $referenciado) {
+    $tieneLlamada = $llamadaModel->tieneLlamadaRegistrada($referenciado['id_referenciado']);
+    $referenciadosConLlamada[$referenciado['id_referenciado']] = $tieneLlamada;
+}
 
 // Obtener estadísticas
 $total_referenciados = count($referenciados);
@@ -81,90 +89,6 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/ver_refereciados_admin.css">
-    <style>
-        /* Estilos adicionales para el sistema de rating */
-        .rating-stars {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        
-        .rating-star {
-            font-size: 2.5rem;
-            color: #ddd;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .rating-star:hover,
-        .rating-star.hovered {
-            color: #ffc107;
-            transform: scale(1.2);
-        }
-        
-        .rating-star.selected {
-            color: #ffc107;
-        }
-        
-        .rating-label {
-            text-align: center;
-            margin-top: 10px;
-            font-weight: 500;
-            color: #666;
-            min-height: 24px;
-        }
-        
-        .rating-value {
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .observaciones-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .llamada-info {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .llamada-info-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        
-        .llamada-info-item i {
-            width: 20px;
-            margin-right: 10px;
-            color: #6c757d;
-        }
-        
-        /* Estilos para el modal de rating */
-        .modal-rating .modal-header {
-            background: linear-gradient(135deg, #4e54c8, #8f94fb);
-            color: white;
-        }
-        
-        .modal-rating .modal-footer {
-            justify-content: space-between;
-        }
-        
-        .skip-rating {
-            background: #6c757d;
-            color: white;
-            border: none;
-        }
-        
-        .skip-rating:hover {
-            background: #5a6268;
-            color: white;
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -353,6 +277,11 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                             $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? '') . 
                                           ' - Mesa ' . ($referenciado['mesa'] ?? '');
                         }
+                        
+                        // Verificar si ya tiene llamada registrada
+                        $tieneLlamada = $referenciadosConLlamada[$referenciado['id_referenciado']] ?? false;
+                        $claseBoton = $tieneLlamada ? 'llamada-realizada' : '';
+                        $tituloBoton = $tieneLlamada ? 'Llamada ya realizada' : 'Llamar a ' . $nombre_completo;
                         ?>
                         <tr>
                             <td><?php echo $counter++; ?></td>
@@ -426,13 +355,16 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                                 <?php endif; ?>
                             </td>
                             
-                            <!-- COLUMNA TRACKING CON BOTÓN DE TELÉFONO ROJO -->
+                            <!-- COLUMNA TRACKING CON BOTÓN DE TELÉFONO -->
                             <td>
-                                <button class="tracking-btn" 
-                                        title="Llamar a <?php echo $nombre_completo; ?>"
+                                <button class="tracking-btn <?php echo $claseBoton; ?>" 
+                                        title="<?php echo $tituloBoton; ?>"
                                         onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
                                         <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
                                     <i class="fas fa-phone-alt"></i>
+                                    <?php if ($tieneLlamada): ?>
+                                        <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
+                                    <?php endif; ?>
                                 </button>
                             </td>
                         </tr>
@@ -813,93 +745,83 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
         }
 
         // Función para guardar la valoración
-async function guardarValoracion() {
-    const rating = parseInt(document.getElementById('ratingValor').value);
-    const observaciones = document.getElementById('observaciones').value.trim();
-    const idReferenciado = document.getElementById('ratingIdReferenciado').value;
-    const resultadoSelect = document.getElementById('resultadoLlamada');
-    const idResultado = parseInt(resultadoSelect.value);
-    const { nombre, telefono } = llamadaActual;
-    
-    if (rating === 0) {
-        showNotification('Por favor, seleccione una calificación', 'error');
-        return;
-    }
-    
-    // Crear objeto con datos de la valoración
-    const datosValoracion = {
-        id_referenciado: idReferenciado,
-        telefono: telefono,
-        rating: rating,
-        observaciones: observaciones,
-        fecha_llamada: new Date().toISOString(),
-        id_resultado: idResultado
-    };
-    
-    try {
-        // Mostrar loading
-        const btnGuardar = document.getElementById('btnGuardarValoracion');
-        const originalText = btnGuardar.innerHTML;
-        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        btnGuardar.disabled = true;
-        
-        // Enviar datos al servidor
-        const response = await fetch('../ajax/guardar_valoracion_llamada.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(datosValoracion)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showNotification('Valoración guardada exitosamente', 'success');
+        async function guardarValoracion() {
+            const rating = parseInt(document.getElementById('ratingValor').value);
+            const observaciones = document.getElementById('observaciones').value.trim();
+            const idReferenciado = document.getElementById('ratingIdReferenciado').value;
+            const resultadoSelect = document.getElementById('resultadoLlamada');
+            const idResultado = parseInt(resultadoSelect.value);
+            const { nombre, telefono, boton } = llamadaActual;
             
-            // Cerrar modal
-            const modalRating = bootstrap.Modal.getInstance(document.getElementById('modalRating'));
-            modalRating.hide();
+            if (rating === 0) {
+                showNotification('Por favor, seleccione una calificación', 'error');
+                return;
+            }
             
-            // Reset rating system
-            resetRatingSystem();
+            // Crear objeto con datos de la valoración
+            const datosValoracion = {
+                id_referenciado: idReferenciado,
+                telefono: telefono,
+                rating: rating,
+                observaciones: observaciones,
+                fecha_llamada: new Date().toISOString(),
+                id_resultado: idResultado
+            };
             
-            // Opcional: Actualizar la interfaz
-            actualizarInterfazDespuesDeValoracion(idReferenciado, rating);
-            
-        } else {
-            showNotification('Error: ' + result.message, 'error');
-            btnGuardar.innerHTML = originalText;
-            btnGuardar.disabled = false;
+            try {
+                // Mostrar loading
+                const btnGuardar = document.getElementById('btnGuardarValoracion');
+                const originalText = btnGuardar.innerHTML;
+                btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                btnGuardar.disabled = true;
+                
+                // Enviar datos al servidor
+                const response = await fetch('../ajax/guardar_valoracion_llamada.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datosValoracion)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Valoración guardada exitosamente', 'success');
+                    
+                    // Cerrar modal
+                    const modalRating = bootstrap.Modal.getInstance(document.getElementById('modalRating'));
+                    modalRating.hide();
+                    
+                    // Reset rating system
+                    resetRatingSystem();
+                    
+                    // Cambiar el botón a verde
+                    if (boton) {
+                        boton.classList.add('llamada-realizada');
+                        boton.title = 'Llamada ya realizada';
+                        boton.innerHTML = '<i class="fas fa-phone-alt"></i><i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>';
+                        
+                        // Actualizar tooltip
+                        if (boton._tooltip) {
+                            boton._tooltip.dispose();
+                            new bootstrap.Tooltip(boton);
+                        }
+                    }
+                    
+                } else {
+                    showNotification('Error: ' + result.message, 'error');
+                    btnGuardar.innerHTML = originalText;
+                    btnGuardar.disabled = false;
+                }
+                
+            } catch (error) {
+                showNotification('Error de conexión: ' + error.message, 'error');
+                const btnGuardar = document.getElementById('btnGuardarValoracion');
+                btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i>Guardar Valoración';
+                btnGuardar.disabled = false;
+            }
         }
-        
-    } catch (error) {
-        showNotification('Error de conexión: ' + error.message, 'error');
-        const btnGuardar = document.getElementById('btnGuardarValoracion');
-        btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i>Guardar Valoración';
-        btnGuardar.disabled = false;
-    }
-}
-
-// Función opcional para actualizar la interfaz
-function actualizarInterfazDespuesDeValoracion(idReferenciado, rating) {
-    // Puedes agregar un badge o cambiar el color del botón de tracking
-    const button = llamadaActual.boton;
-    if (button) {
-        // Agregar tooltip con la valoración
-        button.setAttribute('data-bs-title', `Llamada valorada: ${rating} estrellas`);
-        
-        // Actualizar tooltip si ya existe
-        if (button._tooltip) {
-            button._tooltip.dispose();
-            new bootstrap.Tooltip(button);
-        }
-        
-        // Opcional: Cambiar color o agregar badge
-        button.classList.add('valorada');
-        button.innerHTML = '<i class="fas fa-phone-alt"></i> ✓';
-    }
-}
 
         // Función para resetear el sistema de rating
         function resetRatingSystem() {
@@ -915,29 +837,7 @@ function actualizarInterfazDespuesDeValoracion(idReferenciado, rating) {
             document.getElementById('ratingValue').textContent = "";
             document.getElementById('observaciones').value = "";
             document.getElementById('btnGuardarValoracion').disabled = true;
-        }
-
-        // Función para enviar valoración al servidor (opcional)
-        async function enviarValoracionAlServidor(datos) {
-            try {
-                const response = await fetch('../ajax/guardar_valoracion.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(datos)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Valoración guardada en la base de datos', 'success');
-                } else {
-                    showNotification('Error al guardar la valoración: ' + result.message, 'error');
-                }
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-            }
+            document.getElementById('resultadoLlamada').value = "1";
         }
 
         // Configurar eventos al cargar la página
@@ -976,7 +876,6 @@ function actualizarInterfazDespuesDeValoracion(idReferenciado, rating) {
                 if (!button.disabled) {
                     button.setAttribute('data-bs-toggle', 'tooltip');
                     button.setAttribute('data-bs-placement', 'top');
-                    button.setAttribute('data-bs-title', 'Haga clic para llamar');
                 }
             });
             

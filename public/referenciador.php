@@ -164,7 +164,6 @@ $barrios = $barrioModel->getAll();
                     </div>
                     
                     <!-- Teléfono -->
-                                        <!-- Teléfono -->
                     <div class="form-group">
                         <label class="form-label" for="telefono">
                             <i class="fas fa-phone"></i> Teléfono *
@@ -200,12 +199,13 @@ $barrios = $barrioModel->getAll();
                                    data-progress="5">
                         </div>
                     </div>
-                    <!-- Sexo (NUEVO CAMPO) -->
+                    
+                    <!-- Sexo (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="sexo">
-                            <i class="fas fa-venus-mars"></i> Sexo
+                            <i class="fas fa-venus-mars"></i> Sexo *
                         </label>
-                        <select id="sexo" name="sexo" class="form-select" data-progress="3">
+                        <select id="sexo" name="sexo" class="form-select" data-progress="3" required>
                             <option value="">Seleccione sexo</option>
                             <option value="Masculino">Masculino</option>
                             <option value="Femenino">Femenino</option>
@@ -213,12 +213,12 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Barrio -->
+                    <!-- Barrio (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="barrio">
-                            <i class="fas fa-map-signs"></i> Barrio
+                            <i class="fas fa-map-signs"></i> Barrio *
                         </label>
-                        <select id="barrio" name="barrio" class="form-select" data-progress="3">
+                        <select id="barrio" name="barrio" class="form-select" data-progress="3" required>
                             <option value="">Seleccione un barrio</option>
                             <?php foreach ($barrios as $barrio): ?>
                             <option value="<?php echo $barrio['id_barrio']; ?>">
@@ -228,12 +228,12 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Departamento -->
+                    <!-- Departamento (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="departamento">
-                            <i class="fas fa-landmark"></i> Departamento
+                            <i class="fas fa-landmark"></i> Departamento *
                         </label>
-                        <select id="departamento" name="departamento" class="form-select" data-progress="3">
+                        <select id="departamento" name="departamento" class="form-select" data-progress="3" required>
                             <option value="">Seleccione un departamento</option>
                             <?php foreach ($departamentos as $departamento): ?>
                             <option value="<?php echo $departamento['id_departamento']; ?>">
@@ -243,12 +243,12 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Municipio -->
+                    <!-- Municipio (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="municipio">
-                            <i class="fas fa-city"></i> Municipio
+                            <i class="fas fa-city"></i> Municipio *
                         </label>
-                        <select id="municipio" name="municipio" class="form-select" data-progress="3" disabled>
+                        <select id="municipio" name="municipio" class="form-select" data-progress="3" disabled required>
                             <option value="">Primero seleccione un departamento</option>
                         </select>
                     </div>
@@ -267,13 +267,14 @@ $barrios = $barrioModel->getAll();
                                 <span class="star" data-value="5"><i class="far fa-star"></i></span>
                             </div>
                             <div class="rating-value" id="rating-value">0/5</div>
-                            <input type="hidden" id="afinidad" name="afinidad" value="0" data-progress="5">
+                            <input type="hidden" id="afinidad" name="afinidad" value="0" data-progress="5" required>
                         </div>
                     </div>
-                                        <!-- Vota Fuera (NUEVO CAMPO) -->
+                    
+                    <!-- Vota Fuera -->
                     <div class="form-group">
                         <label class="form-label" for="vota_fuera_switch">
-                            <i class="fas fa-person-booth"></i> Vota Fuera
+                            <i class="fas fa-person-booth"></i> Vota Fuera *
                         </label>
                         <div class="switch-container">
                             <input type="checkbox" 
@@ -287,11 +288,11 @@ $barrios = $barrioModel->getAll();
                                     <span class="switch-text-on">Sí</span>
                                 </div>
                             </label>
-                            <input type="hidden" id="vota_fuera" name="vota_fuera" value="No">
+                            <input type="hidden" id="vota_fuera" name="vota_fuera" value="No" required>
                         </div>
                     </div>
 
-                    <!-- Campos para cuando Vota Fuera es SÍ (NUEVOS) -->
+                    <!-- Campos para cuando Vota Fuera es SÍ -->
                     <div class="form-group campo-fuera" style="display: none;">
                         <label class="form-label" for="puesto_votacion_fuera">
                             <i class="fas fa-vote-yea"></i> Puesto de Votación Fuera *
@@ -322,10 +323,10 @@ $barrios = $barrioModel->getAll();
                         </div>
                     </div>
 
-                    <!-- Zona -->
+                    <!-- Zona (sin required inicial) -->
                     <div class="form-group campo-votacion">
                         <label class="form-label" for="zona">
-                            <i class="fas fa-map"></i> Zona
+                            <i class="fas fa-map"></i> Zona <span class="obligatorio-campo-local">*</span>
                         </label>
                         <select id="zona" name="zona" class="form-select" data-progress="3">
                             <option value="">Seleccione una zona</option>
@@ -336,30 +337,31 @@ $barrios = $barrioModel->getAll();
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <!-- Sector -->
+                    
+                    <!-- Sector (sin required inicial) -->
                     <div class="form-group campo-votacion">
                         <label class="form-label" for="sector">
-                            <i class="fas fa-th"></i> Sector
+                            <i class="fas fa-th"></i> Sector <span class="obligatorio-campo-local">*</span>
                         </label>
                         <select id="sector" name="sector" class="form-select" data-progress="3" disabled>
                             <option value="">Primero seleccione una zona</option>
                         </select>
                     </div>
 
-                    <!-- Puesto de Votación -->
+                    <!-- Puesto de Votación (sin required inicial) -->
                     <div class="form-group campo-votacion">
                         <label class="form-label" for="puesto_votacion">
-                            <i class="fas fa-vote-yea"></i> Puesto de Votación
+                            <i class="fas fa-vote-yea"></i> Puesto de Votación <span class="obligatorio-campo-local">*</span>
                         </label>
                         <select id="puesto_votacion" name="puesto_votacion" class="form-select" data-progress="3" disabled>
                             <option value="">Primero seleccione un sector</option>
                         </select>
                     </div>
 
-                    <!-- Mesa -->
+                    <!-- Mesa (sin required inicial) -->
                     <div class="form-group campo-votacion">
                         <label class="form-label" for="mesa">
-                            <i class="fas fa-users"></i> Mesa
+                            <i class="fas fa-users"></i> Mesa <span class="obligatorio-campo-local">*</span>
                         </label>
                         <input type="number" 
                             id="mesa" 
@@ -372,12 +374,12 @@ $barrios = $barrioModel->getAll();
                         <div class="mesa-info" id="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
                     </div>
                     
-                    <!-- Apoyo -->
+                    <!-- Apoyo (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="apoyo">
-                            <i class="fas fa-handshake"></i> Oferta de Apoyo
+                            <i class="fas fa-handshake"></i> Oferta de Apoyo *
                         </label>
-                        <select id="apoyo" name="apoyo" class="form-select" data-progress="3">
+                        <select id="apoyo" name="apoyo" class="form-select" data-progress="3" required>
                             <option value="">Seleccione Oferta de apoyo</option>
                             <?php foreach ($ofertasApoyo as $oferta): ?>
                             <option value="<?php echo $oferta['id_oferta']; ?>">
@@ -387,12 +389,12 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Grupo Poblacional -->
+                    <!-- Grupo Poblacional (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="grupo_poblacional">
-                            <i class="fas fa-users"></i> Grupo Poblacional
+                            <i class="fas fa-users"></i> Grupo Poblacional *
                         </label>
-                        <select id="grupo_poblacional" name="grupo_poblacional" class="form-select" data-progress="3">
+                        <select id="grupo_poblacional" name="grupo_poblacional" class="form-select" data-progress="3" required>
                             <option value="">Seleccione grupo</option>
                             <?php foreach ($gruposPoblacionales as $grupo): ?>
                             <option value="<?php echo $grupo['id_grupo']; ?>">
@@ -402,7 +404,7 @@ $barrios = $barrioModel->getAll();
                         </select>
                     </div>
                     
-                    <!-- Compromiso -->
+                    <!-- Compromiso (NO obligatorio) -->
                     <div class="form-group full-width">
                         <label class="form-label" for="compromiso">
                             <i class="fas fa-handshake"></i> Compromiso del Referido
@@ -419,7 +421,7 @@ $barrios = $barrioModel->getAll();
                         </div>
                     </div>
                     
-                    <!-- Insumos Disponibles -->
+                    <!-- Insumos Disponibles (NO obligatorio) -->
                     <div class="form-group full-width">
                         <label class="form-label">
                             <i class="fas fa-tools"></i> Insumos Disponibles
@@ -515,7 +517,8 @@ $barrios = $barrioModel->getAll();
                             </div>
                         </div>
                     </div>
-                    <!-- Barra de Progreso del Formulario (MOVIDA AQUÍ, ANTES DEL BOTÓN) -->
+                    
+                    <!-- Barra de Progreso del Formulario -->
                     <div class="progress-container" style="margin: 30px 0 20px 0;">
                         <div class="progress-header">
                             <span>Progreso del formulario</span>
@@ -525,6 +528,7 @@ $barrios = $barrioModel->getAll();
                             <div class="progress-fill" id="progress-fill"></div>
                         </div>
                     </div>
+                    
                     <!-- Botón de Envío -->
                     <div class="form-group full-width">
                         <button type="submit" class="submit-btn" id="submit-btn">
@@ -555,5 +559,10 @@ $barrios = $barrioModel->getAll();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
+    
+    <!-- Script para manejar la lógica de campos obligatorios condicionales -->
+    <script>
+    window.camposCondicionalesConfigurados = false;
+    </script>
 </body>
 </html>

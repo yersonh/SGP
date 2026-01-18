@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar eventos del formulario
     setupFormEvents();
     
+    // Configurar asteriscos dinámicos (NUEVO)
+    setupAsteriscosDinamicos();
+    
     // Inicializar progreso del formulario
     updateProgress();
     
@@ -838,78 +841,153 @@ function setupFormEvents() {
         const submitBtn = document.getElementById('submit-btn');
         const originalText = submitBtn.innerHTML;
         
-        // Validación básica
-        const requiredFields = ['nombre', 'apellido', 'cedula', 'direccion', 'email', 'telefono'];
+        // 1. VALIDAR CAMPOS OBLIGATORIOS FIJOS
+        const camposObligatoriosFijos = [
+            {id: 'nombre', nombre: 'Nombre'},
+            {id: 'apellido', nombre: 'Apellido'},
+            {id: 'cedula', nombre: 'Cédula'},
+            {id: 'email', nombre: 'Email'},
+            {id: 'telefono', nombre: 'Teléfono'},
+            {id: 'direccion', nombre: 'Dirección'},
+            {id: 'sexo', nombre: 'Sexo'},
+            {id: 'barrio', nombre: 'Barrio'},
+            {id: 'departamento', nombre: 'Departamento'},
+            {id: 'municipio', nombre: 'Municipio'},
+            {id: 'apoyo', nombre: 'Oferta de Apoyo'},
+            {id: 'grupo_poblacional', nombre: 'Grupo Poblacional'}
+        ];
+        
         let isValid = true;
         let errorMessage = '';
+        let firstErrorField = null;
         
-        requiredFields.forEach(field => {
-            const element = document.getElementById(field);
-            if (!element || !element.value.trim()) {
+        // Validar campos obligatorios fijos
+        camposObligatoriosFijos.forEach(campo => {
+            const element = document.getElementById(campo.id);
+            if (!element || !element.value || element.value.trim() === '') {
                 isValid = false;
                 errorMessage = 'Por favor complete todos los campos obligatorios (*)';
-                if (element) element.focus();
+                if (element && !firstErrorField) {
+                    firstErrorField = element;
+                }
             }
         });
         
-        // Validación según si vota fuera o no
-        const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+        // Validar afinidad (estrellas)
+        if (currentRating === 0) {
+            isValid = false;
+            errorMessage = 'Por favor seleccione el nivel de afinidad (1-5 estrellas)';
+            if (!firstErrorField) {
+                firstErrorField = document.getElementById('rating-stars');
+            }
+        }
         
-        if (votaFueraSwitch.checked) {
-            // Validar campos de votación fuera
+        // 2. VALIDAR CAMPOS CONDICIONALES SEGÚN "VOTA FUERA"
+        const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+        const votaFuera = votaFueraSwitch ? votaFueraSwitch.checked : false;
+        
+        if (votaFuera) {
+            // SI vota fuera - validar campos "fuera"
             const puestoVotacionFuera = document.getElementById('puesto_votacion_fuera');
             const mesaFuera = document.getElementById('mesa_fuera');
             
             if (!puestoVotacionFuera || !puestoVotacionFuera.value.trim()) {
                 isValid = false;
-                errorMessage = 'Por favor ingrese el puesto de votación fuera';
-                if (puestoVotacionFuera) puestoVotacionFuera.focus();
-            } else if (!mesaFuera || !mesaFuera.value || parseInt(mesaFuera.value) < 1) {
+                errorMessage = 'Por favor ingrese el puesto de votación fuera (obligatorio cuando vota fuera)';
+                if (puestoVotacionFuera && !firstErrorField) {
+                    firstErrorField = puestoVotacionFuera;
+                }
+            }
+            
+            if (!mesaFuera || !mesaFuera.value || parseInt(mesaFuera.value) < 1) {
                 isValid = false;
-                errorMessage = 'Por favor ingrese un número de mesa válido (1-40)';
-                if (mesaFuera) mesaFuera.focus();
+                errorMessage = 'Por favor ingrese un número de mesa válido (1-40) para voto fuera';
+                if (mesaFuera && !firstErrorField) {
+                    firstErrorField = mesaFuera;
+                }
             } else if (parseInt(mesaFuera.value) > 40) {
                 isValid = false;
                 errorMessage = 'El número de mesa fuera no puede ser mayor a 40';
-                if (mesaFuera) mesaFuera.focus();
+                if (mesaFuera && !firstErrorField) {
+                    firstErrorField = mesaFuera;
+                }
             }
+            // NOTA: Cuando vota fuera, los campos zona, sector, puesto_votacion, mesa NO son obligatorios
             
         } else {
-            // Validar campos de votación normal
+            // NO vota fuera - validar campos locales de votación
             const zonaSelect = document.getElementById('zona');
             if (!zonaSelect || !zonaSelect.value) {
                 isValid = false;
-                errorMessage = 'Por favor seleccione la zona de votación cuando el referido NO vota fuera';
-                if (zonaSelect) zonaSelect.focus();
+                errorMessage = 'Por favor seleccione la zona de votación (obligatorio cuando NO vota fuera)';
+                if (zonaSelect && !firstErrorField) {
+                    firstErrorField = zonaSelect;
+                }
+            }
+            
+            const sectorSelect = document.getElementById('sector');
+            if (sectorSelect && !sectorSelect.disabled && !sectorSelect.value) {
+                isValid = false;
+                errorMessage = 'Por favor seleccione el sector (obligatorio cuando NO vota fuera)';
+                if (sectorSelect && !firstErrorField) {
+                    firstErrorField = sectorSelect;
+                }
+            }
+            
+            const puestoSelect = document.getElementById('puesto_votacion');
+            if (puestoSelect && !puestoSelect.disabled && !puestoSelect.value) {
+                isValid = false;
+                errorMessage = 'Por favor seleccione el puesto de votación (obligatorio cuando NO vota fuera)';
+                if (puestoSelect && !firstErrorField) {
+                    firstErrorField = puestoSelect;
+                }
             }
             
             const mesaInput = document.getElementById('mesa');
             if (mesaInput && !mesaInput.disabled) {
                 const mesaValue = parseInt(mesaInput.value);
-                if (isNaN(mesaValue) || mesaValue < 1 || mesaValue > maxMesasPuestoActual) {
+                if (isNaN(mesaValue) || mesaValue < 1) {
                     isValid = false;
-                    errorMessage = `Por favor ingrese un número de mesa válido (1-${maxMesasPuestoActual}) cuando el referido NO vota fuera`;
-                    mesaInput.focus();
+                    errorMessage = 'Por favor ingrese un número de mesa válido (obligatorio cuando NO vota fuera)';
+                    if (mesaInput && !firstErrorField) {
+                        firstErrorField = mesaInput;
+                    }
+                } else if (mesaValue > maxMesasPuestoActual) {
+                    isValid = false;
+                    errorMessage = `El número de mesa no puede ser mayor a ${maxMesasPuestoActual}`;
+                    if (mesaInput && !firstErrorField) {
+                        firstErrorField = mesaInput;
+                    }
                 }
             } else if (mesaInput && mesaInput.disabled) {
+                // Si está deshabilitado pero debería estar habilitado
                 const puestoSelect = document.getElementById('puesto_votacion');
                 if (puestoSelect && puestoSelect.value) {
                     isValid = false;
-                    errorMessage = 'Por favor ingrese el número de mesa cuando el referido NO vota fuera';
-                    mesaInput.focus();
+                    errorMessage = 'Por favor ingrese el número de mesa (obligatorio cuando NO vota fuera)';
+                    if (mesaInput && !firstErrorField) {
+                        firstErrorField = mesaInput;
+                    }
                 }
             }
+            // NOTA: Cuando NO vota fuera, los campos puesto_votacion_fuera y mesa_fuera NO son obligatorios
         }
         
+        // 3. SI HAY ERRORES, MOSTRAR Y CANCELAR ENVÍO
         if (!isValid) {
             showNotification(errorMessage, 'error');
+            if (firstErrorField) {
+                firstErrorField.focus();
+            }
             return;
         }
         
+        // 4. VALIDACIONES ADICIONALES
         // Validar cédula (solo números)
         const cedula = document.getElementById('cedula').value;
         if (!/^\d+$/.test(cedula)) {
             showNotification('La cédula solo debe contener números', 'error');
+            document.getElementById('cedula').focus();
             return;
         }
         
@@ -918,16 +996,19 @@ function setupFormEvents() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             showNotification('Por favor ingrese un email válido', 'error');
+            document.getElementById('email').focus();
             return;
         }
         
-        // Validar afinidad (debe ser 1-5)
-        if (currentRating === 0) {
-            showNotification('Por favor seleccione el nivel de afinidad (1-5 estrellas)', 'error');
+        // Validar teléfono
+        const telefono = document.getElementById('telefono').value;
+        if (!/^\d{7,10}$/.test(telefono)) {
+            showNotification('El teléfono debe contener entre 7 y 10 dígitos', 'error');
+            document.getElementById('telefono').focus();
             return;
         }
         
-        // Cambiar estado del botón
+        // 5. ENVIAR FORMULARIO
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         submitBtn.disabled = true;
         
@@ -938,6 +1019,13 @@ function setupFormEvents() {
             const afinidadInput = document.getElementById('afinidad');
             if (afinidadInput) {
                 formData.set('afinidad', currentRating.toString());
+            }
+            
+            // Asegurar que vota_fuera se envíe correctamente
+            const votaFueraHidden = document.getElementById('vota_fuera');
+            if (votaFueraHidden && votaFueraSwitch) {
+                votaFueraHidden.value = votaFuera ? 'Si' : 'No';
+                formData.set('vota_fuera', votaFueraHidden.value);
             }
             
             // Enviar datos
@@ -974,7 +1062,32 @@ function setupFormEvents() {
         }
     });
 }
-
+// ==================== MANEJO DE ASTERISCOS DINÁMICOS ====================
+function setupAsteriscosDinamicos() {
+    const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+    const asteriscosLocal = document.querySelectorAll('.obligatorio-campo-local');
+    
+    if (!votaFueraSwitch) return;
+    
+    function actualizarAsteriscos() {
+        const votaFuera = votaFueraSwitch.checked;
+        
+        if (votaFuera) {
+            // SI vota fuera - ocultar asteriscos de campos locales
+            asteriscosLocal.forEach(asterisco => {
+                asterisco.style.display = 'none';
+            });
+        } else {
+            // NO vota fuera - mostrar asteriscos de campos locales
+            asteriscosLocal.forEach(asterisco => {
+                asterisco.style.display = 'inline';
+            });
+        }
+    }
+    
+    votaFueraSwitch.addEventListener('change', actualizarAsteriscos);
+    actualizarAsteriscos(); // Estado inicial
+}
 // ==================== FUNCIONES AUXILIARES ====================
 
 // Abrir consulta de censo

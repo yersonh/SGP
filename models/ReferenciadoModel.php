@@ -186,7 +186,7 @@ class ReferenciadoModel {
                 LEFT JOIN zona z ON r.id_zona = z.id_zona
                 LEFT JOIN sector s ON r.id_sector = s.id_sector
                 LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
+                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
                 WHERE r.id_referenciador = :id_referenciador
                 ORDER BY r.fecha_registro DESC";
         
@@ -243,7 +243,7 @@ class ReferenciadoModel {
                 LEFT JOIN zona z ON r.id_zona = z.id_zona
                 LEFT JOIN sector s ON r.id_sector = s.id_sector
                 LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
+                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
                 WHERE r.id_referenciado = :id_referenciado";
         
         $stmt = $this->pdo->prepare($sql);
@@ -309,7 +309,7 @@ class ReferenciadoModel {
                 LEFT JOIN zona z ON r.id_zona = z.id_zona
                 LEFT JOIN sector s ON r.id_sector = s.id_sector
                 LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
+                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
                 LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
                 ORDER BY r.fecha_registro DESC";
         
@@ -360,7 +360,7 @@ class ReferenciadoModel {
             LEFT JOIN zona z ON r.id_zona = z.id_zona
             LEFT JOIN sector s ON r.id_sector = s.id_sector
             LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-            LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
             LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
             ORDER BY r.fecha_registro DESC";
     
@@ -614,7 +614,7 @@ class ReferenciadoModel {
      * Obtener todos los grupos disponibles
      */
     public function getGrupos() {
-        $sql = "SELECT * FROM grupos ORDER BY nombre";
+        $sql = "SELECT * FROM grupos_parlamentarios ORDER BY nombre";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -624,7 +624,7 @@ class ReferenciadoModel {
      * Obtener un grupo específico por ID
      */
     public function getGrupoById($id_grupo) {
-        $sql = "SELECT * FROM grupos WHERE id_grupo = :id_grupo";
+        $sql = "SELECT * FROM grupos_parlamentarios WHERE id_grupo = :id_grupo";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':id_grupo', $id_grupo, PDO::PARAM_INT);
         $stmt->execute();
@@ -642,7 +642,7 @@ class ReferenciadoModel {
                 COUNT(CASE WHEN r.activo = true THEN 1 END) as activos,
                 COUNT(CASE WHEN r.vota_fuera = 'Si' THEN 1 END) as vota_fuera,
                 ROUND(AVG(r.afinidad)::numeric, 2) as afinidad_promedio
-                FROM grupos g
+                FROM grupos_parlamentarios g
                 LEFT JOIN referenciados r ON g.id_grupo = r.id_grupo
                 GROUP BY g.id_grupo, g.nombre
                 ORDER BY g.nombre";

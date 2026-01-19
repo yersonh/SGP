@@ -985,3 +985,197 @@
                 max-width: 200px;
             }
         }
+         /* Estilos para el modal de información del sistema */
+        .modal-system-info .modal-header {
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
+            color: white;
+        }
+        
+        .modal-system-info .modal-body {
+            padding: 20px;
+        }
+        
+        /* Logo centrado en el modal - IMAGEN AGRANDADA */
+        .modal-logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        
+        .modal-logo {
+            max-width: 300px; /* AGRANDADO de 200px a 300px */
+            height: auto;
+            margin: 0 auto;
+            border-radius: 12px; /* Bordes más redondeados */
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra más pronunciada */
+            border: 3px solid #fff; /* Borde blanco */
+            background: white;
+        }
+        
+        /* Barra de progreso de licencia */
+        .licencia-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .licencia-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .licencia-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .licencia-dias {
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #3498db;
+            color: white;
+        }
+        
+        .licencia-progress {
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background-color: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .licencia-progress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+        
+        .licencia-fecha {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        /* Tarjetas de características */
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            height: 100%;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            opacity: 0.8;
+        }
+        
+        .feature-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .feature-text {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+        
+        /* Footer del modal */
+        .system-footer-modal {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .logo-clickable {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-clickable:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .modal-system-info .modal-body {
+                padding: 15px;
+            }
+            
+            .modal-logo {
+                max-width: 200px; /* AGRANDADO para móviles también */
+            }
+            
+            .feature-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .modal-system-info h4 {
+                font-size: 1.1rem;
+            }
+            
+            .licencia-info {
+                padding: 12px;
+            }
+            
+            .licencia-title {
+                font-size: 1rem;
+            }
+            
+            .licencia-dias {
+                font-size: 0.9rem;
+                padding: 3px 10px;
+            }
+            
+            .system-footer-modal {
+                padding: 15px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .modal-system-info .modal-dialog {
+                margin: 10px;
+            }
+            
+            .modal-system-info .modal-body {
+                padding: 12px;
+            }
+            
+            .modal-logo-container {
+                padding: 10px;
+            }
+            
+            .modal-logo {
+                max-width: 180px; /* AGRANDADO para móviles pequeños */
+            }
+            
+            .licencia-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .licencia-dias {
+                align-self: flex-start;
+            }
+        }

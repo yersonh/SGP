@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../models/SistemaModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -11,9 +12,37 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
 
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
+$sistemaModel = new SistemaModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
+
+// 6. Obtener información del sistema
+$infoSistema = $sistemaModel->getInformacionSistema();
+
+// 7. Formatear fecha para mostrar
+$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
+
+// 8. Obtener información completa de la licencia (MODIFICADO)
+$licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
+
+// Extraer valores
+$infoSistema = $licenciaInfo['info'];
+$diasRestantes = $licenciaInfo['dias_restantes'];
+$validaHastaFormatted = $licenciaInfo['valida_hasta_formatted'];
+$fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
+
+// PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
+$porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
+
+// Color de la barra basado en lo que RESTA (ahora es más simple)
+if ($porcentajeRestante > 50) {
+    $barColor = 'bg-success';
+} elseif ($porcentajeRestante > 25) {
+    $barColor = 'bg-warning';
+} else {
+    $barColor = 'bg-danger';
+}
 ?>
 
 <!DOCTYPE html>
@@ -377,6 +406,200 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
                 max-width: 200px;
             }
         }
+         /* Estilos para el modal de información del sistema */
+        .modal-system-info .modal-header {
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
+            color: white;
+        }
+        
+        .modal-system-info .modal-body {
+            padding: 20px;
+        }
+        
+        /* Logo centrado en el modal - IMAGEN AGRANDADA */
+        .modal-logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        
+        .modal-logo {
+            max-width: 300px; /* AGRANDADO de 200px a 300px */
+            height: auto;
+            margin: 0 auto;
+            border-radius: 12px; /* Bordes más redondeados */
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra más pronunciada */
+            border: 3px solid #fff; /* Borde blanco */
+            background: white;
+        }
+        
+        /* Barra de progreso de licencia */
+        .licencia-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .licencia-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .licencia-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .licencia-dias {
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #3498db;
+            color: white;
+        }
+        
+        .licencia-progress {
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background-color: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .licencia-progress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+        
+        .licencia-fecha {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        /* Tarjetas de características */
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            height: 100%;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            opacity: 0.8;
+        }
+        
+        .feature-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .feature-text {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+        
+        /* Footer del modal */
+        .system-footer-modal {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .logo-clickable {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-clickable:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .modal-system-info .modal-body {
+                padding: 15px;
+            }
+            
+            .modal-logo {
+                max-width: 200px; /* AGRANDADO para móviles también */
+            }
+            
+            .feature-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .modal-system-info h4 {
+                font-size: 1.1rem;
+            }
+            
+            .licencia-info {
+                padding: 12px;
+            }
+            
+            .licencia-title {
+                font-size: 1rem;
+            }
+            
+            .licencia-dias {
+                font-size: 0.9rem;
+                padding: 3px 10px;
+            }
+            
+            .system-footer-modal {
+                padding: 15px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .modal-system-info .modal-dialog {
+                margin: 10px;
+            }
+            
+            .modal-system-info .modal-body {
+                padding: 12px;
+            }
+            
+            .modal-logo-container {
+                padding: 10px;
+            }
+            
+            .modal-logo {
+                max-width: 180px; /* AGRANDADO para móviles pequeños */
+            }
+            
+            .licencia-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .licencia-dias {
+                align-self: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
@@ -486,19 +709,167 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
     <!-- Footer -->
     <footer class="system-footer">
-            <div class="container text-center mb-3">
-                <img src="imagenes/Logo-artguru.png" alt="Logo">
-            </div>
+        <div class="container text-center mb-3">
+            <img src="imagenes/Logo-artguru.png" 
+                alt="Logo" 
+                class="logo-clickable"
+                onclick="mostrarModalSistema()"
+                title="Haz clic para ver información del sistema">
+        </div>
 
-            <div class="container text-center">
-                <p>
-                    © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
-                    Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
-                </p>
+        <div class="container text-center">
+            <p>
+                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
+                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+            </p>
+        </div>
+    </footer>
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+                    </div>
+                    
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <div class="text-center mb-4">
+                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
+                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
+                        </h1> -->
+                        <h4 class="text-secondary mb-4">
+                            <strong>Gestión Política de Alta Precisión</strong>
+                        </h4>
+                        
+<!-- Información de Licencia (MODIFICADO) -->
+<div class="licencia-info">
+    <div class="licencia-header">
+        <h6 class="licencia-title">Licencia Runtime</h6>
+        <span class="licencia-dias">
+            <strong><?php echo $diasRestantes; ?> días restantes</strong>
+        </span>
+    </div>
+    
+    <div class="licencia-progress">
+        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+             style="width: <?php echo $porcentajeRestante; ?>%"
+             role="progressbar" 
+             aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+             aria-valuemin="0" 
+             aria-valuemax="100">
+        </div>
+    </div>
+    
+    <div class="licencia-fecha">
+        <i class="fas fa-calendar-alt me-1"></i>
+        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+        Válida hasta: <?php echo $validaHastaFormatted; ?>
+    </div>
+</div>
+                    </div>
+                    
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer de información del sistema -->
+                    <div class="system-footer-modal">
+                        <div class="text-center">
+                            <p class="text-muted mb-1">
+                                © Derechos de autor Reservados • 
+                                <strong><?php echo htmlspecialchars($infoSistema['desarrollador'] ?? 'SISGONTech - Ing. Rubén Darío González García'); ?></strong>
+                            </p>
+                            <p class="text-muted mb-1">
+                                <strong>SISGONTech</strong> • Colombia • <?php echo date('Y'); ?>
+                            </p>
+                            <p class="text-muted mb-0">
+                                Email: <?php echo htmlspecialchars($infoSistema['contacto_email'] ?? 'sisgonnet@gmail.com'); ?> • 
+                                Contacto: <?php echo htmlspecialchars($infoSistema['contacto_telefono'] ?? '+57 3106310227'); ?>
+                            </p>
+                            <p class="small text-muted mt-2">
+                                Versión <?php echo htmlspecialchars($infoSistema['version_sistema'] ?? '1.0.1'); ?> • 
+                                Licencia <?php echo htmlspecialchars($infoSistema['tipo_licencia'] ?? 'Runtime'); ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
+                </div>
             </div>
-        </footer>
-
+        </div>
+    </div>
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/modal-sistema.js"></script>
 </body>
 </html>

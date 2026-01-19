@@ -49,12 +49,26 @@ $infoSistema = $sistemaModel->getInformacionSistema();
 // 7. Formatear fecha para mostrar
 $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
 
-// 8. Obtener días restantes de licencia
-$diasRestantes = $sistemaModel->getDiasRestantesLicencia();
-$validaHasta = $infoSistema['valida_hasta'] ?? null;
-$validaHastaFormatted = $validaHasta ? date('d/m/Y', strtotime($validaHasta)) : 'No disponible';
-$totalDias = 30; // Asumimos 30 días como total de la licencia
-$porcentajeRestante = min(100, max(0, ($diasRestantes / $totalDias) * 100));
+// 8. Obtener información completa de la licencia (MODIFICADO)
+$licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
+
+// Extraer valores
+$infoSistema = $licenciaInfo['info'];
+$diasRestantes = $licenciaInfo['dias_restantes'];
+$validaHastaFormatted = $licenciaInfo['valida_hasta_formatted'];
+$fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
+
+// PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
+$porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
+
+// Color de la barra basado en lo que RESTA (ahora es más simple)
+if ($porcentajeRestante > 50) {
+    $barColor = 'bg-success';
+} elseif ($porcentajeRestante > 25) {
+    $barColor = 'bg-warning';
+} else {
+    $barColor = 'bg-danger';
+}
 ?>
 
 <!DOCTYPE html>
@@ -173,6 +187,7 @@ $porcentajeRestante = min(100, max(0, ($diasRestantes / $totalDias) * 100));
         }
         
         .feature-text {
+            font-size: 14px;
             color: #555;
             line-height: 1.5;
             margin-bottom: 0;
@@ -535,45 +550,31 @@ $porcentajeRestante = min(100, max(0, ($diasRestantes / $totalDias) * 100));
                     </div>
                     
                     <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
-                    <div class="text-center mb-4">
-                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
-                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
-                        </h1> -->
-                        <h4 class="text-secondary mb-4">Gestión Política de Alta Precisión</h4>
-                        
-                        <!-- Información de Licencia -->
-                        <div class="licencia-info">
-                            <div class="licencia-header">
-                                <h6 class="licencia-title">Licencia Runtime</h6>
-                                <span class="licencia-dias"><?php echo $diasRestantes; ?> días restantes</span>
-                            </div>
-                            
-                            <div class="licencia-progress">
-                                <?php
-                                $barColor = '';
-                                if ($diasRestantes > 15) {
-                                    $barColor = 'bg-success';
-                                } elseif ($diasRestantes > 7) {
-                                    $barColor = 'bg-warning';
-                                } else {
-                                    $barColor = 'bg-danger';
-                                }
-                                ?>
-                                <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                                     style="width: <?php echo $porcentajeRestante; ?>%"
-                                     role="progressbar" 
-                                     aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
-                                </div>
-                            </div>
-                            
-                            <div class="licencia-fecha">
-                                <i class="fas fa-calendar-alt me-1"></i>
-                                Válida hasta: <?php echo $validaHastaFormatted; ?>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="licencia-info">
+    <div class="licencia-header">
+        <h6 class="licencia-title">Licencia Runtime</h6>
+        <span class="licencia-dias">
+            <strong><?php echo $diasRestantes; ?> días restantes</strong>
+        </span>
+    </div>
+    
+    <div class="licencia-progress">
+        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+             style="width: <?php echo $porcentajeRestante; ?>%"
+             role="progressbar" 
+             aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+             aria-valuemin="0" 
+             aria-valuemax="100">
+        </div>
+    </div>
+    
+    <div class="licencia-fecha">
+        <i class="fas fa-calendar-alt me-1"></i>
+        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+        Válida hasta: <?php echo $validaHastaFormatted; ?>
+    </div>
+</div>
                     
                     <!-- Sección de Características -->
                     <div class="row g-4 mb-4">

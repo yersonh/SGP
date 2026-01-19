@@ -88,6 +88,7 @@ class SistemaModel {
      */
     public function getDiasRestantesLicencia() {
         $sql = "SELECT 
+                    fecha_instalacion,
                     valida_hasta,
                     (valida_hasta - CURRENT_DATE) as dias_restantes
                 FROM sistema_informacion
@@ -101,6 +102,86 @@ class SistemaModel {
         }
         
         return 0;
+    }
+     /**
+     * Obtener días transcurridos desde instalación
+     */
+    public function getDiasTranscurridosLicencia() {
+        $sql = "SELECT 
+                    fecha_instalacion,
+                    (CURRENT_DATE - fecha_instalacion) as dias_transcurridos
+                FROM sistema_informacion
+                ORDER BY id_sistema DESC LIMIT 1";
+        
+        $stmt = $this->pdo->query($sql);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && isset($result['dias_transcurridos'])) {
+            return max(0, intval($result['dias_transcurridos']));
+        }
+        
+        return 0;
+    }
+    public function getTotalDiasLicencia() {
+        $sql = "SELECT 
+                    fecha_instalacion,
+                    valida_hasta,
+                    (valida_hasta - fecha_instalacion) as total_dias
+                FROM sistema_informacion
+                ORDER BY id_sistema DESC LIMIT 1";
+        
+        $stmt = $this->pdo->query($sql);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && isset($result['total_dias']) && $result['total_dias'] > 0) {
+            return intval($result['total_dias']);
+        }
+        
+        return 30; // Por defecto 30 días
+    }
+    
+    /**
+     * Obtener porcentaje de uso de la licencia
+     */
+    public function getPorcentajeUsoLicencia() {
+        $diasTranscurridos = $this->getDiasTranscurridosLicencia();
+        $totalDias = $this->getTotalDiasLicencia();
+        
+        if ($totalDias > 0) {
+            $porcentaje = min(100, max(0, ($diasTranscurridos / $totalDias) * 100));
+            return round($porcentaje, 1);
+        }
+        
+        return 0;
+    }
+    public function getInfoCompletaLicencia() {
+        $info = $this->getInformacionSistema();
+        $diasRestantes = $this->getDiasRestantesLicencia();
+        $diasTranscurridos = $this->getDiasTranscurridosLicencia();
+        $totalDias = $this->getTotalDiasLicencia();
+        $porcentajeUso = $this->getPorcentajeUsoLicencia();
+        
+        return [
+            'info' => $info,
+            'dias_restantes' => $diasRestantes,
+            'dias_transcurridos' => $diasTranscurridos,
+            'total_dias' => $totalDias,
+            'porcentaje_uso' => $porcentajeUso,
+            'porcentaje_restante' => 100 - $porcentajeUso,
+            'valida_hasta_formatted' => isset($info['valida_hasta']) ? date('d/m/Y', strtotime($info['valida_hasta'])) : 'No disponible',
+            'fecha_instalacion_formatted' => isset($info['fecha_instalacion']) ? date('d/m/Y', strtotime($info['fecha_instalacion'])) : 'No disponible'
+        ];
+    }
+    public function getPorcentajeRestanteLicencia() {
+        $diasRestantes = $this->getDiasRestantesLicencia();
+        $totalDias = $this->getTotalDiasLicencia();
+        
+        if ($totalDias > 0) {
+            $porcentaje = min(100, max(0, ($diasRestantes / $totalDias) * 100));
+            return round($porcentaje, 1);
+        }
+        
+        return 100; // Si no hay datos, mostrar 100%
     }
 }
 ?>

@@ -549,3 +549,19 @@
                 max-width: 200px;
             }
         }
+        /* Agregar estos estilos a tu archivo data_referidos.css */
+.modal-header {
+    background-color: #4e73df;
+    color: white;
+}
+
+.btn-success, .btn-primary, .btn-warning {
+    padding: 10px;
+    text-align: left;
+    font-size: 1rem;
+}
+
+.btn-success:hover, .btn-primary:hover, .btn-warning:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s;
+}

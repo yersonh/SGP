@@ -114,561 +114,10 @@ foreach ($barrios as $barrio) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Referidos - Super Admin - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> <!-- FALTA ESTA LÍNEA -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <style>
-        /* Mismo estilo que la vista del referenciador */
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            font-size: 14px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Header Styles (igual al referenciador) */
-        .main-header {
-            background: linear-gradient(135deg, #2c3e50, #1a252f);
-            color: white;
-            padding: 15px 0;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .header-container {
-            display: flex;
-            flex-direction: column;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-        
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .header-title h1 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.1);
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-        
-        .user-info i {
-            color: #3498db;
-        }
-        
-        .logout-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 0.8rem;
-        }
-        
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        
-        /* Breadcrumb Navigation */
-        .breadcrumb-nav {
-            max-width: 1400px;
-            margin: 0 auto 20px;
-            padding: 0 15px;
-        }
-        
-        .breadcrumb {
-            background: transparent;
-            padding: 0;
-            margin: 0;
-            font-size: 0.9rem;
-        }
-        
-        .breadcrumb-item a {
-            color: #3498db;
-            text-decoration: none;
-        }
-        
-        .breadcrumb-item.active {
-            color: #666;
-        }
-        
-        /* Main Container */
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 15px 30px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Dashboard Header */
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 20px 0 30px;
-            padding: 0 20px;
-        }
-        
-        .dashboard-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .stats-summary {
-            display: flex;
-            gap: 20px;
-        }
-        
-        .stat-item {
-            text-align: center;
-            background: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            min-width: 120px;
-        }
-        
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            display: block;
-        }
-        
-        /* Colores para las estadísticas */
-        .stat-total .stat-number {
-            color: #3498db;
-        }
-        
-        .stat-activos .stat-number {
-            color: #27ae60;
-        }
-        
-        .stat-fecha .stat-number {
-            color: #9b59b6;
-        }
-        
-        .stat-label {
-            font-size: 0.85rem;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        /* Table Container */
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-        
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f1f5f9;
-        }
-        
-        .table-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .table-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn-search {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        
-        .btn-export {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        
-        /* DataTables Custom Styling */
-        .dataTables_wrapper {
-            width: 100% !important;
-        }
-        
-        table.dataTable {
-            border-collapse: collapse !important;
-            width: 100% !important;
-        }
-        
-        table.dataTable thead th {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-            padding: 12px 15px;
-            font-weight: 600;
-            color: #2c3e50;
-            text-align: left;
-        }
-        
-        table.dataTable tbody td {
-            padding: 10px 15px;
-            border-bottom: 1px solid #e9ecef;
-            vertical-align: middle;
-        }
-        
-        table.dataTable tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        /* Badge for affinity */
-        .badge-affinidad {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-        
-        .badge-affinidad-1 { background-color: #ff6b6b; color: white; }
-        .badge-affinidad-2 { background-color: #ffa726; color: white; }
-        .badge-affinidad-3 { background-color: #ffd166; color: #333; }
-        .badge-affinidad-4 { background-color: #06d6a0; color: white; }
-        .badge-affinidad-5 { background-color: #118ab2; color: white; }
-        
-        /* Text ellipsis for long content */
-        .text-ellipsis {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
-        }
-        
-        /* Footer */
-        .system-footer {
-            text-align: center;
-            padding: 25px 0;
-            background: white;
-            color: black;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            border-top: 2px solid #eaeaea;
-            width: 100%;
-        }
-        
-        .system-footer p {
-            margin: 8px 0;
-            color: #333;
-        }
-        
-        /* Responsive */
-        @media (max-width: 992px) {
-            .dashboard-header {
-                flex-direction: column;
-                gap: 20px;
-                align-items: flex-start;
-            }
-            
-            .stats-summary {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .table-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-            
-            .table-actions {
-                width: 100%;
-                justify-content: flex-end;
-            }
-        }
-        
-        @media (max-width: 767px) {
-            .header-top {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .user-info {
-                order: 1;
-            }
-            
-            .logout-btn {
-                order: 2;
-                align-self: flex-end;
-            }
-            
-            .stats-summary {
-                flex-wrap: wrap;
-                gap: 15px;
-            }
-            
-            .stat-item {
-                min-width: 100px;
-                padding: 10px 15px;
-            }
-            
-            .stat-number {
-                font-size: 1.3rem;
-            }
-            
-            .table-container {
-                padding: 15px;
-            }
-            
-            .table-title {
-                font-size: 1.1rem;
-            }
-            
-            .system-footer {
-                padding: 20px 15px;
-                font-size: 0.85rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .dashboard-title {
-                font-size: 1.4rem;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .stats-summary {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .stat-item {
-                min-width: 100%;
-                padding: 8px 12px;
-            }
-            
-            .stat-number {
-                font-size: 1.2rem;
-            }
-            
-            .btn-search, .btn-export {
-                padding: 6px 12px;
-                font-size: 0.85rem;
-            }
-        }
-
-        /* ESTILOS PARA LOS BOTONES DE ACCIONES */
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: nowrap;
-            justify-content: center;
-        }
-        
-        .btn-action {
-            padding: 8px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 500;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-        }
-        
-        .btn-view {
-            background-color: rgba(155, 89, 182, 0.1);
-            color: #9b59b6;
-            border: 1px solid rgba(155, 89, 182, 0.2);
-        }
-
-        .btn-view:hover {
-            background-color: rgba(155, 89, 182, 0.2);
-            color: #9b59b6;
-        }
-        
-        .btn-edit {
-            background-color: rgba(52, 152, 219, 0.1);
-            color: #3498db;
-            border: 1px solid rgba(52, 152, 219, 0.2);
-        }
-        
-        .btn-edit:hover {
-            background-color: rgba(52, 152, 219, 0.2);
-            color: #3498db;
-        }
-        
-        .btn-deactivate {
-            background-color: rgba(243, 156, 18, 0.1);
-            color: #f39c12;
-            border: 1px solid rgba(243, 156, 18, 0.2);
-        }
-        
-        .btn-deactivate:hover {
-            background-color: rgba(243, 156, 18, 0.2);
-            color: #f39c12;
-        }
-        
-        /* BOTÓN DE ACTIVAR (VERDE) */
-        .btn-activate {
-            background-color: rgba(39, 174, 96, 0.1);
-            color: #27ae60;
-            border: 1px solid rgba(39, 174, 96, 0.2);
-        }
-        
-        .btn-activate:hover {
-            background-color: rgba(39, 174, 96, 0.2);
-            color: #27ae60;
-        }
-
-        /* ESTILOS PARA NOTIFICACIONES */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            min-width: 300px;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        .notification-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .notification-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .notification-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-        
-        .notification-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-        }
-        
-        .notification-close {
-            background: none;
-            border: none;
-            color: inherit;
-            cursor: pointer;
-            padding: 0;
-            margin-left: 10px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        
-        .notification-close:hover {
-            opacity: 1;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-                .container.text-center.mb-3 img {
-            max-width: 320px;
-            height: auto;
-            transition: max-width 0.3s ease;
-        }
-
-        /* Para dispositivos móviles */
-        @media (max-width: 768px) {
-            .container.text-center.mb-3 img {
-                max-width: 220px;
-            }
-        }
-
-        /* Para dispositivos muy pequeños */
-        @media (max-width: 400px) {
-            .container.text-center.mb-3 img {
-                max-width: 200px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../styles/data_referidos.css">
 </head>
 <body>
     <!-- Header -->
@@ -740,7 +189,7 @@ foreach ($barrios as $barrio) {
                     <button class="btn-search">
                         <i class="fas fa-search"></i> Buscar
                     </button>
-                    <button class="btn-export">
+                    <button class="btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
                         <i class="fas fa-download"></i> Exportar
                     </button>
                 </div>
@@ -865,17 +314,49 @@ foreach ($barrios as $barrio) {
 
     <!-- Footer -->
     <footer class="system-footer">
-            <div class="container text-center mb-3">
-                <img src="../imagenes/Logo-artguru.png" alt="Logo">
-            </div>
+        <div class="container text-center mb-3">
+            <img src="../imagenes/Logo-artguru.png" alt="Logo">
+        </div>
+        <div class="container text-center">
+            <p>
+                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
+                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+            </p>
+        </div>
+    </footer>
 
-            <div class="container text-center">
-                <p>
-                    © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
-                    Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
-                </p>
+    <!-- Modal de Exportación -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-download me-2"></i> Exportar Datos</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Seleccione el formato de exportación:</p>
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-success btn-lg py-3" onclick="exportarReferidos('excel')">
+                            <i class="fas fa-file-excel fa-lg me-2"></i> Exportar a Excel (.xls)
+                        </button>
+                        <button class="btn btn-primary btn-lg py-3" onclick="exportarReferidos('pdf')">
+                            <i class="fas fa-file-pdf fa-lg me-2"></i> Exportar a PDF
+                        </button>
+                    </div>
+                    <hr class="my-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="exportSoloActivos" style="transform: scale(1.3);">
+                        <label class="form-check-label ms-2" for="exportSoloActivos">
+                            <i class="fas fa-filter me-1"></i> Exportar solo referidos activos
+                        </label>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i> El archivo se descargará automáticamente
+                    </div>
+                </div>
             </div>
-        </footer>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -919,10 +400,10 @@ foreach ($barrios as $barrio) {
                 $('#referidosTable_filter input').focus();
             });
             
-            // Botón de exportar
-            $('.btn-export').click(function() {
-                alert('Funcionalidad de exportación en desarrollo...');
-                // Aquí iría la lógica para exportar a Excel/PDF
+            // Botón de exportar - SOLO ABRE EL MODAL (no hacer nada más)
+            $('.btn-export').click(function(e) {
+                // El modal se abre automáticamente por data-bs-toggle
+                // No hacer nada aquí para evitar conflicto
             });
             
             // Ajustar tabla en redimensionamiento
@@ -942,6 +423,51 @@ foreach ($barrios as $barrio) {
                 }
             );
         });
+
+        // Función para exportar referidos
+        function exportarReferidos(formato) {
+            const soloActivos = document.getElementById('exportSoloActivos').checked;
+            
+            let url = '';
+            
+            // Asignar URL según formato
+            switch(formato) {
+                case 'excel':
+                    url = 'exportar_referidos_excel.php';
+                    break;
+                case 'pdf':
+                    url = 'exportar_referidos_pdf.php';
+                    break;
+                default:
+                    url = 'exportar_referidos_excel.php';
+                    break;
+            }
+            
+            // Agregar parámetro si es necesario
+            if (soloActivos) {
+                url += '?solo_activos=1';
+            }
+            
+            // Cerrar modal
+            const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+            if (exportModal) {
+                exportModal.hide();
+            }
+            
+            // Mostrar mensaje de procesamiento
+            showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
+            
+            // Descargar archivo después de un pequeño delay
+            setTimeout(() => {
+                // Crear un link temporal para la descarga
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, 300);
+        }
 
         // Función para desactivar un referenciado
         async function desactivarReferenciado(idReferenciado, nombreReferenciado, button) {
@@ -1053,7 +579,7 @@ foreach ($barrios as $barrio) {
                 showNotification('Error de conexión: ' + error.message, 'error');
                 button.innerHTML = originalIcon;
                 button.className = originalClass;
-                button.disabled = false;
+                    button.disabled = false;
             }
         }
 

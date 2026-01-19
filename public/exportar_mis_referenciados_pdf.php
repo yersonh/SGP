@@ -53,9 +53,9 @@ foreach ($referenciados as $referenciado) {
 // ============================================
 // INCLUIR TCPDF
 // ============================================
-$tcpdfPath = __DIR__ . '/../../tcpdf/tcpdf.php';
+$tcpdfPath = __DIR__ . '/../tcpdf/tcpdf.php';
 if (!file_exists($tcpdfPath)) {
-    $tcpdfPath = __DIR__ . '/../../tcpdf/tcpdf.php';
+    $tcpdfPath = __DIR__ . '/../tcpdf/tcpdf.php';
     if (!file_exists($tcpdfPath)) {
         die("Error: No se encontró TCPDF.");
     }

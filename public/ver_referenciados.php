@@ -47,6 +47,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Referenciados - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
     <style>
@@ -106,6 +107,24 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             background: linear-gradient(135deg, #2c3e50, #1a252f);
             color: white;
             padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .table-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .table-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .table-responsive {
@@ -225,6 +244,103 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             transform: translateY(-2px);
         }
         
+        .btn-export {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-export:hover {
+            background: linear-gradient(135deg, #20c997, #28a745);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        
+        .notification-success {
+            border-left: 5px solid #28a745;
+        }
+        
+        .notification-error {
+            border-left: 5px solid #dc3545;
+        }
+        
+        .notification-info {
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .notification-warning {
+            border-left: 5px solid #ffc107;
+        }
+        
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .notification-content i {
+            font-size: 1.2rem;
+        }
+        
+        .notification-success .notification-content i {
+            color: #28a745;
+        }
+        
+        .notification-error .notification-content i {
+            color: #dc3545;
+        }
+        
+        .notification-info .notification-content i {
+            color: #17a2b8;
+        }
+        
+        .notification-warning .notification-content i {
+            color: #ffc107;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1rem;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
         @media (max-width: 768px) {
             .stats-cards {
                 grid-template-columns: 1fr;
@@ -237,6 +353,16 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             
             .referenciados-container {
                 padding: 15px;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .table-header-actions {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -303,7 +429,14 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             <div class="referenciados-table">
                 <div class="table-header">
                     <h3><i class="fas fa-list-alt"></i> Lista de Referenciados</h3>
-                    <p class="mb-0">Fecha y hora actual: <?php echo $fecha_formateada; ?></p>
+                    <div class="table-header-actions">
+                        <span>Fecha y hora actual: <?php echo $fecha_formateada; ?></span>
+                        <?php if ($total_referenciados > 0): ?>
+                        <button class="btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
+                            <i class="fas fa-download"></i> Exportar
+                        </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 
                 <?php if ($total_referenciados > 0): ?>
@@ -455,9 +588,43 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         </div>
     </footer>
 
+    <!-- Modal de Exportación -->
+    <?php if ($total_referenciados > 0): ?>
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-download me-2"></i> Exportar Mis Referenciados</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Seleccione el formato de exportación:</p>
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-success btn-lg py-3" onclick="exportarMisReferenciados('excel')">
+                            <i class="fas fa-file-excel fa-lg me-2"></i> Exportar a Excel (.xls)
+                        </button>
+                        <button class="btn btn-primary btn-lg py-3" onclick="exportarMisReferenciados('pdf')">
+                            <i class="fas fa-file-pdf fa-lg me-2"></i> Exportar a PDF
+                        </button>
+                    </div>
+                    <hr class="my-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="exportSoloActivos" style="transform: scale(1.3);">
+                        <label class="form-check-label ms-2" for="exportSoloActivos">
+                            <i class="fas fa-filter me-1"></i> Exportar solo referidos activos
+                        </label>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i> Solo se exportarán tus referenciados
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Función para actualizar la hora en tiempo real
         function updateCurrentTime() {
@@ -471,7 +638,7 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             const timeString = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
             
             // Actualizar el texto en la tabla
-            document.querySelectorAll('.table-header p').forEach(element => {
+            document.querySelectorAll('.table-header-actions span').forEach(element => {
                 if (element.textContent.includes('Fecha y hora actual:')) {
                     element.textContent = `Fecha y hora actual: ${timeString}`;
                 }
@@ -512,6 +679,43 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                     notification.remove();
                 }
             }, 5000);
+        }
+        
+        // Función para exportar mis referenciados
+        function exportarMisReferenciados(formato) {
+            const soloActivos = document.getElementById('exportSoloActivos').checked;
+            
+            let url = 'exportar_mis_referenciados_excel.php';
+            
+            // Cambiar URL según formato
+            if (formato === 'pdf') {
+                url = 'exportar_mis_referenciados_pdf.php';
+            }
+            
+            // Agregar parámetro si es necesario
+            if (soloActivos) {
+                url += '?solo_activos=1';
+            }
+            
+            // Cerrar modal
+            const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+            if (exportModal) {
+                exportModal.hide();
+            }
+            
+            // Mostrar mensaje de procesamiento
+            showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
+            
+            // Descargar archivo después de un pequeño delay
+            setTimeout(() => {
+                // Crear un link temporal para la descarga
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, 300);
         }
         
         // Manejar parámetros de éxito/error en la URL

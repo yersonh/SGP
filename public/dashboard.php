@@ -2,13 +2,15 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../models/SistemaModel.php';
 
-header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
-header("Pragma: no-cache"); // HTTP 1.0
-header("Expires: 0"); // Proxies
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
+
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['id_usuario'])) {
     header('Location: index.php');
@@ -17,6 +19,8 @@ if (!isset($_SESSION['id_usuario'])) {
 
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
+$sistemaModel = new SistemaModel($pdo);
+
 $id_usuario_logueado = $_SESSION['id_usuario'];
 
 // 1. Capturar la fecha actual
@@ -38,10 +42,19 @@ $administradores = $model->countAdministradores();
 $referenciadores = $model->countReferenciadores();
 $descargadores = $model->countDescargadores();
 $superadmin = $model->countSuperAdmin();
-$tipos_usuario_stats = $model->countTodosLosTipos();
 
-// 6. Formatear fecha para mostrar
+// 6. Obtener información del sistema
+$infoSistema = $sistemaModel->getInformacionSistema();
+
+// 7. Formatear fecha para mostrar
 $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
+
+// 8. Obtener días restantes de licencia
+$diasRestantes = $sistemaModel->getDiasRestantesLicencia();
+$validaHasta = $infoSistema['valida_hasta'] ?? null;
+$validaHastaFormatted = $validaHasta ? date('d/m/Y', strtotime($validaHasta)) : 'No disponible';
+$totalDias = 30; // Asumimos 30 días como total de la licencia
+$porcentajeRestante = min(100, max(0, ($diasRestantes / $totalDias) * 100));
 ?>
 
 <!DOCTYPE html>
@@ -52,677 +65,200 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
     <title>Usuarios del Sistema - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --light-gray: #f8f9fa;
-            --dark-gray: #343a40;
-            --success-color: #27ae60;
-            --danger-color: #e74c3c;
-            --warning-color: #f39c12;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-        
-        /* Header Styles - Similar al login */
-        .main-header {
-            background: linear-gradient(135deg, var(--primary-color), #1a252f);
+        /* Estilos para el modal de información del sistema */
+        .modal-system-info .modal-header {
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
             color: white;
-            padding: 20px 0;
-            margin-bottom: 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .header-container {
+        .modal-system-info .modal-body {
+            padding: 20px;
+        }
+        
+        /* Logo centrado en el modal - IMAGEN AGRANDADA */
+        .modal-logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        
+        .modal-logo {
+            max-width: 300px; /* AGRANDADO de 200px a 300px */
+            height: auto;
+            margin: 0 auto;
+            border-radius: 12px; /* Bordes más redondeados */
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra más pronunciada */
+            border: 3px solid #fff; /* Borde blanco */
+            background: white;
+        }
+        
+        /* Barra de progreso de licencia */
+        .licencia-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .licencia-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
+            margin-bottom: 10px;
         }
         
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .header-title h1 {
-            font-size: 1.5rem;
+        .licencia-title {
+            font-size: 1.1rem;
             font-weight: 600;
+            color: #2c3e50;
             margin: 0;
         }
         
-        .user-count {
-            background: rgba(255,255,255,0.15);
+        .licencia-dias {
+            font-size: 1rem;
+            font-weight: 600;
             padding: 4px 12px;
             border-radius: 20px;
+            background: #3498db;
+            color: white;
+        }
+        
+        .licencia-progress {
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background-color: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .licencia-progress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+        
+        .licencia-fecha {
             font-size: 0.85rem;
-            font-weight: 500;
-        }
-        
-        .logout-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 0.9rem;
-        }
-        
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        
-        /* Main Content */
-        .main-container {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        
-        /* Top Bar - Agregar Usuario y Estadísticas */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .btn-add-user {
-            background: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-            text-decoration: none;
-            font-size: 1rem;
-            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
-        }
-        
-        .btn-add-user:hover {
-            background: #2980b9;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-        
-        .stats-container {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 15px 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            color: #6c757d;
             text-align: center;
-            min-width: 120px;
-        }
-        
-        .stat-number {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            line-height: 1;
-        }
-        
-        .stat-label {
-            color: #7f8c8d;
-            font-size: 0.85rem;
             margin-top: 5px;
         }
         
-        /* Search Bar */
-        .search-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .search-input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        
-        .search-input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-        
-        .search-btn {
-            background: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .search-btn:hover {
-            background: #2980b9;
-        }
-        
-        .clear-search-btn {
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .clear-search-btn:hover {
-            background: #7f8c8d;
-        }
-        
-        /* Table Container */
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            padding: 0;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        
-        .table-header {
-            background: var(--light-gray);
-            padding: 20px;
-            border-bottom: 2px solid #eaeaea;
-        }
-        
-        .table-header h2 {
-            color: var(--primary-color);
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin: 0;
-        }
-        
-        /* Table Styles - Similar a la imagen */
-        .users-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .users-table thead {
-            background-color: #f1f5f9;
-        }
-        
-        .users-table th {
-            padding: 18px 20px;
-            text-align: left;
-            color: var(--primary-color);
-            font-weight: 600;
-            font-size: 0.95rem;
-            border-bottom: 2px solid #e2e8f0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .users-table tbody tr {
-            border-bottom: 1px solid #f1f5f9;
-            transition: background-color 0.2s;
-        }
-        
-        .users-table tbody tr:hover {
-            background-color: #f8fafc;
-        }
-        
-        .users-table td {
-            padding: 20px;
-            vertical-align: middle;
-            color: #4a5568;
-        }
-        
-        .user-info {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .user-nickname {
-            font-weight: 600;
-            color: var(--primary-color);
-            font-size: 1.05rem;
-            margin-bottom: 3px;
-        }
-        
-        .user-fullname {
-            color: #718096;
-            font-size: 0.9rem;
-        }
-        
-        /* Action Buttons */
-       .action-buttons {
-    display: flex;
-    gap: 5px; /* Reducido de 10px */
-    flex-wrap: nowrap; /* ¡CRÍTICO! Cambiado de wrap a nowrap */
-    justify-content: flex-start;
-    align-items: center;
-    min-width: 160px; /* Ancho mínimo para 3 botones */
-    max-width: 100%; /* Ocupa todo el espacio disponible */
-    overflow: hidden; /* Evita que se desborden */
-}
-        
-        .btn-action {
-    padding: 4px 8px; /* Reducido de 8px 15px */
-    border-radius: 4px;
-    border: none;
-    font-weight: 500;
-    font-size: 0.75rem; /* Reducido de 0.85rem */
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    white-space: nowrap;
-    flex-shrink: 0; /* ¡IMPORTANTE! No permite que se encojan */
-    min-width: 40px; /* Ancho mínimo para cada botón */
-    height: 32px;
-}
-        
-        .btn-edit {
-            background-color: rgba(52, 152, 219, 0.1);
-            color: var(--secondary-color);
-            border: 1px solid rgba(52, 152, 219, 0.2);
-        }
-        
-        .btn-edit:hover {
-            background-color: rgba(52, 152, 219, 0.2);
-            color: var(--secondary-color);
-        }
-        
-        .btn-deactivate {
-            background-color: rgba(243, 156, 18, 0.1);
-            color: var(--warning-color);
-            border: 1px solid rgba(243, 156, 18, 0.2);
-        }
-        
-        .btn-deactivate:hover {
-            background-color: rgba(243, 156, 18, 0.2);
-            color: var(--warning-color);
-        }
-        
-        .btn-activate {
-            background-color: rgba(39, 174, 96, 0.1);
-            color: var(--success-color);
-            border: 1px solid rgba(39, 174, 96, 0.2);
-        }
-        
-        .btn-activate:hover {
-            background-color: rgba(39, 174, 96, 0.2);
-            color: var(--success-color);
-        }
-        
-        /* User Status */
-        .user-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            white-space: nowrap;
-            max-width: 100px;
-            justify-content: center;
-        }
-        
-        .status-active {
-            background-color: rgba(39, 174, 96, 0.1);
-            color: var(--success-color);
-        }
-        
-        .status-inactive {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger-color);
-        }
-        
-        /* User Type */
-        .user-type {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            background-color: rgba(155, 89, 182, 0.1);
-            color: #9b59b6;
-        }
-        
-        /* No Data Message */
-        .no-data {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-        
-        .no-data i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-        
-        /* Responsive */
-        @media (max-width: 992px) {
-            .header-container {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .logout-btn {
-                align-self: flex-end;
-            }
-            
-            .top-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .stats-container {
-                justify-content: center;
-            }
-            
-            .users-table {
-                display: block;
-                overflow-x: auto;
-            }
-            
-            .search-container {
-                flex-direction: column;
-            }
-            
-            .search-input {
-                width: 100%;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .users-table th,
-            .users-table td {
-                padding: 15px 10px;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .btn-action {
-                justify-content: center;
-                width: 100%;
-            }
-        }
-        
-        /* Current User Info */
-        .current-user-info {
-            background: white;
+        /* Tarjetas de características */
+        .feature-card {
+            background: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
+            height: 100%;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
         }
         
-        .current-user-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #f1f5f9;
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
-        .current-user-header h3 {
-            color: var(--primary-color);
-            font-size: 1.1rem;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .feature-icon {
+            opacity: 0.8;
         }
         
-        .login-time {
-            color: #718096;
-            font-size: 0.9rem;
-            background: #f8fafc;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        
-        .user-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detail-label {
-            color: #718096;
-            font-size: 0.85rem;
+        .feature-title {
+            color: #2c3e50;
+            font-weight: 600;
             margin-bottom: 5px;
         }
         
-        .detail-value {
-            color: var(--primary-color);
-            font-weight: 500;
+        .feature-text {
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 0;
         }
         
-        /* Footer Styles */
-        .system-footer {
-            text-align: center;
-            margin-top: 40px;
-            background: white;
-            padding: 20px 0;
-            border-top: 1px solid #eaeaea;
-            color: #7f8c8d;
-            font-size: 0.85rem;
-            line-height: 1.6;
-        }
-        
-        .system-footer p {
-            margin: 5px 0;
-        }
-        
-        .system-footer strong {
-            color: #2c3e50;
-            font-weight: 600;
-        }
-        
-        /* Notification Styles */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
+        /* Footer del modal */
+        .system-footer-modal {
+            background: #f1f5f9;
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            min-width: 300px;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 2px solid #e2e8f0;
         }
         
-        .notification-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .notification-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .notification-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-        
-        .notification-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-        }
-        
-        .notification-close {
-            background: none;
-            border: none;
-            color: inherit;
+        .logo-clickable {
             cursor: pointer;
-            padding: 0;
-            margin-left: 10px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+            transition: transform 0.3s ease;
         }
         
-        .notification-close:hover {
-            opacity: 1;
+        .logo-clickable:hover {
+            transform: scale(1.05);
         }
         
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .btn-view {
-            background-color: rgba(155, 89, 182, 0.1);
-            color: #9b59b6;
-            border: 1px solid rgba(155, 89, 182, 0.2);
-        }
-
-        .btn-view:hover {
-            background-color: rgba(155, 89, 182, 0.2);
-            color: #9b59b6;
-        }
-        /* Estilos para el logo en el footer */
-        .container.text-center.mb-3 img {
-            max-width: 320px;
-            height: auto;
-            transition: max-width 0.3s ease;
-        }
-
-        /* Para dispositivos móviles */
+        /* Responsive */
         @media (max-width: 768px) {
-            .container.text-center.mb-3 img {
-                max-width: 220px;
+            .modal-system-info .modal-body {
+                padding: 15px;
             }
-        }
-
-        /* Para dispositivos muy pequeños */
-        @media (max-width: 400px) {
-            .container.text-center.mb-3 img {
-                max-width: 200px;
+            
+            .modal-logo {
+                max-width: 200px; /* AGRANDADO para móviles también */
             }
-        }
-        /* Agrega estos estilos en la sección de CSS */
-        .password-field {
-            min-width: 200px;
-        }
-
-        .password-input {
-            font-family: 'Courier New', monospace;
-            letter-spacing: 1px;
-        }
-
-        /* Asteriscos cuando está oculto */
-        .password-input[type="password"] {
-            color: transparent;
-            text-shadow: 0 0 8px rgba(0,0,0,0.8);
-            background-image: linear-gradient(45deg, #999 25%, transparent 25%, transparent 50%, #999 50%, #999 75%, transparent 75%, transparent);
-            background-size: 10px 10px;
-        }
-
-        /* Texto normal cuando está visible */
-        .password-input[type="text"] {
-            color: #dc3545; /* Rojo para que destaque */
-            font-weight: 500;
-            background-color: #fff8f8 !important;
-            border-color: #dc3545 !important;
-            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-        }
-
-        .toggle-password-btn {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-            min-width: 40px;
-        }
-
-        .toggle-password-btn:hover {
-            background-color: #f8f9fa;
-        }
-        .btn-view-referrals {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: #2ecc71;
-            border: 1px solid rgba(46, 204, 113, 0.2);
-        }
-
-        .btn-view-referrals:hover {
-            background-color: rgba(46, 204, 113, 0.2);
-            color: #2ecc71;
+            
+            .feature-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .modal-system-info h4 {
+                font-size: 1.1rem;
+            }
+            
+            .licencia-info {
+                padding: 12px;
+            }
+            
+            .licencia-title {
+                font-size: 1rem;
+            }
+            
+            .licencia-dias {
+                font-size: 0.9rem;
+                padding: 3px 10px;
+            }
+            
+            .system-footer-modal {
+                padding: 15px;
+            }
         }
         
-        /* Buscador resultados */
-        .search-results {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            border-left: 4px solid var(--secondary-color);
+        @media (max-width: 576px) {
+            .modal-system-info .modal-dialog {
+                margin: 10px;
+            }
+            
+            .modal-system-info .modal-body {
+                padding: 12px;
+            }
+            
+            .modal-logo-container {
+                padding: 10px;
+            }
+            
+            .modal-logo {
+                max-width: 180px; /* AGRANDADO para móviles pequeños */
+            }
+            
+            .licencia-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .licencia-dias {
+                align-self: flex-start;
+            }
         }
     </style>
 </head>
@@ -906,22 +442,24 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            
                             <td>
-
                                 <div class="action-buttons">
-                                    <!-- BOTÓN DE VER PERSONAS REFERENCIADAS -->
-                                    <button class="btn-action btn-view-referrals" 
-                                            onclick="window.location.href='administrador/ver_referenciados.php?id=<?php echo $usuario['id_usuario']; ?>&nickname=<?php echo urlencode($usuario['nickname']); ?>'"
-                                            title="Ver personas referenciadas por este usuario">
-                                        <i class="fas fa-users"></i>
-                                    </button>
+                                    <!-- BOTÓN DE VER PERSONAS REFERENCIADAS - SOLO PARA REFERENCIADORES -->
+                                    <?php if ($usuario['tipo_usuario'] === 'Referenciador'): ?>
+                                        <button class="btn-action btn-view-referrals" 
+                                                onclick="window.location.href='administrador/ver_referenciados.php?id=<?php echo $usuario['id_usuario']; ?>&nickname=<?php echo urlencode($usuario['nickname']); ?>'"
+                                                title="Ver personas referenciadas por este usuario">
+                                            <i class="fas fa-users"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                    
                                     <!-- BOTÓN DE VER DETALLE -->
                                     <button class="btn-action btn-view" 
                                             onclick="window.location.href='administrador/ver_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"
                                             title="Ver detalle del usuario">
                                         <i class="fas fa-eye"></i>
                                     </button>
+                                    
                                     <!-- BOTÓN DE EDITAR -->
                                     <button class="btn-action btn-edit" 
                                             onclick="window.location.href='administrador/editar_usuario.php?id=<?php echo $usuario['id_usuario']; ?>'"
@@ -964,7 +502,11 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         <!-- Footer del sistema -->
         <footer class="system-footer">
             <div class="container text-center mb-3">
-                <img src="imagenes/Logo-artguru.png" alt="Logo">
+                <img src="imagenes/Logo-artguru.png" 
+                     alt="Logo" 
+                     class="logo-clickable"
+                     onclick="mostrarModalSistema()"
+                     title="Haz clic para ver información del sistema">
             </div>
 
             <div class="container text-center">
@@ -976,10 +518,162 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         </footer>
     </div>
 
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+                    </div>
+                    
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <div class="text-center mb-4">
+                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
+                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
+                        </h1> -->
+                        <h4 class="text-secondary mb-4">Gestión Política de Alta Precisión</h4>
+                        
+                        <!-- Información de Licencia -->
+                        <div class="licencia-info">
+                            <div class="licencia-header">
+                                <h6 class="licencia-title">Licencia Runtime</h6>
+                                <span class="licencia-dias"><?php echo $diasRestantes; ?> días restantes</span>
+                            </div>
+                            
+                            <div class="licencia-progress">
+                                <?php
+                                $barColor = '';
+                                if ($diasRestantes > 15) {
+                                    $barColor = 'bg-success';
+                                } elseif ($diasRestantes > 7) {
+                                    $barColor = 'bg-warning';
+                                } else {
+                                    $barColor = 'bg-danger';
+                                }
+                                ?>
+                                <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                     style="width: <?php echo $porcentajeRestante; ?>%"
+                                     role="progressbar" 
+                                     aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            
+                            <div class="licencia-fecha">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                Válida hasta: <?php echo $validaHastaFormatted; ?>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer de información del sistema -->
+                    <div class="system-footer-modal">
+                        <div class="text-center">
+                            <p class="text-muted mb-1">
+                                © Derechos de autor Reservados • 
+                                <strong><?php echo htmlspecialchars($infoSistema['desarrollador'] ?? 'SISGONTech - Ing. Rubén Darío González García'); ?></strong>
+                            </p>
+                            <p class="text-muted mb-1">
+                                <strong>SISGONTech</strong> • Colombia • <?php echo date('Y'); ?>
+                            </p>
+                            <p class="text-muted mb-0">
+                                Email: <?php echo htmlspecialchars($infoSistema['contacto_email'] ?? 'sisgonnet@gmail.com'); ?> • 
+                                Contacto: <?php echo htmlspecialchars($infoSistema['contacto_telefono'] ?? '+57 3106310227'); ?>
+                            </p>
+                            <p class="small text-muted mt-2">
+                                Versión <?php echo htmlspecialchars($infoSistema['version_sistema'] ?? '1.0.1'); ?> • 
+                                Licencia <?php echo htmlspecialchars($infoSistema['tipo_licencia'] ?? 'Runtime'); ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Función para mostrar el modal del sistema
+        function mostrarModalSistema() {
+            const modal = new bootstrap.Modal(document.getElementById('modalSistema'));
+            modal.show();
+        }
+        
         // Función para buscar usuarios
         function buscarUsuarios() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
@@ -987,7 +681,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             let visibleCount = 0;
             
             rows.forEach(row => {
-                // Obtener texto combinado de nickname y nombre completo
                 const nickname = row.querySelector('.user-nickname').textContent.toLowerCase();
                 const fullname = row.querySelector('.user-fullname')?.textContent.toLowerCase() || '';
                 const text = nickname + ' ' + fullname;
@@ -1000,7 +693,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 }
             });
             
-            // Actualizar mensaje de resultados
             const resultsElement = document.getElementById('search-results');
             if (searchTerm.trim() === '') {
                 resultsElement.textContent = `Mostrando ${rows.length} usuarios`;
@@ -1039,13 +731,11 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
         
         // Función para mostrar notificaciones
         function showNotification(message, type = 'info') {
-            // Eliminar notificación anterior si existe
             const oldNotification = document.querySelector('.notification');
             if (oldNotification) {
                 oldNotification.remove();
             }
             
-            // Crear nueva notificación
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.innerHTML = `
@@ -1060,12 +750,10 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
             
             document.body.appendChild(notification);
             
-            // Botón para cerrar
             notification.querySelector('.notification-close').addEventListener('click', () => {
                 notification.remove();
             });
             
-            // Auto-eliminar después de 5 segundos
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.remove();
@@ -1095,7 +783,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Cambiar el estado en la tabla
                     const row = button.closest('tr');
                     const statusBadge = row.querySelector('.user-status');
                     if (statusBadge) {
@@ -1103,7 +790,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Inactivo';
                     }
                     
-                    // Crear nuevo botón REACTIVAR con event listener
                     const newButton = document.createElement('button');
                     newButton.className = 'btn-action btn-activate';
                     newButton.title = 'Reactivar usuario';
@@ -1112,12 +798,10 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         reactivarUsuario(idUsuario, nickname, newButton);
                     });
                     
-                    // Reemplazar el botón en el contenedor
                     const buttonContainer = button.parentNode;
                     buttonContainer.removeChild(button);
                     buttonContainer.appendChild(newButton);
                     
-                    // Actualizar estadísticas
                     updateStats(-1, 0);
                     
                     showNotification('Usuario dado de baja correctamente', 'success');
@@ -1132,9 +816,9 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 button.disabled = false;
             }
         }
-                
-                // Función para reactivar un usuario
-                async function reactivarUsuario(idUsuario, nickname, button) {
+        
+        // Función para reactivar un usuario
+        async function reactivarUsuario(idUsuario, nickname, button) {
             if (!confirm(`¿Desea REACTIVAR al usuario "${nickname}"?`)) {
                 return;
             }
@@ -1155,7 +839,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Cambiar el estado en la tabla
                     const row = button.closest('tr');
                     const statusBadge = row.querySelector('.user-status');
                     if (statusBadge) {
@@ -1163,7 +846,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Activo';
                     }
                     
-                    // Crear nuevo botón DAR DE BAJA con event listener
                     const newButton = document.createElement('button');
                     newButton.className = 'btn-action btn-deactivate';
                     newButton.title = 'Dar de baja al usuario';
@@ -1172,12 +854,10 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                         darDeBaja(idUsuario, nickname, newButton);
                     });
                     
-                    // Reemplazar el botón en el contenedor
                     const buttonContainer = button.parentNode;
                     buttonContainer.removeChild(button);
                     buttonContainer.appendChild(newButton);
                     
-                    // Actualizar estadísticas
                     updateStats(1, 0);
                     
                     showNotification('Usuario reactivado correctamente', 'success');
@@ -1209,7 +889,6 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                     activosElement.textContent = current + changeActivos;
                 }
                 
-                // Actualizar contador en el header
                 const userCountElement = document.querySelector('.user-count');
                 if (userCountElement && changeTotal !== 0) {
                     const text = userCountElement.textContent;
@@ -1218,45 +897,43 @@ $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
                 }
             }
         }
-// Función para mostrar/ocultar contraseña
-function togglePassword(userId) {
-    const passwordInput = document.getElementById(`password-input-${userId}`);
-    const button = document.querySelector(`[data-user-id="${userId}"]`);
-    const icon = button.querySelector('i');
-    
-    if (passwordInput.type === 'password') {
-        // Mostrar contraseña
-        passwordInput.type = 'text';
-        icon.className = 'fas fa-eye-slash';
-        button.title = 'Ocultar contraseña';
-        button.classList.add('btn-warning');
-        button.classList.remove('btn-outline-secondary');
-    } else {
-        // Ocultar contraseña
-        passwordInput.type = 'password';
-        icon.className = 'fas fa-eye';
-        button.title = 'Mostrar contraseña';
-        button.classList.remove('btn-warning');
-        button.classList.add('btn-outline-secondary');
-    }
-}
-
-// Inicializar event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Asignar evento a todos los botones de mostrar/ocultar
-    document.querySelectorAll('.toggle-password-btn').forEach(button => {
-        const userId = button.getAttribute('data-user-id');
-        button.addEventListener('click', () => togglePassword(userId));
-    });
-    
-    // Prevenir selección de texto en campos de contraseña oculta
-    document.querySelectorAll('.password-input[type="password"]').forEach(input => {
-        input.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            this.blur();
+        
+        // Función para mostrar/ocultar contraseña
+        function togglePassword(userId) {
+            const passwordInput = document.getElementById(`password-input-${userId}`);
+            const button = document.querySelector(`[data-user-id="${userId}"]`);
+            const icon = button.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+                button.title = 'Ocultar contraseña';
+                button.classList.add('btn-warning');
+                button.classList.remove('btn-outline-secondary');
+            } else {
+                passwordInput.type = 'password';
+                icon.className = 'fas fa-eye';
+                button.title = 'Mostrar contraseña';
+                button.classList.remove('btn-warning');
+                button.classList.add('btn-outline-secondary');
+            }
+        }
+        
+        // Inicializar event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.toggle-password-btn').forEach(button => {
+                const userId = button.getAttribute('data-user-id');
+                button.addEventListener('click', () => togglePassword(userId));
+            });
+            
+            document.querySelectorAll('.password-input[type="password"]').forEach(input => {
+                input.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    this.blur();
+                });
+            });
         });
-    });
-});
+        
         // Efecto hover en filas de la tabla
         document.querySelectorAll('.users-table tbody tr').forEach(row => {
             row.addEventListener('mouseenter', function() {
@@ -1289,7 +966,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (message) {
                     showNotification(message, 'success');
-                    // Limpiar parámetro de la URL sin recargar la página
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             }
@@ -1308,7 +984,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (message) {
                     showNotification(message, 'error');
-                    // Limpiar parámetro de la URL sin recargar la página
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             }

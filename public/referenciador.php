@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../models/DepartamentoModel.php';
 require_once __DIR__ . '/../models/ZonaModel.php';
 require_once __DIR__ . '/../models/BarrioModel.php';
+require_once __DIR__ . '/../models/Grupos_ParlamentariosModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
@@ -31,13 +32,14 @@ $ofertaApoyoModel = new OfertaApoyoModel($pdo);
 $departamentoModel = new DepartamentoModel($pdo);
 $zonaModel = new ZonaModel($pdo);
 $barrioModel = new BarrioModel($pdo);
-
+$gruposParlamentariosModel = new Grupos_ParlamentariosModel($pdo);
 // Obtener datos para los combos
 $gruposPoblacionales = $grupoPoblacionalModel->getAll();
 $ofertasApoyo = $ofertaApoyoModel->getAll();
 $departamentos = $departamentoModel->getAll();
 $zonas = $zonaModel->getAll();
 $barrios = $barrioModel->getAll();
+$gruposParlamentarios = $gruposParlamentariosModel->getAll();
 ?>
 
 <!DOCTYPE html>
@@ -270,7 +272,20 @@ $barrios = $barrioModel->getAll();
                             <input type="hidden" id="afinidad" name="afinidad" value="0" data-progress="5" required>
                         </div>
                     </div>
-                    
+                    <!--Grupo Parlamentario (OBLIGATORIO) -->
+                    <div class="form-group">
+                        <label class="form-label" for="grupo_parlamentario">
+                            <i class="fas fa-users-cog"></i> Grupo Parlamentario *
+                        </label>
+                        <select id="grupo_parlamentario" name="grupo_parlamentario" class="form-select" data-progress="3" required>
+                            <option value="">Seleccione un Grupo Parlamentario</option>
+                            <?php foreach ($gruposParlamentarios as $grupo): ?>
+                            <option value="<?php echo $grupo['id_grupo']; ?>">
+                                <?php echo htmlspecialchars($grupo['nombre']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <!-- Vota Fuera -->
                     <div class="form-group">
                         <label class="form-label" for="vota_fuera_switch">

@@ -51,19 +51,21 @@ class ReferenciadoModel {
         $this->pdo->beginTransaction();
         
         try {
-            // SQL actualizado con los nuevos campos
+            // SQL actualizado con el campo id_grupo
             $sql = "INSERT INTO referenciados (
                 nombre, apellido, cedula, direccion, email, telefono, 
                 afinidad, id_zona, id_sector, id_puesto_votacion, mesa,
                 id_departamento, id_municipio, id_barrio, id_oferta_apoyo, id_grupo_poblacional,
                 compromiso, id_referenciador, fecha_registro,
-                sexo, vota_fuera, puesto_votacion_fuera, mesa_fuera  -- NUEVOS CAMPOS
+                sexo, vota_fuera, puesto_votacion_fuera, mesa_fuera,
+                id_grupo  -- NUEVO CAMPO: id_grupo
             ) VALUES (
                 :nombre, :apellido, :cedula, :direccion, :email, :telefono,
                 :afinidad, :id_zona, :id_sector, :id_puesto_votacion, :mesa,
                 :id_departamento, :id_municipio, :id_barrio, :id_oferta_apoyo, :id_grupo_poblacional,
                 :compromiso, :id_referenciador, NOW(),
-                :sexo, :vota_fuera, :puesto_votacion_fuera, :mesa_fuera  -- NUEVOS CAMPOS
+                :sexo, :vota_fuera, :puesto_votacion_fuera, :mesa_fuera,
+                :id_grupo  -- NUEVO CAMPO: id_grupo
             ) RETURNING id_referenciado";
             
             $stmt = $this->pdo->prepare($sql);
@@ -96,9 +98,12 @@ class ReferenciadoModel {
             $stmt->bindValue(':sexo', $data['sexo'] ?? null);
             $stmt->bindValue(':vota_fuera', $votaFuera);
             
-            // NUEVOS CAMPOS: Datos de votación fuera
+            // Campos de votación fuera
             $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
             $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
+            
+            // NUEVO CAMPO: id_grupo
+            $stmt->bindValue(':id_grupo', $data['id_grupo'] ?? null, PDO::PARAM_INT);
             
             $stmt->execute();
             
@@ -163,6 +168,7 @@ class ReferenciadoModel {
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
                 pv.nombre as puesto_votacion_nombre,
+                gr.nombre as grupo_nombre,  -- NUEVO: información del grupo
                 CASE 
                     WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
                     ELSE pv.nombre
@@ -180,6 +186,7 @@ class ReferenciadoModel {
                 LEFT JOIN zona z ON r.id_zona = z.id_zona
                 LEFT JOIN sector s ON r.id_sector = s.id_sector
                 LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
                 WHERE r.id_referenciador = :id_referenciador
                 ORDER BY r.fecha_registro DESC";
         
@@ -218,6 +225,7 @@ class ReferenciadoModel {
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
                 pv.nombre as puesto_votacion_nombre,
+                gr.nombre as grupo_nombre,  -- NUEVO: información del grupo
                 CASE 
                     WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
                     ELSE pv.nombre
@@ -235,6 +243,7 @@ class ReferenciadoModel {
                 LEFT JOIN zona z ON r.id_zona = z.id_zona
                 LEFT JOIN sector s ON r.id_sector = s.id_sector
                 LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
                 WHERE r.id_referenciado = :id_referenciado";
         
         $stmt = $this->pdo->prepare($sql);
@@ -281,6 +290,7 @@ class ReferenciadoModel {
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
                 pv.nombre as puesto_votacion_nombre,
+                gr.nombre as grupo_nombre,  -- NUEVO: información del grupo
                 CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
                 CASE 
                     WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
@@ -299,6 +309,7 @@ class ReferenciadoModel {
                 LEFT JOIN zona z ON r.id_zona = z.id_zona
                 LEFT JOIN sector s ON r.id_sector = s.id_sector
                 LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
                 LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
                 ORDER BY r.fecha_registro DESC";
         
@@ -321,6 +332,7 @@ class ReferenciadoModel {
                 z.nombre as zona_nombre,
                 s.nombre as sector_nombre,
                 pv.nombre as puesto_votacion_nombre,
+                gr.nombre as grupo_nombre,  -- NUEVO: información del grupo
                 CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
                 u.tope as referenciador_tope,
                 CASE 
@@ -348,6 +360,7 @@ class ReferenciadoModel {
             LEFT JOIN zona z ON r.id_zona = z.id_zona
             LEFT JOIN sector s ON r.id_sector = s.id_sector
             LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN grupos gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
             LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
             ORDER BY r.fecha_registro DESC";
     
@@ -457,7 +470,7 @@ class ReferenciadoModel {
         $this->pdo->beginTransaction();
         
         try {
-            // SQL actualizado para incluir los nuevos campos
+            // SQL actualizado para incluir el nuevo campo id_grupo
             $sql = "UPDATE referenciados SET
                     nombre = :nombre,
                     apellido = :apellido,
@@ -480,7 +493,8 @@ class ReferenciadoModel {
                     sexo = :sexo,
                     vota_fuera = :vota_fuera,
                     puesto_votacion_fuera = :puesto_votacion_fuera,
-                    mesa_fuera = :mesa_fuera
+                    mesa_fuera = :mesa_fuera,
+                    id_grupo = :id_grupo  -- NUEVO CAMPO: id_grupo
                     WHERE id_referenciado = :id_referenciado";
             
             $stmt = $this->pdo->prepare($sql);
@@ -513,9 +527,12 @@ class ReferenciadoModel {
             $stmt->bindValue(':sexo', $data['sexo'] ?? null);
             $stmt->bindValue(':vota_fuera', $votaFuera);
             
-            // Nuevos campos
+            // Campos de votación fuera
             $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
             $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
+            
+            // NUEVO CAMPO: id_grupo
+            $stmt->bindValue(':id_grupo', $data['id_grupo'] ?? null, PDO::PARAM_INT);
             
             $stmt->execute();
             
@@ -591,6 +608,48 @@ class ReferenciadoModel {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Obtener todos los grupos disponibles
+     */
+    public function getGrupos() {
+        $sql = "SELECT * FROM grupos ORDER BY nombre";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Obtener un grupo específico por ID
+     */
+    public function getGrupoById($id_grupo) {
+        $sql = "SELECT * FROM grupos WHERE id_grupo = :id_grupo";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_grupo', $id_grupo, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Obtener estadísticas por grupo
+     */
+    public function getEstadisticasPorGrupo() {
+        $sql = "SELECT 
+                g.id_grupo,
+                g.nombre as grupo_nombre,
+                COUNT(r.id_referenciado) as total_referenciados,
+                COUNT(CASE WHEN r.activo = true THEN 1 END) as activos,
+                COUNT(CASE WHEN r.vota_fuera = 'Si' THEN 1 END) as vota_fuera,
+                ROUND(AVG(r.afinidad)::numeric, 2) as afinidad_promedio
+                FROM grupos g
+                LEFT JOIN referenciados r ON g.id_grupo = r.id_grupo
+                GROUP BY g.id_grupo, g.nombre
+                ORDER BY g.nombre";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

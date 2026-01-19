@@ -26,6 +26,7 @@ $data = [
     'vota_fuera' => trim($_POST['vota_fuera'] ?? 'No'), // 'Si' o 'No'
     'puesto_votacion_fuera' => trim($_POST['puesto_votacion_fuera'] ?? ''), // NUEVO CAMPO
     'mesa_fuera' => !empty($_POST['mesa_fuera']) ? intval($_POST['mesa_fuera']) : null, // NUEVO CAMPO
+    'id_grupo' => !empty($_POST['grupo']) ? intval($_POST['grupo']) : null, // NUEVO CAMPO: id_grupo (cambiado de 'campo' a 'grupo')
     'afinidad' => intval($_POST['afinidad'] ?? 0),
     'id_zona' => !empty($_POST['zona']) ? intval($_POST['zona']) : null,
     'id_sector' => !empty($_POST['sector']) ? intval($_POST['sector']) : null,
@@ -46,6 +47,7 @@ error_log("Datos recibidos: " . print_r($data, true));
 error_log("Vota fuera: " . $data['vota_fuera']);
 error_log("Puesto votación fuera: " . $data['puesto_votacion_fuera']);
 error_log("Mesa fuera: " . $data['mesa_fuera']);
+error_log("ID Grupo: " . $data['id_grupo']); // NUEVO: debug grupo (cambiado de campo)
 error_log("Insumos recibidos: " . print_r($data['insumos'], true));
 
 // Validaciones básicas
@@ -80,6 +82,11 @@ if (!empty($data['sexo']) && !in_array($data['sexo'], ['Masculino', 'Femenino', 
 // Validar vota_fuera (debe ser 'Si' o 'No')
 if (!in_array($data['vota_fuera'], ['Si', 'No'])) {
     $errors[] = 'El campo "Vota Fuera" debe ser Si o No';
+}
+
+// Validar grupo (si se seleccionó) - NUEVO: cambiado de campo a grupo
+if (!empty($data['id_grupo']) && $data['id_grupo'] <= 0) {
+    $errors[] = 'El grupo seleccionado no es válido';
 }
 
 // Validaciones condicionales según si vota fuera o no
@@ -146,6 +153,21 @@ if (!empty($data['id_barrio'])) {
     }
 }
 
+// Verificar si grupo existe (si se seleccionó) - NUEVO: cambiado de campo a grupo
+if (!empty($data['id_grupo'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT id_grupo FROM grupos WHERE id_grupo = ? AND activo = true");
+        $stmt->execute([$data['id_grupo']]);
+        if (!$stmt->fetch()) {
+            $data['id_grupo'] = null; // Si no existe, establecer como null
+            error_log("Grupo con ID " . $data['id_grupo'] . " no encontrado o inactivo");
+        }
+    } catch (Exception $e) {
+        error_log("Error verificando grupo: " . $e->getMessage());
+        $data['id_grupo'] = null;
+    }
+}
+
 // Verificar insumos válidos
 $insumosValidos = ['carro', 'caballo', 'cicla', 'moto', 'motocarro', 'publicidad'];
 if (!empty($data['insumos']) && is_array($data['insumos'])) {
@@ -182,6 +204,20 @@ try {
             $mensaje .= '. Referido que vota en su lugar de residencia.';
         }
         
+        // Agregar info sobre grupo si se seleccionó - NUEVO: cambiado de campo a grupo
+        if (!empty($data['id_grupo'])) {
+            try {
+                $stmt = $pdo->prepare("SELECT nombre FROM grupos WHERE id_grupo = ?");
+                $stmt->execute([$data['id_grupo']]);
+                $grupo = $stmt->fetch();
+                if ($grupo) {
+                    $mensaje .= ' Grupo: ' . $grupo['nombre'] . '.';
+                }
+            } catch (Exception $e) {
+                error_log("Error obteniendo nombre del grupo: " . $e->getMessage());
+            }
+        }
+        
         echo json_encode([
             'success' => true, 
             'message' => $mensaje,
@@ -212,6 +248,8 @@ try {
             $mensajeError .= 'Verifique los datos de votación fuera.';
         } elseif (strpos($errorMessage, 'zona') !== false) {
             $mensajeError .= 'Verifique los datos de ubicación de votación.';
+        } elseif (strpos($errorMessage, 'grupo') !== false) {
+            $mensajeError .= 'Verifique los datos del grupo.'; // NUEVO: cambiado de campo a grupo
         } else {
             $mensajeError .= 'Por favor intente nuevamente.';
         }

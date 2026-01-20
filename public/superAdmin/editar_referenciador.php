@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/InsumoModel.php';
+require_once __DIR__ . '/../../models/Grupos_ParlamentariosModel.php';
 
 header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
 header("Pragma: no-cache"); // HTTP 1.0
@@ -46,6 +47,7 @@ $municipioModel = new MunicipioModel($pdo);
 $ofertaModel = new OfertaApoyoModel($pdo);
 $grupoModel = new GrupoPoblacionalModel($pdo);
 $barrioModel = new BarrioModel($pdo);
+$gruposParlamentariosModel = new Grupos_ParlamentariosModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
@@ -68,6 +70,7 @@ $ofertas = $ofertaModel->getAll();
 $grupos = $grupoModel->getAll();
 $barrios = $barrioModel->getAll();
 $insumos_disponibles = $insumoModel->getAll();
+$gruposParlamentarios = $gruposParlamentariosModel->getAll();
 
 // Obtener insumos del referenciado
 $insumos_referenciado = $insumoModel->getInsumosByReferenciado($id_referenciado);
@@ -112,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'telefono' => $_POST['telefono'] ?? '',
             'sexo' => $_POST['sexo'] ?? '',
             'vota_fuera' => $_POST['vota_fuera'] ?? 'No',
+            'id_grupo' => !empty($_POST['id_grupo']) ? $_POST['id_grupo'] : null,
             'afinidad' => $_POST['afinidad'] ?? 1,
             'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
             'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
@@ -181,7 +185,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($datos_actualizar['sexo']) && !in_array($datos_actualizar['sexo'], ['Masculino', 'Femenino', 'Otro'])) {
             throw new Exception('El sexo seleccionado no es válido.');
         }
-        
+        // Validar grupo parlamentario (OBLIGATORIO)
+        if (empty($_POST['id_grupo'])) {
+            throw new Exception('El Grupo Parlamentario es obligatorio.');
+        }
+
+        // También validar que sea un valor válido
+        if (!empty($_POST['id_grupo']) && $_POST['id_grupo'] <= 0) {
+            throw new Exception('El Grupo Parlamentario seleccionado no es válido.');
+        }
         // Validar vota_fuera
         if (!in_array($datos_actualizar['vota_fuera'], ['Si', 'No'])) {
             throw new Exception('El campo "Vota Fuera" debe ser Si o No.');
@@ -318,6 +330,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .campo-fuera.hidden, .campo-votacion.hidden {
             display: none;
         }
+        /* ESTILOS PARA SELECT/COMBOBOX */
+select.form-control,
+.form-select,
+select[name="id_grupo"],
+select[name="id_zona"],
+select[name="id_sector"],
+select[name="id_puesto_votacion"],
+select[name="id_departamento"],
+select[name="id_municipio"],
+select[name="id_barrio"],
+select[name="id_oferta_apoyo"],
+select[name="id_grupo_poblacional"],
+select[name="sexo"] {
+    /* Fondo del select cerrado */
+    background-color: #2d3748 !important; /* Gris oscuro */
+    color: #e2e8f0 !important; /* Gris claro para texto */
+    border: 1px solid #4a5568 !important;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    appearance: none; /* Quita el estilo nativo */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Fondo cuando el select está abierto (dropdown) */
+select.form-control:focus,
+.form-select:focus,
+select:focus {
+    background-color: #2d3748 !important;
+    color: #e2e8f0 !important;
+    border-color: #4299e1 !important;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15) !important;
+    outline: none;
+}
+
+/* Estilo para las opciones dentro del select */
+select.form-control option,
+.form-select option,
+select option {
+    background-color: #2d3748 !important; /* Fondo del dropdown */
+    color: #e2e8f0 !important; /* Color del texto en dropdown */
+    padding: 10px;
+    font-size: 14px;
+}
+
+/* Estilo para opción seleccionada en el dropdown */
+select.form-control option:checked,
+.form-select option:checked,
+select option:checked {
+    background-color: #4299e1 !important; /* Azul para seleccionado */
+    color: white !important;
+}
+
+/* Estilo para opción hover en dropdown */
+select.form-control option:hover,
+.form-select option:hover,
+select option:hover {
+    background-color: #4a5568 !important; /* Gris más claro al hover */
+    color: white !important;
+}
+
+/* Icono flecha personalizado */
+select.form-control,
+.form-select,
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23e2e8f0' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px; /* Espacio para la flecha */
+}
+
+/* Para select deshabilitado */
+select.form-control:disabled,
+.form-select:disabled,
+select:disabled {
+    background-color: #4a5568 !important;
+    color: #a0aec0 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
     </style>
 </head>
 <body>
@@ -502,6 +599,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <div class="form-grid">
+                        <!-- CAMPO NUEVO: Grupo Parlamentario (AGREGARLO AQUÍ) -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-users-cog"></i> Grupo Parlamentario *
+                            </label>
+                            <select class="form-control" name="id_grupo" required>
+                                <option value="">Seleccionar...</option>
+                                <?php foreach ($gruposParlamentarios as $grupo): ?>
+                                    <option value="<?php echo $grupo['id_grupo']; ?>" 
+                                        <?php echo isSelected($grupo['id_grupo'], $referenciado['id_grupo'] ?? ''); ?>>
+                                        <?php echo htmlspecialchars($grupo['nombre']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <!-- Campo Vota Fuera -->
                         <div class="form-group">
                             <label class="form-label">
@@ -1209,6 +1321,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     return false;
                 }
             });
+            // En la validación del formulario, agrega esto:
+            const grupoParlamentario = document.querySelector('select[name="id_grupo"]');
+            if (!grupoParlamentario.value) {
+                e.preventDefault();
+                showNotification('El Grupo Parlamentario es obligatorio', 'warning');
+                grupoParlamentario.style.borderColor = '#e74c3c';
+                grupoParlamentario.focus();
+                return false;
+            }
             
             // Mostrar mensaje de confirmación
             if (!confirm('¿Está seguro de guardar los cambios?')) {

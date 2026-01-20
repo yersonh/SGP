@@ -356,17 +356,35 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                             </td>
                             
                             <!-- COLUMNA TRACKING CON BOTÓN DE TELÉFONO -->
-                            <td>
-                                <button class="tracking-btn <?php echo $claseBoton; ?>" 
-                                        title="<?php echo $tituloBoton; ?>"
-                                        onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
-                                        <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
-                                    <i class="fas fa-phone-alt"></i>
-                                    <?php if ($tieneLlamada): ?>
-                                        <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
-                                    <?php endif; ?>
-                                </button>
-                            </td>
+<td>
+    <div class="d-flex align-items-center justify-content-start gap-1">
+        <?php if ($tieneLlamada): ?>
+            <!-- Primero el botón de llamada (amarillo) -->
+            <button class="tracking-btn llamada-realizada" 
+                    title="Llamada ya realizada - Click para llamar de nuevo"
+                    onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
+                    <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
+                <i class="fas fa-phone-alt"></i>
+                <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
+            </button>
+            
+            <!-- Luego el botón de detalles (verde) -->
+            <button class="tracking-btn tracking-detalle" 
+                    title="Ver detalles de la llamada"
+                    onclick="mostrarDetalleLlamada('<?php echo $referenciado['id_referenciado']; ?>', '<?php echo addslashes($nombre_completo); ?>')">
+                <i class="fas fa-eye"></i>
+            </button>
+        <?php else: ?>
+            <!-- Si no tiene llamada, solo mostrar botón de llamada normal -->
+            <button class="tracking-btn" 
+                    title="Llamar a <?php echo htmlspecialchars($nombre_completo); ?>"
+                    onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
+                    <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
+                <i class="fas fa-phone-alt"></i>
+            </button>
+        <?php endif; ?>
+    </div>
+</td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -524,7 +542,106 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
             </div>
         </div>
     </div>
-
+<!-- Modal de Detalles de Llamada -->
+<div class="modal fade" id="modalDetalleLlamada" tabindex="-1" aria-labelledby="modalDetalleLlamadaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalDetalleLlamadaLabel">
+                    <i class="fas fa-clipboard-list me-2"></i>Detalles de Llamada
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="persona-info mb-4">
+                    <h4 id="detalleNombrePersona" class="mb-3"></h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <i class="fas fa-phone me-2 text-success"></i>
+                                <strong>Teléfono:</strong> <span id="detalleTelefono"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <i class="fas fa-user-tie me-2 text-primary"></i>
+                                <strong>Referenciador:</strong> <span id="detalleReferenciador"><?php echo htmlspecialchars($referenciador['nickname']); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Llamadas</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="tablaHistorialLlamadas">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha y Hora</th>
+                                        <th>Resultado</th>
+                                        <th>Calificación</th>
+                                        <th>Observaciones</th>
+                                        <th>Usuario</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoHistorialLlamadas">
+                                    <!-- Los datos se cargarán aquí -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Resumen</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="summary-item">
+                                    <span class="summary-label">Total de llamadas:</span>
+                                    <span class="summary-value" id="totalLlamadas">0</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">Promedio de calificación:</span>
+                                    <span class="summary-value" id="promedioRating">0</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">Última llamada:</span>
+                                    <span class="summary-value" id="ultimaLlamada">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-star me-2"></i>Distribución de Calificaciones</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="distribucionRating" class="rating-distribution">
+                                    <!-- Se generarán las barras de distribución aquí -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnNuevaLlamada">
+                    <i class="fas fa-phone me-2"></i>Nueva Llamada
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -822,7 +939,191 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                 btnGuardar.disabled = false;
             }
         }
+// Función para mostrar detalles de llamadas
+async function mostrarDetalleLlamada(idReferenciado, nombre) {
+    try {
+        // Mostrar loading
+        const modalDetalle = document.getElementById('modalDetalleLlamada');
+        const cuerpo = document.getElementById('cuerpoHistorialLlamadas');
+        cuerpo.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</td></tr>';
+        
+        // Actualizar título
+        document.getElementById('detalleNombrePersona').textContent = nombre;
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(modalDetalle);
+        modal.show();
+        
+        // Obtener datos del historial
+        const response = await fetch(`../ajax/obtener_historial_llamadas.php?id_referenciado=${idReferenciado}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar información personal
+            if (data.referenciado) {
+                document.getElementById('detalleTelefono').textContent = data.referenciado.telefono || 'No registrado';
+            }
+            
+            // Actualizar historial
+            let historialHTML = '';
+            let totalRating = 0;
+            let conteoRating = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+            
+            if (data.historial && data.historial.length > 0) {
+                data.historial.forEach(llamada => {
+                    // Formatear fecha
+                    const fecha = new Date(llamada.fecha_llamada);
+                    const fechaStr = fecha.toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    // Calcular rating
+                    if (llamada.rating) {
+                        totalRating += llamada.rating;
+                        conteoRating[llamada.rating]++;
+                    }
+                    
+                    // Generar estrellas para rating
+                    let estrellasHTML = '';
+                    if (llamada.rating) {
+                        for (let i = 1; i <= 5; i++) {
+                            if (i <= llamada.rating) {
+                                estrellasHTML += '<i class="fas fa-star text-warning"></i>';
+                            } else {
+                                estrellasHTML += '<i class="far fa-star text-muted"></i>';
+                            }
+                        }
+                    } else {
+                        estrellasHTML = '<span class="text-muted">Sin calificar</span>';
+                    }
+                    
+                    historialHTML += `
+                        <tr>
+                            <td>${fechaStr}</td>
+                            <td><span class="badge ${getColorResultado(llamada.id_resultado)}">${llamada.resultado_nombre || 'Sin resultado'}</span></td>
+                            <td>${estrellasHTML}</td>
+                            <td>${llamada.observaciones || '<span class="text-muted">Sin observaciones</span>'}</td>
+                            <td>${llamada.usuario_nombre || 'Sistema'}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Actualizar resumen
+                document.getElementById('totalLlamadas').textContent = data.historial.length;
+                
+                if (totalRating > 0) {
+                    const promedio = (totalRating / data.historial.filter(l => l.rating).length).toFixed(1);
+                    document.getElementById('promedioRating').textContent = promedio;
+                    document.getElementById('promedioRating').innerHTML += ` <i class="fas fa-star text-warning"></i>`;
+                }
+                
+                // Última llamada
+                const ultima = new Date(data.historial[0].fecha_llamada);
+                document.getElementById('ultimaLlamada').textContent = ultima.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Generar distribución de ratings
+                generarDistribucionRating(conteoRating, data.historial.filter(l => l.rating).length);
+                
+            } else {
+                historialHTML = '<tr><td colspan="5" class="text-center text-muted">No hay historial de llamadas registradas</td></tr>';
+                document.getElementById('totalLlamadas').textContent = '0';
+                document.getElementById('promedioRating').textContent = 'N/A';
+                document.getElementById('ultimaLlamada').textContent = 'Nunca';
+                document.getElementById('distribucionRating').innerHTML = '<p class="text-muted mb-0">No hay datos de calificación</p>';
+            }
+            
+            cuerpo.innerHTML = historialHTML;
+            
+            // Configurar botón de nueva llamada
+            document.getElementById('btnNuevaLlamada').onclick = function() {
+                modal.hide();
+                // Buscar el teléfono del referenciado
+                const fila = document.querySelector(`tr[data-id-referenciado="${idReferenciado}"]`);
+                if (fila) {
+                    const telefono = fila.querySelector('td:nth-child(4)').textContent.trim();
+                    const boton = fila.querySelector('.tracking-btn.llamada-realizada');
+                    if (boton) {
+                        mostrarModalLlamada(telefono, nombre, idReferenciado, boton);
+                    }
+                }
+            };
+            
+        } else {
+            showNotification('Error al cargar el historial: ' + (data.message || 'Error desconocido'), 'error');
+            cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar el historial</td></tr>';
+        }
+        
+    } catch (error) {
+        showNotification('Error de conexión: ' + error.message, 'error');
+        document.getElementById('cuerpoHistorialLlamadas').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error de conexión</td></tr>';
+    }
+}
 
+// Función para generar la distribución de ratings
+function generarDistribucionRating(conteoRating, totalConRating) {
+    const container = document.getElementById('distribucionRating');
+    let html = '';
+    
+    if (totalConRating > 0) {
+        for (let i = 5; i >= 1; i--) {
+            const porcentaje = totalConRating > 0 ? (conteoRating[i] / totalConRating * 100).toFixed(0) : 0;
+            html += `
+                <div class="rating-dist-item mb-2">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            ${i} <i class="fas fa-star text-warning"></i>
+                            <span class="text-muted">(${conteoRating[i]})</span>
+                        </div>
+                        <div>${porcentaje}%</div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: ${porcentaje}%;"></div>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        html = '<p class="text-muted mb-0">No hay calificaciones registradas</p>';
+    }
+    
+    container.innerHTML = html;
+}
+
+// Función auxiliar para obtener color según resultado
+function getColorResultado(idResultado) {
+    const colores = {
+        1: 'bg-success',    // Contactado
+        2: 'bg-warning text-dark', // No contesta
+        3: 'bg-secondary',  // Número equivocado
+        4: 'bg-danger',     // Teléfono apagado
+        5: 'bg-info',       // Ocupado
+        6: 'bg-primary',    // Dejó mensaje
+        7: 'bg-dark'        // Rechazó llamada
+    };
+    return colores[idResultado] || 'bg-secondary';
+}
+
+// En el DOMContentLoaded, agregar data-id a las filas para facilitar la búsqueda
+document.addEventListener('DOMContentLoaded', function() {
+    // ... (código existente) ...
+    
+    // Agregar data-id a las filas de la tabla
+    document.querySelectorAll('#referenciados-table tbody tr').forEach((row, index) => {
+        const idReferenciado = row.querySelector('.tracking-btn')?.getAttribute('onclick')?.match(/'(\d+)'/)?.[1];
+        if (idReferenciado) {
+            row.setAttribute('data-id-referenciado', idReferenciado);
+        }
+    });
+});
         // Función para resetear el sistema de rating
         function resetRatingSystem() {
             // Reset stars

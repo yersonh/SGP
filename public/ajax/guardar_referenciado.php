@@ -26,7 +26,7 @@ $data = [
     'vota_fuera' => trim($_POST['vota_fuera'] ?? 'No'), // 'Si' o 'No'
     'puesto_votacion_fuera' => trim($_POST['puesto_votacion_fuera'] ?? ''), // NUEVO CAMPO
     'mesa_fuera' => !empty($_POST['mesa_fuera']) ? intval($_POST['mesa_fuera']) : null, // NUEVO CAMPO
-    'id_grupo' => !empty($_POST['grupo']) ? intval($_POST['grupo']) : null, // NUEVO CAMPO: id_grupo (cambiado de 'campo' a 'grupo')
+    'id_grupo' => !empty($_POST['grupo_parlamentario']) ? intval($_POST['grupo_parlamentario']) : null, // NUEVO CAMPO: id_grupo (cambiado de 'campo' a 'grupo')
     'afinidad' => intval($_POST['afinidad'] ?? 0),
     'id_zona' => !empty($_POST['zona']) ? intval($_POST['zona']) : null,
     'id_sector' => !empty($_POST['sector']) ? intval($_POST['sector']) : null,
@@ -85,8 +85,8 @@ if (!in_array($data['vota_fuera'], ['Si', 'No'])) {
 }
 
 // Validar grupo (si se seleccionó) - NUEVO: cambiado de campo a grupo
-if (!empty($data['id_grupo']) && $data['id_grupo'] <= 0) {
-    $errors[] = 'El grupo seleccionado no es válido';
+if (empty($data['id_grupo'])) {
+    $errors[] = 'El Grupo Parlamentario es obligatorio';
 }
 
 // Validaciones condicionales según si vota fuera o no
@@ -156,7 +156,7 @@ if (!empty($data['id_barrio'])) {
 // Verificar si grupo existe (si se seleccionó) - NUEVO: cambiado de campo a grupo
 if (!empty($data['id_grupo'])) {
     try {
-        $stmt = $pdo->prepare("SELECT id_grupo FROM grupos WHERE id_grupo = ? AND activo = true");
+        $stmt = $pdo->prepare("SELECT id_grupo FROM grupos_parlamentarios WHERE id_grupo = ?");
         $stmt->execute([$data['id_grupo']]);
         if (!$stmt->fetch()) {
             $data['id_grupo'] = null; // Si no existe, establecer como null

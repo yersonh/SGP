@@ -14,10 +14,10 @@ class Grupos_ParlamentariosModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     public function getAll() {
-        $sql = "SELECT * FROM grupos_parlamentarios ORDER BY nombre";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    $sql = "SELECT * FROM grupos_parlamentarios ORDER BY id_grupo ASC";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 }
 ?>

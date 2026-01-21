@@ -514,7 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="system-info">
             <p>
                 © Derechos de autor Reservados • Equipo de soporte • <strong>SISGONTech</strong> <br>
-                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+                Email: soportesgp@gmail.com • Contacto: +57 3138486960 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
             </p>
         </div>
     </div>

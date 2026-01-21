@@ -30,6 +30,7 @@ $inactivos_global = 0;
 // Calcular votos por Cámara y Senado GLOBALES
 $total_camara_global = 0;
 $total_senado_global = 0;
+$total_ambos_global = 0; 
 
 foreach ($todos_referenciados as $referenciado) {
     // Contar activos/inactivos
@@ -58,6 +59,7 @@ foreach ($todos_referenciados as $referenciado) {
         // Ambos (Cámara y Senado)
         $total_camara_global++;
         $total_senado_global++;
+        $total_ambos_global++; // NUEVO: contar los que votan por ambos
     }
 }
 
@@ -67,7 +69,8 @@ $porc_camara_global = ($total_conteo_global > 0) ? round(($total_camara_global *
 $porc_senado_global = ($total_conteo_global > 0) ? round(($total_senado_global * 100) / $total_conteo_global, 1) : 0;
 $ambos_contados_global = min($total_camara_global, $total_senado_global);
 $porc_ambos_global = ($total_conteo_global > 0) ? round(($ambos_contados_global * 100) / $total_conteo_global, 1) : 0;
-
+$ambos_contados_global = $total_ambos_global; // NUEVO: usar el contador real
+$porc_ambos_global = ($total_conteo_global > 0) ? round(($ambos_contados_global * 100) / $total_conteo_global, 1) : 0;
 // Información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
@@ -123,14 +126,6 @@ if ($porcentajeRestante > 50) {
                         <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
                     </div>
                 </div>
-                <div class="header-actions">
-                    <a href="superadmin_monitoreos.php" class="btn-volver">
-                        <i class="fas fa-arrow-left"></i> Volver a Monitores
-                    </a>
-                    <a href="../logout.php" class="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                    </a>
-                </div>
             </div>
         </div>
     </header>
@@ -138,7 +133,7 @@ if ($porcentajeRestante > 50) {
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
         <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
+            <ol class="breadcrumb justify-content-center">
                 <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
                 <li class="breadcrumb-item"><a href="superadmin_monitoreos.php"><i class="fas fa-database"></i> Monitores</a></li>
                 <li class="breadcrumb-item active"><i class="fas fa-chart-pie"></i> Gráfica de Votos</li>
@@ -249,15 +244,15 @@ if ($porcentajeRestante > 50) {
                         </div>
                         <div class="info-item">
                             <span class="info-label">Votan solo por Cámara:</span>
-                            <span class="info-value"><?php echo $total_camara_global - $ambos_contados_global; ?> personas</span>
+                            <span class="info-value"><?php echo $total_camara_global - $total_ambos_global; ?> personas</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Votan solo por Senado:</span>
-                            <span class="info-value"><?php echo $total_senado_global - $ambos_contados_global; ?> personas</span>
+                            <span class="info-value"><?php echo $total_senado_global - $total_ambos_global; ?> personas</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Votan por ambos:</span>
-                            <span class="info-value"><?php echo $ambos_contados_global; ?> personas</span>
+                            <span class="info-value"><?php echo $total_ambos_global; ?> personas</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Total referenciados (activos + inactivos):</span>
@@ -304,7 +299,147 @@ if ($porcentajeRestante > 50) {
             </p>
         </div>
     </footer>
-
+<!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+                    </div>
+                    
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <div class="text-center mb-4">
+                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
+                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
+                        </h1> -->
+                        <h4 class="text-secondary mb-4">
+                            <strong>Gestión Política de Alta Precisión</strong>
+                        </h4>
+                        
+<!-- Información de Licencia (MODIFICADO) -->
+<div class="licencia-info">
+    <div class="licencia-header">
+        <h6 class="licencia-title">Licencia Runtime</h6>
+        <span class="licencia-dias">
+            <strong><?php echo $diasRestantes; ?> días restantes</strong>
+        </span>
+    </div>
+    
+    <div class="licencia-progress">
+        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+             style="width: <?php echo $porcentajeRestante; ?>%"
+             role="progressbar" 
+             aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+             aria-valuemin="0" 
+             aria-valuemax="100">
+        </div>
+    </div>
+    
+    <div class="licencia-fecha">
+        <i class="fas fa-calendar-alt me-1"></i>
+        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+        Válida hasta: <?php echo $validaHastaFormatted; ?>
+    </div>
+</div>
+                    </div>
+                    
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer de información del sistema -->
+                    <div class="system-footer-modal">
+                        <div class="text-center">
+                            <p class="text-muted mb-1">
+                                © Derechos de autor Reservados • 
+                                <strong><?php echo htmlspecialchars($infoSistema['desarrollador'] ?? 'SISGONTech - Ing. Rubén Darío González García'); ?></strong>
+                            </p>
+                            <p class="text-muted mb-1">
+                                <strong>SISGONTech</strong> • Colombia • <?php echo date('Y'); ?>
+                            </p>
+                            <p class="text-muted mb-0">
+                                Email: <?php echo htmlspecialchars($infoSistema['contacto_email'] ?? 'sisgonnet@gmail.com'); ?> • 
+                                Contacto: <?php echo htmlspecialchars($infoSistema['contacto_telefono'] ?? '+57 3106310227'); ?>
+                            </p>
+                            <p class="small text-muted mt-2">
+                                Versión <?php echo htmlspecialchars($infoSistema['version_sistema'] ?? '1.0.1'); ?> • 
+                                Licencia <?php echo htmlspecialchars($infoSistema['tipo_licencia'] ?? 'Runtime'); ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -517,5 +652,6 @@ if ($porcentajeRestante > 50) {
             alert('Modal de información del sistema - Similar al del referenciador');
         }
     </script>
+    <script src="../js/modal-sistema.js"></script>
 </body>
 </html>

@@ -76,27 +76,53 @@ $restante_tope = max(0, ($usuario_logueado['tope'] ?? 0) - ($usuario_logueado['t
 // CALCULAR VOTOS POR CÁMARA Y SENADO
 $total_camara = 0;
 $total_senado = 0;
+$total_activos_camara = 0;
+$total_activos_senado = 0;
+// Calcular porcentaje del tope (SOLO ACTIVOS)
+$total_activos = $activos; // Ya tenemos esto calculado
+$tope_asignado = $usuario_logueado['tope'] ?? 0;
 
+// Calcular porcentaje basado solo en activos
+$porcentaje_tope = ($tope_asignado > 0) ? min(100, ($total_activos * 100) / $tope_asignado) : 0;
+$restante_tope = max(0, $tope_asignado - $total_activos);
 foreach ($referenciados as $referenciado) {
+    // Verificar si el referenciado está activo
+    $esta_activo = ($referenciado['activo'] === true || $referenciado['activo'] === 't' || $referenciado['activo'] == 1);
+    
+    if (!$esta_activo) {
+        continue; // Saltar referenciados inactivos
+    }
+    
     $id_grupo = $referenciado['id_grupo'] ?? null;
     
     if ($id_grupo == 1) {
         // Solo Cámara
         $total_camara++;
+        $total_activos_camara++;
     } elseif ($id_grupo == 2) {
         // Solo Senado
         $total_senado++;
+        $total_activos_senado++;
     } elseif ($id_grupo == 3) {
         // Ambos (Cámara y Senado)
         $total_camara++;
         $total_senado++;
+        $total_activos_camara++;
+        $total_activos_senado++;
     }
 }
 
-// Calcular porcentajes
+// Calcular porcentajes (usando solo activos)
 $tope_asignado = $usuario_logueado['tope'] ?? 0;
 $porcentaje_camara = ($tope_asignado > 0) ? min(100, ($total_camara * 100) / $tope_asignado) : 0;
 $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $tope_asignado) : 0;
+
+// También necesitamos el total activos para la gráfica
+$total_conteo = $total_camara + $total_senado;
+$porc_camara = ($total_conteo > 0) ? round(($total_camara * 100) / $total_conteo, 1) : 0;
+$porc_senado = ($total_conteo > 0) ? round(($total_senado * 100) / $total_conteo, 1) : 0;
+$ambos_contados = min($total_camara, $total_senado);
+$porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conteo, 1) : 0;
 ?>
 
 <!DOCTYPE html>
@@ -110,6 +136,21 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
     <link rel="stylesheet" href="styles/ver_referenciados_referenciador.css">
+    <!-- Cargar Chart.js ANTES de que se use -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Definir datos de la gráfica ANTES de que se usen
+        const graficaData = {
+            camara: <?php echo $total_camara; ?>,
+            senado: <?php echo $total_senado; ?>,
+            total: <?php echo $activos; ?>,
+            porcentajes: {
+                camara: <?php echo $porc_camara; ?>,
+                senado: <?php echo $porc_senado; ?>,
+                ambos: <?php echo $porc_ambos; ?>
+            }
+        };
+    </script>
 </head>
 <body>
    <!-- En la sección del header -->
@@ -162,11 +203,10 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
             <!-- NUEVA BARRA DE PROGRESO DEL TOPE -->
             <div class="tope-progress-container">
                 <div class="tope-progress-header">
-                    <h4><i class="fas fa-chart-line me-2"></i>Progreso del Tope</h4>
+                    <h4><i class="fas fa-chart-line me-2"></i>Progreso del Tope (Solo Activos)</h4>
                     <div class="tope-stats">
                         <span class="tope-stat">
-                            <i class="fas fa-users me-1"></i>
-                            <strong><?php echo $usuario_logueado['total_referenciados'] ?? 0; ?></strong> / <?php echo $usuario_logueado['tope'] ?? 0; ?> referenciados
+                            <strong><?php echo $total_activos; ?></strong> / <?php echo $tope_asignado; ?> referenciados activos
                         </span>
                         <span class="tope-percentage">
                             <?php echo number_format($porcentaje_tope, 1) . '%'; ?>
@@ -190,11 +230,23 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                 <div class="tope-info">
                     <div class="tope-info-item">
                         <span class="tope-info-label">Tope asignado:</span>
-                        <span class="tope-info-value"><?php echo $usuario_logueado['tope'] ?? 0; ?> personas</span>
+                        <span class="tope-info-value"><?php echo $tope_asignado; ?> personas</span>
                     </div>
                     <div class="tope-info-item">
-                        <span class="tope-info-label">Actual:</span>
-                        <span class="tope-info-value"><?php echo $usuario_logueado['total_referenciados'] ?? 0; ?> personas</span>
+                        <span class="tope-info-label">Activos actuales:</span>
+                        <span class="tope-info-value">
+                            <span class="text-success">
+                                <?php echo $total_activos; ?> personas
+                            </span>
+                        </span>
+                    </div>
+                    <div class="tope-info-item">
+                        <span class="tope-info-label">Inactivos:</span>
+                        <span class="tope-info-value">
+                            <span class="text-danger">
+                                <?php echo $inactivos; ?> personas
+                            </span>
+                        </span>
                     </div>
                     <div class="tope-info-item">
                         <span class="tope-info-label">Restante:</span>
@@ -241,10 +293,6 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                                 <i class="fas fa-users me-1"></i>
                                 <span>Votos obtenidos: <strong><?php echo $total_camara; ?></strong></span>
                             </div>
-                            <div class="voto-info-item">
-                                <i class="fas fa-bullseye me-1"></i>
-                                <span>Meta: <strong><?php echo $tope_asignado; ?></strong></span>
-                            </div>
                         </div>
                     </div>
                     
@@ -282,10 +330,6 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                                 <i class="fas fa-users me-1"></i>
                                 <span>Votos obtenidos: <strong><?php echo $total_senado; ?></strong></span>
                             </div>
-                            <div class="voto-info-item">
-                                <i class="fas fa-bullseye me-1"></i>
-                                <span>Meta: <strong><?php echo $tope_asignado; ?></strong></span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -296,11 +340,11 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                     <div class="grupos-stats">
                         <div class="grupo-item">
                             <span class="grupo-label">Solo Cámara:</span>
-                            <span class="grupo-value"><?php echo $total_camara - $total_senado; ?> personas</span>
+                            <span class="grupo-value"><?php echo $total_camara - min($total_camara, $total_senado); ?> personas</span>
                         </div>
                         <div class="grupo-item">
                             <span class="grupo-label">Solo Senado:</span>
-                            <span class="grupo-value"><?php echo $total_senado - $total_camara; ?> personas</span>
+                            <span class="grupo-value"><?php echo $total_senado - min($total_camara, $total_senado); ?> personas</span>
                         </div>
                         <div class="grupo-item">
                             <span class="grupo-label">Ambos (PACHA):</span>
@@ -321,7 +365,7 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                     </div>
                 </div>
             </div>
-            </div>
+            
             <!-- Tabla de Referenciados -->
             <div class="referenciados-table">
                 <div class="table-header">
@@ -499,41 +543,83 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Logo centrado AGRANDADO -->
-                    <div class="modal-logo-container">
-                        <img src="imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
-                    </div>
-                    
-                    <!-- Título del Sistema -->
-                    <div class="text-center mb-4">
-                        <h4 class="text-secondary mb-4">
-                            <strong>Gestión Política de Alta Precisión</strong>
-                        </h4>
-                        
-                        <!-- Información de Licencia (MODIFICADO) -->
-                        <div class="licencia-info">
-                            <div class="licencia-header">
-                                <h6 class="licencia-title">Licencia Runtime</h6>
-                                <span class="licencia-dias">
-                                    <strong><?php echo $diasRestantes; ?> días restantes</strong>
-                                </span>
+                    <div class="grafica-modal-content">
+                        <!-- Gráfica -->
+                        <div class="grafica-canvas-modal">
+                            <canvas id="graficaTortaModal1" width="500" height="500"></canvas>
+                            <div class="grafica-note">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <small>Gráfica basada solo en referenciados activos</small>
                             </div>
-                            
-                            <div class="licencia-progress">
-                                <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-                                <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                                     style="width: <?php echo $porcentajeRestante; ?>%"
-                                     role="progressbar" 
-                                     aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
+                        </div>
+                        
+                        <!-- Información y controles -->
+                        <div class="grafica-info-modal">
+                            <div class="grafica-header-modal">
+                                <h4><i class="fas fa-chart-bar me-2"></i>Análisis de Distribución (Solo Activos)</h4>
+                                <div class="grafica-controls">
+                                    <button class="btn-grafica-control" onclick="toggleGraficaModal('modalSistema')" id="btnToggleGrafica1">
+                                        <i class="fas fa-exchange-alt me-1"></i> Cambiar a torta sólida
+                                    </button>
+                                    <button class="btn-grafica-control" onclick="descargarGrafica('modalSistema')">
+                                        <i class="fas fa-download me-1"></i> Descargar
+                                    </button>
                                 </div>
                             </div>
                             
-                            <div class="licencia-fecha">
-                                <i class="fas fa-calendar-alt me-1"></i>
-                                Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-                                Válida hasta: <?php echo $validaHastaFormatted; ?>
+                            <!-- Estadísticas -->
+                            <div class="estadisticas-grid">
+                                <div class="estadistica-card camara">
+                                    <div class="estadistica-icon">
+                                        <i class="fas fa-landmark"></i>
+                                    </div>
+                                    <div class="estadistica-content">
+                                        <div class="estadistica-label">Referidos a Cámara (Activos)</div>
+                                        <div class="estadistica-value"><?php echo $total_camara; ?></div>
+                                        <div class="estadistica-porcentaje">
+                                            <?php echo $porc_camara . '%'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="estadistica-card senado">
+                                    <div class="estadistica-icon">
+                                        <i class="fas fa-balance-scale"></i>
+                                    </div>
+                                    <div class="estadistica-content">
+                                        <div class="estadistica-label">Referidos a Senado (Activos)</div>
+                                        <div class="estadistica-value"><?php echo $total_senado; ?></div>
+                                        <div class="estadistica-porcentaje">
+                                            <?php echo $porc_senado . '%'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="estadistica-card ambos">
+                                    <div class="estadistica-icon">
+                                        <i class="fas fa-handshake"></i>
+                                    </div>
+                                    <div class="estadistica-content">
+                                        <div class="estadistica-label">Votan por ambos (Activos)</div>
+                                        <div class="estadistica-value">
+                                            <?php echo $ambos_contados; ?>
+                                        </div>
+                                        <div class="estadistica-porcentaje">
+                                            <?php echo $porc_ambos . '%'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="estadistica-card total">
+                                    <div class="estadistica-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="estadistica-content">
+                                        <div class="estadistica-label">Total Referenciados Activos</div>
+                                        <div class="estadistica-value"><?php echo $activos; ?></div>
+                                        <div class="estadistica-porcentaje">100%</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -640,7 +726,7 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                     <div class="grafica-modal-content">
                         <!-- Gráfica -->
                         <div class="grafica-canvas-modal">
-                            <canvas id="graficaTortaModal" width="500" height="500"></canvas>
+                            <canvas id="graficaTortaModal2" width="500" height="500"></canvas>
                         </div>
                         
                         <!-- Información y controles -->
@@ -648,10 +734,10 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                             <div class="grafica-header-modal">
                                 <h4><i class="fas fa-chart-bar me-2"></i>Análisis de Distribución</h4>
                                 <div class="grafica-controls">
-                                    <button class="btn-grafica-control" onclick="toggleGraficaModal()" id="btnToggleGrafica">
+                                    <button class="btn-grafica-control" onclick="toggleGraficaModal('modalGrafica')" id="btnToggleGrafica2">
                                         <i class="fas fa-exchange-alt me-1"></i> Cambiar a torta sólida
                                     </button>
-                                    <button class="btn-grafica-control" onclick="descargarGrafica()">
+                                    <button class="btn-grafica-control" onclick="descargarGrafica('modalGrafica')">
                                         <i class="fas fa-download me-1"></i> Descargar
                                     </button>
                                 </div>
@@ -723,9 +809,9 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                                 </div>
                             </div>
                             
-                            <!-- Detalles -->
+                                                        <!-- Detalles -->
                             <div class="detalles-distribucion">
-                                <h5><i class="fas fa-info-circle me-2"></i>Detalles de la Distribución</h5>
+                                <h5><i class="fas fa-info-circle me-2"></i>Detalles de la Distribución (Solo Activos)</h5>
                                 <div class="detalle-item">
                                     <span class="detalle-label">Solo votan por Cámara:</span>
                                     <span class="detalle-value"><?php echo $total_camara - min($total_camara, $total_senado); ?> personas</span>
@@ -735,8 +821,12 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                                     <span class="detalle-value"><?php echo $total_senado - min($total_camara, $total_senado); ?> personas</span>
                                 </div>
                                 <div class="detalle-item">
-                                    <span class="detalle-label">Distribución ideal:</span>
-                                    <span class="detalle-value">50% Cámara / 50% Senado</span>
+                                    <span class="detalle-label">Votan por ambos:</span>
+                                    <span class="detalle-value"><?php echo min($total_camara, $total_senado); ?> personas</span>
+                                </div>
+                                <div class="detalle-item">
+                                    <span class="detalle-label">Total referenciados activos:</span>
+                                    <span class="detalle-value"><?php echo $activos; ?> personas</span>
                                 </div>
                                 <div class="detalle-item">
                                     <span class="detalle-label">Tope asignado:</span>
@@ -744,10 +834,22 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                                 </div>
                             </div>
                             
-                            <!-- Resumen -->
+                                                        <!-- Resumen -->
                             <div class="resumen-final">
                                 <div class="resumen-text">
                                     <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    <span>
+                                        <strong>Análisis:</strong> 
+                                        <?php
+                                        if ($total_camara > $total_senado) {
+                                            echo "Tienes más referidos activos para Cámara (" . $total_camara . ") que para Senado (" . $total_senado . ").";
+                                        } elseif ($total_senado > $total_camara) {
+                                            echo "Tienes más referidos activos para Senado (" . $total_senado . ") que para Cámara (" . $total_camara . ").";
+                                        } else {
+                                            echo "Tienes una distribución balanceada entre Cámara y Senado en referidos activos.";
+                                        }
+                                        ?>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -800,6 +902,12 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // Variables para gráficas
+        let chartModal1 = null;
+        let chartModal2 = null;
+        let chartTypeModal1 = 'doughnut';
+        let chartTypeModal2 = 'doughnut';
+        
         // Función para actualizar la hora en tiempo real
         function updateCurrentTime() {
             const now = new Date();
@@ -929,175 +1037,177 @@ $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $to
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             }
-        });
-         // Variables para gráfica del modal
-    let chartTypeModal = 'doughnut';
-    let currentChartModal = null;
-    
-    // Función para inicializar gráfica del modal
-    function inicializarGraficaModal() {
-        const ctx = document.getElementById('graficaTortaModal').getContext('2d');
-        
-        // Destruir gráfica anterior si existe
-        if (currentChartModal) {
-            currentChartModal.destroy();
-        }
-        
-        // Configurar datos
-        const data = {
-            labels: ['Cámara', 'Senado'],
-            datasets: [{
-                data: [graficaData.camara, graficaData.senado],
-                backgroundColor: [
-                    'rgba(52, 152, 219, 0.9)',
-                    'rgba(155, 89, 182, 0.9)'
-                ],
-                borderColor: [
-                    'rgba(52, 152, 219, 1)',
-                    'rgba(155, 89, 182, 1)'
-                ],
-                borderWidth: 3,
-                borderAlign: 'inner',
-                hoverBackgroundColor: [
-                    'rgba(52, 152, 219, 1)',
-                    'rgba(155, 89, 182, 1)'
-                ],
-                hoverOffset: 20,
-                spacing: 8,
-                borderRadius: 10
-            }]
-        };
-        
-        // Configurar opciones
-        const options = {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value * 100) / total);
-                            return `${label}: ${value} personas (${percentage}%)`;
-                        }
-                    },
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 14
-                    },
-                    padding: 15,
-                    cornerRadius: 8
-                }
-            },
-            cutout: chartTypeModal === 'doughnut' ? '55%' : '0%',
-            rotation: -90,
-            circumference: 360,
-            animation: {
-                animateRotate: true,
-                animateScale: true,
-                duration: 1500,
-                easing: 'easeOutQuart'
-            },
-            elements: {
-                arc: {
-                    borderWidth: 0
-                }
+            
+            // Inicializar eventos para los modales de gráficas
+            const modalSistema = document.getElementById('modalSistema');
+            if (modalSistema) {
+                modalSistema.addEventListener('shown.bs.modal', function() {
+                    setTimeout(() => {
+                        inicializarGraficaModal('modalSistema');
+                    }, 100);
+                });
             }
-        };
-        
-        // Crear gráfica
-        currentChartModal = new Chart(ctx, {
-            type: chartTypeModal,
-            data: data,
-            options: options,
-            plugins: [{
-                id: 'centerTextModal',
-                afterDraw: function(chart) {
-                    const width = chart.width;
-                    const height = chart.height;
-                    const ctx = chart.ctx;
-                    
-                    ctx.restore();
-                    
-                    // Texto grande del total
-                    ctx.font = `bold ${(height / 100).toFixed(2)}em 'Segoe UI', sans-serif`;
-                    ctx.textBaseline = 'middle';
-                    ctx.textAlign = 'center';
-                    
-                    const totalText = "TOTAL";
-                    const countText = `${graficaData.total} personas`;
-                    
-                    const centerX = width / 2;
-                    const centerY = height / 2;
-                    
-                    // Sombra del texto
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.fillText(totalText, centerX + 2, centerY - 15 + 2);
-                    ctx.fillText(countText, centerX + 2, centerY + 10 + 2);
-                    
-                    // Texto principal
-                    ctx.fillStyle = '#2c3e50';
-                    ctx.fillText(totalText, centerX, centerY - 15);
-                    ctx.fillText(countText, centerX, centerY + 10);
-                    
-                    // Texto pequeño
-                    ctx.font = `${(height / 150).toFixed(2)}em 'Segoe UI', sans-serif`;
-                    ctx.fillStyle = '#6c757d';
-                    ctx.fillText('Cámara vs Senado', centerX, centerY + 35);
-                    
-                    ctx.save();
-                }
-            }]
+            
+            const modalGrafica = document.getElementById('modalGrafica');
+            if (modalGrafica) {
+                modalGrafica.addEventListener('shown.bs.modal', function() {
+                    setTimeout(() => {
+                        inicializarGraficaModal('modalGrafica');
+                    }, 100);
+                });
+            }
         });
-    }
-    
-    // Función para cambiar tipo de gráfica en el modal
-    function toggleGraficaModal() {
-        chartTypeModal = chartTypeModal === 'doughnut' ? 'pie' : 'doughnut';
-        inicializarGraficaModal();
         
-        // Actualizar texto del botón
-        const btn = document.getElementById('btnToggleGrafica');
-        const icon = btn.querySelector('i');
-        const text = chartTypeModal === 'doughnut' ? 'Cambiar a torta sólida' : 'Cambiar a torta hueca';
-        
-        icon.className = chartTypeModal === 'doughnut' ? 'fas fa-exchange-alt me-1' : 'fas fa-exchange-alt me-1';
-        btn.innerHTML = `<i class="${icon.className}"></i> ${text}`;
-    }
-    
-    // Función para descargar gráfica
-    function descargarGrafica() {
-        const canvas = document.getElementById('graficaTortaModal');
-        const link = document.createElement('a');
-        link.download = `grafica-distribucion-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-        showNotification('Gráfica descargada correctamente', 'success');
-    }
-    
-    // Inicializar gráfica cuando se abra el modal
-    document.addEventListener('DOMContentLoaded', function() {
-        const modalGrafica = document.getElementById('modalGrafica');
-        if (modalGrafica) {
-            modalGrafica.addEventListener('shown.bs.modal', function() {
-                setTimeout(() => {
-                    inicializarGraficaModal();
-                }, 300);
+        // Función para inicializar gráfica del modal
+        function inicializarGraficaModal(modalId) {
+            let canvasId, currentChart, chartType, buttonId;
+            
+            if (modalId === 'modalSistema') {
+                canvasId = 'graficaTortaModal1';
+                currentChart = chartModal1;
+                chartType = chartTypeModal1;
+                buttonId = 'btnToggleGrafica1';
+            } else {
+                canvasId = 'graficaTortaModal2';
+                currentChart = chartModal2;
+                chartType = chartTypeModal2;
+                buttonId = 'btnToggleGrafica2';
+            }
+            
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            // Destruir gráfica anterior si existe
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            // Configurar datos
+            const data = {
+                labels: ['Cámara', 'Senado'],
+                datasets: [{
+                    data: [graficaData.camara, graficaData.senado],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.9)',
+                        'rgba(155, 89, 182, 0.9)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(155, 89, 182, 1)'
+                    ],
+                    borderWidth: 3,
+                    hoverBackgroundColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(155, 89, 182, 1)'
+                    ]
+                }]
+            };
+            
+            // Configurar opciones
+            const options = {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value * 100) / total);
+                                return `${label}: ${value} personas (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: chartType === 'doughnut' ? '55%' : '0%',
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 1500,
+                    easing: 'easeOutQuart'
+                }
+            };
+            
+            // Crear gráfica
+            const newChart = new Chart(ctx, {
+                type: chartType,
+                data: data,
+                options: options,
+                plugins: [{
+                    id: 'centerTextModal',
+                    afterDraw: function(chart) {
+                        const width = chart.width;
+                        const height = chart.height;
+                        const ctx = chart.ctx;
+                        
+                        ctx.restore();
+                        ctx.save();
+                    }
+                }]
             });
+            
+            // Guardar referencia
+            if (modalId === 'modalSistema') {
+                chartModal1 = newChart;
+            } else {
+                chartModal2 = newChart;
+            }
         }
-    });
+        
+        // Función para cambiar tipo de gráfica en el modal
+        function toggleGraficaModal(modalId) {
+            if (modalId === 'modalSistema') {
+                chartTypeModal1 = chartTypeModal1 === 'doughnut' ? 'pie' : 'doughnut';
+                const btn = document.getElementById('btnToggleGrafica1');
+                if (btn) {
+                    const text = chartTypeModal1 === 'doughnut' ? 'Cambiar a torta sólida' : 'Cambiar a torta hueca';
+                    btn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i> ${text}`;
+                }
+                inicializarGraficaModal('modalSistema');
+            } else {
+                chartTypeModal2 = chartTypeModal2 === 'doughnut' ? 'pie' : 'doughnut';
+                const btn = document.getElementById('btnToggleGrafica2');
+                if (btn) {
+                    const text = chartTypeModal2 === 'doughnut' ? 'Cambiar a torta sólida' : 'Cambiar a torta hueca';
+                    btn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i> ${text}`;
+                }
+                inicializarGraficaModal('modalGrafica');
+            }
+        }
+        
+        // Función para descargar gráfica
+        function descargarGrafica(modalId) {
+            let canvasId;
+            if (modalId === 'modalSistema') {
+                canvasId = 'graficaTortaModal1';
+            } else {
+                canvasId = 'graficaTortaModal2';
+            }
+            
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.error('Canvas no encontrado');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = `grafica-distribucion-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            showNotification('Gráfica descargada correctamente', 'success');
+        }
+        
+        // Función para mostrar modal del sistema
+        function mostrarModalSistema() {
+            const modal = new bootstrap.Modal(document.getElementById('modalSistema'));
+            modal.show();
+        }
     </script>
-    <script src="js/modal-sistema.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="js/modal-sistema.js"></script> 
 </body>
 </html>

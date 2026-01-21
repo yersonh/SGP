@@ -1567,3 +1567,28 @@ canvas {
         padding: 15px;
     }
 }
+/* Nota para gráfica */
+.grafica-note {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+/* Estilo para total en grupos */
+.grupo-item.total {
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    border: 1px solid #ffb74d;
+}
+.grafica-title {
+    text-align: center;
+    color: #2c3e50;
+    font-weight: bold;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}

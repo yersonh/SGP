@@ -100,7 +100,7 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                     <span class="user-count"><?php echo $total_referenciados; ?> personas</span>
                 </h1>
             </div>
-            <a href="../dashboard.php" class="back-btn">
+            <a href="ver_usuarios.php" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Volver a Usuarios
             </a>
         </div>

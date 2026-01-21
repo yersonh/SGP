@@ -527,8 +527,8 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
 
         <div class="container text-center">
             <p>
-                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
-                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+                © Derechos de autor Reservados • Equipo de soporte • <strong>SISGONTech</strong><br>
+                Email: soportesgp@gmail.com • Contacto: +57 3138486960 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
             </p>
         </div>
     </footer>

@@ -1584,11 +1584,3 @@ canvas {
     background: linear-gradient(135deg, #fff3e0, #ffe0b2);
     border: 1px solid #ffb74d;
 }
-.grafica-title {
-    text-align: center;
-    color: #2c3e50;
-    font-weight: bold;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}

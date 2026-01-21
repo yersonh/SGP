@@ -22,7 +22,7 @@ $puestoModel = new PuestoVotacionModel($pdo);
 $zonas = $zonaModel->getAll();
 
 // Tipos de usuario permitidos
-$tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin'];
+$tipos_usuario = ['Administrador', 'Referenciador', 'Descargador', 'SuperAdmin', 'Tracking'];
 ?>
 
 <!DOCTYPE html>

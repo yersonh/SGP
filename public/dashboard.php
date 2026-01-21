@@ -11,10 +11,10 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-// Verificar si el usuario está logueado
-if (!isset($_SESSION['id_usuario'])) {
-    header('Location: index.php');
-    exit();
+// Verificar si el usuario está logueado y es SuperAdmin
+if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {
+    header('HTTP/1.1 403 Forbidden');
+    exit('Acceso denegado');
 }
 
 $pdo = Database::getConnection();

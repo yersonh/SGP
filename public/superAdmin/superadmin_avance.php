@@ -28,18 +28,9 @@ $zonas = $zonaModel->getAll();
 $sectores = $sectorModel->getAll();
 $puestosVotacion = $puestoVotacionModel->getAll();
 
-// Procesar filtros del formulario
-$filtros = [
-    'nombre' => $_GET['nombre'] ?? '',
-    'id_zona' => $_GET['id_zona'] ?? '',
-    'id_sector' => $_GET['id_sector'] ?? '',
-    'id_puesto_votacion' => $_GET['id_puesto_votacion'] ?? '',
-    'fecha_acceso' => $_GET['fecha_acceso'] ?? '',
-    'porcentaje_minimo' => $_GET['porcentaje_minimo'] ?? '',
-    'ordenar_por' => $_GET['ordenar_por'] ?? 'fecha_creacion' // Nuevo: campo para ordenar
-];
-
-// Obtener todos los referenciadores con sus estadísticas (SIN FILTROS para estadísticas globales)
+// ============================================================================
+// MANTENER: Obtener todos los referenciadores con sus estadísticas (INICIAL)
+// ============================================================================
 try {
     // Obtener todos los usuarios con estadísticas para cálculo global
     $todosReferenciadores = $usuarioModel->getAllUsuariosActivos();
@@ -76,182 +67,42 @@ try {
         $porcentajeGlobal = min($porcentajeGlobal, 100);
     }
     
-    // Ahora aplicar filtros solo para la lista de referenciadores
-    $referenciadores = array_filter($todosReferenciadores, function($usuario) use ($filtros, $zonaModel, $sectorModel, $puestoVotacionModel, $usuarioModel) {
-        // Filtrar por tipo de usuario y activo
-        if ($usuario['tipo_usuario'] !== 'Referenciador' || $usuario['activo'] != true) {
-            return false;
-        }
-        
-        // Filtrar por nombre (nombres o apellidos) - búsqueda en tiempo real
-        if (!empty($filtros['nombre'])) {
-            $nombreCompleto = $usuario['nombres'] . ' ' . $usuario['apellidos'];
-            if (stripos($nombreCompleto, $filtros['nombre']) === false && 
-                stripos($usuario['nombres'], $filtros['nombre']) === false &&
-                stripos($usuario['apellidos'], $filtros['nombre']) === false) {
-                return false;
-            }
-        }
-        
-        // Filtrar por zona
-        if (!empty($filtros['id_zona']) && $usuario['id_zona'] != $filtros['id_zona']) {
-            return false;
-        }
-        
-        // Filtrar por sector
-        if (!empty($filtros['id_sector']) && $usuario['id_sector'] != $filtros['id_sector']) {
-            return false;
-        }
-        
-        // Filtrar por puesto de votación
-        if (!empty($filtros['id_puesto_votacion'])) {
-            // Obtener el sector del puesto de votación
-            $puesto = $puestoVotacionModel->getById($filtros['id_puesto_votacion']);
-            if ($puesto && isset($puesto['id_sector'])) {
-                // Obtener el usuario completo con sus relaciones
-                $usuarioCompleto = $usuarioModel->getUsuarioByIdActivo($usuario['id_usuario']);
-                if ($usuarioCompleto && $usuarioCompleto['id_sector'] != $puesto['id_sector']) {
-                    return false;
-                }
-            }
-        }
-        
-        // Filtrar por fecha de último acceso (exacta o posterior)
-        if (!empty($filtros['fecha_acceso']) && !empty($usuario['ultimo_registro'])) {
-            $fechaUltimoAcceso = new DateTime($usuario['ultimo_registro']);
-            $fechaFiltro = new DateTime($filtros['fecha_acceso']);
-            
-            // Comparar solo la fecha (sin horas/minutos)
-            if ($fechaUltimoAcceso->format('Y-m-d') != $fechaFiltro->format('Y-m-d')) {
-                return false;
-            }
-        }
-        
-        // Filtrar por porcentaje mínimo
-        if (!empty($filtros['porcentaje_minimo'])) {
-            $porcentaje_usuario = 0;
-            if (isset($usuario['porcentaje_tope'])) {
-                $porcentaje_usuario = $usuario['porcentaje_tope'];
-            } elseif ($usuario['tope'] > 0) {
-                $porcentaje_usuario = round(($usuario['total_referenciados'] / $usuario['tope']) * 100, 2);
-            }
-            
-            if ($porcentaje_usuario < (float)$filtros['porcentaje_minimo']) {
-                return false;
-            }
-        }
-        
-        return true;
-    });
-
-    // Reindexar array después del filtro
-    $referenciadores = array_values($referenciadores);
-    
-    // Ordenar según el filtro seleccionado
-    usort($referenciadores, function($a, $b) use ($filtros) {
-        switch ($filtros['ordenar_por']) {
-            case 'porcentaje_desc':
-                $porcentaje_a = 0;
-                $porcentaje_b = 0;
-                
-                if (isset($a['porcentaje_tope'])) {
-                    $porcentaje_a = $a['porcentaje_tope'];
-                } elseif ($a['tope'] > 0) {
-                    $porcentaje_a = round(($a['total_referenciados'] / $a['tope']) * 100, 2);
-                }
-                
-                if (isset($b['porcentaje_tope'])) {
-                    $porcentaje_b = $b['porcentaje_tope'];
-                } elseif ($b['tope'] > 0) {
-                    $porcentaje_b = round(($b['total_referenciados'] / $b['tope']) * 100, 2);
-                }
-                
-                return $porcentaje_b <=> $porcentaje_a; // Descendente
-                
-            case 'referidos_desc':
-                $referidos_a = $a['total_referenciados'] ?? 0;
-                $referidos_b = $b['total_referenciados'] ?? 0;
-                return $referidos_b <=> $referidos_a; // Descendente
-                
-            case 'fecha_creacion':
-            default:
-                // Ordenar por fecha de creación (más viejo primero)
-                $fecha_a = strtotime($a['fecha_creacion'] ?? '2000-01-01');
-                $fecha_b = strtotime($b['fecha_creacion'] ?? '2000-01-01');
-                return $fecha_a <=> $fecha_b; // Ascendente (más viejo primero)
-        }
+    // Obtener TODOS los referenciadores para mostrar inicialmente (sin filtros)
+    $referenciadoresIniciales = array_filter($todosReferenciadores, function($usuario) {
+        return $usuario['tipo_usuario'] === 'Referenciador' && $usuario['activo'] == true;
     });
     
-    // Calcular estadísticas solo para los filtrados (para mostrar en resultados)
-    $referenciadoresFiltradosCount = count($referenciadores);
-    $totalReferidosFiltrados = 0;
-    $totalTopeFiltrados = 0;
+    // Ordenar inicialmente por fecha de creación (más reciente primero)
+    usort($referenciadoresIniciales, function($a, $b) {
+        $fecha_a = strtotime($a['fecha_creacion'] ?? '2000-01-01');
+        $fecha_b = strtotime($b['fecha_creacion'] ?? '2000-01-01');
+        return $fecha_b <=> $fecha_a; // Más recientes primero
+    });
     
-    foreach ($referenciadores as &$referenciador) {
-        $totalReferidosFiltrados += $referenciador['total_referenciados'] ?? 0;
-        $totalTopeFiltrados += $referenciador['tope'] ?? 0;
-        
-        // Calcular porcentaje individual si no viene del modelo
-        if (!isset($referenciador['porcentaje_tope']) && $referenciador['tope'] > 0) {
-            $referenciador['porcentaje_tope'] = round(($referenciador['total_referenciados'] / $referenciador['tope']) * 100, 2);
-        }
-        
-        // Limitar al 100%
-        if ($referenciador['porcentaje_tope'] > 100) {
-            $referenciador['porcentaje_tope'] = 100;
-        }
-    }
-    
-    // Calcular porcentaje filtrado
-    $porcentajeFiltrado = 0;
-    if ($totalTopeFiltrados > 0) {
-        $porcentajeFiltrado = round(($totalReferidosFiltrados / $totalTopeFiltrados) * 100, 2);
-        $porcentajeFiltrado = min($porcentajeFiltrado, 100);
-    }
+    // Calcular estadísticas para los referenciadores iniciales
+    $totalIniciales = count($referenciadoresIniciales);
     
 } catch (Exception $e) {
-    $referenciadores = [];
+    // Manejo de error (mantener como estaba)
+    $referenciadoresIniciales = [];
     $referenciadoresGlobales = [];
     $totalReferenciadores = 0;
     $totalReferidos = 0;
     $totalTope = 0;
     $porcentajeGlobal = 0;
-    $referenciadoresFiltradosCount = 0;
+    $totalIniciales = 0;
     error_log("Error al obtener referenciadores: " . $e->getMessage());
 }
 
-// Determinar texto del orden actual
-$orden_texto = '';
-switch($filtros['ordenar_por']) {
-    case 'fecha_creacion':
-        $orden_texto = 'Fecha de creación (más antiguo primero)';
-        break;
-    case 'porcentaje_desc':
-        $orden_texto = '% Avance (Descendente)';
-        break;
-    case 'referidos_desc':
-        $orden_texto = 'Cantidad de Referidos (Descendente)';
-        break;
-}
-// 6. Obtener información del sistema
-$infoSistema = $sistemaModel->getInformacionSistema();
-
-// 7. Formatear fecha para mostrar
-$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
-
-// 8. Obtener información completa de la licencia (MODIFICADO)
+// Info del sistema (igual que antes)
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
-
-// Extraer valores
 $infoSistema = $licenciaInfo['info'];
 $diasRestantes = $licenciaInfo['dias_restantes'];
 $validaHastaFormatted = $licenciaInfo['valida_hasta_formatted'];
 $fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
-
-// PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
 $porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
 
-// Color de la barra basado en lo que RESTA (ahora es más simple)
+// Color de la barra
 if ($porcentajeRestante > 50) {
     $barColor = 'bg-success';
 } elseif ($porcentajeRestante > 25) {
@@ -272,61 +123,32 @@ if ($porcentajeRestante > 50) {
     <link rel="stylesheet" href="../styles/superadmin_avance.css">
 </head>
 <body>
-    <!-- Header -->
+    <!-- Header (mantener igual) -->
     <header class="main-header">
-        <div class="header-container">
-            <div class="header-top">
-                <div class="header-title">
-                    <h1><i class="fas fa-chart-line"></i> Avance Referenciadores - Super Admin</h1>
-                    <div class="user-info">
-                        <i class="fas fa-user-circle"></i>
-                        <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
-                    </div>
-                </div>
-                <a href="../logout.php" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
-            </div>
-        </div>
+        <!-- ... código del header igual ... -->
     </header>
 
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
-                <li class="breadcrumb-item"><a href="superadmin_monitoreos.php"><i class="fas fa-database"></i> Monitores</a></li>
-                <li class="breadcrumb-item">
-                    <a href="superadmin_avance.php" class="text-decoration-none">
-                        <i class="fas fa-chart-line"></i> Avance Referenciadores
-                    </a>
-                </li>
-            </ol>
-        </nav>
+        <!-- ... breadcrumb igual ... -->
     </div>
 
     <!-- Main Content -->
     <div class="main-container">
         <!-- Dashboard Header -->
         <div class="dashboard-header">
-            <div class="dashboard-title">
-                <i class="fas fa-users-line"></i>
-                <span>Monitoreo de Avance - Referenciadores</span>
-            </div>
-            <p class="dashboard-subtitle">
-                Visualice el progreso de todos los referenciadores activos del sistema. 
-                Compare el avance individual y global vs las metas establecidas.
-            </p>
+            <!-- ... título igual ... -->
         </div>
         
-        <!-- Estadísticas Globales - MEJORADA (SIEMPRE muestra todos) -->
+        <!-- ====================================================================
+             MANTENER: Estadísticas Globales - EXACTAMENTE IGUAL
+        ===================================================================== -->
         <div class="global-stats">
             <div class="stats-title">
                 <i class="fas fa-chart-bar"></i>
                 <span>Resumen del Avance Global</span>
             </div>
             
-            <!-- Grid de 2 filas: Estadísticas principales arriba, barra abajo -->
             <div class="stats-main-container">
                 <!-- Primera fila: 4 estadísticas en línea -->
                 <div class="stats-row">
@@ -397,34 +219,34 @@ if ($porcentajeRestante > 50) {
             </div>
         </div>
         
-        <!-- NUEVO: Filtros de Búsqueda (debajo de estadísticas globales) -->
+        <!-- ====================================================================
+             REEMPLAZAR: Filtros de Búsqueda - NUEVA VERSIÓN CON AJAX
+        ===================================================================== -->
         <div class="filtros-container">
             <div class="filtros-title">
                 <i class="fas fa-filter"></i>
                 <span>Filtrar y Ordenar Referenciadores</span>
             </div>
             
-            <form method="GET" action="" class="filtros-form" id="filtrosForm">
-                <!-- Nombre (con búsqueda en tiempo real) -->
+            <!-- Formulario SIN action/method, solo para capturar datos -->
+            <div class="filtros-form" id="filtrosForm">
+                <!-- Nombre -->
                 <div class="form-group">
                     <label for="nombre"><i class="fas fa-user"></i> Nombre</label>
                     <input type="text" 
                            id="nombre" 
-                           name="nombre" 
-                           class="form-control" 
+                           class="form-control filtro-input" 
                            placeholder="Buscar por nombre..." 
-                           value="<?php echo htmlspecialchars($filtros['nombre']); ?>"
-                           onkeyup="actualizarFiltros()">
+                           data-filtro="nombre">
                 </div>
                 
                 <!-- Zona -->
                 <div class="form-group">
                     <label for="id_zona"><i class="fas fa-map-marker-alt"></i> Zona</label>
-                    <select id="id_zona" name="id_zona" class="form-select" onchange="actualizarFiltros()">
+                    <select id="id_zona" class="form-select filtro-select" data-filtro="id_zona">
                         <option value="">Todas las zonas</option>
                         <?php foreach ($zonas as $zona): ?>
-                            <option value="<?php echo $zona['id_zona']; ?>" 
-                                <?php echo $filtros['id_zona'] == $zona['id_zona'] ? 'selected' : ''; ?>>
+                            <option value="<?php echo $zona['id_zona']; ?>">
                                 <?php echo htmlspecialchars($zona['nombre']); ?>
                             </option>
                         <?php endforeach; ?>
@@ -434,11 +256,10 @@ if ($porcentajeRestante > 50) {
                 <!-- Sector -->
                 <div class="form-group">
                     <label for="id_sector"><i class="fas fa-th-large"></i> Sector</label>
-                    <select id="id_sector" name="id_sector" class="form-select" onchange="actualizarFiltros()">
+                    <select id="id_sector" class="form-select filtro-select" data-filtro="id_sector">
                         <option value="">Todos los sectores</option>
                         <?php foreach ($sectores as $sector): ?>
-                            <option value="<?php echo $sector['id_sector']; ?>" 
-                                <?php echo $filtros['id_sector'] == $sector['id_sector'] ? 'selected' : ''; ?>>
+                            <option value="<?php echo $sector['id_sector']; ?>">
                                 <?php echo htmlspecialchars($sector['nombre']); ?>
                             </option>
                         <?php endforeach; ?>
@@ -448,275 +269,476 @@ if ($porcentajeRestante > 50) {
                 <!-- Puesto de Votación -->
                 <div class="form-group">
                     <label for="id_puesto_votacion"><i class="fas fa-vote-yea"></i> Puesto de Votación</label>
-                    <select id="id_puesto_votacion" name="id_puesto_votacion" class="form-select" onchange="actualizarFiltros()">
+                    <select id="id_puesto_votacion" class="form-select filtro-select" data-filtro="id_puesto_votacion">
                         <option value="">Todos los puestos</option>
                         <?php foreach ($puestosVotacion as $puesto): ?>
-                            <option value="<?php echo $puesto['id_puesto']; ?>" 
-                                <?php echo $filtros['id_puesto_votacion'] == $puesto['id_puesto'] ? 'selected' : ''; ?>>
+                            <option value="<?php echo $puesto['id_puesto']; ?>">
                                 <?php echo htmlspecialchars($puesto['nombre'] . ' (' . $puesto['sector_nombre'] . ')'); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 
-                <!-- Filtro por Porcentaje Mínimo de Avance -->
+                <!-- Porcentaje Mínimo -->
                 <div class="form-group">
                     <label for="porcentaje_minimo"><i class="fas fa-percentage"></i> % Avance Mínimo</label>
-                    <select id="porcentaje_minimo" name="porcentaje_minimo" class="form-select" onchange="actualizarFiltros()">
+                    <select id="porcentaje_minimo" class="form-select filtro-select" data-filtro="porcentaje_minimo">
                         <option value="">Todos los porcentajes</option>
-                        <option value="100" <?php echo $filtros['porcentaje_minimo'] == '100' ? 'selected' : ''; ?>>100% (Completado)</option>
-                        <option value="90" <?php echo $filtros['porcentaje_minimo'] == '90' ? 'selected' : ''; ?>>90% o más</option>
-                        <option value="75" <?php echo $filtros['porcentaje_minimo'] == '75' ? 'selected' : ''; ?>>75% o más</option>
-                        <option value="50" <?php echo $filtros['porcentaje_minimo'] == '50' ? 'selected' : ''; ?>>50% o más</option>
-                        <option value="25" <?php echo $filtros['porcentaje_minimo'] == '25' ? 'selected' : ''; ?>>25% o más</option>
-                        <option value="0" <?php echo $filtros['porcentaje_minimo'] == '0' ? 'selected' : ''; ?>>Con algún avance</option>
+                        <option value="100">100% (Completado)</option>
+                        <option value="90">90% o más</option>
+                        <option value="75">75% o más</option>
+                        <option value="50">50% o más</option>
+                        <option value="25">25% o más</option>
+                        <option value="0">Con algún avance</option>
                     </select>
                 </div>
                 
-                <!-- NUEVO: Ordenar por -->
+                <!-- Ordenar por -->
                 <div class="form-group filtro-orden">
                     <label for="ordenar_por"><i class="fas fa-sort-amount-down"></i> Ordenar por</label>
-                    <select id="ordenar_por" name="ordenar_por" class="form-select" onchange="actualizarFiltros()">
-                        <option value="fecha_creacion" <?php echo $filtros['ordenar_por'] == 'fecha_creacion' ? 'selected' : ''; ?>>Fecha de creación</option>
-                        <option value="porcentaje_desc" <?php echo $filtros['ordenar_por'] == 'porcentaje_desc' ? 'selected' : ''; ?>>% Avance</option>
-                        <option value="referidos_desc" <?php echo $filtros['ordenar_por'] == 'referidos_desc' ? 'selected' : ''; ?>>Cantidad de Referidos</option>
+                    <select id="ordenar_por" class="form-select filtro-select" data-filtro="ordenar_por">
+                        <option value="fecha_creacion">Fecha de creación</option>
+                        <option value="porcentaje_desc">% Avance</option>
+                        <option value="referidos_desc">Cantidad de Referidos</option>
                     </select>
                 </div>
                 
-                <!-- Última Fecha de Acceso (solo una fecha) -->
+                <!-- Fecha de Acceso -->
                 <div class="form-group">
                     <label for="fecha_acceso"><i class="fas fa-calendar-alt"></i> Último acceso</label>
                     <input type="date" 
                            id="fecha_acceso" 
-                           name="fecha_acceso" 
-                           class="form-control" 
-                           value="<?php echo htmlspecialchars($filtros['fecha_acceso']); ?>"
-                           onchange="actualizarFiltros()">
+                           class="form-control filtro-input" 
+                           data-filtro="fecha_acceso">
                 </div>
                 
                 <!-- Botones de acción -->
                 <div class="form-group filtros-actions">
-                    <button type="button" class="btn-buscar" onclick="actualizarFiltros()">
+                    <button type="button" class="btn-buscar" id="btnBuscarAjax">
                         <i class="fas fa-search"></i> Buscar
                     </button>
-                    <button type="button" class="btn-limpiar" onclick="limpiarFiltros()">
+                    <button type="button" class="btn-limpiar" id="btnLimpiarAjax">
                         <i class="fas fa-times"></i> Limpiar
                     </button>
                 </div>
-            </form>
+            </div>
             
-            <!-- Filtros activos -->
-            <?php 
-            $filtrosActivos = array_filter($filtros, function($valor, $clave) {
-                return !empty($valor) && $clave != 'ordenar_por';
-            }, ARRAY_FILTER_USE_BOTH);
-            
-            if (!empty($filtrosActivos) || $filtros['ordenar_por'] != 'fecha_creacion'): ?>
-            <div class="active-filters">
+            <!-- Contenedor para filtros activos (se llena dinámicamente) -->
+            <div class="active-filters" id="activeFiltersContainer" style="display: none;">
                 <div class="filter-section-title">
                     <i class="fas fa-check-circle"></i> Filtros aplicados:
                 </div>
-                <div>
-                    <?php foreach ($filtrosActivos as $clave => $valor): 
-                        $etiqueta = '';
-                        $valorMostrar = htmlspecialchars($valor);
-                        
-                        switch($clave) {
-                            case 'nombre':
-                                $etiqueta = "Nombre: $valorMostrar";
-                                break;
-                            case 'id_zona':
-                                $zonaNombre = '';
-                                foreach ($zonas as $zona) {
-                                    if ($zona['id_zona'] == $valor) {
-                                        $zonaNombre = $zona['nombre'];
-                                        break;
-                                    }
-                                }
-                                $etiqueta = "Zona: " . htmlspecialchars($zonaNombre);
-                                break;
-                            case 'id_sector':
-                                $sectorNombre = '';
-                                foreach ($sectores as $sector) {
-                                    if ($sector['id_sector'] == $valor) {
-                                        $sectorNombre = $sector['nombre'];
-                                        break;
-                                    }
-                                }
-                                $etiqueta = "Sector: " . htmlspecialchars($sectorNombre);
-                                break;
-                            case 'id_puesto_votacion':
-                                $puestoNombre = '';
-                                foreach ($puestosVotacion as $puesto) {
-                                    if ($puesto['id_puesto'] == $valor) {
-                                        $puestoNombre = $puesto['nombre'] . ' (' . $puesto['sector_nombre'] . ')';
-                                        break;
-                                    }
-                                }
-                                $etiqueta = "Puesto: " . htmlspecialchars($puestoNombre);
-                                break;
-                            case 'fecha_acceso':
-                                $etiqueta = "Último acceso: " . date('d/m/Y', strtotime($valor));
-                                break;
-                            case 'porcentaje_minimo':
-                                $porcentaje_texto = '';
-                                switch($valor) {
-                                    case '100': $porcentaje_texto = '100% (Completado)'; break;
-                                    case '90': $porcentaje_texto = '90% o más'; break;
-                                    case '75': $porcentaje_texto = '75% o más'; break;
-                                    case '50': $porcentaje_texto = '50% o más'; break;
-                                    case '25': $porcentaje_texto = '25% o más'; break;
-                                    case '0': $porcentaje_texto = 'Con algún avance'; break;
-                                    default: $porcentaje_texto = $valor . '% o más';
-                                }
-                                $etiqueta = "Avance mínimo: " . $porcentaje_texto;
-                                break;
-                        }
-                        
-                        if (!empty($etiqueta)):
-                    ?>
-                        <span class="filter-badge" id="filtro-<?php echo $clave; ?>">
-                            <?php echo $etiqueta; ?>
-                            <span class="close" onclick="eliminarFiltro('<?php echo $clave; ?>')">&times;</span>
-                        </span>
-                    <?php 
-                        endif;
-                    endforeach; 
-                    
-                    // Mostrar filtro de orden si no es el por defecto
-                    if ($filtros['ordenar_por'] != 'fecha_creacion'):
-                        $orden_texto_badge = '';
-                        switch($filtros['ordenar_por']) {
-                            case 'porcentaje_desc':
-                                $orden_texto_badge = 'Orden: % Avance (Descendente)';
-                                break;
-                            case 'referidos_desc':
-                                $orden_texto_badge = 'Orden: Cantidad de Referidos (Descendente)';
-                                break;
-                        }
-                    ?>
-                        <span class="filter-badge filter-badge-orden" id="filtro-orden">
-                            <?php echo $orden_texto_badge; ?>
-                            <span class="close" onclick="eliminarFiltro('ordenar_por')">&times;</span>
-                        </span>
-                    <?php endif; ?>
-                </div>
+                <div id="activeFiltersList"></div>
             </div>
-            <?php endif; ?>
         </div>
         
-        <!-- NUEVO: Resultados de búsqueda -->
-        <?php if (!empty($filtrosActivos)): ?>
-        <div class="resultados-info">
+        <!-- Info de resultados (dinámica) -->
+        <div class="resultados-info" id="resultadosInfo" style="display: none;">
             <div class="resultados-text">
                 <i class="fas fa-info-circle"></i>
-                <span>
-                    Mostrando <span class="resultados-count"><?php echo $referenciadoresFiltradosCount; ?></span> 
-                    referenciador(es) que coinciden con los filtros aplicados
-                </span>
+                <span id="resultadosText"></span>
             </div>
         </div>
-        <?php endif; ?>
         
-        <!-- Lista de Referenciadores -->
-        <div class="referenciadores-list">
+        <!-- ====================================================================
+             MODIFICAR: Lista de Referenciadores - Mostrar inicial + actualizar con AJAX
+        ===================================================================== -->
+        <div class="referenciadores-list" id="referenciadoresContainer">
             <div class="list-title">
                 <i class="fas fa-list-ol"></i>
-                <span>Progreso Individual por Referenciador <?php echo !empty($filtrosActivos) ? '(Filtrados)' : ''; ?></span>
+                <span>Progreso Individual por Referenciador</span>
+                <span id="filtroIndicator" class="badge bg-info ms-2" style="display: none;">Filtrados</span>
             </div>
             
-            <?php if (empty($referenciadores)): ?>
-                <?php if (!empty($filtrosActivos)): ?>
-                <div class="no-results">
-                    <i class="fas fa-search"></i>
-                    <p>No se encontraron referenciadores con los filtros aplicados.</p>
-                    <button type="button" class="btn-reset-filters" onclick="limpiarFiltros()">
-                        <i class="fas fa-times"></i> Limpiar filtros
-                    </button>
+            <!-- Loading indicator (oculto inicialmente) -->
+            <div id="loadingIndicator" class="text-center py-5" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
                 </div>
+                <p class="mt-2 text-muted">Buscando referenciadores...</p>
+            </div>
+            
+            <!-- Contenedor para los resultados (inicialmente con datos PHP) -->
+            <div id="referenciadoresList">
+                <?php if (empty($referenciadoresIniciales)): ?>
+                    <div class="no-data">
+                        <i class="fas fa-users-slash"></i>
+                        <p>No hay referenciadores activos registrados en el sistema.</p>
+                    </div>
                 <?php else: ?>
-                <div class="no-data">
-                    <i class="fas fa-users-slash"></i>
-                    <p>No hay referenciadores activos registrados en el sistema.</p>
-                </div>
+                    <?php foreach ($referenciadoresIniciales as $referenciador): ?>
+                        <?php 
+                        $porcentaje = $referenciador['porcentaje_tope'] ?? 0;
+                        if (!$porcentaje && $referenciador['tope'] > 0) {
+                            $porcentaje = round(($referenciador['total_referenciados'] / $referenciador['tope']) * 100, 2);
+                        }
+                        
+                        // Determinar clase de color según porcentaje
+                        $progressClass = 'progress-bajo';
+                        if ($porcentaje >= 75) $progressClass = 'progress-excelente';
+                        elseif ($porcentaje >= 50) $progressClass = 'progress-bueno';
+                        elseif ($porcentaje >= 25) $progressClass = 'progress-medio';
+                        ?>
+                        
+                        <div class="referenciador-card" data-id="<?php echo $referenciador['id_usuario']; ?>">
+                            <div class="referenciador-header">
+                                <div class="user-info-section">
+                                    <div class="user-avatar">
+                                        <?php if (!empty($referenciador['foto_url'])): ?>
+                                            <img src="<?php echo htmlspecialchars($referenciador['foto_url']); ?>" alt="Foto">
+                                        <?php else: ?>
+                                            <div style="width: 100%; height: 100%; background: #eaeaea; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-user" style="color: #95a5a6; font-size: 1.5rem;"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name">
+                                            <?php echo htmlspecialchars($referenciador['nombres'] . ' ' . $referenciador['apellidos']); ?>
+                                            <?php if ($porcentaje >= 100): ?>
+                                                <span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;">
+                                                    <i class="fas fa-check-circle"></i> Completado
+                                                </span>
+                                            <?php elseif ($porcentaje >= 75): ?>
+                                                <span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;">
+                                                    <i class="fas fa-trophy"></i> Avanzado
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="user-info-text">
+                                            <span>Cédula: <?php echo htmlspecialchars($referenciador['cedula'] ?? 'N/A'); ?></span>
+                                            <span>Usuario: <?php echo htmlspecialchars($referenciador['nickname'] ?? 'N/A'); ?></span>
+                                            <span>Fecha registro: <?php echo date('d/m/Y', strtotime($referenciador['fecha_creacion'])); ?></span>
+                                            <?php if (!empty($referenciador['ultimo_registro'])): ?>
+                                            <span>Último acceso: <?php echo date('d/m/Y H:i', strtotime($referenciador['ultimo_registro'])); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="user-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-number"><?php echo $referenciador['total_referenciados'] ?? 0; ?></div>
+                                        <div class="stat-desc">Referidos</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number"><?php echo $referenciador['tope'] ?? 0; ?></div>
+                                        <div class="stat-desc">Tope</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number <?php echo $porcentaje >= 100 ? 'text-success' : ($porcentaje >= 75 ? 'text-primary' : ''); ?>">
+                                            <?php echo $porcentaje; ?>%
+                                        </div>
+                                        <div class="stat-desc">Avance</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Barra de Progreso Individual -->
+                            <div class="individual-progress">
+                                <div class="progress-label-small">
+                                    Progreso individual: <?php echo $referenciador['total_referenciados'] ?? 0; ?> de <?php echo $referenciador['tope'] ?? 0; ?> referidos
+                                    <span style="float: right; font-weight: bold; color: <?php echo $porcentaje >= 100 ? '#4caf50' : ($porcentaje >= 75 ? '#2196f3' : '#666'); ?>">
+                                        <?php echo $porcentaje; ?>%
+                                    </span>
+                                </div>
+                                <div class="progress-container-small">
+                                    <div class="progress-bar-small <?php echo $progressClass; ?>" 
+                                         style="width: <?php echo $porcentaje; ?>%">
+                                    </div>
+                                </div>
+                                <div class="progress-numbers">
+                                    <span>0%</span>
+                                    <span>25%</span>
+                                    <span>50%</span>
+                                    <span>75%</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-            <?php else: ?>
-                <?php foreach ($referenciadores as $referenciador): ?>
-                    <?php 
-                    $porcentaje = $referenciador['porcentaje_tope'] ?? 0;
+            </div>
+            
+            <!-- Paginación (se llena dinámicamente con AJAX) -->
+            <div id="paginacionContainer" class="pagination-container mt-4" style="display: none;">
+                <!-- Aquí se insertará la paginación desde AJAX -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (mantener igual) -->
+    <footer class="system-footer">
+        <!-- ... footer igual ... -->
+    </footer>
+
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <!-- ... modal igual ... -->
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variable global para controlar las peticiones AJAX
+        var filtrosActuales = {};
+        var timerBusqueda;
+        
+        // ====================================================================
+        // FUNCIONES PRINCIPALES PARA EL SISTEMA DE FILTRADO AJAX
+        // ====================================================================
+        
+        // 1. Función para obtener valores de los filtros
+        function obtenerFiltros() {
+            return {
+                nombre: $('#nombre').val().trim(),
+                id_zona: $('#id_zona').val() || 0,
+                id_sector: $('#id_sector').val() || 0,
+                id_puesto_votacion: $('#id_puesto_votacion').val() || 0,
+                fecha_acceso: $('#fecha_acceso').val() || '',
+                porcentaje_minimo: $('#porcentaje_minimo').val() || 0,
+                ordenar_por: $('#ordenar_por').val() || 'fecha_creacion',
+                page: 1, // Siempre empezar en página 1 al filtrar
+                limit: 50 // Puedes ajustar esto
+            };
+        }
+        
+        // 2. Función para mostrar/ocultar filtros activos
+        function actualizarFiltrosActivos(filtros) {
+            var container = $('#activeFiltersContainer');
+            var list = $('#activeFiltersList');
+            list.empty();
+            
+            var filtrosMostrar = [];
+            
+            // Nombre
+            if (filtros.nombre) {
+                filtrosMostrar.push({
+                    key: 'nombre',
+                    label: 'Nombre: ' + filtros.nombre
+                });
+            }
+            
+            // Zona
+            if (filtros.id_zona > 0) {
+                var zonaNombre = $('#id_zona option:selected').text();
+                filtrosMostrar.push({
+                    key: 'id_zona',
+                    label: 'Zona: ' + zonaNombre
+                });
+            }
+            
+            // Sector
+            if (filtros.id_sector > 0) {
+                var sectorNombre = $('#id_sector option:selected').text();
+                filtrosMostrar.push({
+                    key: 'id_sector',
+                    label: 'Sector: ' + sectorNombre
+                });
+            }
+            
+            // Puesto de votación
+            if (filtros.id_puesto_votacion > 0) {
+                var puestoNombre = $('#id_puesto_votacion option:selected').text();
+                filtrosMostrar.push({
+                    key: 'id_puesto_votacion',
+                    label: 'Puesto: ' + puestoNombre
+                });
+            }
+            
+            // Porcentaje mínimo
+            if (filtros.porcentaje_minimo > 0) {
+                var porcentajeText = '';
+                switch(filtros.porcentaje_minimo.toString()) {
+                    case '100': porcentajeText = '100% (Completado)'; break;
+                    case '90': porcentajeText = '90% o más'; break;
+                    case '75': porcentajeText = '75% o más'; break;
+                    case '50': porcentajeText = '50% o más'; break;
+                    case '25': porcentajeText = '25% o más'; break;
+                    case '0': porcentajeText = 'Con algún avance'; break;
+                    default: porcentajeText = filtros.porcentaje_minimo + '% o más';
+                }
+                filtrosMostrar.push({
+                    key: 'porcentaje_minimo',
+                    label: 'Avance mínimo: ' + porcentajeText
+                });
+            }
+            
+            // Fecha acceso
+            if (filtros.fecha_acceso) {
+                filtrosMostrar.push({
+                    key: 'fecha_acceso',
+                    label: 'Último acceso: ' + filtros.fecha_acceso
+                });
+            }
+            
+            // Ordenar por (si no es el default)
+            if (filtros.ordenar_por !== 'fecha_creacion') {
+                var ordenText = '';
+                switch(filtros.ordenar_por) {
+                    case 'porcentaje_desc': ordenText = 'Orden: % Avance'; break;
+                    case 'referidos_desc': ordenText = 'Orden: Cant. Referidos'; break;
+                }
+                filtrosMostrar.push({
+                    key: 'ordenar_por',
+                    label: ordenText
+                });
+            }
+            
+            // Mostrar u ocultar contenedor
+            if (filtrosMostrar.length > 0) {
+                container.show();
+                $('#filtroIndicator').show();
+                
+                // Crear badges para cada filtro
+                filtrosMostrar.forEach(function(filtro) {
+                    var badge = $('<span class="filter-badge">')
+                        .html(filtro.label + ' <span class="close" data-filtro="' + filtro.key + '">&times;</span>')
+                        .appendTo(list);
+                });
+            } else {
+                container.hide();
+                $('#filtroIndicator').hide();
+            }
+        }
+        
+        // 3. Función principal para buscar con AJAX
+        function buscarReferenciadores() {
+            filtrosActuales = obtenerFiltros();
+            
+            // Mostrar loading
+            $('#loadingIndicator').show();
+            $('#referenciadoresList').hide();
+            $('#paginacionContainer').hide();
+            
+            // Actualizar filtros activos
+            actualizarFiltrosActivos(filtrosActuales);
+            
+            // Construir URL para AJAX
+            var url = '../ajax/filtros_referenciadores.php?' + $.param(filtrosActuales);
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        mostrarResultados(response.data);
+                    } else {
+                        mostrarError(response.error || 'Error en la búsqueda');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    mostrarError('Error de conexión: ' + error);
+                },
+                complete: function() {
+                    $('#loadingIndicator').hide();
+                }
+            });
+        }
+        
+        // 4. Función para mostrar resultados
+        function mostrarResultados(data) {
+            var container = $('#referenciadoresList');
+            container.empty();
+            
+            // Actualizar info de resultados
+            if (data.filtrosActivos) {
+                $('#resultadosInfo').show();
+                $('#resultadosText').html(
+                    'Mostrando <strong>' + data.paginacion.mostrandoDesde + '-' + data.paginacion.mostrandoHasta + 
+                    '</strong> de <strong>' + data.paginacion.totalResultados + '</strong> referenciadores filtrados'
+                );
+            } else {
+                $('#resultadosInfo').hide();
+            }
+            
+            // Mostrar estadísticas filtradas (opcional, si quieres mostrarlas)
+            console.log('Estadísticas filtradas:', data.estadisticas);
+            
+            // Mostrar referenciadores
+            if (data.referenciadores.length === 0) {
+                var noResults = $('<div class="no-results">')
+                    .html('<i class="fas fa-search"></i><p>No se encontraron referenciadores con los filtros aplicados.</p>')
+                    .appendTo(container);
+                
+                if (data.filtrosActivos) {
+                    $('<button type="button" class="btn-reset-filters" onclick="limpiarFiltros()">')
+                        .html('<i class="fas fa-times"></i> Limpiar filtros')
+                        .appendTo(noResults);
+                }
+            } else {
+                data.referenciadores.forEach(function(referenciador) {
+                    var porcentaje = referenciador.porcentaje_tope || 0;
                     
-                    // Determinar clase de color según porcentaje
-                    $progressClass = 'progress-bajo';
-                    if ($porcentaje >= 75) $progressClass = 'progress-excelente';
-                    elseif ($porcentaje >= 50) $progressClass = 'progress-bueno';
-                    elseif ($porcentaje >= 25) $progressClass = 'progress-medio';
-                    ?>
+                    // Determinar clase de progreso
+                    var progressClass = 'progress-bajo';
+                    if (porcentaje >= 75) progressClass = 'progress-excelente';
+                    else if (porcentaje >= 50) progressClass = 'progress-bueno';
+                    else if (porcentaje >= 25) progressClass = 'progress-medio';
                     
-                    <div class="referenciador-card">
+                    // Crear tarjeta
+                    var card = $('<div class="referenciador-card">')
+                        .attr('data-id', referenciador.id_usuario)
+                        .appendTo(container);
+                    
+                    // Construir contenido (similar al PHP)
+                    var html = `
                         <div class="referenciador-header">
                             <div class="user-info-section">
                                 <div class="user-avatar">
-                                    <?php if (!empty($referenciador['foto_url'])): ?>
-                                        <img src="<?php echo htmlspecialchars($referenciador['foto_url']); ?>" alt="Foto">
-                                    <?php else: ?>
-                                        <div style="width: 100%; height: 100%; background: #eaeaea; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-user" style="color: #95a5a6; font-size: 1.5rem;"></i>
-                                        </div>
-                                    <?php endif; ?>
+                                    ${referenciador.foto_url ? 
+                                        '<img src="' + referenciador.foto_url + '" alt="Foto">' : 
+                                        '<div style="width: 100%; height: 100%; background: #eaeaea; display: flex; align-items: center; justify-content: center;">' +
+                                        '<i class="fas fa-user" style="color: #95a5a6; font-size: 1.5rem;"></i></div>'}
                                 </div>
                                 <div class="user-details">
                                     <div class="user-name">
-                                        <?php echo htmlspecialchars($referenciador['nombres'] . ' ' . $referenciador['apellidos']); ?>
-                                        <?php if ($porcentaje >= 100): ?>
-                                            <span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;">
-                                                <i class="fas fa-check-circle"></i> Completado
-                                            </span>
-                                        <?php elseif ($porcentaje >= 75): ?>
-                                            <span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;">
-                                                <i class="fas fa-trophy"></i> Avanzado
-                                            </span>
-                                        <?php endif; ?>
+                                        ${referenciador.nombres} ${referenciador.apellidos}
+                                        ${porcentaje >= 100 ? 
+                                            '<span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Completado</span>' : 
+                                            (porcentaje >= 75 ? 
+                                                '<span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;"><i class="fas fa-trophy"></i> Avanzado</span>' : '')}
                                     </div>
                                     <div class="user-info-text">
-                                        <span>Cédula: <?php echo htmlspecialchars($referenciador['cedula'] ?? 'N/A'); ?></span>
-                                        <span>Usuario: <?php echo htmlspecialchars($referenciador['nickname'] ?? 'N/A'); ?></span>
-                                        <span>Fecha registro: <?php echo date('d/m/Y', strtotime($referenciador['fecha_creacion'])); ?></span>
-                                        <?php if (!empty($referenciador['ultimo_registro'])): ?>
-                                        <span>Último acceso: <?php echo date('d/m/Y H:i', strtotime($referenciador['ultimo_registro'])); ?></span>
-                                        <?php endif; ?>
+                                        <span>Cédula: ${referenciador.cedula || 'N/A'}</span>
+                                        <span>Usuario: ${referenciador.nickname || 'N/A'}</span>
+                                        <span>Fecha registro: ${new Date(referenciador.fecha_creacion).toLocaleDateString('es-ES')}</span>
+                                        ${referenciador.ultimo_registro ? 
+                                            '<span>Último acceso: ' + new Date(referenciador.ultimo_registro).toLocaleString('es-ES') + '</span>' : ''}
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="user-stats">
-                                <div class="stat-item <?php echo $filtros['ordenar_por'] == 'referidos_desc' ? 'stat-destacado' : ''; ?>">
-                                    <div class="stat-number"><?php echo $referenciador['total_referenciados'] ?? 0; ?></div>
+                                <div class="stat-item ${filtrosActuales.ordenar_por === 'referidos_desc' ? 'stat-destacado' : ''}">
+                                    <div class="stat-number">${referenciador.total_referenciados || 0}</div>
                                     <div class="stat-desc">Referidos</div>
                                 </div>
                                 <div class="stat-item">
-                                    <div class="stat-number"><?php echo $referenciador['tope'] ?? 0; ?></div>
+                                    <div class="stat-number">${referenciador.tope || 0}</div>
                                     <div class="stat-desc">Tope</div>
                                 </div>
-                                <div class="stat-item <?php echo $filtros['ordenar_por'] == 'porcentaje_desc' ? 'stat-destacado' : ''; ?>">
-                                    <div class="stat-number <?php echo $porcentaje >= 100 ? 'text-success' : ($porcentaje >= 75 ? 'text-primary' : ''); ?>">
-                                        <?php echo $porcentaje; ?>%
+                                <div class="stat-item ${filtrosActuales.ordenar_por === 'porcentaje_desc' ? 'stat-destacado' : ''}">
+                                    <div class="stat-number ${porcentaje >= 100 ? 'text-success' : (porcentaje >= 75 ? 'text-primary' : '')}">
+                                        ${porcentaje}%
                                     </div>
                                     <div class="stat-desc">Avance</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Barra de Progreso Individual -->
                         <div class="individual-progress">
                             <div class="progress-label-small">
-                                Progreso individual: <?php echo $referenciador['total_referenciados'] ?? 0; ?> de <?php echo $referenciador['tope'] ?? 0; ?> referidos
-                                <span style="float: right; font-weight: bold; color: <?php echo $porcentaje >= 100 ? '#4caf50' : ($porcentaje >= 75 ? '#2196f3' : '#666'); ?>">
-                                    <?php echo $porcentaje; ?>%
+                                Progreso individual: ${referenciador.total_referenciados || 0} de ${referenciador.tope || 0} referidos
+                                <span style="float: right; font-weight: bold; color: ${porcentaje >= 100 ? '#4caf50' : (porcentaje >= 75 ? '#2196f3' : '#666')}">
+                                    ${porcentaje}%
                                 </span>
                             </div>
                             <div class="progress-container-small">
-                                <div class="progress-bar-small <?php echo $progressClass; ?>" 
-                                     style="width: <?php echo $porcentaje; ?>%">
+                                <div class="progress-bar-small ${progressClass}" 
+                                     style="width: ${porcentaje}%">
                                 </div>
                             </div>
                             <div class="progress-numbers">
@@ -727,270 +749,202 @@ if ($porcentajeRestante > 50) {
                                 <span>100%</span>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="system-footer">
-        <div class="container text-center mb-3">
-            <img src="../imagenes/Logo-artguru.png" 
-                alt="Logo" 
-                class="logo-clickable"
-                onclick="mostrarModalSistema()"
-                title="Haz clic para ver información del sistema">
-        </div>
-
-        <div class="container text-center">
-            <p>
-                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
-                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
-            </p>
-        </div>
-    </footer>
-    <!-- Modal de Información del Sistema -->
-    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalSistemaLabel">
-                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Logo centrado AGRANDADO -->
-                    <div class="modal-logo-container">
-                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
-                    </div>
+                    `;
                     
-                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
-                    <div class="text-center mb-4">
-                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
-                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
-                        </h1> -->
-                        <h4 class="text-secondary mb-4">
-                            <strong>Gestión Política de Alta Precisión</strong>
-                        </h4>
-                        
-<!-- Información de Licencia (MODIFICADO) -->
-<div class="licencia-info">
-    <div class="licencia-header">
-        <h6 class="licencia-title">Licencia Runtime</h6>
-        <span class="licencia-dias">
-            <strong><?php echo $diasRestantes; ?> días restantes</strong>
-        </span>
-    </div>
-    
-    <div class="licencia-progress">
-        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-             style="width: <?php echo $porcentajeRestante; ?>%"
-             role="progressbar" 
-             aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-             aria-valuemin="0" 
-             aria-valuemax="100">
-        </div>
-    </div>
-    
-    <div class="licencia-fecha">
-        <i class="fas fa-calendar-alt me-1"></i>
-        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-        Válida hasta: <?php echo $validaHastaFormatted; ?>
-    </div>
-</div>
-                    </div>
-                    <div class="feature-image-container">
-                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
-                        <div class="profile-info mt-3">
-                            <h4 class="profile-name"><strong>Rubén Darío Gonzáles García</strong></h4>
-                            
-                            <small class="profile-description">
-                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
-                                Magister en Administración Pública.<br>
-                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
-                            </small>
-                        </div>
-                    </div>
-                    <!-- Sección de Características -->
-                    <div class="row g-4 mb-4">
-                        <!-- Efectividad de la Herramienta -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-primary mb-3">
-                                    <i class="fas fa-bolt fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
-                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
-                                <p class="feature-text">
-                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Integridad de Datos -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-success mb-3">
-                                    <i class="fas fa-database fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Integridad de Datos</h5>
-                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
-                                <p class="feature-text">
-                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Monitoreo de Metas -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-warning mb-3">
-                                    <i class="fas fa-chart-line fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Monitoreo de Metas</h5>
-                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
-                                <p class="feature-text">
-                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Seguridad Avanzada -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-danger mb-3">
-                                    <i class="fas fa-shield-alt fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Seguridad Avanzada</h5>
-                                <h6 class="text-muted mb-2">Control Total</h6>
-                                <p class="feature-text">
-                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i> Cerrar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Timer para búsqueda en tiempo real
-        var timer;
-        
-        // Función para actualizar filtros (búsqueda en tiempo real)
-        function actualizarFiltros() {
-            clearTimeout(timer);
-            timer = setTimeout(function() {
-                // Obtener valores del formulario
-                var nombre = $('#nombre').val();
-                var id_zona = $('#id_zona').val();
-                var id_sector = $('#id_sector').val();
-                var id_puesto_votacion = $('#id_puesto_votacion').val();
-                var porcentaje_minimo = $('#porcentaje_minimo').val();
-                var ordenar_por = $('#ordenar_por').val();
-                var fecha_acceso = $('#fecha_acceso').val();
-                
-                // Construir query string
-                var params = [];
-                if (nombre) params.push('nombre=' + encodeURIComponent(nombre));
-                if (id_zona) params.push('id_zona=' + encodeURIComponent(id_zona));
-                if (id_sector) params.push('id_sector=' + encodeURIComponent(id_sector));
-                if (id_puesto_votacion) params.push('id_puesto_votacion=' + encodeURIComponent(id_puesto_votacion));
-                if (porcentaje_minimo) params.push('porcentaje_minimo=' + encodeURIComponent(porcentaje_minimo));
-                if (ordenar_por && ordenar_por != 'fecha_creacion') params.push('ordenar_por=' + encodeURIComponent(ordenar_por));
-                if (fecha_acceso) params.push('fecha_acceso=' + encodeURIComponent(fecha_acceso));
-                
-                // Recargar la página con los nuevos parámetros
-                var url = 'superadmin_avance.php';
-                if (params.length > 0) {
-                    url += '?' + params.join('&');
-                }
-                
-                window.location.href = url;
-            }, 800); // 800ms de delay para evitar múltiples peticiones
-        }
-        
-        // Función para limpiar todos los filtros
-        function limpiarFiltros() {
-            window.location.href = 'superadmin_avance.php';
-        }
-        
-        // Función para eliminar un filtro específico
-        function eliminarFiltro(filtro) {
-            // Obtener parámetros actuales
-            var urlParams = new URLSearchParams(window.location.search);
-            
-            // Eliminar el filtro específico
-            urlParams.delete(filtro);
-            
-            // Construir nueva URL
-            var newUrl = 'superadmin_avance.php';
-            if (urlParams.toString()) {
-                newUrl += '?' + urlParams.toString();
+                    card.html(html);
+                });
             }
             
-            window.location.href = newUrl;
+            // Mostrar paginación
+            if (data.paginacion.totalPaginas > 1) {
+                mostrarPaginacion(data.paginacion);
+            } else {
+                $('#paginacionContainer').hide();
+            }
+            
+            // Mostrar contenedor
+            container.show();
+            
+            // Animación de barras
+            setTimeout(function() {
+                $('.progress-bar-small').each(function() {
+                    var width = $(this).css('width');
+                    $(this).css('width', '0');
+                    $(this).animate({ width: width }, 1000);
+                });
+            }, 300);
         }
         
-        // Función para aplicar orden rápido
-        function ordenarPor(opcion) {
-            $('#ordenar_por').val(opcion);
-            actualizarFiltros();
+        // 5. Función para mostrar paginación
+        function mostrarPaginacion(paginacion) {
+            var container = $('#paginacionContainer');
+            container.empty().show();
+            
+            var paginacionHTML = `
+                <nav aria-label="Paginación de referenciadores">
+                    <ul class="pagination justify-content-center">
+            `;
+            
+            // Botón anterior
+            paginacionHTML += `
+                <li class="page-item ${paginacion.paginaActual === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="cambiarPagina(${paginacion.paginaActual - 1})" aria-label="Anterior">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            `;
+            
+            // Páginas
+            for (var i = 1; i <= paginacion.totalPaginas; i++) {
+                if (i === 1 || i === paginacion.totalPaginas || 
+                    (i >= paginacion.paginaActual - 2 && i <= paginacion.paginaActual + 2)) {
+                    
+                    paginacionHTML += `
+                        <li class="page-item ${i === paginacion.paginaActual ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="cambiarPagina(${i})">${i}</a>
+                        </li>
+                    `;
+                } else if (i === paginacion.paginaActual - 3 || i === paginacion.paginaActual + 3) {
+                    paginacionHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+            
+            // Botón siguiente
+            paginacionHTML += `
+                <li class="page-item ${paginacion.paginaActual === paginacion.totalPaginas ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="cambiarPagina(${paginacion.paginaActual + 1})" aria-label="Siguiente">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            `;
+            
+            paginacionHTML += `
+                    </ul>
+                </nav>
+                <div class="text-center text-muted mt-2">
+                    Mostrando ${paginacion.mostrandoDesde}-${paginacion.mostrandoHasta} de ${paginacion.totalResultados} resultados
+                </div>
+            `;
+            
+            container.html(paginacionHTML);
         }
+        
+        // 6. Función para cambiar de página
+        function cambiarPagina(pagina) {
+            filtrosActuales.page = pagina;
+            
+            // Actualizar URL de AJAX con nueva página
+            var url = '../ajax/filtros_referenciadores.php?' + $.param(filtrosActuales);
+            
+            $('#loadingIndicator').show();
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        mostrarResultados(response.data);
+                        // Scroll suave hacia la lista
+                        $('html, body').animate({
+                            scrollTop: $('#referenciadoresContainer').offset().top - 20
+                        }, 500);
+                    }
+                },
+                complete: function() {
+                    $('#loadingIndicator').hide();
+                }
+            });
+        }
+        
+        // 7. Función para limpiar filtros
+        function limpiarFiltros() {
+            // Limpiar todos los campos
+            $('.filtro-input').val('');
+            $('.filtro-select').val('');
+            $('#ordenar_por').val('fecha_creacion');
+            
+            // Ocultar contenedores
+            $('#activeFiltersContainer').hide();
+            $('#resultadosInfo').hide();
+            $('#filtroIndicator').hide();
+            
+            // Resetear resultados a estado inicial
+            $('#loadingIndicator').show();
+            $('#referenciadoresList').hide();
+            $('#paginacionContainer').hide();
+            
+            // Recargar la página para mostrar datos iniciales (o hacer AJAX sin filtros)
+            setTimeout(function() {
+                location.reload(); // Opción 1: Recargar página
+                // Opción 2: Hacer AJAX sin filtros:
+                // filtrosActuales = {page: 1, limit: 50, ordenar_por: 'fecha_creacion'};
+                // buscarReferenciadores();
+            }, 300);
+        }
+        
+        // 8. Función para mostrar error
+        function mostrarError(mensaje) {
+            $('#referenciadoresList').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> ${mensaje}
+                </div>
+            `).show();
+        }
+        
+        // ====================================================================
+        // EVENT LISTENERS
+        // ====================================================================
         
         $(document).ready(function() {
-            // Efecto de animación para las barras de progreso al cargar
-            $('.progress-bar-small').each(function() {
-                var width = $(this).css('width');
-                $(this).css('width', '0');
+            // Buscar al hacer clic en botón
+            $('#btnBuscarAjax').click(buscarReferenciadores);
+            
+            // Limpiar filtros
+            $('#btnLimpiarAjax').click(limpiarFiltros);
+            
+            // Búsqueda en tiempo real en campo de nombre
+            $('#nombre').on('keyup', function() {
+                clearTimeout(timerBusqueda);
+                timerBusqueda = setTimeout(function() {
+                    if ($('#nombre').val().trim().length >= 3 || $('#nombre').val().trim().length === 0) {
+                        buscarReferenciadores();
+                    }
+                }, 500);
+            });
+            
+            // Cambios en selects (excepto ordenar que no dispara búsqueda automática)
+            $('#id_zona, #id_sector, #id_puesto_votacion, #porcentaje_minimo, #fecha_acceso').change(function() {
+                buscarReferenciadores();
+            });
+            
+            // Ordenar por - búsqueda al cambiar
+            $('#ordenar_por').change(function() {
+                buscarReferenciadores();
+            });
+            
+            // Eliminar filtro individual al hacer clic en X
+            $(document).on('click', '.filter-badge .close', function() {
+                var filtroKey = $(this).data('filtro');
                 
-                setTimeout(() => {
-                    $(this).animate({
-                        width: width
-                    }, 1000);
-                }, 300);
+                // Limpiar ese filtro específico
+                $('#' + filtroKey).val('');
+                if (filtroKey === 'ordenar_por') {
+                    $('#' + filtroKey).val('fecha_creacion');
+                }
+                
+                // Volver a buscar
+                buscarReferenciadores();
             });
             
             // Efecto hover en tarjetas
-            $('.referenciador-card').hover(
-                function() {
-                    $(this).css('transform', 'translateY(-5px)');
-                    $(this).css('box-shadow', '0 5px 15px rgba(0,0,0,0.1)');
-                },
-                function() {
-                    $(this).css('transform', 'translateY(0)');
-                    $(this).css('box-shadow', '0 2px 5px rgba(0,0,0,0.05)');
-                }
-            );
-            
-            // Destacar estadísticas según el orden actual
-            $('.stat-destacado').each(function() {
-                $(this).css('background', 'rgba(33, 150, 243, 0.1)');
-                $(this).css('border-radius', '5px');
-                $(this).css('padding', '5px');
-                $(this).find('.stat-number').css('font-weight', 'bold');
+            $(document).on('mouseenter', '.referenciador-card', function() {
+                $(this).css('transform', 'translateY(-5px)');
+                $(this).css('box-shadow', '0 5px 15px rgba(0,0,0,0.1)');
+            }).on('mouseleave', '.referenciador-card', function() {
+                $(this).css('transform', 'translateY(0)');
+                $(this).css('box-shadow', '0 2px 5px rgba(0,0,0,0.05)');
             });
-            
-            // Mejorar UX: Auto-focus en el campo de búsqueda
-            $('#nombre').focus();
-            
-            // Actualizar estadísticas cada 30 segundos (opcional)
-            setInterval(function() {
-                // Aquí podrías agregar una llamada AJAX para actualizar en tiempo real
-                // si necesitas datos en vivo
-            }, 30000);
         });
     </script>
     <script src="../js/modal-sistema.js"></script>

@@ -1042,7 +1042,7 @@ if ($porcentajeRestante > 50) {
 </div>
                     </div>
                     <div class="feature-image-container">
-                        <img src="imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
                         <div class="profile-info mt-3">
                             <h4 class="profile-name"><strong>Rubén Darío Gonzáles García</strong></h4>
                             

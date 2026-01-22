@@ -218,7 +218,7 @@ if ($porcentajeRestante > 50) {
                     <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
                 </h1>
             </div>
-            <a href="../logout.php" class="logout-btn">
+            <a href="../logout.php" class="../logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
             </a>
         </div>

@@ -13,8 +13,8 @@ header("X-XSS-Protection: 1; mode=block");
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administrador') {
-    header('HTTP/1.1 403 Forbidden');
-    exit('Acceso denegado');
+    header('location: index.php');
+    exit();
 }
 
 $pdo = Database::getConnection();
@@ -42,6 +42,7 @@ $administradores = $model->countAdministradores();
 $referenciadores = $model->countReferenciadores();
 $descargadores = $model->countDescargadores();
 $superadmin = $model->countSuperAdmin();
+$tracking = $model->countTracking();
 
 // 6. Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
@@ -80,236 +81,6 @@ if ($porcentajeRestante > 50) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/dashboard.css">
-    <style>
-        /* Estilos para el modal de información del sistema */
-        .modal-system-info .modal-header {
-            background: linear-gradient(135deg, #2c3e50, #1a252f);
-            color: white;
-        }
-        
-        .modal-system-info .modal-body {
-            padding: 20px;
-        }
-        
-        /* Logo centrado en el modal - IMAGEN AGRANDADA */
-        .modal-logo-container {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 15px;
-        }
-        
-        .modal-logo {
-            max-width: 300px; /* AGRANDADO de 200px a 300px */
-            height: auto;
-            margin: 0 auto;
-            border-radius: 12px; /* Bordes más redondeados */
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra más pronunciada */
-            border: 3px solid #fff; /* Borde blanco */
-            background: white;
-        }
-        .modal-logo:hover {
-            transform: scale(1.05);
-        }
-        /* Contenedor para centrar la imagen */
-        .feature-image-container {
-            text-align: center;
-            margin-bottom: 2rem; /* Espacio antes de las tarjetas */
-        }
-
-        /* Estilos de la imagen redonda */
-        .feature-img-header {
-            width: 190px;
-            height: 190px;
-            object-fit: cover;       /* Asegura que no se deforme */
-            border-radius: 50%;      /* Círculo perfecto */
-            border: 4px solid #ffffff; 
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
-            transition: transform 0.3s ease; /* Para el efecto de hover */
-        }
-
-        /* Efecto opcional al pasar el mouse */
-        .feature-img-header:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Barra de progreso de licencia */
-        .licencia-info {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #dee2e6;
-        }
-        
-        .licencia-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .licencia-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin: 0;
-        }
-        
-        .licencia-dias {
-            font-size: 1rem;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: #3498db;
-            color: white;
-        }
-        
-        .licencia-progress {
-            height: 12px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            background-color: #e9ecef;
-            overflow: hidden;
-        }
-        
-        .licencia-progress-bar {
-            height: 100%;
-            border-radius: 6px;
-            transition: width 0.6s ease;
-        }
-        
-        .licencia-fecha {
-            font-size: 0.85rem;
-            color: #6c757d;
-            text-align: center;
-            margin-top: 5px;
-        }
-        
-        /* Tarjetas de características */
-        .feature-card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            height: 100%;
-            border-left: 4px solid #3498db;
-            transition: transform 0.3s ease;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .feature-icon {
-            opacity: 0.8;
-        }
-        
-        .feature-title {
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .feature-text {
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-            margin-bottom: 0;
-        }
-        
-        /* Footer del modal */
-        .system-footer-modal {
-            background: #f1f5f9;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 30px;
-            border-top: 2px solid #e2e8f0;
-        }
-        
-        .logo-clickable {
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .logo-clickable:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .modal-system-info .modal-body {
-                padding: 15px;
-            }
-            
-            .modal-logo {
-                max-width: 200px; /* AGRANDADO para móviles también */
-            }
-            .feature-img-header {
-            width: 140px;
-            height: 140px;
-            }
-            .feature-card {
-                padding: 15px;
-                margin-bottom: 15px;
-            }
-            
-            .modal-system-info h4 {
-                font-size: 1.1rem;
-            }
-            
-            .licencia-info {
-                padding: 12px;
-            }
-            
-            .licencia-title {
-                font-size: 1rem;
-            }
-            
-            .licencia-dias {
-                font-size: 0.9rem;
-                padding: 3px 10px;
-            }
-            
-            .system-footer-modal {
-                padding: 15px;
-            }
-        }
-        
-        @media (max-width: 576px) {
-            .modal-system-info .modal-dialog {
-                margin: 10px;
-            }
-            
-            .modal-system-info .modal-body {
-                padding: 12px;
-            }
-            
-            .modal-logo-container {
-                padding: 10px;
-            }
-            
-            .modal-logo {
-                max-width: 180px; /* AGRANDADO para móviles pequeños */
-            }
-            .modal-logo-container {
-            padding: 15px;
-            }
-            .feature-img-header {
-            width: 140px;
-            height: 140px;
-            }
-            
-            .licencia-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            
-            .licencia-dias {
-                align-self: flex-start;
-            }
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -390,6 +161,10 @@ if ($porcentajeRestante > 50) {
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $superadmin; ?></div>
                     <div class="stat-label">Super Admin</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $tracking; ?></div>
+                    <div class="stat-label">Tracking</div>
                 </div>
             </div>
         </div>
@@ -818,7 +593,7 @@ if ($porcentajeRestante > 50) {
                     const newButton = document.createElement('button');
                     newButton.className = 'btn-action btn-activate';
                     newButton.title = 'Reactivar usuario';
-                    newButton.innerHTML = '<i class="fas fa-user-check"></i> REACTIVAR';
+                    newButton.innerHTML = '<i class="fas fa-user-check"></i>';
                     newButton.addEventListener('click', function() {
                         reactivarUsuario(idUsuario, nickname, newButton);
                     });
@@ -829,7 +604,7 @@ if ($porcentajeRestante > 50) {
                     
                     updateStats(-1, 0);
                     
-                    showNotification('Usuario dado de baja correctamente', 'success');
+                    showNotification('Usuario y sus referenciados dados de baja correctamente', 'success');
                 } else {
                     showNotification('Error: ' + (data.message || 'No se pudo dar de baja el usuario'), 'error');
                     button.innerHTML = originalText;
@@ -874,7 +649,7 @@ if ($porcentajeRestante > 50) {
                     const newButton = document.createElement('button');
                     newButton.className = 'btn-action btn-deactivate';
                     newButton.title = 'Dar de baja al usuario';
-                    newButton.innerHTML = '<i class="fas fa-user-slash"></i> DAR DE BAJA';
+                    newButton.innerHTML = '<i class="fas fa-user-slash"></i>';
                     newButton.addEventListener('click', function() {
                         darDeBaja(idUsuario, nickname, newButton);
                     });
@@ -885,7 +660,7 @@ if ($porcentajeRestante > 50) {
                     
                     updateStats(1, 0);
                     
-                    showNotification('Usuario reactivado correctamente', 'success');
+                    showNotification('Usuario y sus referenciados reactivados correctamente', 'success');
                 } else {
                     showNotification('Error: ' + data.message, 'error');
                     button.innerHTML = originalText;

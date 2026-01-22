@@ -1130,7 +1130,37 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
             transition: transform 0.3s ease; /* Para el efecto de hover */
         }
-
+/* Estilos adicionales para los nuevos filtros */
+        .form-group.filtro-orden {
+            position: relative;
+        }
+        
+        .badge-orden {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #4caf50;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-left: 5px;
+        }
+        
+        .orden-activo {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .orden-activo span {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        
         /* Efecto opcional al pasar el mouse */
         .feature-img-header:hover {
             transform: scale(1.05);
@@ -1207,3 +1237,21 @@
             height: 140px;
             }
         }
+
+        /* Agregar en tu superadmin_avance.css */
+#loading-filtros {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Para que no se mueva la página */
+html {
+    scroll-behavior: auto !important;
+}

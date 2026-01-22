@@ -13,8 +13,8 @@ header("X-XSS-Protection: 1; mode=block");
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Tracking') {
-    header('HTTP/1.1 403 Forbidden');
-    exit('Acceso denegado');
+    header('location: ../index.php');
+    exit();
 }
 
 $pdo = Database::getConnection();
@@ -218,7 +218,7 @@ if ($porcentajeRestante > 50) {
                     <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
                 </h1>
             </div>
-            <a href="../logout.php" class="../logout-btn">
+            <a href="../logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
             </a>
         </div>

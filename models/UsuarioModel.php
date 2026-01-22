@@ -35,7 +35,32 @@ class UsuarioModel {
         
         return $usuarios;
     }
-    
+    public function getAllUsuariosActivos() {
+        $query = "SELECT 
+                    u.*,
+                    COALESCE(r.total_referenciados, 0) as total_referenciados,
+                    CASE 
+                        WHEN u.tope > 0 THEN 
+                            ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                        ELSE 0 
+                    END as porcentaje_tope
+                  FROM usuario u 
+                  LEFT JOIN (
+                      SELECT id_referenciador, COUNT(*) as total_referenciados 
+                      FROM referenciados where activo = true
+                      GROUP BY id_referenciador
+                  ) r ON u.id_usuario = r.id_referenciador
+                  ORDER BY u.fecha_creacion DESC";
+        $stmt = $this->pdo->query($query);
+        $usuarios = $stmt->fetchAll();
+        
+        // Agregar URLs de fotos
+        foreach ($usuarios as &$usuario) {
+            $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
+        }
+        
+        return $usuarios;
+    }
     // Obtener usuario por ID CON estadísticas de referenciados y foto
     public function getUsuarioById($id_usuario) {
         $query = "SELECT 
@@ -51,6 +76,34 @@ class UsuarioModel {
                       SELECT id_referenciador, COUNT(*) as total_referenciados 
                       FROM referenciados 
                       WHERE id_referenciador = ?
+                      GROUP BY id_referenciador
+                  ) r ON u.id_usuario = r.id_referenciador
+                  WHERE u.id_usuario = ?";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$id_usuario, $id_usuario]);
+        $usuario = $stmt->fetch();
+        
+        if ($usuario) {
+            $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
+        }
+        
+        return $usuario;
+    }
+    public function getUsuarioByActivo($cedula) {
+       $query = "SELECT 
+                    u.*,
+                    COALESCE(r.total_referenciados, 0) as total_referenciados,
+                    CASE 
+                        WHEN u.tope > 0 THEN 
+                            ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                        ELSE 0 
+                    END as porcentaje_tope
+                  FROM usuario u 
+                  LEFT JOIN (
+                      SELECT id_referenciador, COUNT(*) as total_referenciados 
+                      FROM referenciados 
+                      WHERE id_referenciador = ? and activo = true
                       GROUP BY id_referenciador
                   ) r ON u.id_usuario = r.id_referenciador
                   WHERE u.id_usuario = ?";
@@ -270,17 +323,65 @@ class UsuarioModel {
     
     // Desactivar usuario (cambiar estado a false)
     public function desactivarUsuario($id_usuario) {
+    try {
+        $this->pdo->beginTransaction();
+        
+        // 1. Dar de baja al usuario
         $query = "UPDATE usuario SET activo = false WHERE id_usuario = ?";
         $stmt = $this->pdo->prepare($query);
-        return $stmt->execute([$id_usuario]);
+        $result_usuario = $stmt->execute([$id_usuario]);
+        
+        if (!$result_usuario) {
+            throw new Exception("Error al desactivar usuario");
+        }
+        
+        // 2. Dar de baja a TODOS sus referenciados (si es referenciador)
+        $query_referenciados = "UPDATE referenciados SET activo = false WHERE id_referenciador = ?";
+        $stmt_referenciados = $this->pdo->prepare($query_referenciados);
+        $result_referenciados = $stmt_referenciados->execute([$id_usuario]);
+        
+        $this->pdo->commit();
+        
+        // Devolver éxito si ambas operaciones funcionaron
+        return $result_usuario && $result_referenciados;
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        error_log("Error en desactivarUsuario: " . $e->getMessage());
+        throw $e;
     }
+}
     
     // Reactivar usuario (cambiar estado a true)
     public function reactivarUsuario($id_usuario) {
+    try {
+        $this->pdo->beginTransaction();
+        
+        // 1. Reactivar al usuario
         $query = "UPDATE usuario SET activo = true WHERE id_usuario = ?";
         $stmt = $this->pdo->prepare($query);
-        return $stmt->execute([$id_usuario]);
+        $result_usuario = $stmt->execute([$id_usuario]);
+        
+        if (!$result_usuario) {
+            throw new Exception("Error al reactivar usuario");
+        }
+        
+        // 2. Reactivar a TODOS sus referenciados (si es referenciador)
+        $query_referenciados = "UPDATE referenciados SET activo = true WHERE id_referenciador = ?";
+        $stmt_referenciados = $this->pdo->prepare($query_referenciados);
+        $result_referenciados = $stmt_referenciados->execute([$id_usuario]);
+        
+        $this->pdo->commit();
+        
+        // Devolver éxito si ambas operaciones funcionaron
+        return $result_usuario && $result_referenciados;
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        error_log("Error en reactivarUsuario: " . $e->getMessage());
+        throw $e;
     }
+}
     
     // Contar usuarios totales
     public function countUsuarios() {
@@ -482,6 +583,12 @@ public function countSuperAdmin() {
     $stmt = $this->pdo->query($query);
     $result = $stmt->fetch();
     return $result['superadmin'];
+}
+public function countTracking() {
+    $query = "SELECT COUNT(*) as tracking FROM usuario WHERE tipo_usuario = 'Tracking'";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['tracking'];
 }
 
 // Contar todos los tipos de usuario en un solo método

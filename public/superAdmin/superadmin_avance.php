@@ -42,7 +42,7 @@ $filtros = [
 // Obtener todos los referenciadores con sus estadísticas (SIN FILTROS para estadísticas globales)
 try {
     // Obtener todos los usuarios con estadísticas para cálculo global
-    $todosReferenciadores = $usuarioModel->getAllUsuarios();
+    $todosReferenciadores = $usuarioModel->getAllUsuariosActivos();
     
     // Filtrar solo referenciadores activos para estadísticas globales
     $referenciadoresGlobales = array_filter($todosReferenciadores, function($usuario) {
@@ -109,7 +109,7 @@ try {
             $puesto = $puestoVotacionModel->getById($filtros['id_puesto_votacion']);
             if ($puesto && isset($puesto['id_sector'])) {
                 // Obtener el usuario completo con sus relaciones
-                $usuarioCompleto = $usuarioModel->getUsuarioById($usuario['id_usuario']);
+                $usuarioCompleto = $usuarioModel->getUsuarioByIdActivo($usuario['id_usuario']);
                 if ($usuarioCompleto && $usuarioCompleto['id_sector'] != $puesto['id_sector']) {
                     return false;
                 }
@@ -270,39 +270,6 @@ if ($porcentajeRestante > 50) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/superadmin_avance.css">
-    <style>
-        /* Estilos adicionales para los nuevos filtros */
-        .form-group.filtro-orden {
-            position: relative;
-        }
-        
-        .badge-orden {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: #4caf50;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            margin-left: 5px;
-        }
-        
-        .orden-activo {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .orden-activo span {
-            color: #4caf50;
-            font-weight: bold;
-        }
-        
-    </style>
 </head>
 <body>
     <!-- Header -->

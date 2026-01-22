@@ -55,18 +55,18 @@
             font-weight: 500;
         }
         
-        .logout-btn {
+         .logout-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.3);
             color: white;
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: 5px;
             display: flex;
             align-items: center;
             gap: 5px;
             text-decoration: none;
             transition: all 0.3s;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         
         .logout-btn:hover {

@@ -532,6 +532,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
             </p>
         </div>
     </footer>
+
 <!-- Modal de Información del Sistema -->
     <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -543,85 +544,46 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="grafica-modal-content">
-                        <!-- Gráfica -->
-                        <div class="grafica-canvas-modal">
-                            <canvas id="graficaTortaModal1" width="500" height="500"></canvas>
-                            <div class="grafica-note">
-                                <i class="fas fa-info-circle me-1"></i>
-                                <small>Gráfica basada solo en referenciados activos</small>
-                            </div>
-                        </div>
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+                    </div>
+                    
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <div class="text-center mb-4">
+                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
+                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
+                        </h1> -->
+                        <h4 class="text-secondary mb-4">
+                            <strong>Gestión Política de Alta Precisión</strong>
+                        </h4>
                         
-                        <!-- Información y controles -->
-                        <div class="grafica-info-modal">
-                            <div class="grafica-header-modal">
-                                <h4><i class="fas fa-chart-bar me-2"></i>Análisis de Distribución (Solo Activos)</h4>
-                                <div class="grafica-controls">
-                                    <button class="btn-grafica-control" onclick="toggleGraficaModal('modalSistema')" id="btnToggleGrafica1">
-                                        <i class="fas fa-exchange-alt me-1"></i> Cambiar a torta sólida
-                                    </button>
-                                    <button class="btn-grafica-control" onclick="descargarGrafica('modalSistema')">
-                                        <i class="fas fa-download me-1"></i> Descargar
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Estadísticas -->
-                            <div class="estadisticas-grid">
-                                <div class="estadistica-card camara">
-                                    <div class="estadistica-icon">
-                                        <i class="fas fa-landmark"></i>
-                                    </div>
-                                    <div class="estadistica-content">
-                                        <div class="estadistica-label">Referidos a Cámara (Activos)</div>
-                                        <div class="estadistica-value"><?php echo $total_camara; ?></div>
-                                        <div class="estadistica-porcentaje">
-                                            <?php echo $porc_camara . '%'; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="estadistica-card senado">
-                                    <div class="estadistica-icon">
-                                        <i class="fas fa-balance-scale"></i>
-                                    </div>
-                                    <div class="estadistica-content">
-                                        <div class="estadistica-label">Referidos a Senado (Activos)</div>
-                                        <div class="estadistica-value"><?php echo $total_senado; ?></div>
-                                        <div class="estadistica-porcentaje">
-                                            <?php echo $porc_senado . '%'; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="estadistica-card ambos">
-                                    <div class="estadistica-icon">
-                                        <i class="fas fa-handshake"></i>
-                                    </div>
-                                    <div class="estadistica-content">
-                                        <div class="estadistica-label">Votan por ambos (Activos)</div>
-                                        <div class="estadistica-value">
-                                            <?php echo $ambos_contados; ?>
-                                        </div>
-                                        <div class="estadistica-porcentaje">
-                                            <?php echo $porc_ambos . '%'; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="estadistica-card total">
-                                    <div class="estadistica-icon">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div class="estadistica-content">
-                                        <div class="estadistica-label">Total Referenciados Activos</div>
-                                        <div class="estadistica-value"><?php echo $activos; ?></div>
-                                        <div class="estadistica-porcentaje">100%</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<!-- Información de Licencia (MODIFICADO) -->
+<div class="licencia-info">
+    <div class="licencia-header">
+        <h6 class="licencia-title">Licencia Runtime</h6>
+        <span class="licencia-dias">
+            <strong><?php echo $diasRestantes; ?> días restantes</strong>
+        </span>
+    </div>
+    
+    <div class="licencia-progress">
+        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+             style="width: <?php echo $porcentajeRestante; ?>%"
+             role="progressbar" 
+             aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+             aria-valuemin="0" 
+             aria-valuemax="100">
+        </div>
+    </div>
+    
+    <div class="licencia-fecha">
+        <i class="fas fa-calendar-alt me-1"></i>
+        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+        Válida hasta: <?php echo $validaHastaFormatted; ?>
+    </div>
+</div>
                     </div>
                     
                     <!-- Sección de Características -->
@@ -712,7 +674,8 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
             </div>
         </div>
     </div>
-        <!-- Modal de Gráfica de Distribución -->
+
+    <!-- Modal de Gráfica de Distribución -->
     <div class="modal fade" id="modalGrafica" tabindex="-1" aria-labelledby="modalGraficaLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content modal-grafica">
@@ -809,7 +772,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                 </div>
                             </div>
                             
-                                                        <!-- Detalles -->
+                            <!-- Detalles -->
                             <div class="detalles-distribucion">
                                 <h5><i class="fas fa-info-circle me-2"></i>Detalles de la Distribución (Solo Activos)</h5>
                                 <div class="detalle-item">
@@ -834,7 +797,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                 </div>
                             </div>
                             
-                                                        <!-- Resumen -->
+                            <!-- Resumen -->
                             <div class="resumen-final">
                                 <div class="resumen-text">
                                     <i class="fas fa-lightbulb text-warning me-2"></i>
@@ -863,6 +826,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
             </div>
         </div>
     </div>
+
     <!-- Modal de Exportación -->
     <?php if ($total_referenciados > 0): ?>
     <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">

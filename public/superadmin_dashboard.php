@@ -138,7 +138,27 @@ if ($porcentajeRestante > 50) {
             background: rgba(255,255,255,0.2);
             color: white;
         }
-        
+        /* Contenedor para centrar la imagen */
+        .feature-image-container {
+            text-align: center;
+            margin-bottom: 2rem; /* Espacio antes de las tarjetas */
+        }
+
+        /* Estilos de la imagen redonda */
+        .feature-img-header {
+            width: 190px;
+            height: 190px;
+            object-fit: cover;       /* Asegura que no se deforme */
+            border-radius: 50%;      /* Círculo perfecto */
+            border: 4px solid #ffffff; 
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
+            transition: transform 0.3s ease; /* Para el efecto de hover */
+        }
+
+        /* Efecto opcional al pasar el mouse */
+        .feature-img-header:hover {
+            transform: scale(1.05);
+        }
         /* Main Container - CENTRADO Y MÁS AMPLIO */
         .main-container {
             max-width: 1400px;
@@ -303,7 +323,10 @@ if ($porcentajeRestante > 50) {
                 max-width: 600px;
                 gap: 25px;
             }
-            
+            .feature-img-header {
+            width: 140px;
+            height: 140px;
+            }
             .dashboard-option {
                 padding: 30px 20px;
             }
@@ -319,7 +342,10 @@ if ($porcentajeRestante > 50) {
                 align-items: flex-start;
                 gap: 10px;
             }
-            
+            .feature-img-header {
+            width: 140px;
+            height: 140px;
+            }
             .user-info {
                 order: 1;
             }
@@ -367,7 +393,10 @@ if ($porcentajeRestante > 50) {
             .dashboard-option {
                 padding: 25px 15px;
             }
-            
+            .feature-img-header {
+            width: 140px;
+            height: 140px;
+            }
             .option-icon-wrapper {
                 width: 55px;
                 height: 55px;
@@ -776,7 +805,18 @@ if ($porcentajeRestante > 50) {
     </div>
 </div>
                     </div>
-                    
+                    <div class="feature-image-container">
+                        <img src="imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
                     <!-- Sección de Características -->
                     <div class="row g-4 mb-4">
                         <!-- Efectividad de la Herramienta -->
@@ -834,28 +874,7 @@ if ($porcentajeRestante > 50) {
                                 </p>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Footer de información del sistema -->
-                    <div class="system-footer-modal">
-                        <div class="text-center">
-                            <p class="text-muted mb-1">
-                                © Derechos de autor Reservados • 
-                                <strong><?php echo htmlspecialchars($infoSistema['desarrollador'] ?? 'SISGONTech - Ing. Rubén Darío González García'); ?></strong>
-                            </p>
-                            <p class="text-muted mb-1">
-                                <strong>SISGONTech</strong> • Colombia • <?php echo date('Y'); ?>
-                            </p>
-                            <p class="text-muted mb-0">
-                                Email: <?php echo htmlspecialchars($infoSistema['contacto_email'] ?? 'sisgonnet@gmail.com'); ?> • 
-                                Contacto: <?php echo htmlspecialchars($infoSistema['contacto_telefono'] ?? '+57 3106310227'); ?>
-                            </p>
-                            <p class="small text-muted mt-2">
-                                Versión <?php echo htmlspecialchars($infoSistema['version_sistema'] ?? '1.0.1'); ?> • 
-                                Licencia <?php echo htmlspecialchars($infoSistema['tipo_licencia'] ?? 'Runtime'); ?>
-                            </p>
-                        </div>
-                    </div>
+                    </div>  
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">

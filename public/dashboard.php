@@ -107,6 +107,30 @@ if ($porcentajeRestante > 50) {
             border: 3px solid #fff; /* Borde blanco */
             background: white;
         }
+        .modal-logo:hover {
+            transform: scale(1.05);
+        }
+        /* Contenedor para centrar la imagen */
+        .feature-image-container {
+            text-align: center;
+            margin-bottom: 2rem; /* Espacio antes de las tarjetas */
+        }
+
+        /* Estilos de la imagen redonda */
+        .feature-img-header {
+            width: 190px;
+            height: 190px;
+            object-fit: cover;       /* Asegura que no se deforme */
+            border-radius: 50%;      /* Círculo perfecto */
+            border: 4px solid #ffffff; 
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
+            transition: transform 0.3s ease; /* Para el efecto de hover */
+        }
+
+        /* Efecto opcional al pasar el mouse */
+        .feature-img-header:hover {
+            transform: scale(1.05);
+        }
         
         /* Barra de progreso de licencia */
         .licencia-info {
@@ -220,7 +244,10 @@ if ($porcentajeRestante > 50) {
             .modal-logo {
                 max-width: 200px; /* AGRANDADO para móviles también */
             }
-            
+            .feature-img-header {
+            width: 140px;
+            height: 140px;
+            }
             .feature-card {
                 padding: 15px;
                 margin-bottom: 15px;
@@ -263,6 +290,13 @@ if ($porcentajeRestante > 50) {
             
             .modal-logo {
                 max-width: 180px; /* AGRANDADO para móviles pequeños */
+            }
+            .modal-logo-container {
+            padding: 15px;
+            }
+            .feature-img-header {
+            width: 140px;
+            height: 140px;
             }
             
             .licencia-header {
@@ -575,7 +609,18 @@ if ($porcentajeRestante > 50) {
         Válida hasta: <?php echo $validaHastaFormatted; ?>
     </div>
 </div>
-                    
+                    <div class="feature-image-container">
+                        <img src="imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
                     <!-- Sección de Características -->
                     <div class="row g-4 mb-4">
                         <!-- Efectividad de la Herramienta -->
@@ -632,27 +677,6 @@ if ($porcentajeRestante > 50) {
                                     Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
                                 </p>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Footer de información del sistema -->
-                    <div class="system-footer-modal">
-                        <div class="text-center">
-                            <p class="text-muted mb-1">
-                                © Derechos de autor Reservados • 
-                                <strong><?php echo htmlspecialchars($infoSistema['desarrollador'] ?? 'SISGONTech - Ing. Rubén Darío González García'); ?></strong>
-                            </p>
-                            <p class="text-muted mb-1">
-                                <strong>SISGONTech</strong> • Colombia • <?php echo date('Y'); ?>
-                            </p>
-                            <p class="text-muted mb-0">
-                                Email: <?php echo htmlspecialchars($infoSistema['contacto_email'] ?? 'sisgonnet@gmail.com'); ?> • 
-                                Contacto: <?php echo htmlspecialchars($infoSistema['contacto_telefono'] ?? '+57 3106310227'); ?>
-                            </p>
-                            <p class="small text-muted mt-2">
-                                Versión <?php echo htmlspecialchars($infoSistema['version_sistema'] ?? '1.0.1'); ?> • 
-                                Licencia <?php echo htmlspecialchars($infoSistema['tipo_licencia'] ?? 'Runtime'); ?>
-                            </p>
                         </div>
                     </div>
                 </div>

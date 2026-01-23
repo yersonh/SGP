@@ -186,9 +186,10 @@ if ($porcentajeRestante > 50) {
                 <button class="tab-btn" data-tab="comparativas">
                     <i class="fas fa-balance-scale"></i> Comparativas
                 </button>
+                <!--
                 <button class="tab-btn" data-tab="tendencias">
                     <i class="fas fa-chart-line"></i> Tendencias
-                </button>
+                </button>-->
                 <button class="tab-btn" data-tab="detalle">
                     <i class="fas fa-table"></i> Detalle
                 </button>
@@ -427,14 +428,14 @@ if ($porcentajeRestante > 50) {
                     </style>
                 </div>
                 
-                <!-- TAB 4: TENDENCIAS -->
+                <!-- TAB 4: TENDENCIAS 
                 <div class="tab-pane" id="tab-tendencias">
                     <div class="text-center py-5">
                         <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
                         <h5>Análisis de Tendencias</h5>
                         <p class="text-muted">Esta sección está en desarrollo</p>
                     </div>
-                </div>
+                </div>-->
                 
                 <!-- TAB 5: DETALLE -->
                 <div class="tab-pane" id="tab-detalle">
@@ -1023,46 +1024,166 @@ function actualizarMiniGraficas(data) {
             });
         }
         
-        // Función para actualizar tabla de detalle
-        function actualizarTablaDetalle(datos) {
-            const tbody = $('#tablaDetalle tbody');
-            tbody.empty();
-            
-            if (datos.length === 0) {
-                tbody.append(`
-                    <tr>
-                        <td colspan="7" class="text-center py-4">
-                            <i class="fas fa-info-circle"></i> No hay registros para la fecha seleccionada
-                        </td>
-                    </tr>
-                `);
-                return;
+        // Función para actualizar tabla de detalle (CON SOPORTE MODO OSCURO)
+function actualizarTablaDetalle(datos) {
+    const tbody = $('#tablaDetalle tbody');
+    tbody.empty();
+    
+    // Verificar si está en modo oscuro
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (datos.length === 0) {
+        // Mensaje cuando no hay datos
+        const claseFila = isDarkMode ? 'text-light' : '';
+        const claseTexto = isDarkMode ? 'text-light' : 'text-muted';
+        
+        tbody.append(`
+            <tr class="${claseFila}">
+                <td colspan="7" class="text-center py-4 ${claseTexto}">
+                    <i class="fas fa-info-circle ${isDarkMode ? 'text-primary' : ''}"></i> 
+                    No hay registros para la fecha seleccionada
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    // Generar filas con estilos condicionales
+    datos.forEach((item, index) => {
+        const hora = new Date(item.fecha_registro).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Clases condicionales para modo oscuro
+        const claseFila = isDarkMode ? 'text-light' : '';
+        const claseBadge = isDarkMode ? 
+            (item.tipo_eleccion === 'camara' ? 'bg-primary' : 'bg-success') : 
+            (item.tipo_eleccion === 'camara' ? 'bg-primary' : 'bg-success');
+        
+        // Color de fondo alternado para filas (mejor visibilidad en modo oscuro)
+        const bgClass = isDarkMode ? 
+            (index % 2 === 0 ? 'bg-dark-row' : 'bg-darker-row') : 
+            '';
+        
+        tbody.append(`
+            <tr class="${claseFila} ${bgClass}">
+                <td>${hora}</td>
+                <td>${item.referenciador_nombre || 'N/A'}</td>
+                <td>${item.nombres} ${item.apellidos}</td>
+                <td>${item.cedula || 'N/A'}</td>
+                <td>${item.telefono || 'N/A'}</td>
+                <td>
+                    <span class="badge ${claseBadge}">
+                        ${item.tipo_eleccion === 'camara' ? 'Cámara' : 'Senado'}
+                    </span>
+                </td>
+                <td>${item.zona_nombre || 'N/A'}</td>
+            </tr>
+        `);
+    });
+    
+    // Aplicar estilos adicionales si está en modo oscuro
+    if (isDarkMode) {
+        aplicarEstilosTablaModoOscuro();
+    }
+}
+
+// Función auxiliar para aplicar estilos de modo oscuro a la tabla
+function aplicarEstilosTablaModoOscuro() {
+    const tabla = $('#tablaDetalle');
+    
+    // Asegurar que la tabla tenga la clase table-dark de Bootstrap
+    tabla.removeClass('table-hover').addClass('table-dark');
+    
+    // Estilos personalizados para mejor visibilidad
+    tabla.find('td, th').css({
+        'border-color': '#4d4d4d',
+        'background-color': 'transparent'
+    });
+    
+    // Filas alternadas
+    tabla.find('tbody tr:nth-child(even)').css('background-color', '#3a3a3a');
+    tabla.find('tbody tr:nth-child(odd)').css('background-color', '#2d2d2d');
+    
+    // Efecto hover
+    tabla.find('tbody tr').hover(
+        function() {
+            $(this).css('background-color', '#4a4a4a');
+        },
+        function() {
+            const index = $(this).index();
+            if (index % 2 === 0) {
+                $(this).css('background-color', '#2d2d2d');
+            } else {
+                $(this).css('background-color', '#3a3a3a');
             }
+        }
+    );
+}
+// Función para aplicar modo oscuro a TODO el contenido dinámico
+function aplicarModoOscuroGlobal() {
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (!isDarkMode) return;
+    
+    // 1. Aplicar a la tabla
+    aplicarEstilosTablaModoOscuro();
+    
+    // 2. Aplicar a cards de comparativas
+    $('.card').each(function() {
+        if ($(this).closest('#comparativasContenido').length) {
+            $(this).css({
+                'background-color': '#3d3d3d',
+                'color': '#e0e0e0',
+                'border-color': '#4d4d4d'
+            });
             
-            datos.forEach(item => {
-                const hora = new Date(item.fecha_registro).toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                tbody.append(`
-                    <tr>
-                        <td>${hora}</td>
-                        <td>${item.referenciador_nombre || 'N/A'}</td>
-                        <td>${item.nombres} ${item.apellidos}</td>
-                        <td>${item.cedula || 'N/A'}</td>
-                        <td>${item.telefono || 'N/A'}</td>
-                        <td>
-                            <span class="badge ${item.tipo_eleccion === 'camara' ? 'bg-primary' : 'bg-success'}">
-                                ${item.tipo_eleccion === 'camara' ? 'Cámara' : 'Senado'}
-                            </span>
-                        </td>
-                        <td>${item.zona_nombre || 'N/A'}</td>
-                    </tr>
-                `);
+            $(this).find('.card-header').css({
+                'background-color': '#4d4d4d',
+                'border-color': '#5d5d5d',
+                'color': '#ffffff'
             });
         }
-        
+    });
+    
+    // 3. Aplicar a gráficas
+    $('.grafica-full-card, .grafica-half-card').css({
+        'background-color': '#3d3d3d',
+        'color': '#e0e0e0',
+        'border-color': '#4d4d4d'
+    });
+}
+
+// Escuchar cambios en el tema del sistema
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    aplicarModoOscuroGlobal();
+});
+
+// Llamar después de cada carga de contenido dinámico
+function cargarTablaDetalle() {
+    const fecha = $('#selectFecha').val();
+    const tipo = $('#selectTipo').val();
+    const zona = $('#selectZona').val();
+    
+    $.ajax({
+        url: '../ajax/obtener_detalle_referenciados.php',
+        type: 'POST',
+        data: {
+            fecha: fecha,
+            tipo: tipo,
+            zona: zona
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                actualizarTablaDetalle(response.data);
+                // Aplicar modo oscuro después de cargar
+                setTimeout(aplicarModoOscuroGlobal, 100);
+            }
+        }
+    });
+}
         // Función para configurar eventos
         function configurarEventos() {
             // Aplicar filtros
@@ -1133,9 +1254,6 @@ function actualizarMiniGraficas(data) {
                 }
             });
         }
-        
-        // Función para mostrar comparativa
-        // Función para mostrar comparativa
 // Función para mostrar comparativa
 function mostrarComparativa(data, tipo) {
     let html = '';

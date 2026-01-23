@@ -647,21 +647,10 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                     
                     <!-- Footer de información del sistema -->
                     <div class="system-footer-modal">
-                        <div class="text-center">
-                            <p class="text-muted mb-1">
-                                © Derechos de autor Reservados • 
-                                <strong><?php echo htmlspecialchars($infoSistema['desarrollador'] ?? 'SISGONTech - Ing. Rubén Darío González García'); ?></strong>
-                            </p>
-                            <p class="text-muted mb-1">
-                                <strong>SISGONTech</strong> • Colombia • <?php echo date('Y'); ?>
-                            </p>
-                            <p class="text-muted mb-0">
-                                Email: <?php echo htmlspecialchars($infoSistema['contacto_email'] ?? 'sisgonnet@gmail.com'); ?> • 
-                                Contacto: <?php echo htmlspecialchars($infoSistema['contacto_telefono'] ?? '+57 3106310227'); ?>
-                            </p>
-                            <p class="small text-muted mt-2">
-                                Versión <?php echo htmlspecialchars($infoSistema['version_sistema'] ?? '1.0.1'); ?> • 
-                                Licencia <?php echo htmlspecialchars($infoSistema['tipo_licencia'] ?? 'Runtime'); ?>
+                        <div class="container text-center">
+                            <p>
+                                © Derechos de autor Reservados • Equipo de soporte • <strong>SISGONTech</strong><br>
+                                Email: soportesgp@gmail.com • Contacto: +57 3138486960 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
                             </p>
                         </div>
                     </div>

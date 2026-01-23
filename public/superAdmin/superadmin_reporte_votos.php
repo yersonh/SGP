@@ -467,22 +467,25 @@ if ($porcentajeRestante > 50) {
     </div>
 
     <!-- Footer -->
-    <footer class="system-footer">
-        <div class="container text-center mb-3">
-            <img src="../imagenes/Logo-artguru.png" 
-                alt="Logo" 
-                class="logo-clickable"
-                onclick="mostrarModalSistema()"
-                title="Haz clic para ver información del sistema">
-        </div>
+<footer class="system-footer">
+    <div class="container text-center mb-3">
+        <img id="footer-logo" 
+            src="../imagenes/Logo-artguru.png" 
+            alt="Logo ARTGURU" 
+            class="logo-clickable"
+            onclick="mostrarModalSistema()"
+            title="Haz clic para ver información del sistema"
+            data-img-claro="../imagenes/Logo-artguru.png"
+            data-img-oscuro="../imagenes/image_no_bg.png">
+    </div>
 
-        <div class="container text-center">
-            <p>
-                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
-                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
-            </p>
-        </div>
-    </footer>
+    <div class="container text-center">
+        <p>
+            © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
+            Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+        </p>
+    </div>
+</footer>
     
     <!-- Modal de Información del Sistema -->
     <div class="modal fade" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
@@ -1088,7 +1091,28 @@ function actualizarTablaDetalle(datos) {
         aplicarEstilosTablaModoOscuro();
     }
 }
+function actualizarLogoSegunTema() {
+    const logo = document.getElementById('footer-logo');
+    if (!logo) return;
+    
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (isDarkMode) {
+        logo.src = logo.getAttribute('data-img-oscuro');
+    } else {
+        logo.src = logo.getAttribute('data-img-claro');
+    }
+}
 
+// Ejecutar al cargar y cuando cambie el tema
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarLogoSegunTema();
+});
+
+// Escuchar cambios en el tema del sistema
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    actualizarLogoSegunTema();
+});
 // Función auxiliar para aplicar estilos de modo oscuro a la tabla
 function aplicarEstilosTablaModoOscuro() {
     const tabla = $('#tablaDetalle');

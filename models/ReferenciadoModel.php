@@ -651,5 +651,254 @@ class ReferenciadoModel {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    // En ReferenciadoModel.php
+public function getReferenciadosPorFecha($fecha) {
+    $sql = "SELECT r.*, 
+                   u.nombres as referenciador_nombre,
+                   u.apellidos as referenciador_apellido,
+                   z.nombre as zona_nombre,
+                   s.nombre as sector_nombre
+            FROM referenciados r
+            JOIN usuario u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            WHERE DATE(r.fecha_registro) = :fecha
+            AND r.activo = true
+            ORDER BY r.fecha_registro DESC";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute(['fecha' => $fecha]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+public function getComparativaPorFechas($fecha_inicio, $fecha_fin) {
+    $sql = "SELECT 
+                DATE(r.fecha_registro) as fecha,
+                COUNT(*) as total,
+                SUM(CASE WHEN r.afinidad = 'camara' THEN 1 ELSE 0 END) as camara,
+                SUM(CASE WHEN r.afinidad = 'senado' THEN 1 ELSE 0 END) as senado,
+                COUNT(DISTINCT r.id_referenciador) as referenciadores_activos,
+                COUNT(DISTINCT r.id_zona) as zonas_activas,
+                COUNT(DISTINCT r.id_sector) as sectores_activos
+            FROM referenciados r
+            WHERE DATE(r.fecha_registro) BETWEEN :fecha_inicio AND :fecha_fin
+            GROUP BY DATE(r.fecha_registro)
+            ORDER BY fecha";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([
+        'fecha_inicio' => $fecha_inicio,
+        'fecha_fin' => $fecha_fin
+    ]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Método adicional para obtener estadísticas detalladas por fecha
+public function getEstadisticasPorFecha($fecha, $tipoEleccion = null, $idZona = null) {
+    $sql = "SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN r.afinidad >= 3 THEN 1 ELSE 0 END) as alta_afinidad,
+                SUM(CASE WHEN r.afinidad <= 2 THEN 1 ELSE 0 END) as baja_afinidad,
+                COUNT(DISTINCT r.id_referenciador) as referenciadores_activos,
+                COUNT(DISTINCT r.id_zona) as zonas_activas,
+                COUNT(DISTINCT r.id_sector) as sectores_activos,
+                COUNT(DISTINCT r.id_puesto_votacion) as puestos_activos,
+                
+                -- Distribución por grupos parlamentarios (Cámara/Senado/Ambos)
+                SUM(CASE WHEN r.id_grupo = 1 THEN 1 ELSE 0 END) as camara,
+                SUM(CASE WHEN r.id_grupo = 2 THEN 1 ELSE 0 END) as senado,
+                SUM(CASE WHEN r.id_grupo = 3 THEN 1 ELSE 0 END) as ambos,
+                
+                -- Para el KPI de Distribución: Cámara + Ambos / Senado + Ambos
+                (SUM(CASE WHEN r.id_grupo = 1 THEN 1 ELSE 0 END) + 
+                 SUM(CASE WHEN r.id_grupo = 3 THEN 1 ELSE 0 END)) as total_camara_con_ambos,
+                (SUM(CASE WHEN r.id_grupo = 2 THEN 1 ELSE 0 END) + 
+                 SUM(CASE WHEN r.id_grupo = 3 THEN 1 ELSE 0 END)) as total_senado_con_ambos,
+                
+                -- CORREGIR: compromiso es texto, verificar varios valores posibles
+                SUM(CASE WHEN TRIM(r.compromiso) = 'Si' THEN 1 
+                         WHEN TRIM(r.compromiso) = 'SI' THEN 1
+                         WHEN TRIM(r.compromiso) = 'si' THEN 1
+                         WHEN TRIM(r.compromiso) = '1' THEN 1
+                         WHEN TRIM(r.compromiso) = 'true' THEN 1
+                         WHEN TRIM(r.compromiso) = 'TRUE' THEN 1
+                         WHEN r.compromiso IS NOT NULL AND TRIM(r.compromiso) != '' THEN 1
+                         ELSE 0 
+                    END) as con_compromiso,
+                
+                -- CORREGIR: vota_fuera también es texto 'Si'/'No'
+                SUM(CASE WHEN TRIM(r.vota_fuera) = 'Si' THEN 1 
+                         WHEN TRIM(r.vota_fuera) = 'SI' THEN 1
+                         WHEN TRIM(r.vota_fuera) = 'si' THEN 1
+                         WHEN TRIM(r.vota_fuera) = '1' THEN 1
+                         WHEN TRIM(r.vota_fuera) = 'true' THEN 1
+                         ELSE 0 
+                    END) as vota_fuera,
+                
+                ROUND(AVG(r.afinidad)::numeric, 2) as afinidad_promedio
+            FROM referenciados r
+            INNER JOIN usuario u ON r.id_referenciador = u.id_usuario
+            WHERE DATE(r.fecha_registro) = :fecha
+            AND r.activo = true
+            AND u.tipo_usuario = 'Referenciador'
+            AND u.activo = true";
+    
+    $params = [':fecha' => $fecha];
+    
+    // Agregar filtros si se proporcionan
+    if ($tipoEleccion && $tipoEleccion !== 'todos') {
+        if ($tipoEleccion === 'camara') {
+            $sql .= " AND (r.id_grupo = 1 OR r.id_grupo = 3)";
+        } elseif ($tipoEleccion === 'senado') {
+            $sql .= " AND (r.id_grupo = 2 OR r.id_grupo = 3)";
+        }
+    }
+    
+    if ($idZona && $idZona !== 'todas') {
+        $sql .= " AND r.id_zona = :id_zona";
+        $params[':id_zona'] = $idZona;
+    }
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Método para obtener referenciados por hora
+public function getReferenciadosPorHora($fecha, $tipoEleccion = null, $idZona = null) {
+    $sql = "SELECT 
+                EXTRACT(HOUR FROM r.fecha_registro) as hora,
+                COUNT(*) as cantidad
+            FROM referenciados r
+            INNER JOIN usuario u ON r.id_referenciador = u.id_usuario
+            WHERE DATE(r.fecha_registro) = :fecha
+            AND r.activo = true
+            AND u.tipo_usuario = 'Referenciador'
+            AND u.activo = true";
+    
+    $params = [':fecha' => $fecha];
+    
+    // Agregar filtros
+    if ($tipoEleccion && $tipoEleccion !== 'todos') {
+        if ($tipoEleccion === 'camara') {
+            $sql .= " AND (r.id_grupo = 1 OR r.id_grupo = 3)";
+        } elseif ($tipoEleccion === 'senado') {
+            $sql .= " AND (r.id_grupo = 2 OR r.id_grupo = 3)";
+        }
+    }
+    
+    if ($idZona && $idZona !== 'todas') {
+        $sql .= " AND r.id_zona = :id_zona";
+        $params[':id_zona'] = $idZona;
+    }
+    
+    $sql .= " GROUP BY EXTRACT(HOUR FROM r.fecha_registro)
+              ORDER BY hora";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Método para obtener top referenciadores por fecha
+public function getTopReferenciadoresPorFecha($fecha, $limite = 10, $tipoEleccion = null, $idZona = null) {
+    $sql = "SELECT 
+                u.id_usuario,
+                CONCAT(u.nombres, ' ', u.apellidos) as nombre,
+                COUNT(r.id_referenciado) as cantidad,
+                u.id_zona,
+                z.nombre as zona_nombre
+            FROM referenciados r
+            JOIN usuario u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN zona z ON u.id_zona = z.id_zona
+            WHERE DATE(r.fecha_registro) = :fecha
+            AND r.activo = true
+            AND u.tipo_usuario = 'Referenciador'
+            AND u.activo = true";
+    
+    $params = [':fecha' => $fecha];
+    
+    // Agregar filtros
+    if ($tipoEleccion && $tipoEleccion !== 'todos') {
+        if ($tipoEleccion === 'camara') {
+            $sql .= " AND (r.id_grupo = 1 OR r.id_grupo = 3)";
+        } elseif ($tipoEleccion === 'senado') {
+            $sql .= " AND (r.id_grupo = 2 OR r.id_grupo = 3)";
+        }
+    }
+    
+    if ($idZona && $idZona !== 'todas') {
+        $sql .= " AND r.id_zona = :id_zona";
+        $params[':id_zona'] = $idZona;
+    }
+    
+    $sql .= " GROUP BY u.id_usuario, u.nombres, u.apellidos, u.id_zona, z.nombre
+              ORDER BY cantidad DESC
+              LIMIT :limite";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':fecha', $fecha);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    
+    if ($idZona && $idZona !== 'todas') {
+        $stmt->bindValue(':id_zona', $idZona);
+    }
+    
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Método para obtener distribución por zona
+public function getDistribucionPorZona($fecha) {
+    $sql = "SELECT 
+                z.id_zona,
+                z.nombre as zona,
+                COUNT(r.id_referenciado) as cantidad,
+                -- CORREGIR: afinidad es numérica 1-5
+                SUM(CASE WHEN r.afinidad >= 3 THEN 1 ELSE 0 END) as alta_afinidad,
+                SUM(CASE WHEN r.afinidad <= 2 THEN 1 ELSE 0 END) as baja_afinidad
+            FROM referenciados r
+            JOIN zona z ON r.id_zona = z.id_zona
+            WHERE DATE(r.fecha_registro) = :fecha
+            AND r.activo = true
+            GROUP BY z.id_zona, z.nombre
+            ORDER BY cantidad DESC";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute(['fecha' => $fecha]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Método para obtener detalle de referenciados por fecha
+public function getDetalleReferenciadosPorFecha($fecha, $limite = 1000) {
+    $sql = "SELECT 
+                r.id_referenciado,
+                r.nombre,
+                r.apellido,
+                r.cedula,
+                r.telefono,
+                r.afinidad,
+                r.compromiso,  -- Esto es texto 'Si'/'No' o similar
+                r.vota_fuera,  -- Esto es texto 'Si'/'No'
+                r.fecha_registro,
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                z.nombre as zona_nombre,
+                s.nombre as sector_nombre,
+                pv.nombre as puesto_votacion_nombre
+            FROM referenciados r
+            JOIN usuario u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            WHERE DATE(r.fecha_registro) = :fecha
+            AND r.activo = true
+            ORDER BY r.fecha_registro DESC
+            LIMIT :limite";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':fecha', $fecha);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 }
 ?>

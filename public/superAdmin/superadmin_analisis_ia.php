@@ -16,13 +16,8 @@ $sistemaModel = new SistemaModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
-// 6. Obtener información del sistema
-$infoSistema = $sistemaModel->getInformacionSistema();
 
-// 7. Formatear fecha para mostrar
-$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
-
-// 8. Obtener información completa de la licencia (MODIFICADO)
+// Obtener información completa de la licencia
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
 
 // Extraer valores
@@ -31,10 +26,10 @@ $diasRestantes = $licenciaInfo['dias_restantes'];
 $validaHastaFormatted = $licenciaInfo['valida_hasta_formatted'];
 $fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
 
-// PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
+// Calcular porcentaje RESTANTE
 $porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
 
-// Color de la barra basado en lo que RESTA (ahora es más simple)
+// Color de la barra
 if ($porcentajeRestante > 50) {
     $barColor = 'bg-success';
 } elseif ($porcentajeRestante > 25) {
@@ -49,18 +44,18 @@ if ($porcentajeRestante > 50) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Super Admin - SGP</title>
+    <title>Rendimiento Diario de Votos - Super Admin - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../styles/superadmin_monitoreos.css">
+    <link rel="stylesheet" href="../styles/superadmin_analisis_ia.css">
 </head>
 <body>
-    <!-- Header (igual al referenciador) -->
+    <!-- Header -->
     <header class="main-header">
         <div class="header-container">
             <div class="header-top">
                 <div class="header-title">
-                    <h1><i class="fas fa-user-shield"></i> Panel Super Admin</h1>
+                    <h1><i class="fas fa-chart-line"></i> Rendimiento Diario de Votos</h1>
                     <div class="user-info">
                         <i class="fas fa-user-circle"></i>
                         <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
@@ -73,12 +68,12 @@ if ($porcentajeRestante > 50) {
         </div>
     </header>
 
-    <!-- Breadcrumb Navigation (IGUAL AL DE DATA REFERIDOS) -->
+    <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
-                <li class="breadcrumb-item active"><i class="fas fa-database"></i> Monitores</li>
+                <li class="breadcrumb-item active"><i class="fas fa-chart-bar"></i> Rendimiento Votos</li>
             </ol>
         </nav>
     </div>
@@ -88,64 +83,42 @@ if ($porcentajeRestante > 50) {
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="dashboard-title">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Panel de Control Super Admin</span>
+                <i class="fas fa-calendar-day"></i>
+                <span>Análisis de Rendimiento Diario</span>
             </div>
             <p class="dashboard-subtitle">
-                Acceda a los módulos especializados de análisis y seguimiento del sistema de gestión política.
-                Supervise el avance de referenciadores.
+                Visualice el rendimiento diario de votos registrados en el sistema. 
+                Análisis detallado por fecha, zona y tipo de elección.
             </p>
         </div>
         
-        <!-- Grid de 3 columnas - AHORA 3 BOTONES -->
-        <div class="dashboard-grid">
-            <!-- AVANCE REFERENCIADOS -->
-            <a href="superadmin_avance.php" class="dashboard-option option-avance">
+        <!-- ÚNICO BOTÓN CENTRADO -->
+        <div class="dashboard-grid-single">
+            <!-- RENDIMIENTO DIARIO DE VOTOS -->
+            <a href="superadmin_reporte_votos.php" class="dashboard-option option-rendimiento">
                 <div class="access-indicator">
-                    <i class="fas fa-chart-line"></i> VER DASHBOARD
+                    <i class="fas fa-chart-line"></i> VER REPORTE COMPLETO
                 </div>
                 <div class="option-icon-wrapper">
                     <div class="option-icon">
-                        <i class="fas fa-users-line"></i>
+                        <i class="fas fa-calendar-check"></i>
                     </div>
                 </div>
-                <div class="option-title">AVANCE REFERENCIADOS</div>
+                <div class="option-title">RENDIMIENTO DIARIO DE VOTOS</div>
                 <div class="option-description">
-                    Monitoreo en tiempo real del progreso de referenciadores y análisis 
-                    detallado de avances por zona, sector y puesto.
+                    Análisis detallado del rendimiento diario de votos registrados en el sistema.
+                    Reportes por fecha, comparativas históricas y tendencias de crecimiento.
                 </div>
-            </a>
-            
-            <!-- GRÁFICA DE VOTOS -->
-            <a href="superadmin_grafica_votos.php" class="dashboard-option option-avance">
-                <div class="access-indicator">
-                    <i class="fas fa-chart-pie"></i> VER GRÁFICA
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-chart-bar"></i>
+                <div class="option-features">
+                    <div class="feature-badge">
+                        <i class="fas fa-chart-bar"></i> Gráficas diarias
                     </div>
-                </div>
-                <div class="option-title">GRÁFICA DE VOTOS</div>
-                <div class="option-description">
-                    Visualización gráfica de la distribución de votos por Cámara y Senado.
-                    Análisis comparativo de referenciados activos.
-                </div>
-            </a>
-            
-            <!-- ANÁLISIS IA -->
-            <a href="superadmin_analisis_ia.php" class="dashboard-option option-analisis">
-                <div class="access-indicator">
-                    <i class="fas fa-brain"></i> INICIAR ANÁLISIS
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-robot"></i>
+                    <div class="feature-badge">
+                        <i class="fas fa-calendar-alt"></i> Comparativas por fecha
                     </div>
-                </div>
-                <div class="option-title">ANÁLISIS IA</div>
-                <div class="option-description">
-                    Análisis predictivo y prescriptivo utilizando inteligencia artificial.
+                    <div class="feature-badge">
+                        <i class="fas fa-trend-up"></i> Tendencias
+                    </div>
                 </div>
             </a>
         </div>
@@ -168,6 +141,7 @@ if ($porcentajeRestante > 50) {
             </p>
         </div>
     </footer>
+    
     <!-- Modal de Información del Sistema -->
     <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -179,47 +153,45 @@ if ($porcentajeRestante > 50) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Logo centrado AGRANDADO -->
+                    <!-- Logo centrado -->
                     <div class="modal-logo-container">
                         <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                     </div>
                     
-                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <!-- Título -->
                     <div class="text-center mb-4">
-                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
-                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
-                        </h1> -->
                         <h4 class="text-secondary mb-4">
                             <strong>Gestión Política de Alta Precisión</strong>
                         </h4>
                         
-<!-- Información de Licencia (MODIFICADO) -->
-<div class="licencia-info">
-    <div class="licencia-header">
-        <h6 class="licencia-title">Licencia Runtime</h6>
-        <span class="licencia-dias">
-            <strong><?php echo $diasRestantes; ?> días restantes</strong>
-        </span>
-    </div>
-    
-    <div class="licencia-progress">
-        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-             style="width: <?php echo $porcentajeRestante; ?>%"
-             role="progressbar" 
-             aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-             aria-valuemin="0" 
-             aria-valuemax="100">
-        </div>
-    </div>
-    
-    <div class="licencia-fecha">
-        <i class="fas fa-calendar-alt me-1"></i>
-        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-        Válida hasta: <?php echo $validaHastaFormatted; ?>
-    </div>
-</div>
+                        <!-- Información de Licencia -->
+                        <div class="licencia-info">
+                            <div class="licencia-header">
+                                <h6 class="licencia-title">Licencia Runtime</h6>
+                                <span class="licencia-dias">
+                                    <strong><?php echo $diasRestantes; ?> días restantes</strong>
+                                </span>
+                            </div>
+                            
+                            <div class="licencia-progress">
+                                <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                     style="width: <?php echo $porcentajeRestante; ?>%"
+                                     role="progressbar" 
+                                     aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            
+                            <div class="licencia-fecha">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                                Válida hasta: <?php echo $validaHastaFormatted; ?>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <!-- Imagen del ingeniero -->
                     <div class="feature-image-container">
                         <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
                         <div class="profile-info mt-3">
@@ -232,6 +204,7 @@ if ($porcentajeRestante > 50) {
                             </small>
                         </div>
                     </div>
+                    
                     <!-- Sección de Características -->
                     <div class="row g-4 mb-4">
                         <!-- Efectividad de la Herramienta -->
@@ -306,43 +279,37 @@ if ($porcentajeRestante > 50) {
     <script>
         // Efecto de carga suave
         document.addEventListener('DOMContentLoaded', function() {
-            // Efecto hover mejorado
-            const options = document.querySelectorAll('.dashboard-option');
+            // Efecto hover mejorado para el botón único
+            const option = document.querySelector('.dashboard-option');
             
-            options.forEach(option => {
-                option.addEventListener('mouseenter', function() {
-                    this.style.zIndex = '10';
-                });
-                
-                option.addEventListener('mouseleave', function() {
-                    this.style.zIndex = '1';
-                });
+            option.addEventListener('mouseenter', function() {
+                this.style.zIndex = '10';
+            });
+            
+            option.addEventListener('mouseleave', function() {
+                this.style.zIndex = '1';
             });
             
             // Prevenir clics múltiples rápidos
-            const links = document.querySelectorAll('a.dashboard-option');
-            links.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    // Solo aplicar si no está deshabilitado
-                    if (!this.classList.contains('disabled')) {
-                        const originalHTML = this.innerHTML;
-                        this.innerHTML = `
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; margin-bottom: 15px; color: #3498db;"></i>
-                                <span>Cargando módulo...</span>
-                            </div>
-                        `;
-                        this.classList.add('disabled');
-                        this.style.pointerEvents = 'none';
-                        
-                        // Restaurar después de 3 segundos (por si falla la navegación)
-                        setTimeout(() => {
-                            this.innerHTML = originalHTML;
-                            this.classList.remove('disabled');
-                            this.style.pointerEvents = 'auto';
-                        }, 3000);
-                    }
-                });
+            option.addEventListener('click', function(e) {
+                if (!this.classList.contains('disabled')) {
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = `
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; margin-bottom: 15px; color: #9b59b6;"></i>
+                            <span>Cargando reporte de rendimiento...</span>
+                        </div>
+                    `;
+                    this.classList.add('disabled');
+                    this.style.pointerEvents = 'none';
+                    
+                    // Restaurar después de 3 segundos (por si falla la navegación)
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.classList.remove('disabled');
+                        this.style.pointerEvents = 'auto';
+                    }, 3000);
+                }
             });
             
             // Breadcrumb hover effect

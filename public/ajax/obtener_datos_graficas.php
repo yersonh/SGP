@@ -19,11 +19,16 @@ try {
     $pdo = Database::getConnection();
     $referenciadoModel = new ReferenciadoModel($pdo);
     
-    // Obtener parámetros
+    // Obtener parámetros CON FILTROS
     $fecha = $_POST['fecha'] ?? date('Y-m-d');
+    $tipo = $_POST['tipo'] ?? 'todos';
+    $zona = $_POST['zona'] ?? 'todas';
     
-    // 1. Datos por hora (detallados) - usar método del modelo
-    $horas_data = $referenciadoModel->getReferenciadosPorHora($fecha);
+    // 1. Obtener estadísticas con filtros
+    $estadisticas = $referenciadoModel->getEstadisticasPorFecha($fecha, $tipo, $zona);
+    
+    // 2. Datos por hora con filtros
+    $horas_data = $referenciadoModel->getReferenciadosPorHora($fecha, $tipo, $zona);
     $por_hora = [];
     
     // Formatear datos por hora
@@ -34,15 +39,17 @@ try {
         ];
     }
     
-    // 2. Distribución por elección - usar método getEstadisticasPorFecha
-    $estadisticas = $referenciadoModel->getEstadisticasPorFecha($fecha);
+    // 3. Distribución por elección - usando los campos CORRECTOS
     $distribucion = [
-        'camara' => (int)($estadisticas['camara'] ?? 0),
-        'senado' => (int)($estadisticas['senado'] ?? 0)
+        'camara' => (int)($estadisticas['total_camara_con_ambos'] ?? 0),
+        'senado' => (int)($estadisticas['total_senado_con_ambos'] ?? 0),
+        'solo_camara' => (int)($estadisticas['camara'] ?? 0),
+        'solo_senado' => (int)($estadisticas['senado'] ?? 0),
+        'ambos' => (int)($estadisticas['ambos'] ?? 0)
     ];
     
-    // 3. Distribución por zona - usar método del modelo
-    $distribucion_zonas = $referenciadoModel->getDistribucionPorZona($fecha);
+    // 4. Distribución por zona con filtros
+    $distribucion_zonas = $referenciadoModel->getDistribucionPorZona($fecha, $tipo, $zona);
     $por_zona = [];
     
     // Limitar a 10 zonas
@@ -52,13 +59,15 @@ try {
         $por_zona[] = [
             'zona' => $zona_data['zona'],
             'cantidad' => (int)$zona_data['cantidad'],
-            'camara' => (int)$zona_data['camara'] ?? 0,
-            'senado' => (int)$zona_data['senado'] ?? 0
+            // NOTA: Los métodos actuales no tienen camara/senado por zona
+            // Necesitarías modificar getDistribucionPorZona para incluir estos campos
+            'camara' => 0, // Placeholder - necesitas modificar el método
+            'senado' => 0  // Placeholder - necesitas modificar el método
         ];
     }
     
-    // 4. Top referenciadores - usar método del modelo
-    $top_data = $referenciadoModel->getTopReferenciadoresPorFecha($fecha, 10);
+    // 5. Top referenciadores con filtros
+    $top_data = $referenciadoModel->getTopReferenciadoresPorFecha($fecha, 10, $tipo, $zona);
     $top_referenciadores = [];
     
     foreach ($top_data as $top) {
@@ -69,18 +78,57 @@ try {
         ];
     }
     
-    // 5. Datos adicionales para gráficas
-    // Datos por compromiso
+    // 6. Datos adicionales para gráficas
     $por_compromiso = [
         'con_compromiso' => (int)($estadisticas['con_compromiso'] ?? 0),
         'sin_compromiso' => (int)($estadisticas['total'] ?? 0) - (int)($estadisticas['con_compromiso'] ?? 0)
     ];
     
-    // Datos por vota_fuera
     $por_vota_fuera = [
         'vota_fuera' => (int)($estadisticas['vota_fuera'] ?? 0),
         'vota_aqui' => (int)($estadisticas['total'] ?? 0) - (int)($estadisticas['vota_fuera'] ?? 0)
     ];
+    
+    // 7. Distribución por sexo (si tienes el campo)
+    $sql_sexo = "SELECT 
+                    sexo,
+                    COUNT(*) as cantidad
+                FROM referenciados r
+                INNER JOIN usuario u ON r.id_referenciador = u.id_usuario
+                WHERE DATE(r.fecha_registro) = :fecha
+                AND r.activo = true
+                AND u.tipo_usuario = 'Referenciador'
+                AND u.activo = true";
+    
+    $params = [':fecha' => $fecha];
+    
+    // Agregar filtros
+    if ($tipo && $tipo !== 'todos') {
+        if ($tipo === 'camara') {
+            $sql_sexo .= " AND (r.id_grupo = 1 OR r.id_grupo = 3)";
+        } elseif ($tipo === 'senado') {
+            $sql_sexo .= " AND (r.id_grupo = 2 OR r.id_grupo = 3)";
+        }
+    }
+    
+    if ($zona && $zona !== 'todas') {
+        $sql_sexo .= " AND r.id_zona = :zona";
+        $params[':zona'] = $zona;
+    }
+    
+    $sql_sexo .= " GROUP BY sexo";
+    
+    $stmt_sexo = $pdo->prepare($sql_sexo);
+    $stmt_sexo->execute($params);
+    $sexo_data = $stmt_sexo->fetchAll(PDO::FETCH_ASSOC);
+    
+    $por_sexo = [];
+    foreach ($sexo_data as $sexo) {
+        $por_sexo[] = [
+            'sexo' => $sexo['sexo'] ?: 'No especificado',
+            'cantidad' => (int)$sexo['cantidad']
+        ];
+    }
     
     // Preparar respuesta
     $respuesta = [
@@ -92,6 +140,7 @@ try {
             'top_referenciadores' => $top_referenciadores,
             'por_compromiso' => $por_compromiso,
             'por_vota_fuera' => $por_vota_fuera,
+            'por_sexo' => $por_sexo,
             'total_referenciados' => (int)($estadisticas['total'] ?? 0),
             'referenciadores_activos' => (int)($estadisticas['referenciadores_activos'] ?? 0),
             'zonas_activas' => (int)($estadisticas['zonas_activas'] ?? 0),

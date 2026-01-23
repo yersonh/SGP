@@ -1135,53 +1135,186 @@ function actualizarMiniGraficas(data) {
         }
         
         // Función para mostrar comparativa
-        function mostrarComparativa(data, tipo) {
-            let html = '';
-            
-            if (tipo === 'ayer') {
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0"><i class="fas fa-calendar-day"></i> Hoy</h5>
-                                </div>
-                                <div class="card-body">
-                                    <h2 class="text-center">${data.hoy.total || 0}</h2>
-                                    <p class="text-center text-muted">Referenciados</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-secondary text-white">
-                                    <h5 class="mb-0"><i class="fas fa-calendar-day"></i> Ayer</h5>
-                                </div>
-                                <div class="card-body">
-                                    <h2 class="text-center">${data.ayer.total || 0}</h2>
-                                    <p class="text-center text-muted">Referenciados</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card mt-4">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="fas fa-chart-line"></i> Comparativa</h5>
+        // Función para mostrar comparativa
+// Función para mostrar comparativa
+function mostrarComparativa(data, tipo) {
+    let html = '';
+    
+    const labels = data.labels;
+    const datosHoy = data.datos_hoy;
+    const datosCompara = data.datos_compara;
+    const totales = data.totales;
+    
+    if (tipo === 'ayer' || tipo === 'semana' || tipo === 'mes') {
+        const labelTexto = tipo === 'ayer' ? 'Ayer' : tipo === 'semana' ? 'Semana Pasada' : 'Mes Pasado';
+        
+        html = `
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-day me-2"></i>
+                                Comparativa: ${tipo === 'ayer' ? 'Hoy vs Ayer' : tipo === 'semana' ? 'Esta Semana vs Semana Pasada' : 'Este Mes vs Mes Pasado'}
+                            </h5>
                         </div>
                         <div class="card-body">
-                            <div class="text-center">
-                                <h3 class="${data.diferencia >= 0 ? 'text-success' : 'text-danger'}">
-                                    ${data.diferencia >= 0 ? '+' : ''}${data.diferencia}
-                                </h3>
-                                <p>Diferencia (${data.porcentaje >= 0 ? '+' : ''}${data.porcentaje}%)</p>
+                            <!-- Resumen de totales -->
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card ${totales.diferencias.total >= 0 ? 'border-success' : 'border-danger'}">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-subtitle mb-2 text-muted">Total Referenciados</h6>
+                                            <h2 class="card-title">${totales.hoy.total}</h2>
+                                            <p class="card-text">
+                                                <small class="${totales.diferencias.total >= 0 ? 'text-success' : 'text-danger'}">
+                                                    <i class="fas fa-arrow-${totales.diferencias.total >= 0 ? 'up' : 'down'} me-1"></i>
+                                                    ${totales.diferencias.total >= 0 ? '+' : ''}${totales.diferencias.total} 
+                                                    (${totales.diferencias.porcentaje_total >= 0 ? '+' : ''}${totales.diferencias.porcentaje_total}%)
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">vs ${labelTexto}: ${totales.compara.total}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card ${totales.diferencias.camara >= 0 ? 'border-primary' : 'border-danger'}">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-subtitle mb-2 text-muted">Cámara</h6>
+                                            <h2 class="card-title text-primary">${totales.hoy.camara}</h2>
+                                            <p class="card-text">
+                                                <small class="${totales.diferencias.camara >= 0 ? 'text-success' : 'text-danger'}">
+                                                    <i class="fas fa-arrow-${totales.diferencias.camara >= 0 ? 'up' : 'down'} me-1"></i>
+                                                    ${totales.diferencias.camara >= 0 ? '+' : ''}${totales.diferencias.camara} 
+                                                    (${totales.diferencias.porcentaje_camara >= 0 ? '+' : ''}${totales.diferencias.porcentaje_camara}%)
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">vs ${labelTexto}: ${totales.compara.camara}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card ${totales.diferencias.senado >= 0 ? 'border-success' : 'border-danger'}">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-subtitle mb-2 text-muted">Senado</h6>
+                                            <h2 class="card-title text-success">${totales.hoy.senado}</h2>
+                                            <p class="card-text">
+                                                <small class="${totales.diferencias.senado >= 0 ? 'text-success' : 'text-danger'}">
+                                                    <i class="fas fa-arrow-${totales.diferencias.senado >= 0 ? 'up' : 'down'} me-1"></i>
+                                                    ${totales.diferencias.senado >= 0 ? '+' : ''}${totales.diferencias.senado} 
+                                                    (${totales.diferencias.porcentaje_senado >= 0 ? '+' : ''}${totales.diferencias.porcentaje_senado}%)
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">vs ${labelTexto}: ${totales.compara.senado}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Gráfica de comparativa -->
+                            <div class="card mt-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-chart-line me-2"></i>
+                                        Gráfica Comparativa
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="grafica-body" style="height: 400px;">
+                                        <canvas id="graficaComparativa"></canvas>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                `;
+                </div>
+            </div>
+        `;
+        
+        $('#comparativasContenido').html(html);
+        
+        // Crear gráfica de comparativa
+        crearGraficaComparativa(labels, datosHoy, datosCompara, tipo);
+    }
+}
+
+// Función para crear gráfica de comparativa
+function crearGraficaComparativa(labels, datosHoy, datosCompara, tipo) {
+    const ctx = document.getElementById('graficaComparativa').getContext('2d');
+    
+    // Preparar datos para gráfica
+    const datosTotalHoy = datosHoy.map(dia => dia.total);
+    const datosTotalCompara = datosCompara.map(dia => dia.total);
+    
+    // Destruir gráfica anterior si existe
+    if (window.chartComparativa) {
+        window.chartComparativa.destroy();
+    }
+    
+    const labelActual = tipo === 'ayer' ? 'Hoy' : tipo === 'semana' ? 'Esta Semana' : 'Este Mes';
+    const labelCompara = tipo === 'ayer' ? 'Ayer' : tipo === 'semana' ? 'Semana Pasada' : 'Mes Pasado';
+    
+    window.chartComparativa = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: labelActual,
+                    data: datosTotalHoy,
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: labelCompara,
+                    data: datosTotalCompara,
+                    borderColor: 'rgba(155, 89, 182, 1)',
+                    backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Referenciados'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: tipo === 'ayer' ? 'Días' : tipo === 'semana' ? 'Días de la Semana' : 'Días del Mes'
+                    }
+                }
             }
-            
-            $('#comparativasContenido').html(html);
         }
+    });
+}
         
         // Función para exportar reporte
         function exportarReporte() {

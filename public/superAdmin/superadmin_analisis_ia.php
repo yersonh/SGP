@@ -104,7 +104,7 @@ if ($porcentajeRestante > 50) {
                         <i class="fas fa-calendar-check"></i>
                     </div>
                 </div>
-                <div class="option-title">RENDIMIENTO DIARIO DE VOTOS</div>
+                <div class="option-title">ANÁLISIS DIARIO DE CAFHUE</div>
                 <div class="option-description">
                     Análisis detallado del rendimiento diario de votos registrados en el sistema.
                     Reportes por fecha, comparativas históricas y tendencias de crecimiento.

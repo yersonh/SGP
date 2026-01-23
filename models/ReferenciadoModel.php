@@ -848,23 +848,44 @@ public function getTopReferenciadoresPorFecha($fecha, $limite = 10, $tipoEleccio
 }
 
 // Método para obtener distribución por zona
-public function getDistribucionPorZona($fecha) {
+public function getDistribucionPorZona($fecha, $tipoEleccion = null, $idZona = null) {
     $sql = "SELECT 
                 z.id_zona,
                 z.nombre as zona,
                 COUNT(r.id_referenciado) as cantidad,
-                -- CORREGIR: afinidad es numérica 1-5
-                SUM(CASE WHEN r.afinidad >= 3 THEN 1 ELSE 0 END) as alta_afinidad,
-                SUM(CASE WHEN r.afinidad <= 2 THEN 1 ELSE 0 END) as baja_afinidad
+                -- Distribución por grupo parlamentario por zona
+                SUM(CASE WHEN r.id_grupo = 1 THEN 1 ELSE 0 END) as camara,
+                SUM(CASE WHEN r.id_grupo = 2 THEN 1 ELSE 0 END) as senado,
+                SUM(CASE WHEN r.id_grupo = 3 THEN 1 ELSE 0 END) as ambos
             FROM referenciados r
+            INNER JOIN usuario u ON r.id_referenciador = u.id_usuario
             JOIN zona z ON r.id_zona = z.id_zona
             WHERE DATE(r.fecha_registro) = :fecha
             AND r.activo = true
-            GROUP BY z.id_zona, z.nombre
-            ORDER BY cantidad DESC";
+            AND u.tipo_usuario = 'Referenciador'
+            AND u.activo = true";
+    
+    $params = [':fecha' => $fecha];
+    
+    // Agregar filtros
+    if ($tipoEleccion && $tipoEleccion !== 'todos') {
+        if ($tipoEleccion === 'camara') {
+            $sql .= " AND (r.id_grupo = 1 OR r.id_grupo = 3)";
+        } elseif ($tipoEleccion === 'senado') {
+            $sql .= " AND (r.id_grupo = 2 OR r.id_grupo = 3)";
+        }
+    }
+    
+    if ($idZona && $idZona !== 'todas') {
+        $sql .= " AND r.id_zona = :id_zona";
+        $params[':id_zona'] = $idZona;
+    }
+    
+    $sql .= " GROUP BY z.id_zona, z.nombre
+              ORDER BY cantidad DESC";
     
     $stmt = $this->pdo->prepare($sql);
-    $stmt->execute(['fecha' => $fecha]);
+    $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

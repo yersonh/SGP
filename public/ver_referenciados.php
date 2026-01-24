@@ -178,7 +178,25 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
         </div>
     </div>
 </header>
-
+<!-- CONTADOR COMPACTO -->
+    <div class="countdown-compact-container">
+        <div class="countdown-compact">
+            <div class="countdown-compact-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Elecciones Legislativas 2026</span>
+            </div>
+            <div class="countdown-compact-timer">
+                <span id="compact-days">00</span>d 
+                <span id="compact-hours">00</span>h 
+                <span id="compact-minutes">00</span>m 
+                <span id="compact-seconds">00</span>s
+            </div>
+            <div class="countdown-compact-date">
+                <i class="fas fa-calendar-alt"></i>
+                8 Marzo 2026
+            </div>
+        </div>
+    </div>
     <!-- Contenido Principal -->
     <div class="main-container">
         <div class="referenciados-container">
@@ -1162,5 +1180,6 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
     </script>
 
     <script src="js/modal-sistema.js"></script> 
+    <script src="js/contador.js"></script>
 </body>
 </html>

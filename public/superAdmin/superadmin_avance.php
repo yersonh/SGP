@@ -125,19 +125,57 @@ if ($porcentajeRestante > 50) {
 <body>
     <!-- Header (mantener igual) -->
     <header class="main-header">
-        <!-- ... código del header igual ... -->
+        <div class="header-container">
+            <div class="header-top">
+                <div class="header-title">
+                    <h1><i class="fas fa-user-shield"></i> Panel Super Admin</h1>
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
+                    </div>
+                </div>
+                <a href="../logout.php" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
     </header>
 
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
-        <!-- ... breadcrumb igual ... -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
+                <li class="breadcrumb-item active"><a href="superadmin_monitoreos.php"><i class="fas fa-database"></i> Monitores</a></li>
+                <li class="breadcrumb-item active"><i class="fas fa-database"></i> Avance Referenciadores</li>
+            </ol>
+        </nav>
     </div>
-
+<!-- CONTADOR COMPACTO -->
+    <div class="countdown-compact-container">
+        <div class="countdown-compact">
+            <div class="countdown-compact-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Elecciones Legislativas 2026</span>
+            </div>
+            <div class="countdown-compact-timer">
+                <span id="compact-days">00</span>d 
+                <span id="compact-hours">00</span>h 
+                <span id="compact-minutes">00</span>m 
+                <span id="compact-seconds">00</span>s
+            </div>
+            <div class="countdown-compact-date">
+                <i class="fas fa-calendar-alt"></i>
+                8 Marzo 2026
+            </div>
+        </div>
+    </div>
     <!-- Main Content -->
     <div class="main-container">
         <!-- Dashboard Header -->
         <div class="dashboard-header">
-            <!-- ... título igual ... -->
+            <h2><i class="fas fa-chart-line"></i> Avance de Referenciadores</h2>
+            <p class="dashboard-subtitle">Monitoreo del progreso de referenciadores en el sistema</p>
         </div>
         
         <!-- ====================================================================
@@ -948,5 +986,6 @@ if ($porcentajeRestante > 50) {
         });
     </script>
     <script src="../js/modal-sistema.js"></script>
+    <script src="../js/contador.js"></script>
 </body>
 </html>

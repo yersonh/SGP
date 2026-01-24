@@ -127,10 +127,30 @@ if ($porcentajeRestante > 50) {
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
-                <li class="breadcrumb-item"><a href="superadmin_rendimiento_votos.php"><i class="fas fa-chart-bar"></i> Rendimiento</a></li>
+                <li class="breadcrumb-item"><a href="superadmin_analisis_ia.php"><i class="fas fa-chart-bar"></i> Rendimiento</a></li>
                 <li class="breadcrumb-item active"><i class="fas fa-file-chart-line"></i> Reporte Diario</li>
             </ol>
         </nav>
+    </div>
+
+        <!-- CONTADOR COMPACTO -->
+    <div class="countdown-compact-container">
+        <div class="countdown-compact">
+            <div class="countdown-compact-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Elecciones Legislativas 2026</span>
+            </div>
+            <div class="countdown-compact-timer">
+                <span id="compact-days">00</span>d 
+                <span id="compact-hours">00</span>h 
+                <span id="compact-minutes">00</span>m 
+                <span id="compact-seconds">00</span>s
+            </div>
+            <div class="countdown-compact-date">
+                <i class="fas fa-calendar-alt"></i>
+                8 Marzo 2026
+            </div>
+        </div>
     </div>
 
     <!-- Dashboard Principal -->
@@ -641,6 +661,8 @@ if ($porcentajeRestante > 50) {
             
             // Inicializar modal del sistema
             inicializarModalSistema();
+             // INICIAR CONTADOR REGRESIVO - AÑADE ESTA LÍNEA
+            iniciarContadorCompacto();
         });
         
         // Función para inicializar sistema de tabs
@@ -1457,7 +1479,54 @@ function crearGraficaComparativa(labels, datosHoy, datosCompara, tipo) {
         }
     });
 }
-        
+         // VERSIÓN ALTERNATIVA SIMPLE
+        function iniciarContadorCompacto() {
+            // Fecha específica para Colombia: 8 de marzo de 2025, 8:00 AM
+            const fechaElecciones = new Date(2026, 2, 8, 8, 0, 0).getTime(); // Marzo es 2 (0=enero, 1=feb, 2=mar)
+            
+            console.log('Contador iniciado - Fecha objetivo:', new Date(fechaElecciones).toLocaleString('es-CO'));
+            
+            // Función que se ejecuta cada segundo
+            setInterval(function() {
+                const ahora = new Date().getTime();
+                const tiempoRestante = fechaElecciones - ahora;
+                
+                // Si los elementos no existen, salir
+                if (!document.getElementById('compact-days')) return;
+                
+                if (tiempoRestante <= 0) {
+                    // Fecha pasada
+                    document.getElementById('compact-days').textContent = '00';
+                    document.getElementById('compact-hours').textContent = '00';
+                    document.getElementById('compact-minutes').textContent = '00';
+                    document.getElementById('compact-seconds').textContent = '00';
+                    return;
+                }
+                
+                // Calcular
+                const totalSegundos = Math.floor(tiempoRestante / 1000);
+                const dias = Math.floor(totalSegundos / 86400);
+                const horas = Math.floor((totalSegundos % 86400) / 3600);
+                const minutos = Math.floor((totalSegundos % 3600) / 60);
+                const segundos = totalSegundos % 60;
+                
+                // Actualizar
+                document.getElementById('compact-days').textContent = dias.toString().padStart(2, '0');
+                document.getElementById('compact-hours').textContent = horas.toString().padStart(2, '0');
+                document.getElementById('compact-minutes').textContent = minutos.toString().padStart(2, '0');
+                document.getElementById('compact-seconds').textContent = segundos.toString().padStart(2, '0');
+                
+                // Color
+                const daysEl = document.getElementById('compact-days');
+                if (dias <= 7) {
+                    daysEl.style.color = '#e74c3c';
+                } else if (dias <= 30) {
+                    daysEl.style.color = '#f39c12';
+                } else {
+                    daysEl.style.color = '#ffffff';
+                }
+            }, 1000);
+        }
         // Función para exportar reporte
         function exportarReporte() {
             const fecha = $('#selectFecha').val();

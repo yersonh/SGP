@@ -482,27 +482,29 @@
     border-left: 4px solid var(--color-camara);
     max-width: 400px;
 }
+
 /* Contenedor para centrar la imagen */
-        .feature-image-container {
-            text-align: center;
-            margin-bottom: 2rem; /* Espacio antes de las tarjetas */
-        }
+.feature-image-container {
+    text-align: center;
+    margin-bottom: 2rem; /* Espacio antes de las tarjetas */
+}
 
-        /* Estilos de la imagen redonda */
-        .feature-img-header {
-            width: 190px;
-            height: 190px;
-            object-fit: cover;       /* Asegura que no se deforme */
-            border-radius: 50%;      /* Círculo perfecto */
-            border: 4px solid #ffffff; 
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
-            transition: transform 0.3s ease; /* Para el efecto de hover */
-        }
+/* Estilos de la imagen redonda */
+.feature-img-header {
+    width: 190px;
+    height: 190px;
+    object-fit: cover;       /* Asegura que no se deforme */
+    border-radius: 50%;      /* Círculo perfecto */
+    border: 4px solid #ffffff; 
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
+    transition: transform 0.3s ease; /* Para el efecto de hover */
+}
 
-        /* Efecto opcional al pasar el mouse */
-        .feature-img-header:hover {
-            transform: scale(1.05);
-        }
+/* Efecto opcional al pasar el mouse */
+.feature-img-header:hover {
+    transform: scale(1.05);
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(100%);
@@ -687,120 +689,561 @@
     transform: scale(1.05);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .modal-system-info .modal-body {
+/* =========================================== */
+/* RESPONSIVE PARA DISPOSITIVOS MÓVILES */
+/* =========================================== */
+
+/* Smartphones pequeños (menos de 480px) */
+@media (max-width: 480px) {
+    body {
+        font-size: 13px;
+        overflow-x: hidden;
+    }
+    
+    /* Header optimizado para móviles */
+    .main-header {
+        padding: 12px 0;
+        margin-bottom: 15px;
+    }
+    
+    .header-container {
+        padding: 0 12px;
+    }
+    
+    .header-top {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .header-title h1 {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+    
+    .user-info {
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        margin-top: 5px;
+    }
+    
+    .logout-btn {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+    
+    /* Breadcrumb optimizado */
+    .breadcrumb-nav {
+        padding: 0 12px;
+        margin-bottom: 15px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .breadcrumb {
+        font-size: 0.8rem;
+        display: inline-flex;
+    }
+    
+    /* Stats cards en una columna */
+    .stats-cards {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        padding: 20px 15px;
+        border-radius: 10px;
+    }
+    
+    .stat-number {
+        font-size: 2.2rem;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+    }
+    
+    /* Gráfica container optimizado */
+    .grafica-container {
+        padding: 20px 15px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .grafica-header {
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+    }
+    
+    .grafica-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .grafica-subtitle {
+        font-size: 0.95rem;
+        padding: 0 10px;
+    }
+    
+    /* Contenido de gráfica en columna */
+    .grafica-content {
+        grid-template-columns: 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+    
+    .grafica-canvas-container,
+    .grafica-controls {
+        padding: 20px 15px;
+        border-radius: 10px;
+    }
+    
+    .grafica-title-container h4 {
+        font-size: 1.1rem;
+    }
+    
+    /* Controles optimizados */
+    .controls-buttons {
+        gap: 12px;
+    }
+    
+    .btn-control {
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+    
+    /* Estadísticas detalladas optimizadas */
+    .estadisticas-detalladas {
+        margin-bottom: 25px;
+    }
+    
+    .estadistica-card {
+        padding: 20px 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .estadistica-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .estadistica-header i {
+        font-size: 1.8rem;
+    }
+    
+    .estadistica-header h5 {
+        font-size: 1.1rem;
+    }
+    
+    .estadistica-valor {
+        font-size: 2.5rem;
+    }
+    
+    .estadistica-porcentaje {
+        font-size: 1.5rem;
+    }
+    
+    /* Información adicional optimizada */
+    .info-adicional {
+        padding: 20px 15px;
+        border-radius: 10px;
+    }
+    
+    .info-header h5 {
+        font-size: 1.1rem;
+    }
+    
+    .info-item {
+        padding: 10px 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .info-value {
+        align-self: flex-end;
+    }
+    
+    .info-analisis {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
         padding: 15px;
     }
     
+    .analisis-icon {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .analisis-text {
+        font-size: 0.95rem;
+        text-align: center;
+    }
+    
+    /* Notificaciones móviles */
+    .notification {
+        left: 12px;
+        right: 12px;
+        top: 80px;
+        max-width: none;
+        padding: 12px 15px;
+    }
+    
+    /* Footer optimizado */
+    .system-footer {
+        padding: 20px 15px;
+        margin-top: 40px;
+        font-size: 0.85rem;
+    }
+    
+    .container.text-center.mb-3 img {
+        max-width: 250px;
+    }
+    
+    /* Imagen de perfil responsive */
+    .feature-img-header {
+        width: 140px;
+        height: 140px;
+    }
+    
+    /* Modal responsive */
     .modal-logo {
-        max-width: 200px; /* AGRANDADO para móviles también */
+        max-width: 220px;
+    }
+    
+    .licencia-info {
+        padding: 12px;
+    }
+    
+    .licencia-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .licencia-dias {
+        align-self: flex-start;
     }
     
     .feature-card {
         padding: 15px;
         margin-bottom: 15px;
     }
-    
-    .modal-system-info h4 {
+}
+
+/* Smartphones medianos (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+    .header-title h1 {
         font-size: 1.1rem;
     }
     
-    .licencia-info {
-        padding: 12px;
+    .stats-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
     }
+    
+    .grafica-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .grafica-canvas-container,
+    .grafica-controls {
+        padding: 25px 20px;
+    }
+    
+    .estadisticas-detalladas {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .info-analisis {
+        flex-direction: row;
+    }
+    
     .feature-img-header {
-            width: 140px;
-            height: 140px;
-            }
-    .licencia-title {
-        font-size: 1rem;
-    }
-    
-    .licencia-dias {
-        font-size: 0.9rem;
-        padding: 3px 10px;
-    }
-    
-    .system-footer {
-        padding: 20px 15px;
-        font-size: 0.85rem;
-        margin-top: 60px;
-    }
-    
-    .system-footer-modal {
-        padding: 15px;
-    }
-    
-    /* Para dispositivos móviles */
-    .container.text-center.mb-3 img {
-        max-width: 220px;
+        width: 160px;
+        height: 160px;
     }
 }
 
-@media (max-width: 767px) {
-    .header-top {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+/* Tablets (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .stats-cards {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .grafica-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .estadisticas-detalladas {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* =========================================== */
+/* DETECCIÓN DEL TEMA DEL DISPOSITIVO */
+/* =========================================== */
+
+/* Modo oscuro del sistema */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-fondo: #1a1a1a;
+        --color-borde: #3d3d3d;
+        --color-texto: #e0e0e0;
+        --color-subtexto: #b0b0b0;
+        --color-total: #4d4d4d;
+    }
+    
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
+    
+    /* Header en modo oscuro */
+    .main-header {
+        background: linear-gradient(135deg, #1a252f, #0d1117);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
+    /* Contenedores blancos en modo oscuro */
+    .grafica-container,
+    .stat-card,
+    .grafica-canvas-container,
+    .grafica-controls,
+    .estadistica-card,
+    .info-adicional,
+    .info-item,
+    .system-footer,
+    .notification {
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+        border-color: #3d3d3d;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Textos en modo oscuro */
+    .stat-number,
+    .grafica-header h3,
+    .grafica-title-container h4,
+    .controls-header h5,
+    .estadistica-header h5,
+    .info-header h5,
+    .info-label,
+    .analisis-text,
+    .stat-label,
+    .estadistica-desc,
+    .system-footer p,
+    .licencia-fecha,
+    .grafica-subtitle {
+        color: #e0e0e0;
+    }
+    
+    .stat-card.total .stat-number { color: #a0a0a0; }
+    .stat-card.activos .stat-number { color: #2ecc71; }
+    .stat-card.inactivos .stat-number { color: #e74c3c; }
+    
+    /* Inputs y selects en modo oscuro */
+    .btn-control {
+        background-color: #3d3d3d;
+        border-color: #4d4d4d;
+        color: #e0e0e0;
+    }
+    
+    .btn-control:hover {
+        background-color: #4d4d4d;
+        border-color: #3498db;
+    }
+    
+    /* Líneas de separación en modo oscuro */
+    .grafica-header,
+    .estadistica-header,
+    .controls-header,
+    .info-header {
+        border-bottom-color: #3d3d3d;
+    }
+    
+    /* Info item en modo oscuro */
+    .info-item {
+        background-color: #3d3d3d;
+    }
+    
+    /* Info análisis en modo oscuro */
+    .info-analisis {
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, rgba(155, 89, 182, 0.15) 100%);
+        border-color: #3d3d3d;
+    }
+    
+    /* Cards de características en modo oscuro */
+    .feature-card {
+        background-color: #3d3d3d;
+        color: #e0e0e0;
+    }
+    
+    .feature-title {
+        color: #e0e0e0;
+    }
+    
+    .feature-text {
+        color: #b0b0b0;
+    }
+    
+    /* Información de licencia en modo oscuro */
+    .licencia-info {
+        background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+        border-color: #4d4d4d;
+    }
+    
+    .licencia-title {
+        color: #e0e0e0;
+    }
+    
+    .licencia-progress {
+        background-color: #4d4d4d;
+    }
+    
+    /* Footer del modal en modo oscuro */
+    .system-footer-modal {
+        background-color: #3d3d3d;
+        border-color: #4d4d4d;
+        color: #e0e0e0;
+    }
+    
+    /* Modal content en modo oscuro */
+    .modal-content {
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+    }
+    
+    .modal-header {
+        border-color: #3d3d3d;
+    }
+    
+    /* Logo en modo oscuro */
+    .modal-logo {
+        background-color: #3d3d3d;
+        border-color: #4d4d4d;
+    }
+    
+    /* Breadcrumb en modo oscuro */
+    .breadcrumb-item a {
+        color: #4dabf7;
+    }
+    
+    .breadcrumb-item a:hover {
+        color: #339af0;
+    }
+    
+    .breadcrumb-item.active {
+        color: #a0a0a0;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: #666;
+    }
+}
+
+/* Ajustes específicos para móviles en modo oscuro */
+@media (max-width: 480px) and (prefers-color-scheme: dark) {
+    .user-info {
+        background: rgba(255,255,255,0.08);
+    }
+    
+    .logout-btn {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.2);
+    }
+    
+    .logout-btn:hover {
+        background: rgba(255,255,255,0.15);
+    }
+    
+    .btn-control {
+        background-color: #3d3d3d;
+        border-color: #4d4d4d;
+        color: #e0e0e0;
+    }
+    
+    .stat-card::before {
+        background: #4d4d4d;
+    }
+    
+    .stat-card.total::before { background: #5d5d5d; }
+    .stat-card.activos::before { background: #27ae60; }
+    .stat-card.inactivos::before { background: #c0392b; }
+}
+
+/* Ajustes para orientación horizontal en móviles */
+@media (max-width: 767px) and (orientation: landscape) {
+    .stats-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .grafica-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .grafica-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .estadistica-valor {
+        font-size: 2.2rem;
+    }
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media (max-width: 360px) {
+    .header-title h1 {
+        font-size: 0.9rem;
+        max-width: 150px;
     }
     
     .user-info {
-        order: 1;
-    }
-    .feature-img-header {
-            width: 140px;
-            height: 140px;
-            }
-    .logout-btn {
-        order: 2;
-        align-self: flex-end;
-    }
-}
-
-@media (max-width: 576px) {
-    .modal-system-info .modal-dialog {
-        margin: 10px;
-    }
-    .feature-img-header {
-            width: 140px;
-            height: 140px;
-            }
-    .modal-system-info .modal-body {
-        padding: 12px;
+        font-size: 0.75rem;
     }
     
-    .modal-logo-container {
-        padding: 10px;
+    .logout-btn {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+    }
+    
+    .estadistica-valor {
+        font-size: 2rem;
+    }
+    
+    .feature-img-header {
+        width: 120px;
+        height: 120px;
     }
     
     .modal-logo {
-        max-width: 180px; /* AGRANDADO para móviles pequeños */
+        max-width: 180px;
     }
     
-    .licencia-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .licencia-dias {
-        align-self: flex-start;
-    }
-}
-
-/* Para dispositivos muy pequeños */
-@media (max-width: 400px) {
     .container.text-center.mb-3 img {
         max-width: 200px;
     }
-    .feature-img-header {
-            width: 140px;
-            height: 140px;
-            }
 }
 
-/* Responsive para gráficas */
+/* Mantener responsive existente para gráficas */
 @media (max-width: 1200px) {
     .grafica-content {
         grid-template-columns: 1fr;
@@ -835,22 +1278,375 @@
         text-align: center;
     }
 }
-.logout-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 0.8rem;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
+
+/* Ajustes responsive existentes del modal */
+@media (max-width: 768px) {
+    .modal-system-info .modal-body {
+        padding: 15px;
+    }
+    
+    .modal-logo {
+        max-width: 200px;
+    }
+    
+    .feature-card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .modal-system-info h4 {
+        font-size: 1.1rem;
+    }
+    
+    .licencia-info {
+        padding: 12px;
+    }
+    
+    .licencia-title {
+        font-size: 1rem;
+    }
+    
+    .licencia-dias {
+        font-size: 0.9rem;
+        padding: 3px 10px;
+    }
+    
+    .system-footer {
+        padding: 20px 15px;
+        font-size: 0.85rem;
+        margin-top: 60px;
+    }
+    
+    .system-footer-modal {
+        padding: 15px;
+    }
+    
+    .container.text-center.mb-3 img {
+        max-width: 220px;
+    }
+}
+
+@media (max-width: 767px) {
+    .header-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .user-info {
+        order: 1;
+    }
+    
+    .logout-btn {
+        order: 2;
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 576px) {
+    .modal-system-info .modal-dialog {
+        margin: 10px;
+    }
+    
+    .modal-system-info .modal-body {
+        padding: 12px;
+    }
+    
+    .modal-logo-container {
+        padding: 10px;
+    }
+    
+    .modal-logo {
+        max-width: 180px;
+    }
+    
+    .licencia-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .licencia-dias {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 400px) {
+    .container.text-center.mb-3 img {
+        max-width: 200px;
+    }
+}
+/* =========================================== */
+/* ESTILOS RESPONSIVE ESPECÍFICOS PARA LA GRÁFICA */
+/* =========================================== */
+
+.grafica-wrapper {
+    position: relative;
+    margin: 0 auto;
+    padding: 15px;
+}
+
+/* ESTILOS PARA PC (768px o más) */
+@media (min-width: 768px) {
+    .grafica-wrapper {
+        width: 650px !important; /* Tamaño fijo en PC */
+        height: 400px !important; /* Tamaño fijo en PC */
+        max-width: 650px !important;
+        max-height: 400px !important;
+    }
+    
+    .grafica-canvas-container {
+        min-height: 450px; /* Espacio suficiente para la gráfica grande */
+    }
+    
+    #graficaTortaGlobal {
+        width: 650px !important;
+        height: 400px !important;
+        max-width: 650px !important;
+        max-height: 400px !important;
+    }
+}
+/* ESTILOS PARA MÓVIL (menos de 768px) */
+@media (max-width: 767px) {
+    .grafica-wrapper {
+        width: 100% !important;
+        height: 300px !important; /* Más pequeño en móvil */
+        max-width: 100% !important;
+        max-height: 300px !important;
+    }
+    
+    .grafica-canvas-container {
+        min-height: 320px; /* Espacio ajustado para móvil */
+    }
+    
+    #graficaTortaGlobal {
+        width: 100% !important;
+        height: 280px !important; /* Más pequeño que en PC */
+        max-width: 100% !important;
+        max-height: 280px !important;
+    }
+}
+
+/* Ajustes para móviles muy pequeños */
+@media (max-width: 480px) {
+    .grafica-wrapper {
+        height: 250px !important;
+        padding: 10px !important;
+    }
+    
+    #graficaTortaGlobal {
+        height: 230px !important;
+        max-height: 230px !important;
+    }
+}
+/* Orientación horizontal en móviles */
+@media (max-width: 767px) and (orientation: landscape) {
+    .grafica-wrapper {
+        height: 200px !important;
+    }
+    
+    #graficaTortaGlobal {
+        height: 180px !important;
+        max-height: 180px !important;
+    }
+}
+/* Asegurar que Chart.js no sobrescriba los estilos */
+#graficaTortaGlobal {
+    display: block !important;
+    margin: 0 auto !important;
+}
+
+/* Prevenir que Bootstrap afecte el tamaño */
+canvas#graficaTortaGlobal {
+    box-sizing: content-box !important;
+}
+
+/* Ajustes para tablets */
+@media (min-width: 769px) and (max-width: 991px) {
+    .grafica-wrapper {
+        height: 350px !important;
+        max-width: 500px;
+    }
+}
+
+/* Para que Chart.js sea responsive */
+#graficaTortaGlobal {
+    display: block;
+    max-width: 100%;
+    height: auto !important;
+}
+
+/* Ajustes del layout en móviles */
+@media (max-width: 768px) {
+    .grafica-content {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+    
+    .grafica-controls {
+        order: 2;
+    }
+    
+    .grafica-canvas-container {
+        order: 1;
+    }
+    
+    .estadisticas-detalladas .row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .estadistica-card {
+        margin-bottom: 0 !important;
+    }
+    
+    .info-content .info-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 5px !important;
+    }
+    
+    .info-value {
+        align-self: flex-end !important;
+    }
+}
+
+/* Asegurar que el canvas no se desborde */
+.grafica-canvas-container {
+    overflow: hidden;
+}
+
+/* Mejorar la legibilidad en móviles */
+@media (max-width: 480px) {
+    .stat-number {
+        font-size: 2rem !important;
+    }
+    
+    .estadistica-valor {
+        font-size: 2.2rem !important;
+    }
+    
+    .estadistica-porcentaje {
+        font-size: 1.4rem !important;
+    }
+    
+    .info-analisis {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 12px !important;
+    }
+    
+    .analisis-icon {
+        margin: 0 auto !important;
+    }
+}
+
+/* CONTADOR COMPACTO */
+.countdown-compact-container {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    padding: 0 15px;
+}
+
+.countdown-compact {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    border-radius: 10px;
+    padding: 15px 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.countdown-compact-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.countdown-compact-title i {
+    color: #f1c40f;
+    font-size: 1.2rem;
+}
+
+.countdown-compact-title span {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.countdown-compact-timer {
+    flex: 2;
+    text-align: center;
+    font-family: 'Segoe UI', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.countdown-compact-timer span {
+    display: inline-block;
+    min-width: 35px;
+    text-align: center;
+}
+
+.countdown-compact-date {
+    flex: 1;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.9);
+}
+
+.countdown-compact-date i {
+    color: #f1c40f;
+}
+
+/* Modo oscuro */
+@media (prefers-color-scheme: dark) {
+    .countdown-compact {
+        background: linear-gradient(135deg, #1a252f, #2980b9);
+    }
+}
+
+/* Responsive para contador compacto */
+@media (max-width: 768px) {
+    .countdown-compact {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 15px;
+    }
+    
+    .countdown-compact-timer {
+        order: 2;
+        width: 100%;
+    }
+    
+    .countdown-compact-title {
+        order: 1;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .countdown-compact-date {
+        order: 3;
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .countdown-compact-timer {
+        font-size: 1.3rem;
+    }
+    
+    .countdown-compact-title span {
+        font-size: 0.9rem;
+    }
+}

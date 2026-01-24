@@ -176,7 +176,25 @@ if ($porcentajeRestante > 50) {
             </ol>
         </nav>
     </div>
-
+<!-- CONTADOR COMPACTO -->
+    <div class="countdown-compact-container">
+        <div class="countdown-compact">
+            <div class="countdown-compact-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Elecciones Legislativas 2026</span>
+            </div>
+            <div class="countdown-compact-timer">
+                <span id="compact-days">00</span>d 
+                <span id="compact-hours">00</span>h 
+                <span id="compact-minutes">00</span>m 
+                <span id="compact-seconds">00</span>s
+            </div>
+            <div class="countdown-compact-date">
+                <i class="fas fa-calendar-alt"></i>
+                8 Marzo 2026
+            </div>
+        </div>
+    </div>
     <!-- Main Content -->
     <div class="main-container">
         <!-- Dashboard Header -->
@@ -801,5 +819,6 @@ if ($porcentajeRestante > 50) {
         }
     </script>
     <script src="../js/modal-sistema.js"></script>
+    <script src="../js/contador.js"></script>
 </body>
 </html>

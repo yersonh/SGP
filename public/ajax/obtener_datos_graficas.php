@@ -159,4 +159,4 @@ try {
         'error' => 'Error interno del servidor: ' . $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
-?>
+?>  

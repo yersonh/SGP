@@ -151,6 +151,115 @@ if ($porcentajeRestante > 50) {
                 font-size: 0.9rem;
             }
         }
+        /* CONTADOR COMPACTO */
+.countdown-compact-container {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    padding: 0 15px;
+}
+
+.countdown-compact {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    border-radius: 10px;
+    padding: 15px 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.countdown-compact-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.countdown-compact-title i {
+    color: #f1c40f;
+    font-size: 1.2rem;
+}
+
+.countdown-compact-title span {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.countdown-compact-timer {
+    flex: 2;
+    text-align: center;
+    font-family: 'Segoe UI', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.countdown-compact-timer span {
+    display: inline-block;
+    min-width: 35px;
+    text-align: center;
+}
+
+.countdown-compact-date {
+    flex: 1;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.9);
+}
+
+.countdown-compact-date i {
+    color: #f1c40f;
+}
+
+/* Modo oscuro */
+@media (prefers-color-scheme: dark) {
+    .countdown-compact {
+        background: linear-gradient(135deg, #1a252f, #2980b9);
+    }
+}
+
+/* Responsive para contador compacto */
+@media (max-width: 768px) {
+    .countdown-compact {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 15px;
+    }
+    
+    .countdown-compact-timer {
+        order: 2;
+        width: 100%;
+    }
+    
+    .countdown-compact-title {
+        order: 1;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .countdown-compact-date {
+        order: 3;
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .countdown-compact-timer {
+        font-size: 1.3rem;
+    }
+    
+    .countdown-compact-title span {
+        font-size: 0.9rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -189,7 +298,25 @@ if ($porcentajeRestante > 50) {
         </div>
     </div>
 </header>
-
+<!-- CONTADOR COMPACTO -->
+    <div class="countdown-compact-container">
+        <div class="countdown-compact">
+            <div class="countdown-compact-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Elecciones Legislativas 2026</span>
+            </div>
+            <div class="countdown-compact-timer">
+                <span id="compact-days">00</span>d 
+                <span id="compact-hours">00</span>h 
+                <span id="compact-minutes">00</span>m 
+                <span id="compact-seconds">00</span>s
+            </div>
+            <div class="countdown-compact-date">
+                <i class="fas fa-calendar-alt"></i>
+                8 Marzo 2026
+            </div>
+        </div>
+    </div>
     <!-- Main Form -->
     <div class="main-container">
         <div class="form-card">
@@ -816,6 +943,7 @@ if ($porcentajeRestante > 50) {
     <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
     <script src="js/modal-sistema.js"></script>
+    <script src="js/contador.js"></script>
     
     <!-- Script para manejar la lógica de campos obligatorios condicionales -->
     <script>

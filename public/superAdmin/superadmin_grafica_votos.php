@@ -145,7 +145,25 @@ if ($porcentajeRestante > 50) {
             </ol>
         </nav>
     </div>
-
+    <!-- CONTADOR COMPACTO -->
+    <div class="countdown-compact-container">
+        <div class="countdown-compact">
+            <div class="countdown-compact-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Elecciones Legislativas 2026</span>
+            </div>
+            <div class="countdown-compact-timer">
+                <span id="compact-days">00</span>d 
+                <span id="compact-hours">00</span>h 
+                <span id="compact-minutes">00</span>m 
+                <span id="compact-seconds">00</span>s
+            </div>
+            <div class="countdown-compact-date">
+                <i class="fas fa-calendar-alt"></i>
+                8 Marzo 2026
+            </div>
+        </div>
+    </div>
     <!-- Main Content -->
     <div class="main-container">
         <div class="grafica-container">
@@ -182,7 +200,10 @@ if ($porcentajeRestante > 50) {
                                 <i class="fas fa-chart-pie me-2"></i>Cámara vs Senado (Global)
                             </h4>
                         </div>
-                        <canvas id="graficaTortaGlobal" width="600" height="600"></canvas>
+                        <!-- CAMBIO AQUÍ: Remover width y height fijos, usar contenedor responsive -->
+                        <div class="grafica-wrapper">
+                            <canvas id="graficaTortaGlobal"></canvas>
+                        </div>
                     </div>
                     
                     <!-- Controles de la Gráfica -->
@@ -207,7 +228,7 @@ if ($porcentajeRestante > 50) {
                 <!-- Estadísticas Detalladas -->
                 <div class="estadisticas-detalladas">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-6 mb-3">
                             <div class="estadistica-card camara-detalle">
                                 <div class="estadistica-header">
                                     <i class="fas fa-landmark"></i>
@@ -221,7 +242,7 @@ if ($porcentajeRestante > 50) {
                             </div>
                         </div>
                         
-                        <div class="col-md-6">
+                        <div class="col-md-6 mb-3">
                             <div class="estadistica-card senado-detalle">
                                 <div class="estadistica-header">
                                     <i class="fas fa-balance-scale"></i>
@@ -290,11 +311,14 @@ if ($porcentajeRestante > 50) {
     <!-- Footer -->
     <footer class="system-footer">
         <div class="container text-center mb-3">
-            <img src="../imagenes/Logo-artguru.png" 
-                alt="Logo" 
+            <img id="footer-logo" 
+                src="../imagenes/Logo-artguru.png" 
+                alt="Logo ARTGURU" 
                 class="logo-clickable"
                 onclick="mostrarModalSistema()"
-                title="Haz clic para ver información del sistema">
+                title="Haz clic para ver información del sistema"
+                data-img-claro="../imagenes/Logo-artguru.png"
+                data-img-oscuro="../imagenes/image_no_bg.png">
         </div>
 
         <div class="container text-center">
@@ -443,108 +467,149 @@ if ($porcentajeRestante > 50) {
         let chartGlobal = null;
         let chartTypeGlobal = 'doughnut';
         
-        // Función para inicializar la gráfica global
-        function inicializarGraficaGlobal() {
-            const ctx = document.getElementById('graficaTortaGlobal').getContext('2d');
-            
-            // Destruir gráfica anterior si existe
-            if (chartGlobal) {
-                chartGlobal.destroy();
-            }
-            
-            // Configurar datos
-            const data = {
-                labels: ['Cámara', 'Senado'],
-                datasets: [{
-                    data: [graficaDataGlobal.camara, graficaDataGlobal.senado],
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.9)', // Azul para Cámara
-                        'rgba(155, 89, 182, 0.9)'  // Morado para Senado
-                    ],
-                    borderColor: [
-                        'rgba(52, 152, 219, 1)',
-                        'rgba(155, 89, 182, 1)'
-                    ],
-                    borderWidth: 3,
-                    hoverBackgroundColor: [
-                        'rgba(52, 152, 219, 1)',
-                        'rgba(155, 89, 182, 1)'
-                    ],
-                    hoverOffset: 15
-                }]
-            };
-            
-            // Configurar opciones
-            const options = {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            generateLabels: function(chart) {
-                                const data = chart.data;
-                                if (data.labels.length && data.datasets.length) {
-                                    return data.labels.map((label, i) => {
-                                        const value = data.datasets[0].data[i];
-                                        const percentage = Math.round((value * 100) / data.datasets[0].data.reduce((a, b) => a + b, 0));
-                                        return {
-                                            text: `${label}: ${value} (${percentage}%)`,
-                                            fillStyle: data.datasets[0].backgroundColor[i],
-                                            strokeStyle: data.datasets[0].borderColor[i],
-                                            lineWidth: 2,
-                                            hidden: false,
-                                            index: i
-                                        };
-                                    });
-                                }
-                                return [];
-                            }
-                        }
+       // Función para inicializar la gráfica global
+function inicializarGraficaGlobal() {
+    const canvas = document.getElementById('graficaTortaGlobal');
+    const ctx = canvas.getContext('2d');
+    
+    // Detectar si es móvil
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+        // Para móviles: usar tamaño reducido
+        const container = canvas.parentElement;
+        const containerWidth = container.clientWidth;
+        const aspectRatio = 1; // Cuadrado para móviles
+        const canvasSize = Math.min(containerWidth - 40, 400); // Máximo 400px en móviles
+        
+        canvas.width = canvasSize;
+        canvas.height = canvasSize / aspectRatio;
+    } else {
+        // Para PC/tablet: mantener tamaño fijo (650px)
+        canvas.width = 650;
+        canvas.height = 400;
+    }
+    
+    // Destruir gráfica anterior si existe
+    if (chartGlobal) {
+        chartGlobal.destroy();
+    }
+    
+    // Configurar datos (mantener igual)
+    const data = {
+        labels: ['Cámara', 'Senado'],
+        datasets: [{
+            data: [graficaDataGlobal.camara, graficaDataGlobal.senado],
+            backgroundColor: [
+                'rgba(52, 152, 219, 0.9)',
+                'rgba(155, 89, 182, 0.9)'
+            ],
+            borderColor: [
+                'rgba(52, 152, 219, 1)',
+                'rgba(155, 89, 182, 1)'
+            ],
+            borderWidth: isMobile ? 2 : 3,
+            hoverBackgroundColor: [
+                'rgba(52, 152, 219, 1)',
+                'rgba(155, 89, 182, 1)'
+            ],
+            hoverOffset: isMobile ? 10 : 15
+        }]
+    };
+    
+    // Configurar opciones responsive
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false, // IMPORTANTE: desactivar aspect ratio automático
+        plugins: {
+            legend: {
+                position: isMobile ? 'top' : 'bottom',
+                labels: {
+                    padding: isMobile ? 10 : 20,
+                    font: {
+                        size: isMobile ? 12 : 14,
+                        weight: 'bold'
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    generateLabels: function(chart) {
+                        const data = chart.data;
+                        if (data.labels.length && data.datasets.length) {
+                            return data.labels.map((label, i) => {
+                                const value = data.datasets[0].data[i];
+                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
                                 const percentage = Math.round((value * 100) / total);
-                                return `${label}: ${value} personas (${percentage}%)`;
-                            }
-                        },
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 14
-                        },
-                        padding: 15,
-                        cornerRadius: 8
+                                
+                                let displayText;
+                                if (window.innerWidth < 480) {
+                                    displayText = `${label}: ${value} (${percentage}%)`;
+                                } else if (window.innerWidth < 768) {
+                                    displayText = `${label}: ${value} votos (${percentage}%)`;
+                                } else {
+                                    displayText = `${label}: ${value} votos (${percentage}%)`;
+                                }
+                                
+                                return {
+                                    text: displayText,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    strokeStyle: data.datasets[0].borderColor[i],
+                                    lineWidth: 2,
+                                    hidden: false,
+                                    index: i
+                                };
+                            });
+                        }
+                        return [];
+                    }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = Math.round((value * 100) / total);
+                        return `${label}: ${value} personas (${percentage}%)`;
                     }
                 },
-                cutout: chartTypeGlobal === 'doughnut' ? '50%' : '0%',
-                animation: {
-                    animateRotate: true,
-                    animateScale: true,
-                    duration: 1500,
-                    easing: 'easeOutQuart'
-                }
-            };
-            
-            // Crear gráfica
-            chartGlobal = new Chart(ctx, {
-                type: chartTypeGlobal,
-                data: data,
-                options: options
-            });
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleFont: {
+                    size: isMobile ? 12 : 14,
+                    weight: 'bold'
+                },
+                bodyFont: {
+                    size: isMobile ? 12 : 14
+                },
+                padding: isMobile ? 10 : 15,
+                cornerRadius: 8,
+                displayColors: false
+            }
+        },
+        cutout: chartTypeGlobal === 'doughnut' ? '50%' : '0%',
+        animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1500,
+            easing: 'easeOutQuart'
         }
+    };
+    
+    // Crear gráfica
+    chartGlobal = new Chart(ctx, {
+        type: chartTypeGlobal,
+        data: data,
+        options: options
+    });
+    
+    // Redibujar gráfica cuando cambie el tamaño de la ventana
+    window.addEventListener('resize', function() {
+        if (chartGlobal) {
+            // Solo redimensionar si es móvil
+            if (window.innerWidth < 768) {
+                chartGlobal.resize();
+            }
+        }
+    });
+}
         
         // Función para cambiar tipo de gráfica
         function toggleGraficaTipo() {
@@ -602,6 +667,14 @@ if ($porcentajeRestante > 50) {
             
             document.body.appendChild(notification);
             
+            // Posicionar notificación para móviles
+            if (window.innerWidth < 768) {
+                notification.style.top = '70px';
+                notification.style.left = '12px';
+                notification.style.right = '12px';
+                notification.style.maxWidth = 'none';
+            }
+            
             // Auto-eliminar después de 5 segundos
             setTimeout(() => {
                 if (notification.parentNode) {
@@ -617,36 +690,70 @@ if ($porcentajeRestante > 50) {
                 inicializarGraficaGlobal();
             }, 300);
             
-            // Efectos hover
-            const cards = document.querySelectorAll('.estadistica-card');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px)';
+            // Efectos hover solo en desktop
+            if (window.innerWidth >= 768) {
+                const cards = document.querySelectorAll('.estadistica-card');
+                cards.forEach(card => {
+                    card.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-5px)';
+                    });
+                    card.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateY(0)';
+                    });
                 });
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
+                
+                // Botones de control
+                const buttons = document.querySelectorAll('.btn-control');
+                buttons.forEach(button => {
+                    button.addEventListener('mouseenter', function() {
+                        this.style.transform = 'scale(1.05)';
+                    });
+                    button.addEventListener('mouseleave', function() {
+                        this.style.transform = 'scale(1)';
+                    });
                 });
-            });
+            }
             
-            // Botones de control
-            const buttons = document.querySelectorAll('.btn-control');
-            buttons.forEach(button => {
-                button.addEventListener('mouseenter', function() {
-                    this.style.transform = 'scale(1.05)';
-                });
-                button.addEventListener('mouseleave', function() {
-                    this.style.transform = 'scale(1)';
-                });
+            // Ajustar gráfica cuando cambie la orientación del dispositivo
+            window.addEventListener('orientationchange', function() {
+                setTimeout(() => {
+                    if (chartGlobal) {
+                        chartGlobal.resize();
+                        chartGlobal.update();
+                    }
+                }, 300);
             });
         });
         
         // Función para mostrar modal del sistema
         function mostrarModalSistema() {
-            // Aquí puedes implementar la lógica para mostrar un modal similar al del referenciador
-            // Por ahora solo mostramos un alert
-            alert('Modal de información del sistema - Similar al del referenciador');
+            const modal = new bootstrap.Modal(document.getElementById('modalSistema'));
+            modal.show();
         }
+        
+        function actualizarLogoSegunTema() {
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
+
+        // Ejecutar al cargar y cuando cambie el tema
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
+
+        // Escuchar cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
     </script>
-    <script src="../js/modal-sistema.js"></script>
+    <script src="../js/contador.js"></script>
 </body>
 </html>

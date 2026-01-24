@@ -172,11 +172,14 @@ if ($porcentajeRestante > 50) {
     <!-- Footer -->
     <footer class="system-footer">
         <div class="container text-center mb-3">
-            <img src="../imagenes/Logo-artguru.png" 
-                alt="Logo" 
-                class="logo-clickable"
-                onclick="mostrarModalSistema()"
-                title="Haz clic para ver información del sistema">
+        <img id="footer-logo" 
+            src="../imagenes/Logo-artguru.png" 
+            alt="Logo ARTGURU" 
+            class="logo-clickable"
+            onclick="mostrarModalSistema()"
+            title="Haz clic para ver información del sistema"
+            data-img-claro="../imagenes/Logo-artguru.png"
+            data-img-oscuro="../imagenes/image_no_bg.png">
         </div>
 
         <div class="container text-center">
@@ -322,6 +325,28 @@ if ($porcentajeRestante > 50) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function actualizarLogoSegunTema() {
+    const logo = document.getElementById('footer-logo');
+    if (!logo) return;
+    
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (isDarkMode) {
+        logo.src = logo.getAttribute('data-img-oscuro');
+    } else {
+        logo.src = logo.getAttribute('data-img-claro');
+    }
+}
+
+// Ejecutar al cargar y cuando cambie el tema
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarLogoSegunTema();
+});
+
+// Escuchar cambios en el tema del sistema
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    actualizarLogoSegunTema();
+});
         // Efecto de carga suave
         document.addEventListener('DOMContentLoaded', function() {
             // Efecto hover mejorado

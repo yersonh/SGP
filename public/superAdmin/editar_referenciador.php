@@ -54,6 +54,7 @@ $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
 // Obtener datos completos del referenciado
 $referenciado = $referenciadoModel->getReferenciadoCompleto($id_referenciado);
+$referenciado['activo'] = $referenciado['activo'] ?? true;
 
 if (!$referenciado) {
     header('Location: data_referidos.php?error=referenciado_no_encontrado');
@@ -92,7 +93,14 @@ function isChecked($insumo_id, $insumos_referenciado) {
     }
     return '';
 }
-
+// Función para mostrar estado de actividad (igual que en ver_referenciado.php)
+function getEstadoActividad($activo) {
+    if ($activo === true || $activo === 't' || $activo == 1) {
+        return '<span class="status-active"><i class="fas fa-check-circle"></i> Activo</span>';
+    } else {
+        return '<span class="status-inactive"><i class="fas fa-times-circle"></i> Inactivo</span>';
+    }
+}
 // Variables para mensajes
 $error_message = '';
 $success_message = '';
@@ -101,36 +109,40 @@ $success_message = '';
 if (isset($_GET['success'])) {
     $success_message = 'Referenciado actualizado correctamente.';
 }
-
+error_log("=== Intentando actualizar referenciado ID: $id_referenciado ===");
 // Procesar el formulario cuando se envíe
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Recopilar datos del formulario
-        $datos_actualizar = [
-            'nombre' => $_POST['nombre'] ?? '',
-            'apellido' => $_POST['apellido'] ?? '',
-            'cedula' => $_POST['cedula'] ?? '',
-            'direccion' => $_POST['direccion'] ?? '',
-            'email' => $_POST['email'] ?? '',
-            'telefono' => $_POST['telefono'] ?? '',
-            'sexo' => $_POST['sexo'] ?? '',
-            'vota_fuera' => $_POST['vota_fuera'] ?? 'No',
-            'id_grupo' => !empty($_POST['id_grupo']) ? $_POST['id_grupo'] : null,
-            'afinidad' => $_POST['afinidad'] ?? 1,
-            'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
-            'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
-            'id_puesto_votacion' => !empty($_POST['id_puesto_votacion']) ? $_POST['id_puesto_votacion'] : null,
-            'mesa' => !empty($_POST['mesa']) ? $_POST['mesa'] : null,
-            'id_departamento' => !empty($_POST['id_departamento']) ? $_POST['id_departamento'] : null,
-            'id_municipio' => !empty($_POST['id_municipio']) ? $_POST['id_municipio'] : null,
-            'id_barrio' => !empty($_POST['id_barrio']) ? $_POST['id_barrio'] : null,
-            'id_oferta_apoyo' => !empty($_POST['id_oferta_apoyo']) ? $_POST['id_oferta_apoyo'] : null,
-            'id_grupo_poblacional' => !empty($_POST['id_grupo_poblacional']) ? $_POST['id_grupo_poblacional'] : null,
-            'compromiso' => $_POST['compromiso'] ?? '',
-            'insumos_nuevos' => $_POST['insumos_nuevos'] ?? [],
-            'insumos_eliminar' => $_POST['insumos_eliminar'] ?? []
-        ];
-        
+$datos_actualizar = [
+    'nombre' => $_POST['nombre'] ?? '',
+    'apellido' => $_POST['apellido'] ?? '',
+    'cedula' => $_POST['cedula'] ?? '',
+    'direccion' => $_POST['direccion'] ?? '',
+    'email' => $_POST['email'] ?? '',
+    'telefono' => $_POST['telefono'] ?? '',
+    'sexo' => $_POST['sexo'] ?? '',
+    'vota_fuera' => $_POST['vota_fuera'] ?? 'No',
+    'id_grupo' => !empty($_POST['id_grupo']) ? $_POST['id_grupo'] : null,
+    'afinidad' => $_POST['afinidad'] ?? 1,
+    'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
+    'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
+    'id_puesto_votacion' => !empty($_POST['id_puesto_votacion']) ? $_POST['id_puesto_votacion'] : null,
+    'mesa' => !empty($_POST['mesa']) ? $_POST['mesa'] : null,
+    'id_departamento' => !empty($_POST['id_departamento']) ? $_POST['id_departamento'] : null,
+    'id_municipio' => !empty($_POST['id_municipio']) ? $_POST['id_municipio'] : null,
+    'id_barrio' => !empty($_POST['id_barrio']) ? $_POST['id_barrio'] : null,
+    'id_oferta_apoyo' => !empty($_POST['id_oferta_apoyo']) ? $_POST['id_oferta_apoyo'] : null,
+    'id_grupo_poblacional' => !empty($_POST['id_grupo_poblacional']) ? $_POST['id_grupo_poblacional'] : null,
+    'compromiso' => $_POST['compromiso'] ?? '',
+    'insumos_nuevos' => $_POST['insumos_nuevos'] ?? [],
+    'insumos_eliminar' => $_POST['insumos_eliminar'] ?? [],
+    'id_referenciador' => !empty($_POST['id_referenciador']) ? intval($_POST['id_referenciador']) : $referenciado['id_referenciador']
+];
+error_log("=== DEPURACIÓN: Datos que se enviarán ===");
+error_log("id_referenciador: " . ($datos_actualizar['id_referenciador'] ?? 'NO DEFINIDO'));
+error_log("afinidad: " . ($datos_actualizar['afinidad'] ?? 'NO DEFINIDO'));
+error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
         // Agregar campos de votación fuera si están presentes
         if (isset($_POST['puesto_votacion_fuera'])) {
             $datos_actualizar['puesto_votacion_fuera'] = $_POST['puesto_votacion_fuera'];
@@ -450,9 +462,7 @@ select:disabled {
                             <p>Modifique la información del referenciado en el sistema</p>
                         </div>
                         <div class="header-right">
-                            <div class="status-badge status-active">
-                                <i class="fas fa-check-circle"></i> Activo
-                            </div>
+                            <?php echo getEstadoActividad($referenciado['activo'] ?? true); ?>
                         </div>
                     </div>
                 </div>
@@ -933,7 +943,81 @@ select:disabled {
                             </div>
                         </div>
                     </div>
-                    
+                    <!-- Sección 6: Información de Registro -->
+                    <div class="section-title">
+                        <i class="fas fa-history"></i> Información de Registro
+                    </div>
+
+                    <div class="form-grid">
+                        <!-- Información del referenciador actual -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user-tie"></i> Referenciador Actual
+                            </label>
+                            <div class="field-value">
+                                <?php if ($referenciador): ?>
+                                    <div class="referenciador-info">
+                                        <div class="referenciador-name">
+                                            <i class="fas fa-user-tie"></i>
+                                            <?php echo htmlspecialchars($referenciador['nombres'] . ' ' . $referenciador['apellidos']); ?>
+                                        </div>
+                                        <div class="timestamp-info">
+                                            <i class="fas fa-id-card"></i> 
+                                            Cédula: <?php echo htmlspecialchars($referenciador['cedula'] ?? 'N/A'); ?>
+                                        </div>
+                                        <div class="timestamp-info">
+                                            <i class="fas fa-chart-bar"></i> 
+                                            Referenciados: <?php echo htmlspecialchars($referenciador['total_referenciados'] ?? 0); ?>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="na-text">N/A</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <!-- Campo para cambiar referenciador -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-exchange-alt"></i> Cambiar Referenciador
+                                <span style="color: #ff9800; font-size: 0.8em; margin-left: 5px;">(Opcional)</span>
+                            </label>
+                            <select class="form-control" name="id_referenciador" id="id_referenciador">
+                                <option value="">-- Mantener referenciador actual --</option>
+                                <?php 
+                                // Obtener todos los referenciadores activos
+                                $referenciadores = $usuarioModel->getReferenciadoresActivos();
+                                foreach ($referenciadores as $ref): 
+                                    // Excluir al referenciador actual de la lista
+                                    if ($ref['id_usuario'] == ($referenciado['id_referenciador'] ?? 0)) continue;
+                                ?>
+                                    <option value="<?php echo $ref['id_usuario']; ?>" 
+                                        data-nombre="<?php echo htmlspecialchars($ref['nombres'] . ' ' . $ref['apellidos']); ?>"
+                                        data-cedula="<?php echo htmlspecialchars($ref['cedula'] ?? ''); ?>"
+                                        data-tipo="<?php echo htmlspecialchars($ref['tipo_usuario']); ?>"
+                                        data-tope="<?php echo htmlspecialchars($ref['tope'] ?? 0); ?>"
+                                        data-referenciados="<?php echo htmlspecialchars($ref['total_referenciados'] ?? 0); ?>">
+                                        <?php echo htmlspecialchars($ref['nombres'] . ' ' . $ref['apellidos']); ?> 
+                                        (<?php echo htmlspecialchars($ref['cedula'] ?? 'N/A'); ?>)
+                                        <?php if (isset($ref['total_referenciados'])): ?>
+                                            - <?php echo htmlspecialchars($ref['total_referenciados']); ?> ref.
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small style="display: block; color: #90a4ae; font-size: 0.8em; margin-top: 5px;">
+                                <i class="fas fa-info-circle"></i> Solo referenciadores activos
+                            </small>
+                            
+                            <!-- Preview del nuevo referenciador -->
+                            <div id="nuevo-referenciador-preview" style="display: none; margin-top: 10px; padding: 8px; background: rgba(39, 174, 96, 0.1); border-radius: 5px; border-left: 3px solid #27ae60;">
+                                <div style="color: #27ae60; font-size: 0.85em; margin-bottom: 5px;">
+                                    <i class="fas fa-check-circle"></i> <strong>Nuevo referenciador:</strong>
+                                </div>
+                                <div id="preview-info" style="color: #e2e8f0; font-size: 0.85em;"></div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Botones de Acción -->
                     <div class="form-actions">
                         <a href="ver_referenciado.php?id=<?php echo $id_referenciado; ?>" class="cancel-btn">

@@ -425,15 +425,24 @@ class ReferenciadoModel {
     /**
      * Actualizar un referenciado existente
      */
-    public function actualizarReferenciado($id_referenciado, $data) {
+public function actualizarReferenciado($id_referenciado, $data) {
+    // **DEPURACIÓN INICIAL**
+    error_log("=== actualizarReferenciado INICIADO ===");
+    error_log("ID referenciado: $id_referenciado");
+    error_log("Datos recibidos: " . json_encode($data));
+    
+    try {
         // Asegurar que afinidad sea válida (1-5)
-        $afinidad = max(1, min(5, intval($data['afinidad'])));
+        $afinidad = isset($data['afinidad']) ? max(1, min(5, intval($data['afinidad']))) : 1;
+        error_log("Afinidad procesada: $afinidad");
         
         // Determinar valores según si vota fuera o no
         $votaFuera = $data['vota_fuera'] ?? 'No';
+        error_log("Vota fuera: $votaFuera");
         
         if ($votaFuera === 'Si') {
-            // Cuando vota fuera, los campos normales de votación deben ser nulos
+            error_log("MODO: Vota fuera");
+            // Cuando vota fuera
             $id_zona = null;
             $id_sector = null;
             $id_puesto_votacion = null;
@@ -441,18 +450,13 @@ class ReferenciadoModel {
             $puesto_votacion_fuera = $data['puesto_votacion_fuera'] ?? '';
             $mesa_fuera = $data['mesa_fuera'] ?? null;
             
-            // Validar que los campos fuera estén presentes
+            // Validaciones simplificadas
             if (empty($puesto_votacion_fuera)) {
                 throw new Exception('El puesto de votación fuera es requerido cuando vota fuera');
             }
-            if (empty($mesa_fuera) || $mesa_fuera < 1) {
-                throw new Exception('El número de mesa fuera es requerido y debe ser mayor a 0');
-            }
-            if ($mesa_fuera > 40) {
-                throw new Exception('El número de mesa fuera no puede ser mayor a 40');
-            }
         } else {
-            // Cuando NO vota fuera, los campos fuera deben ser nulos
+            error_log("MODO: No vota fuera");
+            // Cuando NO vota fuera
             $id_zona = $data['id_zona'] ?? null;
             $id_sector = $data['id_sector'] ?? null;
             $id_puesto_votacion = $data['id_puesto_votacion'] ?? null;
@@ -460,103 +464,192 @@ class ReferenciadoModel {
             $puesto_votacion_fuera = null;
             $mesa_fuera = null;
             
-            // Validar que los campos normales estén presentes
             if (empty($id_zona)) {
                 throw new Exception('La zona es requerida cuando no vota fuera');
             }
         }
         
+        // **LÓGICA SIMPLIFICADA PARA 'activo'**
+        error_log("=== Procesando lógica de 'activo' ===");
+        
+        // Por defecto: mantener activo = true
+        $activo = true;
+        
+        // Solo si tenemos id_referenciador en los datos
+        if (isset($data['id_referenciador'])) {
+            error_log("id_referenciador recibido: " . $data['id_referenciador']);
+            
+            // 1. Obtener estado actual ANTES de cualquier cambio
+            $sqlActual = "SELECT id_referenciador, activo FROM referenciados WHERE id_referenciado = :id";
+            $stmtActual = $this->pdo->prepare($sqlActual);
+            $stmtActual->bindValue(':id', $id_referenciado, PDO::PARAM_INT);
+            $stmtActual->execute();
+            $referenciadoActual = $stmtActual->fetch(PDO::FETCH_ASSOC);
+            
+            if ($referenciadoActual) {
+                error_log("Estado actual encontrado: " . json_encode($referenciadoActual));
+                
+                $actualReferenciador = $referenciadoActual['id_referenciador'] ?? null;
+                $nuevoReferenciador = $data['id_referenciador'];
+                
+                error_log("Referenciador actual: $actualReferenciador");
+                error_log("Nuevo referenciador: $nuevoReferenciador");
+                
+                // Verificar si hay cambio
+                if ($actualReferenciador != $nuevoReferenciador) {
+                    error_log("¡HAY CAMBIO DE REFERENCIADOR!");
+                    
+                    // Si estaba INACTIVO → ACTIVAR
+                    if (!$referenciadoActual['activo'] || 
+                        $referenciadoActual['activo'] == 0 || 
+                        $referenciadoActual['activo'] == 'f') {
+                        error_log("Referenciado estaba INACTIVO → Se ACTIVA");
+                        $activo = true;
+                    } else {
+                        error_log("Referenciado ya estaba ACTIVO → Mantiene activo");
+                        $activo = true; // Siempre activo cuando hay cambio
+                    }
+                } else {
+                    error_log("NO hay cambio de referenciador → Mantiene estado actual");
+                    $activo = $referenciadoActual['activo'] ?? true;
+                }
+            } else {
+                error_log("ADVERTENCIA: No se encontró el referenciado ID: $id_referenciado");
+            }
+        } else {
+            error_log("id_referenciador NO recibido en datos");
+        }
+        
+        error_log("Valor final de 'activo': " . ($activo ? 'true' : 'false'));
+        
         // Iniciar transacción
         $this->pdo->beginTransaction();
+        error_log("Transacción iniciada");
         
-        try {
-            // SQL actualizado para incluir el nuevo campo id_grupo
-            $sql = "UPDATE referenciados SET
-                    nombre = :nombre,
-                    apellido = :apellido,
-                    cedula = :cedula,
-                    direccion = :direccion,
-                    email = :email,
-                    telefono = :telefono,
-                    afinidad = :afinidad,
-                    id_zona = :id_zona,
-                    id_sector = :id_sector,
-                    id_puesto_votacion = :id_puesto_votacion,
-                    mesa = :mesa,
-                    id_departamento = :id_departamento,
-                    id_municipio = :id_municipio,
-                    id_barrio = :id_barrio,
-                    id_oferta_apoyo = :id_oferta_apoyo,
-                    id_grupo_poblacional = :id_grupo_poblacional,
-                    compromiso = :compromiso,
-                    fecha_actualizacion = NOW(),
-                    sexo = :sexo,
-                    vota_fuera = :vota_fuera,
-                    puesto_votacion_fuera = :puesto_votacion_fuera,
-                    mesa_fuera = :mesa_fuera,
-                    id_grupo = :id_grupo  -- NUEVO CAMPO: id_grupo
-                    WHERE id_referenciado = :id_referenciado";
-            
-            $stmt = $this->pdo->prepare($sql);
-            
-            // Asignar valores
-            $stmt->bindValue(':nombre', $data['nombre']);
-            $stmt->bindValue(':apellido', $data['apellido']);
-            $stmt->bindValue(':cedula', $data['cedula']);
-            $stmt->bindValue(':direccion', $data['direccion']);
-            $stmt->bindValue(':email', $data['email']);
-            $stmt->bindValue(':telefono', $data['telefono']);
-            $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
-            
-            // Campos de votación
-            $stmt->bindValue(':id_zona', $id_zona, PDO::PARAM_INT);
-            $stmt->bindValue(':id_sector', $id_sector, PDO::PARAM_INT);
-            $stmt->bindValue(':id_puesto_votacion', $id_puesto_votacion, PDO::PARAM_INT);
-            $stmt->bindValue(':mesa', $mesa, PDO::PARAM_INT);
-            
-            // Campos de ubicación
-            $stmt->bindValue(':id_departamento', $data['id_departamento'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_municipio', $data['id_municipio'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_barrio', $data['id_barrio'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':compromiso', $data['compromiso'] ?? '');
-            $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
-            
-            // Campos personales
-            $stmt->bindValue(':sexo', $data['sexo'] ?? null);
-            $stmt->bindValue(':vota_fuera', $votaFuera);
-            
-            // Campos de votación fuera
-            $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
-            $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
-            
-            // NUEVO CAMPO: id_grupo
-            $stmt->bindValue(':id_grupo', $data['id_grupo'] ?? null, PDO::PARAM_INT);
-            
-            $stmt->execute();
-            
-            // Si hay insumos nuevos, agregarlos
-            if (!empty($data['insumos_nuevos'])) {
-                $this->agregarInsumosReferenciado($id_referenciado, $data['insumos_nuevos'], $data);
-            }
-            
-            // Si hay insumos a eliminar, removerlos
-            if (!empty($data['insumos_eliminar'])) {
-                $this->eliminarInsumosReferenciado($id_referenciado, $data['insumos_eliminar']);
-            }
-            
-            // Confirmar la transacción
-            $this->pdo->commit();
-            
-            return true;
-            
-        } catch (Exception $e) {
-            // Revertir la transacción en caso de error
-            $this->pdo->rollBack();
-            throw $e;
+        // **SQL CORREGIDO: Todos los campos exactos de tu tabla**
+        $sql = "UPDATE referenciados SET
+                nombre = :nombre,
+                apellido = :apellido,
+                cedula = :cedula,
+                direccion = :direccion,
+                email = :email,
+                telefono = :telefono,
+                afinidad = :afinidad,
+                id_zona = :id_zona,
+                id_sector = :id_sector,
+                id_puesto_votacion = :id_puesto_votacion,
+                mesa = :mesa,
+                id_departamento = :id_departamento,
+                id_municipio = :id_municipio,
+                id_barrio = :id_barrio,
+                id_oferta_apoyo = :id_oferta_apoyo,
+                id_grupo_poblacional = :id_grupo_poblacional,
+                compromiso = :compromiso,
+                fecha_actualizacion = NOW(),
+                sexo = :sexo,
+                vota_fuera = :vota_fuera,
+                puesto_votacion_fuera = :puesto_votacion_fuera,
+                mesa_fuera = :mesa_fuera,
+                id_grupo = :id_grupo,
+                id_referenciador = :id_referenciador,
+                activo = :activo
+                WHERE id_referenciado = :id_referenciado";
+        
+        error_log("SQL preparado");
+        $stmt = $this->pdo->prepare($sql);
+        
+        // **Bind de valores con DEPURACIÓN**
+        error_log("=== Bind de valores ===");
+        
+        // Campos básicos
+        $stmt->bindValue(':nombre', $data['nombre'] ?? '');
+        $stmt->bindValue(':apellido', $data['apellido'] ?? '');
+        $stmt->bindValue(':cedula', $data['cedula'] ?? '');
+        $stmt->bindValue(':direccion', $data['direccion'] ?? '');
+        $stmt->bindValue(':email', $data['email'] ?? '');
+        $stmt->bindValue(':telefono', $data['telefono'] ?? '');
+        $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
+        
+        // Campos de votación
+        $stmt->bindValue(':id_zona', $id_zona, PDO::PARAM_INT);
+        $stmt->bindValue(':id_sector', $id_sector, PDO::PARAM_INT);
+        $stmt->bindValue(':id_puesto_votacion', $id_puesto_votacion, PDO::PARAM_INT);
+        $stmt->bindValue(':mesa', $mesa, PDO::PARAM_INT);
+        
+        // Campos de ubicación
+        $stmt->bindValue(':id_departamento', $data['id_departamento'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_municipio', $data['id_municipio'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_barrio', $data['id_barrio'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':compromiso', $data['compromiso'] ?? '');
+        
+        // Campos personales
+        $stmt->bindValue(':sexo', $data['sexo'] ?? null);
+        $stmt->bindValue(':vota_fuera', $votaFuera);
+        
+        // Campos de votación fuera
+        $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
+        $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
+        
+        // Campo grupo parlamentario
+        $stmt->bindValue(':id_grupo', $data['id_grupo'] ?? null, PDO::PARAM_INT);
+        
+        // Campo id_referenciador (IMPORTANTE)
+        $idReferenciador = $data['id_referenciador'] ?? null;
+        error_log("Bind id_referenciador: " . ($idReferenciador ?? 'NULL'));
+        $stmt->bindValue(':id_referenciador', $idReferenciador, PDO::PARAM_INT);
+        
+        // Campo activo
+        error_log("Bind activo: " . ($activo ? 'true' : 'false'));
+        $stmt->bindValue(':activo', $activo, PDO::PARAM_BOOL);
+        
+        // ID del referenciado
+        $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
+        
+        // **EJECUTAR**
+        error_log("Ejecutando UPDATE...");
+        $resultado = $stmt->execute();
+        $filasAfectadas = $stmt->rowCount();
+        
+        error_log("Resultado execute: " . ($resultado ? 'true' : 'false'));
+        error_log("Filas afectadas: $filasAfectadas");
+        
+        if ($filasAfectadas === 0) {
+            error_log("ADVERTENCIA: No se actualizó ninguna fila. ¿Existe el ID $id_referenciado?");
         }
+        
+        // Si hay insumos nuevos, agregarlos
+        if (!empty($data['insumos_nuevos'])) {
+            error_log("Agregando " . count($data['insumos_nuevos']) . " insumos nuevos");
+            $this->agregarInsumosReferenciado($id_referenciado, $data['insumos_nuevos'], $data);
+        }
+        
+        // Si hay insumos a eliminar, removerlos
+        if (!empty($data['insumos_eliminar'])) {
+            error_log("Eliminando " . count($data['insumos_eliminar']) . " insumos");
+            $this->eliminarInsumosReferenciado($id_referenciado, $data['insumos_eliminar']);
+        }
+        
+        // Confirmar la transacción
+        $this->pdo->commit();
+        error_log("Transacción confirmada - ÉXITO");
+        
+        return true;
+        
+    } catch (Exception $e) {
+        error_log("ERROR en actualizarReferenciado: " . $e->getMessage());
+        error_log("Trace: " . $e->getTraceAsString());
+        
+        // Revertir la transacción en caso de error
+        if ($this->pdo->inTransaction()) {
+            $this->pdo->rollBack();
+            error_log("Transacción revertida");
+        }
+        
+        throw $e;
     }
+}
     
     /**
      * Agregar nuevos insumos al referenciado

@@ -219,7 +219,18 @@
             gap: 25px;
             margin-bottom: 35px;
         }
-        
+        .form-grid2 {
+            display: grid;
+            /* Cambiamos 1fr por min-content o auto */
+            grid-template-columns: min-content; 
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+
+        /* Para asegurar que los textos no se corten feo */
+        .field-value {
+            white-space: nowrap; /* Evita que el nombre se salte de línea si es corto */
+        }
         .form-group {
             margin-bottom: 0;
         }
@@ -607,4 +618,25 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos para estados (igual que en ver_referenciado.php) */
+.status-active, .status-inactive {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-active {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+}
+
+.status-inactive {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: white;
 }

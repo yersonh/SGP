@@ -349,93 +349,117 @@ function getAfinidadIcon($afinidad) {
                     </div>
                 </div>
                 
-                <!-- Sección 3: Información de Votación -->
-                <div class="section-title">
-                    <i class="fas fa-vote-yea"></i> Información de Votación
+               <!-- Sección 3: Información de Votación -->
+<div class="section-title">
+    <i class="fas fa-vote-yea"></i> Información de Votación
+</div>
+
+<!-- Grid principal: Grupo Parlamentario + Vota Fuera -->
+<div class="voting-info-section">
+    <div class="form-grid">
+
+        <!-- Grupo Parlamentario -->
+        <div class="form-group">
+            <label class="form-label">
+                <i class="fas fa-users-cog"></i> Grupo Parlamentario
+            </label>
+            <div class="field-value">
+                <?php echo getFieldValue($referenciado['grupo_nombre'] ?? ''); ?>
+            </div>
+        </div>
+
+        <!-- Vota Fuera -->
+        <div class="form-group">
+            <label class="form-label">
+                <i class="fas fa-person-booth"></i> Vota Fuera
+            </label>
+            <div class="field-value">
+                <?php 
+                echo isset($referenciado['vota_fuera']) 
+                    ? getVotaFueraSwitch($referenciado['vota_fuera']) 
+                    : '<span class="na-text">N/A</span>'; 
+                ?>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Campos condicionales -->
+<?php if (isset($referenciado['vota_fuera']) && $referenciado['vota_fuera'] === 'Si'): ?>
+
+    <!-- Cuando VOTA FUERA -->
+    <div class="voting-info-section">
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-vote-yea"></i> Puesto de votación fuera
+                </label>
+                <div class="field-value">
+                    <?php echo getFieldValue($referenciado['puesto_votacion_fuera'] ?? ''); ?>
                 </div>
-                
-                <!-- Mostrar información condicional según si vota fuera o no -->
-                <?php if (isset($referenciado['vota_fuera']) && $referenciado['vota_fuera'] === 'Si'): ?>
-                    <!-- Cuando VOTA FUERA -->
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-person-booth"></i> Vota Fuera
-                        </label>
-                        <div class="field-value">
-                            <?php echo isset($referenciado['vota_fuera']) ? getVotaFueraSwitch($referenciado['vota_fuera']) : '<span class="na-text">N/A</span>'; ?>
-                        </div>
-                    </div>
-                    <div class="voting-info-section">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-vote-yea"></i> Puesto de votación fuera
-                                </label>
-                                <div class="field-value">
-                                    <?php echo getFieldValue($referenciado['puesto_votacion_fuera'] ?? ''); ?>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-table"></i> Mesa fuera
-                                </label>
-                                <div class="field-value">
-                                    <?php echo getFieldValue($referenciado['mesa_fuera'] ?? ''); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <!-- Cuando NO vota fuera -->
-                    <div class="voting-info-section">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label-votarfuera">
-                                    <i class="fas fa-person-booth"></i> Vota Fuera
-                                </label>
-                                <div class="field-value">
-                                    <?php echo isset($referenciado['vota_fuera']) ? getVotaFueraSwitch($referenciado['vota_fuera']) : '<span class="na-text">N/A</span>'; ?>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-compass"></i> Zona
-                                </label>
-                                <div class="field-value">
-                                    <?php echo getFieldValue($referenciado['zona_nombre'] ?? ''); ?>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-th-large"></i> Sector
-                                </label>
-                                <div class="field-value">
-                                    <?php echo getFieldValue($referenciado['sector_nombre'] ?? ''); ?>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-vote-yea"></i> Puesto de votación
-                                </label>
-                                <div class="field-value">
-                                    <?php echo getFieldValue($referenciado['puesto_votacion_nombre'] ?? ''); ?>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-table"></i> Mesa
-                                </label>
-                                <div class="field-value">
-                                    <?php echo getFieldValue($referenciado['mesa']); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-table"></i> Mesa fuera
+                </label>
+                <div class="field-value">
+                    <?php echo getFieldValue($referenciado['mesa_fuera'] ?? ''); ?>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<?php else: ?>
+
+    <!-- Cuando NO vota fuera -->
+    <div class="voting-info-section">
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-compass"></i> Zona
+                </label>
+                <div class="field-value">
+                    <?php echo getFieldValue($referenciado['zona_nombre'] ?? ''); ?>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-th-large"></i> Sector
+                </label>
+                <div class="field-value">
+                    <?php echo getFieldValue($referenciado['sector_nombre'] ?? ''); ?>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-vote-yea"></i> Puesto de votación
+                </label>
+                <div class="field-value">
+                    <?php echo getFieldValue($referenciado['puesto_votacion_nombre'] ?? ''); ?>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-table"></i> Mesa
+                </label>
+                <div class="field-value">
+                    <?php echo getFieldValue($referenciado['mesa']); ?>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<?php endif; ?>
+
                 
                 <!-- Sección 4: Información Adicional -->
                 <div class="section-title">

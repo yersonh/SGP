@@ -901,13 +901,13 @@ if ($porcentajeRestante > 50) {
             // Asignar URL según formato
             switch(formato) {
                 case 'excel':
-                    url = 'exportar_referidos_excel.php';
+                    url = 'exportar_referidosInactivos_excel.php';
                     break;
                 case 'pdf':
-                    url = 'exportar_referidos_pdf.php';
+                    url = 'exportar_referidosInactivos_pdf.php';
                     break;
                 default:
-                    url = 'exportar_referidos_excel.php';
+                    url = 'exportar_referidosInactivos_excel.php';
                     break;
             }
             

@@ -1149,7 +1149,7 @@ body {
             </a>
             
             <!-- Reportes -->
-            <a href="superadmin_reportes.php" class="dashboard-option">
+            <a href="/superAdmin/superadmin_reportes.php" class="dashboard-option">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
                 </div>

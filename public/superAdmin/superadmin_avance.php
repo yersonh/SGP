@@ -306,8 +306,8 @@ if ($porcentajeRestante > 50) {
                 
                 <!-- Puesto de Votación -->
                 <div class="form-group">
-                    <label for="id_puesto_votacion"><i class="fas fa-vote-yea"></i> Puesto de Votación</label>
-                    <select id="id_puesto_votacion" class="form-select filtro-select" data-filtro="id_puesto">
+                    <label for="id_puesto"><i class="fas fa-vote-yea"></i> Puesto de Votación</label>
+                    <select id="id_puesto" class="form-select filtro-select" data-filtro="id_puesto">
                         <option value="">Todos los puestos</option>
                         <?php foreach ($puestosVotacion as $puesto): ?>
                             <option value="<?php echo $puesto['id_puesto']; ?>">
@@ -698,7 +698,7 @@ if ($porcentajeRestante > 50) {
                 nombre: $('#nombre').val().trim(),
                 id_zona: $('#id_zona').val() || 0,
                 id_sector: $('#id_sector').val() || 0,
-                id_puesto_votacion: $('#id_puesto').val() || 0,
+                id_puesto: $('#id_puesto').val() || 0,
                 fecha_acceso: $('#fecha_acceso').val() || '',
                 porcentaje_minimo: $('#porcentaje_minimo').val() || 0,
                 ordenar_por: $('#ordenar_por').val() || 'fecha_creacion',
@@ -742,7 +742,7 @@ if ($porcentajeRestante > 50) {
             }
             
             // Puesto de votación
-            if (filtros.id_puesto_votacion > 0) {
+            if (filtros.id_puesto > 0) {
                 var puestoNombre = $('#id_puesto option:selected').text();
                 filtrosMostrar.push({
                     key: 'id_puesto',

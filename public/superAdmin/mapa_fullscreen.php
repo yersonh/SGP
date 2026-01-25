@@ -114,7 +114,6 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
     </style>
 </head>
 <body>
-
     <!-- El Mapa (EXACTAMENTE igual que el tuyo) -->
     <div id="map"></div>
 

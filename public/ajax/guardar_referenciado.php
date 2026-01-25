@@ -207,7 +207,7 @@ try {
         // Agregar info sobre grupo si se seleccionó - NUEVO: cambiado de campo a grupo
         if (!empty($data['id_grupo'])) {
             try {
-                $stmt = $pdo->prepare("SELECT nombre FROM grupos WHERE id_grupo = ?");
+                $stmt = $pdo->prepare("SELECT nombre FROM grupos_parlamentarios WHERE id_grupo = ?");
                 $stmt->execute([$data['id_grupo']]);
                 $grupo = $stmt->fetch();
                 if ($grupo) {

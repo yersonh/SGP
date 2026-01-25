@@ -667,5 +667,41 @@ public function getReferenciadoresActivos() {
         return [];
     }
 }
+public function getUsuarioByIdActivo($id) {
+    try {
+        $sql = "SELECT 
+                    u.*,
+                    COALESCE(r.total_referenciados, 0) as total_referenciados,
+                    CASE 
+                        WHEN u.tope > 0 THEN 
+                            ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                        ELSE 0 
+                    END as porcentaje_tope
+                FROM usuario u 
+                LEFT JOIN (
+                    SELECT id_referenciador, COUNT(*) as total_referenciados 
+                    FROM referenciados 
+                    WHERE activo = true
+                    GROUP BY id_referenciador
+                ) r ON u.id_usuario = r.id_referenciador
+                WHERE u.id_usuario = :id 
+                AND u.activo = true
+                AND u.tipo_usuario = 'Referenciador'";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($usuario) {
+            $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto'] ?? null);
+        }
+        
+        return $usuario;
+    } catch (Exception $e) {
+        error_log("Error en getUsuarioByIdActivo: " . $e->getMessage());
+        return null;
+    }
+}
 }
 ?>

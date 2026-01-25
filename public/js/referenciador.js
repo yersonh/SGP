@@ -2,9 +2,44 @@
 let currentRating = 0;
 let maxMesasPuestoActual = 0;
 
+// Agregar logging global para monitorear llamadas
+console.log('✅ referenciador.js cargado');
+
+// Monitorear todas las llamadas fetch para depuración
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    const url = args[0];
+    const method = args[1]?.method || 'GET';
+    
+    console.log(`🌐 Fetch [${method}]: ${url}`);
+    
+    if (url.includes('enviar_correo_confirmacion.php')) {
+        console.log('📧 Fetch detectado para enviar correo');
+        console.log('📦 Body enviado:', args[1]?.body);
+    }
+    
+    return originalFetch.apply(this, args).then(response => {
+        console.log(`📡 Respuesta fetch [${url}]: ${response.status}`);
+        return response;
+    }).catch(error => {
+        console.error(`🔥 Error fetch [${url}]:`, error);
+        throw error;
+    });
+};
+
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM cargado - Inicializando sistema...');
+    
+    // Prueba: verificar que el endpoint de correo existe
+    console.log('🔍 Verificando endpoint de correo...');
+    fetch('ajax/enviar_correo_confirmacion.php')
+        .then(response => {
+            console.log(`🔍 Endpoint correo - Status: ${response.status}, URL: ${response.url}`);
+        })
+        .catch(error => {
+            console.error('🔍 Error verificando endpoint:', error);
+        });
     
     // Inicializar contador de caracteres
     setupCharCounter();
@@ -39,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar barra de tope
     updateTopeProgress();
     
-    console.log('Sistema inicializado correctamente');
+    console.log('✅ Sistema inicializado correctamente');
 });
 
 // ==================== SISTEMA DE ESTRELLAS (RATING) ====================
@@ -836,6 +871,7 @@ function setupFormEvents() {
     
     // Manejar envío del formulario
     document.getElementById('referenciacion-form').addEventListener('submit', async function(e) {
+        console.log('🚀 Iniciando submit del formulario...');
         e.preventDefault();
         
         const submitBtn = document.getElementById('submit-btn');
@@ -975,6 +1011,7 @@ function setupFormEvents() {
         
         // 3. SI HAY ERRORES, MOSTRAR Y CANCELAR ENVÍO
         if (!isValid) {
+            console.log('❌ Validación fallida:', errorMessage);
             showNotification(errorMessage, 'error');
             if (firstErrorField) {
                 firstErrorField.focus();
@@ -1009,16 +1046,19 @@ function setupFormEvents() {
         }
         
         // 5. ENVIAR FORMULARIO
+        console.log('✅ Validaciones pasadas. Enviando formulario...');
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         submitBtn.disabled = true;
         
         try {
             const formData = new FormData(this);
+            console.log('📝 FormData creado');
             
             // Asegurar que la afinidad se envíe
             const afinidadInput = document.getElementById('afinidad');
             if (afinidadInput) {
                 formData.set('afinidad', currentRating.toString());
+                console.log('⭐ Afinidad enviada:', currentRating);
             }
             
             // Asegurar que vota_fuera se envíe correctamente
@@ -1026,42 +1066,138 @@ function setupFormEvents() {
             if (votaFueraHidden && votaFueraSwitch) {
                 votaFueraHidden.value = votaFuera ? 'Si' : 'No';
                 formData.set('vota_fuera', votaFueraHidden.value);
+                console.log('🗳️ Vota fuera enviado:', votaFueraHidden.value);
             }
             
             // Enviar datos
+            console.log('🌐 Enviando a guardar_referenciado.php...');
             const response = await fetch('ajax/guardar_referenciado.php', {
                 method: 'POST',
                 body: formData
             });
             
+            console.log('📡 Respuesta recibida de guardar_referenciado.php');
             const data = await response.json();
+            console.log('📊 Datos de respuesta:', data);
             
             if (data.success) {
                 showNotification(data.message || 'Registro guardado exitosamente', 'success');
+                console.log('✅ Registro guardado exitosamente');
                 
                 // ACTUALIZAR TOPE (incrementar contador)
                 incrementarTope();
+                console.log('📈 Tope actualizado');
+                
+                // ENVIAR CORREO DE CONFIRMACIÓN DESPUÉS DE GUARDAR EXITOSAMENTE
+                console.log('📧 Llamando a enviarCorreoConfirmacion()...');
+                await enviarCorreoConfirmacion(formData);
                 
                 // Resetear formulario
                 this.reset();
                 currentRating = 0;
+                console.log('🔄 Formulario reseteado');
                 
                 // Resetear elementos específicos
                 resetForm();
                 
             } else {
+                console.log('❌ Error del servidor:', data.message);
                 showNotification(data.message || 'Error al guardar el registro', 'error');
             }
             
         } catch (error) {
-            console.error('Error:', error);
+            console.error('🔥 Error en submit:', error);
             showNotification('Error de conexión: ' + error.message, 'error');
         } finally {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
+            console.log('🏁 Submit finalizado');
         }
     });
 }
+
+// ==================== ENVIAR CORREO DE CONFIRMACIÓN ====================
+async function enviarCorreoConfirmacion(formData) {
+    console.log('🚀 Iniciando enviarCorreoConfirmacion()');
+    
+    try {
+        // Crear objeto con los datos del referido
+        const datosReferido = {
+            nombre: formData.get('nombre'),
+            apellido: formData.get('apellido'),
+            cedula: formData.get('cedula'),
+            email: formData.get('email'),
+            telefono: formData.get('telefono'),
+            direccion: formData.get('direccion'),
+            barrio: formData.get('barrio'), // Enviar ID del barrio
+            afinidad: formData.get('afinidad')
+        };
+        
+        console.log('📝 Datos para correo:', datosReferido);
+        
+        // Validar que tenemos email
+        if (!datosReferido.email) {
+            console.warn('⚠️ No hay email para enviar correo');
+            return;
+        }
+        
+        console.log('🌐 Preparando fetch a enviar_correo_confirmacion.php');
+        
+        // Enviar solicitud para enviar correo
+        const emailResponse = await fetch('ajax/enviar_correo_confirmacion.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                nombre: datosReferido.nombre,
+                apellido: datosReferido.apellido,
+                cedula: datosReferido.cedula,
+                email: datosReferido.email,
+                telefono: datosReferido.telefono,
+                direccion: datosReferido.direccion,
+                barrio: datosReferido.barrio,
+                afinidad: datosReferido.afinidad
+            })
+        });
+        
+        console.log('📡 Respuesta recibida. Status:', emailResponse.status);
+        console.log('📡 URL:', emailResponse.url);
+        
+        // Verificar si la respuesta es JSON
+        const contentType = emailResponse.headers.get('content-type');
+        console.log('📄 Content-Type:', contentType);
+        
+        let emailResult;
+        if (contentType && contentType.includes('application/json')) {
+            emailResult = await emailResponse.json();
+        } else {
+            // Si no es JSON, leer como texto
+            const textResponse = await emailResponse.text();
+            console.log('📄 Respuesta texto:', textResponse);
+            throw new Error('Respuesta no es JSON: ' + textResponse.substring(0, 100));
+        }
+        
+        console.log('📊 Resultado JSON del correo:', emailResult);
+        
+        if (emailResult.success) {
+            console.log('✅ Correo de confirmación enviado exitosamente');
+            // Opcional: mostrar notificación de éxito
+            showNotification('Correo de confirmación enviado al referido', 'success');
+        } else {
+            console.warn('❌ Correo no enviado:', emailResult.error || 'Error desconocido');
+            // No mostramos error al usuario para no interrumpir el flujo principal
+        }
+        
+    } catch (error) {
+        console.error('🔥 Error al enviar correo:', error);
+        console.error('🔥 Stack trace:', error.stack);
+        // No mostramos error al usuario
+    }
+    
+    console.log('🏁 Finalizando enviarCorreoConfirmacion()');
+}
+
 // ==================== MANEJO DE ASTERISCOS DINÁMICOS ====================
 function setupAsteriscosDinamicos() {
     const votaFueraSwitch = document.getElementById('vota_fuera_switch');
@@ -1088,6 +1224,7 @@ function setupAsteriscosDinamicos() {
     votaFueraSwitch.addEventListener('change', actualizarAsteriscos);
     actualizarAsteriscos(); // Estado inicial
 }
+
 // ==================== FUNCIONES AUXILIARES ====================
 
 // Abrir consulta de censo
@@ -1097,6 +1234,8 @@ function abrirConsultaCenso() {
 
 // Mostrar notificaciones
 function showNotification(message, type = 'info') {
+    console.log(`📢 Notificación [${type}]:`, message);
+    
     const oldNotification = document.querySelector('.notification');
     if (oldNotification) oldNotification.remove();
     
@@ -1123,6 +1262,8 @@ function showNotification(message, type = 'info') {
 
 // Resetear formulario después de envío
 function resetForm() {
+    console.log('🔄 Resetear formulario');
+    
     // Resetear rating
     const ratingValue = document.getElementById('rating-value');
     const afinidadInput = document.getElementById('afinidad');
@@ -1372,3 +1513,8 @@ function setupCedulaValidation() {
     
     console.log('Validación de cédula configurada correctamente');
 }
+
+// Prueba: Test directo de la función (opcional)
+setTimeout(() => {
+    console.log('🧪 Prueba: La función enviarCorreoConfirmacion está definida:', typeof enviarCorreoConfirmacion === 'function');
+}, 1000);

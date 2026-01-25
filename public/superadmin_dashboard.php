@@ -1132,7 +1132,7 @@ body {
             </a>
             
             <!-- Georeferenciación -->
-            <a href="superadmin_georeferenciacion.php" class="dashboard-option">
+            <a href="/superAdmin/superadmin_georeferenciacion.php" class="dashboard-option">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
                 </div>

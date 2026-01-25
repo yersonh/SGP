@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/ZonaModel.php';
 require_once __DIR__ . '/../models/BarrioModel.php';
 require_once __DIR__ . '/../models/Grupos_ParlamentariosModel.php';
 require_once __DIR__ . '/../models/SistemaModel.php';
+require_once __DIR__ . '/../lib/BrevoEmail.php';
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {

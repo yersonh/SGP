@@ -23,7 +23,7 @@ $filtros = [
     'nombre' => trim(filter_input(INPUT_GET, 'nombre', FILTER_SANITIZE_STRING) ?? ''),
     'id_zona' => filter_input(INPUT_GET, 'id_zona', FILTER_VALIDATE_INT) ?: 0,
     'id_sector' => filter_input(INPUT_GET, 'id_sector', FILTER_VALIDATE_INT) ?: 0,
-    'id_puesto_votacion' => filter_input(INPUT_GET, 'id_puesto_votacion', FILTER_VALIDATE_INT) ?: 0,
+    'id_puesto' => filter_input(INPUT_GET, 'id_puesto', FILTER_VALIDATE_INT) ?: 0,
     'fecha_acceso' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['fecha_acceso'] ?? '') ? $_GET['fecha_acceso'] : '',
     'porcentaje_minimo' => filter_input(INPUT_GET, 'porcentaje_minimo', FILTER_VALIDATE_FLOAT) ?: 0.0,
     'ordenar_por' => in_array($_GET['ordenar_por'] ?? '', ['fecha_creacion', 'porcentaje_desc', 'referidos_desc']) 
@@ -117,9 +117,9 @@ try {
         }
         
         // Filtrar por puesto de votación
-        if ($filtros['id_puesto_votacion'] > 0) {
+        if ($filtros['id_puesto'] > 0) {
             $usuarioCompleto = $usuarioModel->getUsuarioByIdActivo($usuario['id_usuario']);
-            if ($usuarioCompleto && $usuarioCompleto['id_puesto_votacion'] != $filtros['id_puesto_votacion']) {
+            if ($usuarioCompleto && $usuarioCompleto['id_puesto'] != $filtros['id_puesto']) {
                 return false;
             }
         }
@@ -204,7 +204,7 @@ try {
         // Asegurar que todos los campos necesarios existan
         $referenciador['id_zona'] = $referenciador['id_zona'] ?? 0;
         $referenciador['id_sector'] = $referenciador['id_sector'] ?? 0;
-        $referenciador['id_puesto_votacion'] = $referenciador['id_puesto_votacion'] ?? 0;
+        $referenciador['id_puesto'] = $referenciador['id_puesto'] ?? 0;
         $referenciador['ultimo_registro'] = $referenciador['ultimo_registro'] ?? null;
         $referenciador['fecha_creacion'] = $referenciador['fecha_creacion'] ?? date('Y-m-d H:i:s');
     }

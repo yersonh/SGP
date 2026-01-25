@@ -1014,5 +1014,32 @@ public function getDetalleReferenciadosPorFecha($fecha, $limite = 1000) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+/**
+ * Obtener fecha de registro de un referenciado por cédula
+ */
+public function getFechaRegistroByCedula($cedula) {
+    try {
+        $sql = "SELECT fecha_registro FROM referenciados 
+                WHERE cedula = ? 
+                ORDER BY fecha_registro DESC 
+                LIMIT 1";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$cedula]);
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($resultado && !empty($resultado['fecha_registro'])) {
+            // La fecha ya está en la zona horaria correcta en PostgreSQL
+            // Solo la formateamos
+            $fecha = new DateTime($resultado['fecha_registro']);
+            return $fecha->format('d/m/Y H:i:s');
+        }
+        
+        return null;
+    } catch (Exception $e) {
+        error_log("Error en getFechaRegistroByCedula: " . $e->getMessage());
+        return null;
+    }
+}
 }
 ?>

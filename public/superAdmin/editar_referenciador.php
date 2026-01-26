@@ -259,175 +259,6 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
     <title>Editar Referenciado - SGP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/editar_referenciado.css">
-    <style>
-        .switch-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .switch-checkbox {
-            display: none;
-        }
-        
-        .switch-label {
-            position: relative;
-            display: inline-block;
-            width: 70px;
-            height: 34px;
-        }
-        
-        .switch-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #e0e0e0;
-            border-radius: 34px;
-            transition: .4s;
-        }
-        
-        .switch-slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            border-radius: 50%;
-            transition: .4s;
-        }
-        
-        .switch-checkbox:checked + .switch-label .switch-slider {
-            background-color: #4CAF50;
-        }
-        
-        .switch-checkbox:checked + .switch-label .switch-slider:before {
-            transform: translateX(36px);
-        }
-        
-        .switch-text-on, .switch-text-off {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-        }
-        
-        .switch-text-on {
-            left: 8px;
-            display: none;
-        }
-        
-        .switch-text-off {
-            right: 8px;
-        }
-        
-        .switch-checkbox:checked + .switch-label .switch-text-on {
-            display: block;
-        }
-        
-        .switch-checkbox:checked + .switch-label .switch-text-off {
-            display: none;
-        }
-        
-        .campo-fuera, .campo-votacion {
-            transition: all 0.3s ease;
-        }
-        
-        .campo-fuera.hidden, .campo-votacion.hidden {
-            display: none;
-        }
-        /* ESTILOS PARA SELECT/COMBOBOX */
-select.form-control,
-.form-select,
-select[name="id_grupo"],
-select[name="id_zona"],
-select[name="id_sector"],
-select[name="id_puesto_votacion"],
-select[name="id_departamento"],
-select[name="id_municipio"],
-select[name="id_barrio"],
-select[name="id_oferta_apoyo"],
-select[name="id_grupo_poblacional"],
-select[name="sexo"] {
-    /* Fondo del select cerrado */
-    background-color: #2d3748 !important; /* Gris oscuro */
-    color: #e2e8f0 !important; /* Gris claro para texto */
-    border: 1px solid #4a5568 !important;
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    appearance: none; /* Quita el estilo nativo */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    cursor: pointer;
-    position: relative;
-}
-
-/* Fondo cuando el select está abierto (dropdown) */
-select.form-control:focus,
-.form-select:focus,
-select:focus {
-    background-color: #2d3748 !important;
-    color: #e2e8f0 !important;
-    border-color: #4299e1 !important;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15) !important;
-    outline: none;
-}
-
-/* Estilo para las opciones dentro del select */
-select.form-control option,
-.form-select option,
-select option {
-    background-color: #2d3748 !important; /* Fondo del dropdown */
-    color: #e2e8f0 !important; /* Color del texto en dropdown */
-    padding: 10px;
-    font-size: 14px;
-}
-
-/* Estilo para opción seleccionada en el dropdown */
-select.form-control option:checked,
-.form-select option:checked,
-select option:checked {
-    background-color: #4299e1 !important; /* Azul para seleccionado */
-    color: white !important;
-}
-
-/* Estilo para opción hover en dropdown */
-select.form-control option:hover,
-.form-select option:hover,
-select option:hover {
-    background-color: #4a5568 !important; /* Gris más claro al hover */
-    color: white !important;
-}
-
-/* Icono flecha personalizado */
-select.form-control,
-.form-select,
-select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23e2e8f0' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    padding-right: 40px; /* Espacio para la flecha */
-}
-
-/* Para select deshabilitado */
-select.form-control:disabled,
-.form-select:disabled,
-select:disabled {
-    background-color: #4a5568 !important;
-    color: #a0aec0 !important;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -1033,448 +864,619 @@ select:disabled {
     </div>
 
     <script>
-    // Script para las estrellas de afinidad
-    document.addEventListener('DOMContentLoaded', function() {
-        const estrellas = document.querySelectorAll('.estrellas-afinidad .estrella');
-        const valorInput = document.getElementById('afinidad-valor');
-        const valorSpan = document.getElementById('valor-afinidad');
-        
-        // Establecer estrellas iniciales
-        const valorInicial = parseInt(valorInput.value);
-        actualizarEstrellas(valorInicial);
-        
-        // Agregar event listeners a las estrellas
-        estrellas.forEach(estrella => {
-            estrella.addEventListener('click', function() {
-                const valor = parseInt(this.getAttribute('data-value'));
-                valorInput.value = valor;
-                actualizarEstrellas(valor);
-            });
+   // Script para las estrellas de afinidad
+document.addEventListener('DOMContentLoaded', function() {
+    const estrellas = document.querySelectorAll('.estrellas-afinidad .estrella');
+    const valorInput = document.getElementById('afinidad-valor');
+    const valorSpan = document.getElementById('valor-afinidad');
+    
+    // Datos del referenciado actual (pasados desde PHP)
+    const zonaActual = '<?php echo $referenciado["id_zona"] ?? ""; ?>';
+    const sectorActual = '<?php echo $referenciado["id_sector"] ?? ""; ?>';
+    const puestoActual = '<?php echo $referenciado["id_puesto_votacion"] ?? ""; ?>';
+    const votaFueraActual = '<?php echo $referenciado["vota_fuera"] ?? "No"; ?>';
+    
+    // Referencias a los elementos del DOM
+    const zonaSelect = document.getElementById('id_zona');
+    const sectorSelect = document.getElementById('id_sector');
+    const puestoSelect = document.getElementById('id_puesto_votacion');
+    const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+    const votaFueraHidden = document.getElementById('vota_fuera');
+    const camposFuera = document.querySelectorAll('.campo-fuera');
+    const camposVotacion = document.querySelectorAll('.campo-votacion');
+    
+    // Establecer estrellas iniciales
+    const valorInicial = parseInt(valorInput.value);
+    actualizarEstrellas(valorInicial);
+    
+    // Agregar event listeners a las estrellas
+    estrellas.forEach(estrella => {
+        estrella.addEventListener('click', function() {
+            const valor = parseInt(this.getAttribute('data-value'));
+            valorInput.value = valor;
+            actualizarEstrellas(valor);
         });
-        
-        function actualizarEstrellas(valor) {
-            estrellas.forEach(estrella => {
-                const estrellaValor = parseInt(estrella.getAttribute('data-value'));
-                if (estrellaValor <= valor) {
-                    estrella.classList.add('active');
-                    estrella.classList.remove('far');
-                    estrella.classList.add('fas');
+    });
+    
+    function actualizarEstrellas(valor) {
+        estrellas.forEach(estrella => {
+            const estrellaValor = parseInt(estrella.getAttribute('data-value'));
+            if (estrellaValor <= valor) {
+                estrella.classList.add('active');
+                estrella.classList.remove('far');
+                estrella.classList.add('fas');
+            } else {
+                estrella.classList.remove('active');
+                estrella.classList.remove('fas');
+                estrella.classList.add('far');
+            }
+        });
+        valorSpan.textContent = valor + '/5';
+    }
+    
+    // ============ FUNCIONES PARA DEPENDENCIAS DE ZONA-SECTOR-PUESTO ============
+    
+    // Función para cargar sectores según la zona seleccionada
+    function cargarSectoresPorZona(zonaId, sectorSeleccionado = null) {
+        if (!zonaId || zonaId === '') {
+            sectorSelect.innerHTML = '<option value="">Seleccionar...</option>';
+            sectorSelect.disabled = true;
+            sectorSelect.required = false;
+            puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+            puestoSelect.disabled = true;
+            puestoSelect.required = false;
+            return;
+        }
+
+        // Mostrar indicador de carga
+        sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
+        sectorSelect.disabled = true;
+
+        // Hacer petición AJAX a tu endpoint existente
+        fetch(`../ajax/cargar_sectores.php?zona_id=${zonaId}`)
+            .then(response => response.json())
+            .then(data => {
+                sectorSelect.innerHTML = '<option value="">Seleccionar...</option>';
+                
+                if (data.success && data.sectores && data.sectores.length > 0) {
+                    data.sectores.forEach(sector => {
+                        const option = document.createElement('option');
+                        option.value = sector.id_sector;
+                        option.textContent = sector.nombre;
+                        
+                        // Seleccionar si es el valor del referenciado o el pasado como parámetro
+                        if ((sectorSeleccionado && sector.id_sector == sectorSeleccionado)) {
+                            option.selected = true;
+                        }
+                        
+                        sectorSelect.appendChild(option);
+                    });
+                    
+                    sectorSelect.disabled = false;
+                    sectorSelect.required = false;
+                    
+                    // Si se seleccionó un sector automáticamente, cargar sus puestos
+                    if (sectorSeleccionado) {
+                        cargarPuestosPorSector(sectorSeleccionado);
+                    }
                 } else {
-                    estrella.classList.remove('active');
-                    estrella.classList.remove('fas');
-                    estrella.classList.add('far');
+                    sectorSelect.innerHTML += '<option value="" disabled>No hay sectores para esta zona</option>';
+                    sectorSelect.disabled = false;
                 }
+            })
+            .catch(error => {
+                console.error('Error cargando sectores:', error);
+                sectorSelect.innerHTML = '<option value="">Error cargando sectores</option>';
+                sectorSelect.disabled = true;
             });
-            valorSpan.textContent = valor + '/5';
+    }
+
+    // Función para cargar puestos según el sector seleccionado
+    function cargarPuestosPorSector(sectorId, puestoSeleccionado = null) {
+        if (!sectorId || sectorId === '') {
+            puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+            puestoSelect.disabled = true;
+            puestoSelect.required = false;
+            return;
+        }
+
+        // Mostrar indicador de carga
+        puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
+        puestoSelect.disabled = true;
+
+        // Hacer petición AJAX a tu endpoint existente
+        fetch(`../ajax/cargar_puestos.php?sector_id=${sectorId}`)
+            .then(response => response.json())
+            .then(data => {
+                puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+                
+                if (data.success && data.puestos && data.puestos.length > 0) {
+                    data.puestos.forEach(puesto => {
+                        const option = document.createElement('option');
+                        option.value = puesto.id_puesto;
+                        
+                        // Formatear texto del puesto con número de mesas
+                        let texto = puesto.nombre;
+                        if (puesto.num_mesas !== undefined) {
+                            if (puesto.num_mesas === 0) {
+                                texto += ' (Sin mesas)';
+                                option.style.color = '#e67e22';
+                            } else {
+                                texto += ` (${puesto.num_mesas} mesa${puesto.num_mesas !== 1 ? 's' : ''})`;
+                                option.style.color = '#27ae60';
+                            }
+                        }
+                        
+                        option.textContent = texto;
+                        option.setAttribute('data-mesas', puesto.num_mesas || 0);
+                        
+                        // Seleccionar si es el valor del referenciado
+                        if (puestoSeleccionado && puesto.id_puesto == puestoSeleccionado) {
+                            option.selected = true;
+                        }
+                        
+                        puestoSelect.appendChild(option);
+                    });
+                    
+                    puestoSelect.disabled = false;
+                    puestoSelect.required = false;
+                } else {
+                    puestoSelect.innerHTML += '<option value="" disabled>No hay puestos para este sector</option>';
+                    puestoSelect.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando puestos:', error);
+                puestoSelect.innerHTML = '<option value="">Error cargando puestos</option>';
+                puestoSelect.disabled = true;
+            });
+    }
+
+    // Función para inicializar las dependencias cuando la página carga
+    function inicializarDependencias() {
+        // Si el referenciado vota fuera, no cargar dependencias (los campos estarán ocultos)
+        if (votaFueraActual === 'Si') {
+            console.log('Referenciado vota fuera, dependencias no aplican');
+            return;
         }
         
-        // Manejar el switch de Vota Fuera
-        const votaFueraSwitch = document.getElementById('vota_fuera_switch');
-        const votaFueraHidden = document.getElementById('vota_fuera');
-        const camposFuera = document.querySelectorAll('.campo-fuera');
-        const camposVotacion = document.querySelectorAll('.campo-votacion');
+        // Si hay una zona seleccionada en el referenciado, cargar sus sectores
+        if (zonaActual) {
+            console.log('Inicializando con zona:', zonaActual, 'sector:', sectorActual);
+            cargarSectoresPorZona(zonaActual, sectorActual);
+        }
+    }
+    
+    // ============ EVENT LISTENERS PARA DEPENDENCIAS ============
+    
+    // Cuando cambia la zona
+    zonaSelect.addEventListener('change', function() {
+        const zonaId = this.value;
         
-        function toggleCamposVotacion() {
-            const votaFuera = votaFueraSwitch.checked ? 'Si' : 'No';
-            votaFueraHidden.value = votaFuera;
+        // Solo procesar si el campo está visible (NO vota fuera)
+        const zonaContainer = this.closest('.campo-votacion');
+        if (zonaContainer && zonaContainer.classList.contains('hidden')) {
+            return;
+        }
+        
+        cargarSectoresPorZona(zonaId);
+        
+        // Limpiar puesto si cambia la zona
+        puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+        puestoSelect.disabled = true;
+        puestoSelect.required = false;
+    });
+    
+    // Cuando cambia el sector
+    sectorSelect.addEventListener('change', function() {
+        const sectorId = this.value;
+        
+        // Solo procesar si el campo está visible (NO vota fuera)
+        const sectorContainer = this.closest('.campo-votacion');
+        if (sectorContainer && sectorContainer.classList.contains('hidden')) {
+            return;
+        }
+        
+        cargarPuestosPorSector(sectorId);
+    });
+    
+    // ============ MANEJO DEL SWITCH VOTA FUERA (EXISTENTE - NO MODIFICAR) ============
+    
+    function toggleCamposVotacion() {
+        const votaFuera = votaFueraSwitch.checked ? 'Si' : 'No';
+        votaFueraHidden.value = votaFuera;
+        
+        if (votaFuera === 'Si') {
+            // Mostrar campos fuera, ocultar campos normales
+            camposFuera.forEach(campo => {
+                campo.classList.remove('hidden');
+                const input = campo.querySelector('input');
+                if (input) input.required = true;
+            });
             
-            if (votaFuera === 'Si') {
-                // Mostrar campos fuera, ocultar campos normales
-                camposFuera.forEach(campo => {
-                    campo.classList.remove('hidden');
-                    const input = campo.querySelector('input');
-                    if (input) input.required = true;
-                });
-                
-                camposVotacion.forEach(campo => {
-                    campo.classList.add('hidden');
-                    const input = campo.querySelector('input, select');
-                    if (input) input.required = false;
-                    if (input) input.disabled = true;
-                });
-            } else {
-                // Mostrar campos normales, ocultar campos fuera
-                camposFuera.forEach(campo => {
-                    campo.classList.add('hidden');
-                    const input = campo.querySelector('input');
-                    if (input) input.required = false;
-                });
-                
-                camposVotacion.forEach(campo => {
-                    campo.classList.remove('hidden');
-                    // El campo zona siempre es requerido cuando NO vota fuera
-                    const input = campo.querySelector('input, select');
-                    if (input && input.name === 'id_zona') {
+            camposVotacion.forEach(campo => {
+                campo.classList.add('hidden');
+                const input = campo.querySelector('input, select');
+                if (input) {
+                    input.required = false;
+                    // NO deshabilitar el campo mesa
+                    if (input.name !== 'mesa') {
+                        input.disabled = true;
+                    }
+                }
+            });
+        } else {
+            // Mostrar campos normales, ocultar campos fuera
+            camposFuera.forEach(campo => {
+                campo.classList.add('hidden');
+                const input = campo.querySelector('input');
+                if (input) input.required = false;
+            });
+            
+            camposVotacion.forEach(campo => {
+                campo.classList.remove('hidden');
+                const input = campo.querySelector('input, select');
+                if (input) {
+                    // Solo el campo zona es requerido
+                    if (input.name === 'id_zona') {
                         input.required = true;
                         input.disabled = false;
-                    }
-                });
-            }
-        }
-        
-        // Inicializar estado
-        toggleCamposVotacion();
-        
-        // Agregar evento change al switch
-        votaFueraSwitch.addEventListener('change', toggleCamposVotacion);
-        
-        // Manejar dependencias entre selects de votación
-        const zonaSelect = document.getElementById('id_zona');
-        const sectorSelect = document.getElementById('id_sector');
-        const puestoSelect = document.getElementById('id_puesto_votacion');
-        
-        zonaSelect.addEventListener('change', function() {
-            if (this.value) {
-                sectorSelect.disabled = false;
-                sectorSelect.required = false;
-            } else {
-                sectorSelect.disabled = true;
-                sectorSelect.value = '';
-                sectorSelect.required = false;
-                puestoSelect.disabled = true;
-                puestoSelect.value = '';
-                puestoSelect.required = false;
-            }
-        });
-        
-        sectorSelect.addEventListener('change', function() {
-            if (this.value) {
-                puestoSelect.disabled = false;
-                puestoSelect.required = false;
-            } else {
-                puestoSelect.disabled = true;
-                puestoSelect.value = '';
-                puestoSelect.required = false;
-            }
-        });
-        
-        // Manejar botones de eliminar insumo
-        document.querySelectorAll('.btn-remove-insumo').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const insumoId = this.getAttribute('data-insumo-id');
-                const insumoCard = this.closest('.insumo-card-asignado');
-                
-                if (confirm('¿Está seguro de quitar este insumo?')) {
-                    // Crear campo hidden para marcar el insumo como eliminado
-                    const deleteInput = document.createElement('input');
-                    deleteInput.type = 'hidden';
-                    deleteInput.name = 'insumos_eliminar[]';
-                    deleteInput.value = insumoId;
-                    document.querySelector('form').appendChild(deleteInput);
-                    
-                    // Eliminar visualmente el card
-                    insumoCard.style.opacity = '0.5';
-                    insumoCard.style.transform = 'translateX(-20px)';
-                    
-                    setTimeout(() => {
-                        insumoCard.remove();
-                        showNotification('Insumo marcado para eliminar. Guarde los cambios para aplicar.', 'warning');
                         
-                        // Actualizar contador de insumos asignados
-                        actualizarContadorInsumos();
-                    }, 300);
-                }
-            });
-        });
-        
-        // Mostrar/ocultar campos de detalle al seleccionar insumos nuevos
-        document.querySelectorAll('.insumo-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const detailsForm = this.parentElement.querySelector('.insumo-details-form');
-                if (detailsForm) {
-                    if (this.checked) {
-                        detailsForm.style.display = 'block';
+                        // Si hay una zona seleccionada, cargar sus sectores
+                        if (input.value && votaFuera === 'No') {
+                            setTimeout(() => {
+                                cargarSectoresPorZona(input.value, sectorActual);
+                            }, 100);
+                        }
                     } else {
-                        detailsForm.style.display = 'none';
+                        input.required = false;
+                        input.disabled = false; // IMPORTANTE: habilitar todos los campos
                     }
                 }
             });
-        });
-        
-        // Función para actualizar contador de insumos asignados
-        function actualizarContadorInsumos() {
-            const insumosAsignados = document.querySelectorAll('.insumo-card-asignado').length;
-            const contadorElement = document.querySelector('.insumos-asignados-contador');
-            if (contadorElement) {
-                contadorElement.textContent = insumosAsignados + ' asignados';
-            }
         }
-        
-        // Mostrar notificaciones
-        function showNotification(message, type = 'info') {
-            // Eliminar notificación anterior si existe
-            const oldNotification = document.querySelector('.notification-temp');
-            if (oldNotification) {
-                oldNotification.remove();
-            }
+    }
+    
+    // Inicializar estado del switch Vota Fuera
+    toggleCamposVotacion();
+    
+    // Agregar evento change al switch (ya existente)
+    votaFueraSwitch.addEventListener('change', toggleCamposVotacion);
+    
+    // Inicializar dependencias cuando el DOM esté listo
+    setTimeout(() => {
+        inicializarDependencias();
+    }, 100);
+    
+    // ============ RESTO DEL CÓDIGO EXISTENTE (NO MODIFICAR) ============
+    
+    // Manejar botones de eliminar insumo
+    document.querySelectorAll('.btn-remove-insumo').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const insumoId = this.getAttribute('data-insumo-id');
+            const insumoCard = this.closest('.insumo-card-asignado');
             
-            const notification = document.createElement('div');
-            notification.className = `notification-temp notification-${type}`;
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-                <button class="notification-close">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            
-            // Estilos para la notificación
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                min-width: 300px;
-                max-width: 400px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 2000;
-                animation: slideIn 0.3s ease-out;
-                background: ${type === 'warning' ? '#fff3cd' : 
-                            type === 'error' ? '#f8d7da' : 
-                            type === 'success' ? '#d4edda' : '#d1ecf1'};
-                color: ${type === 'warning' ? '#856404' : 
-                        type === 'error' ? '#721c24' : 
-                        type === 'success' ? '#155724' : '#0c5460'};
-                border: 1px solid ${type === 'warning' ? '#ffeaa7' : 
-                              type === 'error' ? '#f5c6cb' : 
-                              type === 'success' ? '#c3e6cb' : '#bee5eb'};
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Botón para cerrar
-            notification.querySelector('.notification-close').addEventListener('click', () => {
-                notification.remove();
-            });
-            
-            // Auto-eliminar después de 5 segundos
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-            
-            // Animación slideIn
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        // Validación del formulario
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(e) {
-            // Limpiar estilos de error previos
-            document.querySelectorAll('.form-control').forEach(field => {
-                field.style.borderColor = '';
-            });
-            
-            // Validar cédula (solo números)
-            const cedula = document.querySelector('input[name="cedula"]').value;
-            if (!/^\d+$/.test(cedula)) {
-                e.preventDefault();
-                showNotification('La cédula debe contener solo números', 'warning');
-                document.querySelector('input[name="cedula"]').style.borderColor = '#e74c3c';
-                document.querySelector('input[name="cedula"]').focus();
-                return false;
-            }
-            
-            // Validar afinidad (1-5)
-            const afinidad = parseInt(document.getElementById('afinidad-valor').value);
-            if (afinidad < 1 || afinidad > 5) {
-                e.preventDefault();
-                showNotification('La afinidad debe estar entre 1 y 5', 'warning');
-                return false;
-            }
-            
-            // Validar email si está presente
-            const email = document.querySelector('input[name="email"]').value;
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                e.preventDefault();
-                showNotification('Por favor ingrese un email válido', 'warning');
-                document.querySelector('input[name="email"]').style.borderColor = '#e74c3c';
-                document.querySelector('input[name="email"]').focus();
-                return false;
-            }
-            
-            // Validar teléfono si está presente (solo números, mínimo 7 dígitos)
-            const telefono = document.querySelector('input[name="telefono"]').value;
-            if (telefono && !/^\d{7,15}$/.test(telefono)) {
-                e.preventDefault();
-                showNotification('El teléfono debe contener entre 7 y 15 dígitos numéricos', 'warning');
-                document.querySelector('input[name="telefono"]').style.borderColor = '#e74c3c';
-                document.querySelector('input[name="telefono"]').focus();
-                return false;
-            }
-            
-            // Validaciones condicionales según si vota fuera o no
-            const votaFuera = document.getElementById('vota_fuera').value;
-            
-            if (votaFuera === 'Si') {
-                // Validar campos de votación fuera
-                const puestoFuera = document.getElementById('puesto_votacion_fuera');
-                const mesaFuera = document.getElementById('mesa_fuera');
+            if (confirm('¿Está seguro de quitar este insumo?')) {
+                // Crear campo hidden para marcar el insumo como eliminado
+                const deleteInput = document.createElement('input');
+                deleteInput.type = 'hidden';
+                deleteInput.name = 'insumos_eliminar[]';
+                deleteInput.value = insumoId;
+                document.querySelector('form').appendChild(deleteInput);
                 
-                if (!puestoFuera.value.trim()) {
-                    e.preventDefault();
-                    showNotification('El puesto de votación fuera es obligatorio cuando vota fuera', 'warning');
-                    puestoFuera.style.borderColor = '#e74c3c';
-                    puestoFuera.focus();
-                    return false;
-                }
+                // Eliminar visualmente el card
+                insumoCard.style.opacity = '0.5';
+                insumoCard.style.transform = 'translateX(-20px)';
                 
-                if (!mesaFuera.value || parseInt(mesaFuera.value) < 1) {
-                    e.preventDefault();
-                    showNotification('La mesa fuera es obligatoria y debe ser mayor a 0', 'warning');
-                    mesaFuera.style.borderColor = '#e74c3c';
-                    mesaFuera.focus();
-                    return false;
-                }
-                
-                if (parseInt(mesaFuera.value) > 40) {
-                    e.preventDefault();
-                    showNotification('La mesa fuera no puede ser mayor a 40', 'warning');
-                    mesaFuera.style.borderColor = '#e74c3c';
-                    mesaFuera.focus();
-                    return false;
-                }
-            } else {
-                // Validar campos de votación normal
-                const zona = document.getElementById('id_zona');
-                if (!zona.value) {
-                    e.preventDefault();
-                    showNotification('La zona es obligatoria cuando NO vota fuera', 'warning');
-                    zona.style.borderColor = '#e74c3c';
-                    zona.focus();
-                    return false;
-                }
-                
-                // Validar mesa normal si está presente
-                const mesa = document.querySelector('input[name="mesa"]');
-                if (mesa.value && (parseInt(mesa.value) < 1 || isNaN(parseInt(mesa.value)))) {
-                    e.preventDefault();
-                    showNotification('La mesa debe ser un número positivo', 'warning');
-                    mesa.style.borderColor = '#e74c3c';
-                    mesa.focus();
-                    return false;
-                }
+                setTimeout(() => {
+                    insumoCard.remove();
+                    showNotification('Insumo marcado para eliminar. Guarde los cambios para aplicar.', 'warning');
+                    
+                    // Actualizar contador de insumos asignados
+                    actualizarContadorInsumos();
+                }, 300);
             }
-            
-            // Validar que los campos requeridos no estén vacíos
-            const requiredFields = form.querySelectorAll('[required]');
-            let isValid = true;
-            let firstInvalidField = null;
-            
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    isValid = false;
-                    field.style.borderColor = '#e74c3c';
-                    if (!firstInvalidField) {
-                        firstInvalidField = field;
-                    }
-                }
-            });
-            
-            if (!isValid) {
-                e.preventDefault();
-                showNotification('Por favor complete todos los campos requeridos (*)', 'warning');
-                if (firstInvalidField) {
-                    firstInvalidField.focus();
-                }
-                return false;
-            }
-            
-            // Validar que se haya seleccionado al menos una opción válida en selects si tienen valor
-            const selects = form.querySelectorAll('select.form-control');
-            selects.forEach(select => {
-                if (select.value && select.value !== '' && select.options[select.selectedIndex].value === '') {
-                    e.preventDefault();
-                    showNotification('Por favor seleccione una opción válida para ' + select.previousElementSibling.textContent, 'warning');
-                    select.style.borderColor = '#e74c3c';
-                    select.focus();
-                    return false;
-                }
-            });
-            // En la validación del formulario, agrega esto:
-            const grupoParlamentario = document.querySelector('select[name="id_grupo"]');
-            if (!grupoParlamentario.value) {
-                e.preventDefault();
-                showNotification('El Grupo Parlamentario es obligatorio', 'warning');
-                grupoParlamentario.style.borderColor = '#e74c3c';
-                grupoParlamentario.focus();
-                return false;
-            }
-            
-            // Mostrar mensaje de confirmación
-            if (!confirm('¿Está seguro de guardar los cambios?')) {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Mostrar indicador de carga
-            const saveBtn = form.querySelector('.save-btn');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-            saveBtn.disabled = true;
-            
-            // Restaurar botón después de 3 segundos (por si hay error en el servidor)
-            setTimeout(() => {
-                saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
-            }, 3000);
-            
-            return true;
         });
-        
-        // Mostrar mensaje de éxito si existe
-        <?php if ($success_message): ?>
-            setTimeout(() => {
-                showNotification('<?php echo addslashes($success_message); ?>', 'success');
-            }, 500);
-        <?php endif; ?>
-        
-        // Mostrar mensaje de error si existe
-        <?php if ($error_message): ?>
-            setTimeout(() => {
-                showNotification('<?php echo addslashes($error_message); ?>', 'error');
-            }, 500);
-        <?php endif; ?>
-        
-        // Mejorar experiencia de usuario en campos numéricos
-        const numericFields = document.querySelectorAll('input[type="number"]');
-        numericFields.forEach(field => {
-            field.addEventListener('input', function() {
-                if (this.value < 0) {
-                    this.value = Math.abs(this.value);
-                }
-            });
-        });
-        
-        // Agregar efecto de hover a todos los cards de insumos
-        document.querySelectorAll('.insumo-card, .insumo-card-asignado').forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-3px)';
-                this.style.transition = 'all 0.3s ease';
-            });
-            
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-        
-        // Inicializar contador de insumos
-        actualizarContadorInsumos();
     });
+    
+    // Mostrar/ocultar campos de detalle al seleccionar insumos nuevos
+    document.querySelectorAll('.insumo-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const detailsForm = this.parentElement.querySelector('.insumo-details-form');
+            if (detailsForm) {
+                if (this.checked) {
+                    detailsForm.style.display = 'block';
+                } else {
+                    detailsForm.style.display = 'none';
+                }
+            }
+        });
+    });
+    
+    // Función para actualizar contador de insumos asignados
+    function actualizarContadorInsumos() {
+        const insumosAsignados = document.querySelectorAll('.insumo-card-asignado').length;
+        const contadorElement = document.querySelector('.insumos-asignados-contador');
+        if (contadorElement) {
+            contadorElement.textContent = insumosAsignados + ' asignados';
+        }
+    }
+    
+    // Mostrar notificaciones
+    function showNotification(message, type = 'info') {
+        // Eliminar notificación anterior si existe
+        const oldNotification = document.querySelector('.notification-temp');
+        if (oldNotification) {
+            oldNotification.remove();
+        }
+        
+        const notification = document.createElement('div');
+        notification.className = `notification-temp notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Estilos para la notificación
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+            background: ${type === 'warning' ? '#fff3cd' : 
+                        type === 'error' ? '#f8d7da' : 
+                        type === 'success' ? '#d4edda' : '#d1ecf1'};
+            color: ${type === 'warning' ? '#856404' : 
+                    type === 'error' ? '#721c24' : 
+                    type === 'success' ? '#155724' : '#0c5460'};
+            border: 1px solid ${type === 'warning' ? '#ffeaa7' : 
+                          type === 'error' ? '#f5c6cb' : 
+                          type === 'success' ? '#c3e6cb' : '#bee5eb'};
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Botón para cerrar
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.remove();
+        });
+        
+        // Auto-eliminar después de 5 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+        
+        // Animación slideIn
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Validación del formulario
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        // Limpiar estilos de error previos
+        document.querySelectorAll('.form-control').forEach(field => {
+            field.style.borderColor = '';
+        });
+        
+        // Validar cédula (solo números)
+        const cedula = document.querySelector('input[name="cedula"]').value;
+        if (!/^\d+$/.test(cedula)) {
+            e.preventDefault();
+            showNotification('La cédula debe contener solo números', 'warning');
+            document.querySelector('input[name="cedula"]').style.borderColor = '#e74c3c';
+            document.querySelector('input[name="cedula"]').focus();
+            return false;
+        }
+        
+        // Validar afinidad (1-5)
+        const afinidad = parseInt(document.getElementById('afinidad-valor').value);
+        if (afinidad < 1 || afinidad > 5) {
+            e.preventDefault();
+            showNotification('La afinidad debe estar entre 1 y 5', 'warning');
+            return false;
+        }
+        
+        // Validar email si está presente
+        const email = document.querySelector('input[name="email"]').value;
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            e.preventDefault();
+            showNotification('Por favor ingrese un email válido', 'warning');
+            document.querySelector('input[name="email"]').style.borderColor = '#e74c3c';
+            document.querySelector('input[name="email"]').focus();
+            return false;
+        }
+        
+        // Validar teléfono si está presente (solo números, mínimo 7 dígitos)
+        const telefono = document.querySelector('input[name="telefono"]').value;
+        if (telefono && !/^\d{7,15}$/.test(telefono)) {
+            e.preventDefault();
+            showNotification('El teléfono debe contener entre 7 y 15 dígitos numéricos', 'warning');
+            document.querySelector('input[name="telefono"]').style.borderColor = '#e74c3c';
+            document.querySelector('input[name="telefono"]').focus();
+            return false;
+        }
+        
+        // Validaciones condicionales según si vota fuera o no
+        const votaFuera = document.getElementById('vota_fuera').value;
+        
+        if (votaFuera === 'Si') {
+            // Validar campos de votación fuera
+            const puestoFuera = document.getElementById('puesto_votacion_fuera');
+            const mesaFuera = document.getElementById('mesa_fuera');
+            
+            if (!puestoFuera.value.trim()) {
+                e.preventDefault();
+                showNotification('El puesto de votación fuera es obligatorio cuando vota fuera', 'warning');
+                puestoFuera.style.borderColor = '#e74c3c';
+                puestoFuera.focus();
+                return false;
+            }
+            
+            if (!mesaFuera.value || parseInt(mesaFuera.value) < 1) {
+                e.preventDefault();
+                showNotification('La mesa fuera es obligatoria y debe ser mayor a 0', 'warning');
+                mesaFuera.style.borderColor = '#e74c3c';
+                mesaFuera.focus();
+                return false;
+            }
+            
+            if (parseInt(mesaFuera.value) > 40) {
+                e.preventDefault();
+                showNotification('La mesa fuera no puede ser mayor a 40', 'warning');
+                mesaFuera.style.borderColor = '#e74c3c';
+                mesaFuera.focus();
+                return false;
+            }
+        } else {
+            // Validar campos de votación normal
+            const zona = document.getElementById('id_zona');
+            if (!zona.value) {
+                e.preventDefault();
+                showNotification('La zona es obligatoria cuando NO vota fuera', 'warning');
+                zona.style.borderColor = '#e74c3c';
+                zona.focus();
+                return false;
+            }
+            
+            // Validar mesa normal si está presente
+            const mesa = document.querySelector('input[name="mesa"]');
+            if (mesa.value && (parseInt(mesa.value) < 1 || isNaN(parseInt(mesa.value)))) {
+                e.preventDefault();
+                showNotification('La mesa debe ser un número positivo', 'warning');
+                mesa.style.borderColor = '#e74c3c';
+                mesa.focus();
+                return false;
+            }
+        }
+        
+        // Validar que los campos requeridos no estén vacíos
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        let firstInvalidField = null;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.style.borderColor = '#e74c3c';
+                if (!firstInvalidField) {
+                    firstInvalidField = field;
+                }
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            showNotification('Por favor complete todos los campos requeridos (*)', 'warning');
+            if (firstInvalidField) {
+                firstInvalidField.focus();
+            }
+            return false;
+        }
+        
+        // Validar que se haya seleccionado al menos una opción válida en selects si tienen valor
+        const selects = form.querySelectorAll('select.form-control');
+        selects.forEach(select => {
+            if (select.value && select.value !== '' && select.options[select.selectedIndex].value === '') {
+                e.preventDefault();
+                showNotification('Por favor seleccione una opción válida para ' + select.previousElementSibling.textContent, 'warning');
+                select.style.borderColor = '#e74c3c';
+                select.focus();
+                return false;
+            }
+        });
+        // En la validación del formulario, agrega esto:
+        const grupoParlamentario = document.querySelector('select[name="id_grupo"]');
+        if (!grupoParlamentario.value) {
+            e.preventDefault();
+            showNotification('El Grupo Parlamentario es obligatorio', 'warning');
+            grupoParlamentario.style.borderColor = '#e74c3c';
+            grupoParlamentario.focus();
+            return false;
+        }
+        
+        // Mostrar mensaje de confirmación
+        if (!confirm('¿Está seguro de guardar los cambios?')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar indicador de carga
+        const saveBtn = form.querySelector('.save-btn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        saveBtn.disabled = true;
+        
+        // Restaurar botón después de 3 segundos (por si hay error en el servidor)
+        setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }, 3000);
+        
+        return true;
+    });
+    
+    // Mostrar mensaje de éxito si existe
+    <?php if ($success_message): ?>
+        setTimeout(() => {
+            showNotification('<?php echo addslashes($success_message); ?>', 'success');
+        }, 500);
+    <?php endif; ?>
+    
+    // Mostrar mensaje de error si existe
+    <?php if ($error_message): ?>
+        setTimeout(() => {
+            showNotification('<?php echo addslashes($error_message); ?>', 'error');
+        }, 500);
+    <?php endif; ?>
+    
+    // Mejorar experiencia de usuario en campos numéricos
+    const numericFields = document.querySelectorAll('input[type="number"]');
+    numericFields.forEach(field => {
+        field.addEventListener('input', function() {
+            if (this.value < 0) {
+                this.value = Math.abs(this.value);
+            }
+        });
+    });
+    
+    // Agregar efecto de hover a todos los cards de insumos
+    document.querySelectorAll('.insumo-card, .insumo-card-asignado').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Inicializar contador de insumos
+    actualizarContadorInsumos();
+});
     </script>
 </body>
 </html>

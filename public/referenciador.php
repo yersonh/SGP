@@ -565,12 +565,12 @@ if ($porcentajeRestante > 50) {
                                id="mesa_fuera" 
                                name="mesa_fuera" 
                                class="form-control" 
-                               placeholder="Número de mesa (1-40)"
+                               placeholder="Número de mesa (1-60)"
                                min="1"
-                               max="40"
+                               max="60"
                                data-progress="3">
                         <div class="mesa-info" style="font-size: 12px; color: #666; margin-top: 5px;">
-                            Máximo: 40 mesas
+                            Máximo: 60 mesas
                         </div>
                     </div>
 

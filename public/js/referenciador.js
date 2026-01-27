@@ -416,9 +416,9 @@ function validarNumeroMesaFuera(input) {
         return false;
     }
     
-    if (value > 40) {
-        input.value = 40;
-        showNotification('El número máximo de mesas fuera es 40', 'warning');
+    if (value > 60) {
+        input.value = 60;
+        showNotification('El número máximo de mesas fuera es 60', 'warning');
         return false;
     }
     

@@ -12,13 +12,13 @@ require_once __DIR__ . '/../../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/SistemaModel.php';
-
+require_once __DIR__ . '/../../helpers/navigation_helper.php';
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
     header('Location: ../index.php');
     exit();
 }
-
+NavigationHelper::pushUrl();
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);

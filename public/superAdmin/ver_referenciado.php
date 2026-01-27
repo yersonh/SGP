@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/InsumoModel.php';
+require_once __DIR__ . '/../../helpers/navigation_helper.php';
 
 header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
 header("Pragma: no-cache"); // HTTP 1.0
@@ -19,7 +20,8 @@ header("Expires: 0"); // Proxies
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
-
+// Guardar esta URL también
+NavigationHelper::pushUrl();
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
     header('Location: ../index.php');
@@ -605,14 +607,26 @@ function getAfinidadIcon($afinidad) {
                 </div>
                 
                 <!-- Botones de Acción -->
-                <div class="form-actions">
-                    <a href="data_referidos.php" class="back-btn">
-                        <i class="fas fa-arrow-left"></i> Volver a la Lista
-                    </a>
-                    <a href="editar_referenciador.php?id=<?php echo $id_referenciado; ?>" class="edit-btn">
-                        <i class="fas fa-edit"></i> Editar Referenciado
-                    </a>
-                </div>
+<div class="form-actions">
+    <?php
+    // Obtener la URL anterior del historial
+    $return_url = NavigationHelper::getPreviousUrl();
+    
+    // Validar seguridad
+    $dominio_actual = $_SERVER['HTTP_HOST'];
+    if (strpos($return_url, $dominio_actual) === false) {
+        $return_url = 'data_referidos.php';
+    }
+    ?>
+    
+    <a href="<?php echo htmlspecialchars($return_url); ?>" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+    
+    <a href="editar_referenciador.php?id=<?php echo $id_referenciado; ?>" class="edit-btn">
+        <i class="fas fa-edit"></i> Editar Referenciado
+    </a>
+</div>
             </div>
         </div>
     </div>

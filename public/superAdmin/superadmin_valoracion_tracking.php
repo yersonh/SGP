@@ -4,6 +4,8 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/ReferenciadoModel.php';
 require_once __DIR__ . '/../../models/LlamadaModel.php';
+require_once __DIR__ . '/../../helpers/navigation_helper.php';
+require_once __DIR__ . '/../../models/SistemaModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -11,10 +13,12 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
     exit();
 }
 
+NavigationHelper::pushUrl();
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
 $llamadaModel = new LlamadaModel($pdo);
+$sistemaModel = new SistemaModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
@@ -32,7 +36,7 @@ $fecha_hasta = $_GET['fecha_hasta'] ?? date('Y-m-d');
 $id_resultado = $_GET['id_resultado'] ?? '';
 $rating_min = $_GET['rating_min'] ?? '';
 $rating_max = $_GET['rating_max'] ?? '';
-$id_referenciador = $_GET['id_referenciador'] ?? '';
+$id_referenciador_filtro = $_GET['id_referenciador'] ?? '';
 
 // Aplicar filtros
 if (!empty($fecha_desde)) {
@@ -50,8 +54,8 @@ if (!empty($rating_min)) {
 if (!empty($rating_max)) {
     $filtros['rating_max'] = $rating_max;
 }
-if (!empty($id_referenciador) && $id_referenciador != 'todos') {
-    $filtros['id_referenciador'] = $id_referenciador;
+if (!empty($id_referenciador_filtro) && $id_referenciador_filtro != 'todos') {
+    $filtros['id_referenciador'] = $id_referenciador_filtro;
 }
 
 // Obtener datos con filtros aplicados
@@ -66,6 +70,25 @@ $topLlamadores = $llamadaModel->getTopLlamadores(5);
 // Calcular algunos totales
 $totalLlamadas = $estadisticas['total_llamadas'] ?? 0;
 $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas['rating_promedio'], 2) : 0;
+
+// Información del sistema
+$infoSistema = $sistemaModel->getInformacionSistema();
+$licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
+$infoSistema = $licenciaInfo['info'];
+$diasRestantes = $licenciaInfo['dias_restantes'];
+$validaHastaFormatted = $licenciaInfo['valida_hasta_formatted'];
+$fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
+
+// PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
+$porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
+// Color de la barra basado en lo que RESTA (ahora es más simple)
+if ($porcentajeRestante > 50) {
+    $barColor = 'bg-success';
+} elseif ($porcentajeRestante > 25) {
+    $barColor = 'bg-warning';
+} else {
+    $barColor = 'bg-danger';
+}
 ?>
 
 <!DOCTYPE html>
@@ -77,554 +100,69 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../styles/superadmin_valoracion_tracking.css">
     <style>
-        /* Estilos del tema actual */
-        :root {
-            --color-fondo: #f5f7fa;
-            --color-fondo-secundario: #ffffff;
-            --color-texto: #333333;
-            --color-texto-secundario: #666666;
-            --color-borde: #eaeaea;
-            --color-borde-secundario: #e3f2fd;
-            --color-primario: #3498db;
-            --color-secundario: #2c3e50;
-            --color-terciario: #2ecc71;
-            --color-badge: #f8f9fa;
-            --color-sombra: rgba(0, 0, 0, 0.08);
-            --color-sombra-fuerte: rgba(0, 0, 0, 0.15);
-            --color-header: linear-gradient(135deg, #2c3e50, #1a252f);
-            --accent-color: #3498db;
+        /* Estilos adicionales para el nuevo modal */
+        .persona-info {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #0dcaf0;
         }
-
-        /* Variables para modo oscuro */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --color-fondo: #121212;
-                --color-fondo-secundario: #1e1e1e;
-                --color-texto: #e0e0e0;
-                --color-texto-secundario: #b0b0b0;
-                --color-borde: #2d3748;
-                --color-borde-secundario: #4a5568;
-                --color-primario: #60a5fa;
-                --color-secundario: #cbd5e0;
-                --color-terciario: #48bb78;
-                --color-badge: #2d3748;
-                --color-sombra: rgba(0, 0, 0, 0.2);
-                --color-sombra-fuerte: rgba(0, 0, 0, 0.3);
-                --color-header: linear-gradient(135deg, #0d1117, #1a252f);
-            }
+        
+        .info-item {
+            margin-bottom: 0.5rem;
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--color-fondo);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--color-texto);
-            margin: 0;
-            padding: 0;
-            font-size: 14px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        /* Header Styles */
-        .main-header {
-            background: var(--color-header);
-            color: white;
-            padding: 15px 0;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px var(--color-sombra-fuerte);
-            transition: all 0.3s ease;
-        }
-
-        .header-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-
-        .header-top {
+        
+        .summary-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
         }
-
-        .header-title {
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-label {
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .summary-value {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .rating-distribution {
+            margin-top: 0.5rem;
+        }
+        
+        .rating-bar {
             display: flex;
             align-items: center;
-            gap: 10px;
+            margin-bottom: 0.5rem;
         }
-
-        .header-title h1 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0;
+        
+        .rating-label {
+            width: 80px;
+            font-size: 0.9rem;
         }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.1);
-            padding: 5px 10px;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-        }
-
-        .user-info i {
-            color: var(--color-primario);
-        }
-
-        .logout-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 0.8rem;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        /* Main Container */
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 15px 30px;
+        
+        .rating-progress {
             flex: 1;
+            margin: 0 1rem;
         }
-
-        /* Breadcrumb */
-        .breadcrumb-nav {
-            margin-bottom: 20px;
-        }
-
-        .breadcrumb {
-            background: transparent;
-            padding: 0;
-            margin: 0;
-            font-size: 0.9rem;
-        }
-
-        .breadcrumb-item a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-
-        .breadcrumb-item.active {
-            color: var(--color-texto-secundario);
-        }
-
-        /* Page Header */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding: 20px 0;
-            border-bottom: 2px solid var(--color-borde);
-        }
-
-        .page-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .page-title i {
-            font-size: 2rem;
-            color: var(--color-primario);
-        }
-
-        .page-title h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--color-secundario);
-            margin: 0;
-        }
-
-        .page-title .subtitle {
-            font-size: 1rem;
-            color: var(--color-texto-secundario);
-            margin-top: 5px;
-        }
-
-        /* Stats Cards */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: var(--color-fondo-secundario);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 10px var(--color-sombra);
-            border: 1px solid var(--color-borde);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px var(--color-sombra-fuerte);
-        }
-
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-            color: white;
-        }
-
-        .stat-card.total .stat-icon {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-        }
-
-        .stat-card.rating .stat-icon {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-        }
-
-        .stat-card.contactados .stat-icon {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-        }
-
-        .stat-card.llamadores .stat-icon {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--color-texto);
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--color-texto-secundario);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Filter Card */
-        .filter-card {
-            background: var(--color-fondo-secundario);
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px var(--color-sombra);
-            border: 1px solid var(--color-borde);
-        }
-
-        .filter-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            color: var(--color-secundario);
-            font-weight: 600;
-        }
-
-        .filter-title i {
-            color: var(--color-primario);
-        }
-
-        .filter-form .row {
-            margin-bottom: 15px;
-        }
-
-        .filter-form label {
-            font-weight: 500;
-            margin-bottom: 5px;
-            color: var(--color-texto);
-        }
-
-        .filter-form .form-control,
-        .filter-form .form-select {
-            background-color: var(--color-fondo);
-            border: 1px solid var(--color-borde);
-            color: var(--color-texto);
-            padding: 8px 12px;
-            font-size: 0.9rem;
-        }
-
-        .filter-form .form-control:focus,
-        .filter-form .form-select:focus {
-            border-color: var(--color-primario);
-            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn-filter {
-            background: var(--color-primario);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        
+        .rating-count {
+            width: 40px;
+            text-align: right;
             font-weight: 500;
         }
-
-        .btn-filter:hover {
-            background: #2980b9;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .btn-reset {
-            background: var(--color-fondo);
-            color: var(--color-texto);
-            border: 1px solid var(--color-borde);
-            padding: 8px 20px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-        }
-
-        .btn-reset:hover {
-            background: var(--color-borde);
-            color: var(--color-texto);
-        }
-
-        /* Results Card */
-        .results-card {
-            background: var(--color-fondo-secundario);
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px var(--color-sombra);
-            border: 1px solid var(--color-borde);
-        }
-
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid var(--color-borde);
-            background: var(--color-fondo);
-        }
-
-        .results-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--color-secundario);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .results-count {
-            background: var(--color-primario);
-            color: white;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        /* Table Styles */
-        .table-container {
-            overflow-x: auto;
-            padding: 0 20px 20px;
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        .table thead {
-            background: var(--color-fondo);
-        }
-
-        .table th {
-            padding: 12px 15px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--color-secundario);
-            border-bottom: 2px solid var(--color-borde);
-            white-space: nowrap;
-        }
-
-        .table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--color-borde);
-            vertical-align: middle;
-        }
-
-        .table tbody tr:hover {
-            background-color: rgba(52, 152, 219, 0.05);
-        }
-
-        /* Status Badges */
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-block;
-            text-align: center;
-            min-width: 80px;
-        }
-
-        .status-active {
-            background: rgba(46, 204, 113, 0.15);
-            color: #27ae60;
-        }
-
-        .status-inactive {
-            background: rgba(231, 76, 60, 0.15);
-            color: #c0392b;
-        }
-
-        /* Rating Stars */
-        .rating-stars {
-            color: #f39c12;
-            font-size: 0.9rem;
-        }
-
-        .rating-stars .far {
-            color: #bdc3c7;
-        }
-
-        /* Action Buttons in Table */
-        .action-btn {
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: none;
-            background: transparent;
-            color: var(--color-texto);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.8rem;
-        }
-
-        .action-btn:hover {
-            background: var(--color-fondo);
-        }
-
-        .btn-view {
-            color: var(--color-primario);
-        }
-
-        .btn-history {
-            color: #9b59b6;
-        }
-
-        /* Footer */
-        .system-footer {
-            text-align: center;
-            padding: 25px 0;
-            background: var(--color-fondo-secundario);
-            color: var(--color-texto);
-            font-size: 0.9rem;
-            line-height: 1.6;
-            border-top: 2px solid var(--color-borde);
-            width: 100%;
-            margin-top: 60px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header-top {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .table-container {
-                padding: 0 10px 10px;
-            }
-            
-            .table {
-                font-size: 0.8rem;
-            }
-            
-            .table th,
-            .table td {
-                padding: 8px 10px;
-            }
-        }
-
-        /* DataTables Customization */
-        .dataTables_wrapper {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .dataTables_length select,
-        .dataTables_filter input {
-            background-color: var(--color-fondo);
-            border: 1px solid var(--color-borde);
-            color: var(--color-texto);
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .dataTables_paginate .paginate_button {
-            background-color: var(--color-fondo);
-            border: 1px solid var(--color-borde);
-            color: var(--color-texto) !important;
-            margin: 0 2px;
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-
-        .dataTables_paginate .paginate_button.current {
-            background: var(--color-primario) !important;
-            color: white !important;
-            border-color: var(--color-primario);
-        }
-
-        .dataTables_paginate .paginate_button:hover {
-            background: var(--color-borde) !important;
-            color: var(--color-texto) !important;
+        
+        .modal-header.bg-info {
+            background: linear-gradient(135deg, #0dcaf0 0%, #0a8ea8 100%);
         }
     </style>
 </head>
@@ -649,15 +187,13 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
 
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
-        <div class="header-container">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
-                    <li class="breadcrumb-item"><a href="superadmin_reportes.php"><i class="fas fa-database"></i> Reportes</a></li>
-                    <li class="breadcrumb-item active"><i class="fas fa-chart-pie"></i> Valoración Tracking</li>
-                </ol>
-            </nav>
-        </div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
+                <li class="breadcrumb-item"><a href="superadmin_reportes.php"><i class="fas fa-database"></i> Reportes</a></li>
+                <li class="breadcrumb-item active"><i class="fas fa-chart-pie"></i> Valoración Tracking</li>
+            </ol>
+        </nav>
     </div>
 
     <!-- Main Content -->
@@ -753,7 +289,7 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
                             <option value="todos">Todos los referenciadores</option>
                             <?php foreach ($referenciadores as $ref): ?>
                                 <option value="<?php echo $ref['id_usuario']; ?>" 
-                                    <?php echo $id_referenciador == $ref['id_usuario'] ? 'selected' : ''; ?>>
+                                    <?php echo $id_referenciador_filtro == $ref['id_usuario'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($ref['nombres'] . ' ' . $ref['apellidos']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -816,6 +352,7 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
                 <table id="trackingTable" class="table table-hover">
                     <thead>
                         <tr>
+                            <th>N°</th>
                             <th>Referenciado</th>
                             <th>Cédula</th>
                             <th>Teléfono</th>
@@ -831,13 +368,18 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
                     <tbody>
                         <?php if (empty($referenciadosConLlamadas)): ?>
                             <tr>
-                                <td colspan="10" class="text-center py-4">
+                                <td colspan="11" class="text-center py-4"> <!-- Cambia colspan de 10 a 11 -->
                                     <i class="fas fa-inbox fa-2x mb-3" style="color: #bdc3c7;"></i>
                                     <p class="mb-0">No se encontraron registros con los filtros aplicados</p>
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($referenciadosConLlamadas as $referenciado): ?>
+                            <?php 
+                            // Calcular el total de registros
+                            $totalRegistros = count($referenciadosConLlamadas);
+                            $contador = $totalRegistros; // Comenzar desde el total
+                            foreach ($referenciadosConLlamadas as $referenciado): 
+                            ?>
                                 <?php
                                 // Formatear fecha
                                 $fechaLlamada = !empty($referenciado['fecha_llamada']) 
@@ -858,17 +400,23 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
                                         $ratingStars .= '<i class="far fa-star"></i>';
                                     }
                                 }
+                                
+                                // Obtener nombre completo para el botón
+                                $nombreCompleto = htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']);
+                                $referenciadorNombre = htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A');
                                 ?>
-                                <tr>
+                                <tr data-id-referenciado="<?php echo $referenciado['id_referenciado']; ?>"
+                                    data-referenciador-nombre="<?php echo $referenciadorNombre; ?>">
+                                    <td class="text-center fw-bold"><?php echo $contador; ?></td> <!-- Columna del consecutivo descendente -->
                                     <td>
-                                        <strong><?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?></strong>
+                                        <strong><?php echo $nombreCompleto; ?></strong>
                                         <?php if (!empty($referenciado['email'])): ?>
                                             <br><small class="text-muted"><?php echo htmlspecialchars($referenciado['email']); ?></small>
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($referenciado['cedula']); ?></td>
                                     <td><?php echo htmlspecialchars($referenciado['telefono']); ?></td>
-                                    <td><?php echo htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A'); ?></td>
+                                    <td><?php echo $referenciadorNombre; ?></td>
                                     <td><?php echo $fechaLlamada; ?></td>
                                     <td>
                                         <div class="rating-stars">
@@ -896,19 +444,22 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="ver_referenciado.php?id=<?php echo $referenciado['id_referenciado']; ?>" 
-                                               class="action-btn btn-view" 
-                                               title="Ver referenciado">
+                                            class="action-btn btn-view" 
+                                            title="Ver referenciado">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <button type="button" 
                                                     class="action-btn btn-history"
-                                                    onclick="verHistorialLlamadas(<?php echo $referenciado['id_referenciado']; ?>)"
+                                                    onclick="mostrarDetalleLlamada(<?php echo $referenciado['id_referenciado']; ?>, '<?php echo addslashes($nombreCompleto); ?>')"
                                                     title="Ver historial de llamadas">
                                                 <i class="fas fa-history"></i>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
+                                <?php 
+                                $contador--; // DECREMENTAR contador para la siguiente fila
+                                ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -973,6 +524,16 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
 
     <!-- Footer -->
     <footer class="system-footer">
+        <div class="container text-center mb-3">
+            <img id="footer-logo" 
+                src="../imagenes/Logo-artguru.png" 
+                alt="Logo ARTGURU" 
+                class="logo-clickable"
+                onclick="mostrarModalSistema()"
+                title="Haz clic para ver información del sistema"
+                data-img-claro="../imagenes/Logo-artguru.png"
+                data-img-oscuro="../imagenes/image_no_bg.png">
+        </div>
         <div class="container">
             <p>
                 © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
@@ -981,22 +542,228 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
         </div>
     </footer>
 
-    <!-- Modal para Historial de Llamadas -->
-    <div class="modal fade" id="historialModal" tabindex="-1" aria-labelledby="historialModalLabel" aria-hidden="true">
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="historialModalLabel">
-                        <i class="fas fa-history me-2"></i>Historial de Llamadas
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="historialContent">
-                    <!-- El contenido se cargará dinámicamente -->
+                <div class="modal-body">
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+                    </div>
+                    
+                    <!-- Título del Sistema -->
+                    <div class="text-center mb-4">
+                        <h4 class="text-secondary mb-4">
+                            <strong>Gestión Política de Alta Precisión</strong>
+                        </h4>
+                        
+                        <!-- Información de Licencia -->
+                        <div class="licencia-info">
+                            <div class="licencia-header">
+                                <h6 class="licencia-title">Licencia Runtime</h6>
+                                <span class="licencia-dias">
+                                    <strong><?php echo $diasRestantes; ?> días restantes</strong>
+                                </span>
+                            </div>
+                            
+                            <div class="licencia-progress">
+                                <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                     style="width: <?php echo $porcentajeRestante; ?>%"
+                                     role="progressbar" 
+                                     aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            
+                            <div class="licencia-fecha">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                                Válida hasta: <?php echo $validaHastaFormatted; ?>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-image-container">
+                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
+                    </div>  
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalles de Llamada -->
+    <div class="modal fade" id="modalDetalleLlamada" tabindex="-1" aria-labelledby="modalDetalleLlamadaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalDetalleLlamadaLabel">
+                        <i class="fas fa-clipboard-list me-2"></i>Detalles de Llamada
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="persona-info mb-4">
+                        <h4 id="detalleNombrePersona" class="mb-3"></h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <i class="fas fa-phone me-2 text-success"></i>
+                                    <strong>Teléfono:</strong> <span id="detalleTelefono"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <i class="fas fa-user-tie me-2 text-primary"></i>
+                                    <strong>Referenciador:</strong> <span id="detalleReferenciador">Cargando...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Llamadas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="tablaHistorialLlamadas">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha y Hora</th>
+                                            <th>Resultado</th>
+                                            <th>Calificación</th>
+                                            <th>Observaciones</th>
+                                            <th>Usuario</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpoHistorialLlamadas">
+                                        <!-- Los datos se cargarán aquí -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Resumen</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total de llamadas:</span>
+                                        <span class="summary-value" id="totalLlamadas">0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Promedio de calificación:</span>
+                                        <span class="summary-value" id="promedioRating">0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Última llamada:</span>
+                                        <span class="summary-value" id="ultimaLlamada">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-star me-2"></i>Distribución de Calificaciones</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="distribucionRating" class="rating-distribution">
+                                        <!-- Se generarán las barras de distribución aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i> Cerrar
+                        <i class="fas fa-times me-2"></i>Cerrar
                     </button>
                 </div>
             </div>
@@ -1009,105 +776,302 @@ $ratingPromedio = isset($estadisticas['rating_promedio']) ? round($estadisticas[
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../js/modal-sistema.js"></script>
     <script>
-        // Inicializar DataTable
-        $(document).ready(function() {
-            $('#trackingTable').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
-                },
-                pageLength: 25,
-                order: [[4, 'desc']], // Ordenar por última llamada descendente
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-                responsive: true
-            });
+// En la función de DataTables, actualizar el orden
+$(document).ready(function() {
+    const table = $('#trackingTable');
+    
+    // Contar cuántas filas con datos reales hay (filas con 11 columnas ahora)
+    const dataRows = table.find('tbody tr').filter(function() {
+        return $(this).find('td').length === 11; // Cambiado de 10 a 11
+    });
+    
+    // Solo inicializar DataTables si hay al menos 1 fila con datos
+    if (dataRows.length > 0) {
+        table.DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+            },
+            pageLength: 25,
+            order: [[0, 'desc']], // Ordenar por la primera columna (consecutivo) en forma descendente
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            responsive: true,
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: 0 // Hacer que la columna del consecutivo no sea ordenable
+                }
+            ]
+        });
+    }
+});
+        
+        // Función para actualizar logo según tema
+        function actualizarLogoSegunTema() {
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
+         // Ejecutar al cargar y cuando cambie el tema
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
         });
 
-        // Función para ver historial de llamadas
-        function verHistorialLlamadas(idReferenciado) {
-            $.ajax({
-                url: 'ajax/get_historial_llamadas.php',
-                type: 'GET',
-                data: { id_referenciado: idReferenciado },
-                beforeSend: function() {
-                    $('#historialContent').html(`
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando...</span>
-                            </div>
-                            <p class="mt-3">Cargando historial...</p>
-                        </div>
-                    `);
-                },
-                success: function(response) {
-                    $('#historialContent').html(response);
-                    $('#historialModal').modal('show');
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo cargar el historial de llamadas'
-                    });
-                }
+        // Escuchar cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
+
+        // Función para mostrar notificación
+        function showNotification(message, type = 'success') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: type,
+                title: message,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
             });
+        }
+
+        // Función para obtener color según resultado
+        function getColorResultado(idResultado) {
+            const colors = {
+                1: 'bg-success',
+                2: 'bg-warning',
+                3: 'bg-danger',
+                4: 'bg-info',
+                5: 'bg-primary'
+            };
+            return colors[idResultado] || 'bg-secondary';
+        }
+
+        // Función para generar distribución de ratings
+        function generarDistribucionRating(conteoRating, totalConRating) {
+            const container = document.getElementById('distribucionRating');
+            if (totalConRating === 0) {
+                container.innerHTML = '<p class="text-muted mb-0">No hay datos de calificación</p>';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 5; i >= 1; i--) {
+                const count = conteoRating[i] || 0;
+                const percentage = totalConRating > 0 ? (count / totalConRating * 100).toFixed(1) : 0;
+                
+                let stars = '';
+                for (let j = 1; j <= 5; j++) {
+                    if (j <= i) {
+                        stars += '<i class="fas fa-star text-warning"></i>';
+                    }
+                }
+                
+                html += `
+                    <div class="rating-bar">
+                        <div class="rating-label">${stars}</div>
+                        <div class="rating-progress">
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-warning" role="progressbar" 
+                                     style="width: ${percentage}%" 
+                                     aria-valuenow="${percentage}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="rating-count">${percentage}%</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // Función principal para mostrar detalles de llamada
+        async function mostrarDetalleLlamada(idReferenciado, nombre) {
+            try {
+                // Encontrar la fila correspondiente en la tabla para obtener el referenciador
+                const fila = document.querySelector(`tr[data-id-referenciado="${idReferenciado}"]`);
+                let referenciadorNombre = 'N/A';
+                
+                if (fila) {
+                    referenciadorNombre = fila.getAttribute('data-referenciador-nombre') || 'N/A';
+                }
+                
+                // Mostrar loading
+                const modalDetalle = document.getElementById('modalDetalleLlamada');
+                const cuerpo = document.getElementById('cuerpoHistorialLlamadas');
+                cuerpo.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</td></tr>';
+                
+                // Actualizar título e información del referenciador INMEDIATAMENTE
+                document.getElementById('detalleNombrePersona').textContent = nombre;
+                document.getElementById('detalleReferenciador').textContent = referenciadorNombre;
+                
+                // Mostrar modal
+                const modal = new bootstrap.Modal(modalDetalle);
+                modal.show();
+                
+                // Obtener datos del historial
+                const response = await fetch(`../ajax/obtener_historial_llamadas.php?id_referenciado=${idReferenciado}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Actualizar información personal
+                    if (data.referenciado) {
+                        document.getElementById('detalleTelefono').textContent = data.referenciado.telefono || 'No registrado';
+                        // Si la API devuelve el referenciador, usarlo (sobrescribe el de la tabla si es diferente)
+                        if (data.referenciado.referenciador_nombre) {
+                            document.getElementById('detalleReferenciador').textContent = data.referenciado.referenciador_nombre;
+                        }
+                    }
+                    
+                    // Actualizar historial
+                    let historialHTML = '';
+                    let totalRating = 0;
+                    let conteoRating = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+                    
+                    if (data.historial && data.historial.length > 0) {
+                        data.historial.forEach(llamada => {
+                            // Formatear fecha
+                            const fecha = new Date(llamada.fecha_llamada);
+                            const fechaStr = fecha.toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            
+                            // Calcular rating
+                            if (llamada.rating) {
+                                totalRating += llamada.rating;
+                                conteoRating[llamada.rating]++;
+                            }
+                            
+                            // Generar estrellas para rating
+                            let estrellasHTML = '';
+                            if (llamada.rating) {
+                                for (let i = 1; i <= 5; i++) {
+                                    if (i <= llamada.rating) {
+                                        estrellasHTML += '<i class="fas fa-star text-warning"></i>';
+                                    } else {
+                                        estrellasHTML += '<i class="far fa-star text-muted"></i>';
+                                    }
+                                }
+                            } else {
+                                estrellasHTML = '<span class="text-muted">Sin calificar</span>';
+                            }
+                            
+                            historialHTML += `
+                                <tr>
+                                    <td>${fechaStr}</td>
+                                    <td><span class="badge ${getColorResultado(llamada.id_resultado)}">${llamada.resultado_nombre || 'Sin resultado'}</span></td>
+                                    <td>${estrellasHTML}</td>
+                                    <td>${llamada.observaciones || '<span class="text-muted">Sin observaciones</span>'}</td>
+                                    <td>${llamada.usuario_nombre || 'Sistema'}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        // Actualizar resumen
+                        document.getElementById('totalLlamadas').textContent = data.historial.length;
+                        
+                        if (totalRating > 0) {
+                            const promedio = (totalRating / data.historial.filter(l => l.rating).length).toFixed(1);
+                            document.getElementById('promedioRating').textContent = promedio;
+                            document.getElementById('promedioRating').innerHTML += ` <i class="fas fa-star text-warning"></i>`;
+                        }
+                        
+                        // Última llamada
+                        const ultima = new Date(data.historial[0].fecha_llamada);
+                        document.getElementById('ultimaLlamada').textContent = ultima.toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        // Generar distribución de ratings
+                        generarDistribucionRating(conteoRating, data.historial.filter(l => l.rating).length);
+                        
+                    } else {
+                        historialHTML = '<tr><td colspan="5" class="text-center text-muted">No hay historial de llamadas registradas</td></tr>';
+                        document.getElementById('totalLlamadas').textContent = '0';
+                        document.getElementById('promedioRating').textContent = 'N/A';
+                        document.getElementById('ultimaLlamada').textContent = 'Nunca';
+                        document.getElementById('distribucionRating').innerHTML = '<p class="text-muted mb-0">No hay datos de calificación</p>';
+                    }
+                    
+                    cuerpo.innerHTML = historialHTML;
+                    
+                } else {
+                    showNotification('Error al cargar el historial: ' + (data.message || 'Error desconocido'), 'error');
+                    cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar el historial</td></tr>';
+                }
+                
+            } catch (error) {
+                showNotification('Error de conexión: ' + error.message, 'error');
+                document.getElementById('cuerpoHistorialLlamadas').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error de conexión</td></tr>';
+            }
         }
 
         // Función para exportar a Excel
-        function exportarExcel() {
-            // Crear tabla de datos
-            let datos = [];
-            
-            // Agregar encabezados
-            datos.push([
-                'Referenciado', 'Cédula', 'Teléfono', 'Email', 'Referenciador',
-                'Última Llamada', 'Rating', 'Resultado', 'Total Llamadas', 'Estado'
-            ]);
-            
-            // Agregar datos
-            <?php foreach ($referenciadosConLlamadas as $ref): ?>
-                datos.push([
-                    '<?php echo addslashes($ref['nombre'] . ' ' . $ref['apellido']); ?>',
-                    '<?php echo $ref['cedula']; ?>',
-                    '<?php echo $ref['telefono']; ?>',
-                    '<?php echo addslashes($ref['email'] ?? ''); ?>',
-                    '<?php echo addslashes($ref['referenciador_nombre'] ?? ''); ?>',
-                    '<?php echo !empty($ref['fecha_llamada']) ? date('d/m/Y H:i', strtotime($ref['fecha_llamada'])) : ''; ?>',
-                    '<?php echo $ref['rating'] ?? 0; ?>',
-                    '<?php echo addslashes($ref['resultado_nombre'] ?? ''); ?>',
-                    '<?php echo $ref['total_llamadas']; ?>',
-                    '<?php echo $ref['activo'] ? 'Activo' : 'Inactivo'; ?>'
-                ]);
-            <?php endforeach; ?>
-            
-            // Convertir a CSV
-            let csvContent = "data:text/csv;charset=utf-8,";
-            datos.forEach(function(rowArray) {
-                let row = rowArray.map(function(cell) {
-                    // Escapar comillas y agregar comillas si contiene coma
-                    if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
-                        return '"' + cell.replace(/"/g, '""') + '"';
-                    }
-                    return cell;
-                }).join(",");
-                csvContent += row + "\r\n";
-            });
-            
-            // Crear y descargar archivo
-            let encodedUri = encodeURI(csvContent);
-            let link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `valoracion_tracking_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Exportación exitosa',
-                text: 'El archivo se ha descargado correctamente'
+function exportarExcel() {
+    // Obtener todos los filtros actuales
+    const params = new URLSearchParams(window.location.search);
+    
+    // Agregar parámetros de exportación
+    params.append('export', 'excel');
+    
+    // Crear URL con todos los filtros
+    const exportUrl = 'exportar_valoracion_tracking.php?' + params.toString();
+    
+    // Mostrar confirmación
+    Swal.fire({
+        title: 'Exportar a Excel',
+        text: '¿Desea exportar los datos filtrados a Excel?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, exportar',
+        cancelButtonText: 'Cancelar',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            // Descargar el archivo
+            return new Promise((resolve) => {
+                // Crear enlace invisible para descarga
+                const link = document.createElement('a');
+                link.href = exportUrl;
+                link.target = '_blank';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Pequeño retraso para asegurar la descarga
+                setTimeout(() => {
+                    resolve();
+                }, 1000);
             });
         }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Exportación iniciada',
+                text: 'El archivo Excel se está descargando',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+    });
+}
 
         // Función para refrescar datos
         function refreshData() {

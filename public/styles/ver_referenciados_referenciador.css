@@ -1693,3 +1693,238 @@ canvas {
         font-size: 0.9rem;
     }
 }
+
+/* ============================================================================
+   RESPONSIVE PARA MODAL DE GRÁFICA EN DISPOSITIVOS MÓVILES
+   ============================================================================ */
+
+/* Ajustes generales para móviles */
+@media (max-width: 768px) {
+    /* Modal completo en móvil */
+    .modal-grafica .modal-dialog {
+        margin: 5px;
+        max-height: 95vh;
+    }
+    
+    .modal-grafica .modal-content {
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+    
+    /* Reducir padding del modal body */
+    .modal-grafica .modal-body {
+        padding: 10px !important;
+    }
+    
+    /* Reorganizar el layout para móvil */
+    .grafica-modal-content {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+        padding: 10px 0 !important;
+    }
+    
+    /* Ajustar el canvas de la gráfica */
+    .grafica-canvas-modal {
+        min-height: 250px !important;
+        padding: 15px !important;
+        order: 1; /* La gráfica primero */
+    }
+    
+    #graficaTortaModal2 {
+        width: 100% !important;
+        max-width: 280px !important;
+        height: auto !important;
+        max-height: 250px !important;
+    }
+    
+    /* Ajustar contenedor de info */
+    .grafica-info-modal {
+        gap: 15px !important;
+        order: 2; /* La información después */
+    }
+    
+    /* Reorganizar controles */
+    .grafica-header-modal {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+    
+    .grafica-header-modal h4 {
+        text-align: center;
+        font-size: 1.1rem !important;
+    }
+    
+    .grafica-controls {
+        width: 100% !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .btn-grafica-control {
+        width: 100% !important;
+        justify-content: center;
+        padding: 10px !important;
+    }
+    
+    /* Ajustar estadísticas grid */
+    .estadisticas-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+    
+    .estadistica-card {
+        padding: 12px !important;
+    }
+    
+    .estadistica-icon {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.2rem !important;
+    }
+    
+    .estadistica-value {
+        font-size: 1.3rem !important;
+    }
+    
+    /* Ajustar detalles */
+    .detalles-distribucion {
+        padding: 15px !important;
+    }
+    
+    .detalles-distribucion h5 {
+        font-size: 1rem !important;
+        margin-bottom: 12px !important;
+    }
+    
+    .detalle-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 3px !important;
+        padding: 8px 0 !important;
+    }
+    
+    .detalle-label {
+        font-size: 0.85rem !important;
+    }
+    
+    .detalle-value {
+        font-size: 0.9rem !important;
+    }
+    
+    /* Ajustar resumen */
+    .resumen-final {
+        padding: 12px !important;
+    }
+    
+    .resumen-text {
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+    }
+    
+    /* Modal header más pequeño */
+    .modal-grafica .modal-header {
+        padding: 15px !important;
+    }
+    
+    .modal-grafica .modal-title {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Modal footer */
+    .modal-grafica .modal-footer {
+        padding: 10px !important;
+    }
+    
+    .modal-grafica .modal-footer .btn {
+        width: 100% !important;
+    }
+}
+
+/* Ajustes específicos para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .modal-grafica .modal-dialog {
+        margin: 2px !important;
+        max-height: 98vh !important;
+    }
+    
+    .grafica-canvas-modal {
+        min-height: 220px !important;
+        padding: 10px !important;
+    }
+    
+    #graficaTortaModal2 {
+        max-width: 220px !important;
+        max-height: 220px !important;
+    }
+    
+    .estadistica-card {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 10px !important;
+    }
+    
+    .estadistica-content {
+        text-align: center !important;
+    }
+}
+
+/* Ajustes para tablets (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .modal-grafica .modal-dialog {
+        margin: 20px;
+    }
+    
+    .grafica-modal-content {
+        gap: 25px !important;
+    }
+    
+    .grafica-canvas-modal {
+        min-height: 350px !important;
+    }
+    
+    .estadisticas-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* Ajustes de scroll en móvil */
+@media (max-width: 768px) {
+    .modal-grafica .modal-body {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+        max-height: calc(90vh - 120px);
+    }
+}
+
+/* Asegurar que el canvas sea responsive */
+.grafica-canvas-modal canvas {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* Ajustes para orientación landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+    .modal-grafica .modal-dialog {
+        margin: 5px;
+        max-height: 90vh;
+    }
+    
+    .modal-grafica .modal-body {
+        max-height: calc(85vh - 120px);
+    }
+    
+    .grafica-modal-content {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 15px !important;
+    }
+    
+    .grafica-canvas-modal {
+        min-height: 200px !important;
+    }
+    
+    #graficaTortaModal2 {
+        max-width: 200px !important;
+        max-height: 200px !important;
+    }
+}

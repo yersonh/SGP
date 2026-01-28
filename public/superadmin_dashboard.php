@@ -1104,7 +1104,7 @@ body {
         <div class="dashboard-header">
             <div class="dashboard-title">
                 <i class="fas fa-tachometer-alt"></i>
-                <span>Panel de Control Super Admin</span>
+                <span>Panel de Control</span>
             </div>
             <p class="dashboard-subtitle">
                 Acceda a los módulos principales del sistema de gestión política. 

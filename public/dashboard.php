@@ -80,6 +80,7 @@ if ($porcentajeRestante > 50) {
     <title>Usuarios del Sistema - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="styles/dashboard.css">
 </head>
 <body>
@@ -89,7 +90,7 @@ if ($porcentajeRestante > 50) {
             <div class="header-title">
                 <h1>
                     <i class="fas fa-users"></i> Usuarios del Sistema
-                    <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
+                    <span class="user-count"><?php echo $usuarios_activos; ?> usuarios</span>
                 </h1>
             </div>
             <a href="logout.php" class="logout-btn">
@@ -218,6 +219,7 @@ if ($porcentajeRestante > 50) {
                 <table class="users-table" id="users-table">
                     <thead>
                         <tr>
+                            <th>N°</th>
                             <th>NICKNAME</th>
                             <th>NOMBRE COMPLETO</th>
                             <th>CONTRASEÑA</th>
@@ -227,12 +229,14 @@ if ($porcentajeRestante > 50) {
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
+                        <?php $consecutivo = 1; ?>
                         <?php foreach ($usuarios as $usuario): ?>
                         <?php 
                         $activo = $usuario['activo'];
                         $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
                         ?>
                         <tr>
+                            <td class="text-center"><?php echo $consecutivo++; ?></td>
                             <td>
                                 <div class="user-info">
                                     <span class="user-nickname"><?php echo htmlspecialchars($usuario['nickname']); ?></span>
@@ -484,8 +488,53 @@ if ($porcentajeRestante > 50) {
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     
     <script>
+        // Inicializar DataTable
+        $(document).ready(function() {
+            // Guardar referencia global a la tabla
+            window.table = $('#users-table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+                order: [[0, 'asc']],
+                responsive: true,
+                dom: '<"top"f>rt<"bottom"lip><"clear">',
+                columnDefs: [
+                    {
+                        targets: 6, // Columna de Acciones (columna 7)
+                        orderable: false,
+                        searchable: false,
+                        width: '180px'
+                    },
+                    {
+                        targets: 0, // Columna N°
+                        width: '60px',
+                        searchable: false
+                    }
+                ]
+            });
+            
+            // Asegurar que los botones de mostrar/ocultar contraseña funcionen con DataTables
+            $(document).on('click', '.toggle-password-btn', function() {
+                const userId = $(this).data('user-id');
+                togglePassword(userId);
+            });
+            
+            // Inicializar hover en filas
+            $('#users-table tbody').on('mouseenter', 'tr', function() {
+                $(this).css('backgroundColor', '#f8fafc');
+            }).on('mouseleave', 'tr', function() {
+                $(this).css('backgroundColor', '');
+            });
+        });
+        
         // Función para mostrar el modal del sistema
         function mostrarModalSistema() {
             const modal = new bootstrap.Modal(document.getElementById('modalSistema'));
@@ -494,36 +543,25 @@ if ($porcentajeRestante > 50) {
         
         // Función para buscar usuarios
         function buscarUsuarios() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const rows = document.querySelectorAll('#users-table-body tr');
-            let visibleCount = 0;
+            const searchTerm = $('#search-input').val();
+            table.search(searchTerm).draw();
             
-            rows.forEach(row => {
-                const nickname = row.querySelector('.user-nickname').textContent.toLowerCase();
-                const fullname = row.querySelector('.user-fullname')?.textContent.toLowerCase() || '';
-                const text = nickname + ' ' + fullname;
-                
-                if (text.includes(searchTerm)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
+            // Actualizar mensaje de resultados
             const resultsElement = document.getElementById('search-results');
             if (searchTerm.trim() === '') {
-                resultsElement.textContent = `Mostrando ${rows.length} usuarios`;
+                resultsElement.textContent = `Mostrando ${table.rows().count()} usuarios`;
             } else {
-                resultsElement.textContent = `Mostrando ${visibleCount} de ${rows.length} usuarios (búsqueda: "${searchTerm}")`;
+                const filteredCount = table.rows({ search: 'applied' }).count();
+                resultsElement.textContent = `Mostrando ${filteredCount} de ${table.rows().count()} usuarios (búsqueda: "${searchTerm}")`;
             }
         }
         
         // Función para limpiar búsqueda
         function limpiarBusqueda() {
-            document.getElementById('search-input').value = '';
-            buscarUsuarios();
-            document.getElementById('search-input').focus();
+            $('#search-input').val('');
+            table.search('').draw();
+            $('#search-input').focus();
+            document.getElementById('search-results').textContent = `Mostrando ${table.rows().count()} usuarios`;
         }
         
         // Actualizar hora en tiempo real
@@ -736,32 +774,6 @@ if ($porcentajeRestante > 50) {
                 button.classList.add('btn-outline-secondary');
             }
         }
-        
-        // Inicializar event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.toggle-password-btn').forEach(button => {
-                const userId = button.getAttribute('data-user-id');
-                button.addEventListener('click', () => togglePassword(userId));
-            });
-            
-            document.querySelectorAll('.password-input[type="password"]').forEach(input => {
-                input.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    this.blur();
-                });
-            });
-        });
-        
-        // Efecto hover en filas de la tabla
-        document.querySelectorAll('.users-table tbody tr').forEach(row => {
-            row.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#f8fafc';
-            });
-            
-            row.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '';
-            });
-        });
         
         // Manejar parámetros de éxito/error en la URL
         document.addEventListener('DOMContentLoaded', function() {

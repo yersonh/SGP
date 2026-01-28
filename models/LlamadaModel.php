@@ -418,5 +418,95 @@ public function getEficienciaGeneralPorRating() {
     
     return $result['eficiencia_porcentaje'] ?? 0;
 }
+/**
+ * Calcular % de Tracking para un referenciador
+ * Cuántos de sus referidos han recibido al menos una llamada
+ * 
+ * @param int $id_referenciador ID del usuario referenciador
+ * @return array Con total referidos, referidos llamados y porcentaje
+ */
+public function getPorcentajeTrackingPorReferenciador($id_referenciador) {
+    $sql = "SELECT 
+                -- Total de referidos del referenciador
+                COALESCE(
+                    (SELECT COUNT(*) 
+                     FROM referenciados 
+                     WHERE id_referenciador = :id_referenciador 
+                     AND activo = true), 
+                    0
+                ) as total_referidos,
+                
+                -- Referidos únicos de él que han recibido al menos una llamada
+                COALESCE(
+                    (SELECT COUNT(DISTINCT r.id_referenciado)
+                     FROM referenciados r
+                     INNER JOIN llamadas_tracking lt ON r.id_referenciado = lt.id_referenciado
+                     WHERE r.id_referenciador = :id_referenciador
+                     AND r.activo = true), 
+                    0
+                ) as referidos_llamados,
+                
+                -- Calcular porcentaje de tracking
+                CASE 
+                    WHEN (
+                        SELECT COUNT(*) 
+                        FROM referenciados 
+                        WHERE id_referenciador = :id_referenciador 
+                        AND activo = true
+                    ) > 0 
+                    THEN ROUND(
+                        (
+                            SELECT COUNT(DISTINCT r.id_referenciado)
+                            FROM referenciados r
+                            INNER JOIN llamadas_tracking lt ON r.id_referenciado = lt.id_referenciado
+                            WHERE r.id_referenciador = :id_referenciador
+                            AND r.activo = true
+                        ) * 100.0 /
+                        (
+                            SELECT COUNT(*) 
+                            FROM referenciados 
+                            WHERE id_referenciador = :id_referenciador 
+                            AND activo = true
+                        ), 
+                        2
+                    )
+                    ELSE 0 
+                END as porcentaje_tracking";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return [
+        'total_referidos' => $resultado['total_referidos'] ?? 0,
+        'referidos_llamados' => $resultado['referidos_llamados'] ?? 0,
+        'porcentaje_tracking' => $resultado['porcentaje_tracking'] ?? 0,
+        'pendientes' => ($resultado['total_referidos'] ?? 0) - ($resultado['referidos_llamados'] ?? 0)
+    ];
+}
+/**
+ * Obtener cantidad de referidos trackeados por referenciador
+ * (Cuántos de sus referidos han recibido al menos una llamada)
+ * 
+ * @param int $id_referenciador ID del usuario referenciador
+ * @return int Cantidad de referidos trackeados
+ */
+public function getCantidadTrackeados($id_referenciador) {
+    $sql = "SELECT COUNT(DISTINCT r.id_referenciado) as trackeados
+            FROM referenciados r
+            INNER JOIN llamadas_tracking lt ON r.id_referenciado = lt.id_referenciado
+            WHERE r.id_referenciador = :id_referenciador
+            AND r.activo = true";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return $resultado['trackeados'] ?? 0;
+}
 }
 ?>

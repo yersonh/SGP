@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/SistemaModel.php';
-
+require_once __DIR__ . '/../../models/LlamadaModel.php';
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
@@ -20,8 +20,10 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Tracking')
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
 $sistemaModel = new SistemaModel($pdo);
+$llamadaModel = new LlamadaModel($pdo);
 
 $id_usuario_logueado = $_SESSION['id_usuario'];
+
 
 // 1. Capturar la fecha actual
 $fecha_actual = date('Y-m-d H:i:s');
@@ -75,6 +77,7 @@ if ($porcentajeRestante > 50) {
     <title>Usuarios del Sistema - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="../styles/ver_usuarios_tracking.css">
     <style>
         /* Estilos para el modal de información del sistema */
@@ -315,6 +318,75 @@ if ($porcentajeRestante > 50) {
         font-size: 0.9rem;
     }
 }
+/* SOLO CENTRAR - SIN CAMBIAR DISEÑO */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.users-table td:nth-child(5) {
+    text-align: center;
+}
+/* Centrar títulos de todas las columnas */
+.users-table th {
+    text-align: center;
+}
+
+/* ESTILOS PARA TRACKING */
+.tracking-percentage {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 50px;
+}
+
+.tracking-percentage-bad {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.tracking-percentage-regular {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.tracking-percentage-good {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.tracking-percentage-excellent {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.tracking-percentage:hover {
+    opacity: 0.9;
+    cursor: help;
+}
+
+.tracking-count {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    background-color: #e8f4fd;
+    color: #0d6efd;
+    border: 1px solid #b6d4fe;
+    min-width: 30px;
+}
+
+.tracking-count:hover {
+    background-color: #cfe2ff;
+    cursor: help;
+}
+
     </style>
     
 </head>
@@ -325,7 +397,7 @@ if ($porcentajeRestante > 50) {
             <div class="header-title">
                 <h1>
                     <i class="fas fa-users"></i> Usuarios del Sistema
-                    <span class="user-count"><?php echo $total_usuarios; ?> usuarios</span>
+                    <span class="user-count"><?php echo $usuarios_activos; ?> usuarios</span>
                 </h1>
             </div>
             <a href="../logout.php" class="logout-btn">
@@ -430,20 +502,35 @@ if ($porcentajeRestante > 50) {
                 <table class="users-table" id="users-table">
                     <thead>
                         <tr>
+                            <th>N°</th>
                             <th>NICKNAME</th>
                             <th>NOMBRE COMPLETO</th>
                             <th>TIPO</th>
                             <th>ESTADO</th>
                             <th>ACCIONES</th>
+                            <th>%TRACKING</th>
+                            <th>CANTIDAD</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
+                        <?php $consecutivo = 1; ?>
                         <?php foreach ($usuarios as $usuario): ?>
                         <?php 
                         $activo = $usuario['activo'];
                         $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                        
+                        // OBTENER ESTADÍSTICAS DE TRACKING SOLO PARA REFERENCIADORES
+                        $trackingData = null;
+                        $trackingCantidad = 0;
+                        if ($usuario['tipo_usuario'] === 'Referenciador') {
+                            // Obtener % de tracking
+                            $trackingData = $llamadaModel->getPorcentajeTrackingPorReferenciador($usuario['id_usuario']);
+                            // Obtener cantidad de trackeados
+                            $trackingCantidad = $llamadaModel->getCantidadTrackeados($usuario['id_usuario']);
+                        }
                         ?>
                         <tr>
+                            <td class="text-center"><?php echo $consecutivo++; ?></td>
                             <td>
                                 <div class="user-info">
                                     <span class="user-nickname"><?php echo htmlspecialchars($usuario['nickname']); ?></span>
@@ -488,6 +575,48 @@ if ($porcentajeRestante > 50) {
                                         </button>
                                     <?php endif; ?>
                                 </div>
+                            </td>
+                            <td class="text-center">
+                                <!-- %TRACKING - Solo para referenciadores -->
+                                <?php if ($usuario['tipo_usuario'] === 'Referenciador' && $trackingData): ?>
+                                    <?php 
+                                    // Formatear porcentaje con un solo decimal
+                                    $porcentaje = number_format($trackingData['porcentaje_tracking'], 1);
+                                    
+                                    // Determinar clase CSS según el porcentaje
+                                    $claseTracking = '';
+                                    if ($porcentaje == 0) {
+                                        $claseTracking = 'tracking-percentage-bad';
+                                    } elseif ($porcentaje <= 30) {
+                                        $claseTracking = 'tracking-percentage-regular';
+                                    } elseif ($porcentaje <= 70) {
+                                        $claseTracking = 'tracking-percentage-good';
+                                    } else {
+                                        $claseTracking = 'tracking-percentage-excellent';
+                                    }
+                                    ?>
+                                    <span class="tracking-percentage <?php echo $claseTracking; ?>" 
+                                          title="<?php echo $trackingData['referidos_llamados']; ?> de <?php echo $trackingData['total_referidos']; ?> referidos trackeados">
+                                        <?php echo $porcentaje; ?>%
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-muted" title="No aplica">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <!-- CANTIDAD - Solo para referenciadores -->
+                                <?php if ($usuario['tipo_usuario'] === 'Referenciador'): ?>
+                                    <?php if ($trackingCantidad > 0): ?>
+                                        <span class="tracking-count" 
+                                              title="<?php echo $trackingCantidad; ?> referidos trackeados">
+                                            <?php echo $trackingCantidad; ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted" title="No hay tracking registrado">0</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-muted" title="No aplica">-</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -540,9 +669,6 @@ if ($porcentajeRestante > 50) {
                     
                     <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
                     <div class="text-center mb-4">
-                        <!-- ELIMINADO: <h1 class="display-5 fw-bold text-primary mb-2">
-                            <?php echo htmlspecialchars($infoSistema['nombre_sistema'] ?? 'Sistema SGP'); ?>
-                        </h1> -->
                         <h4 class="text-secondary mb-4">
                             <strong>Gestión Política de Alta Precisión</strong>
                         </h4>
@@ -656,46 +782,71 @@ if ($porcentajeRestante > 50) {
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     
     <script>
+        // Inicializar DataTable
+        $(document).ready(function() {
+            var table = $('#users-table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+                order: [[0, 'asc']],
+                responsive: true,
+                dom: '<"top"f>rt<"bottom"lip><"clear">',
+                columnDefs: [
+                    {
+                        targets: 5, // Columna de Acciones
+                        orderable: false,
+                        searchable: false,
+                        width: '100px'
+                    },
+                    {
+                        targets: 0, // Columna N°
+                        width: '60px',
+                        searchable: false
+                    },
+                    {
+                        targets: [6, 7], // Columnas %TRACKING y CANTIDAD
+                        width: '100px',
+                        searchable: false
+                    }
+                ]
+            });
+            
+            // Actualizar función buscarUsuarios para usar DataTables
+            window.buscarUsuarios = function() {
+                const searchTerm = $('#search-input').val();
+                table.search(searchTerm).draw();
+                
+                // Actualizar mensaje de resultados
+                const resultsElement = document.getElementById('search-results');
+                if (searchTerm.trim() === '') {
+                    resultsElement.textContent = `Mostrando ${table.rows().count()} usuarios`;
+                } else {
+                    const filteredCount = table.rows({ search: 'applied' }).count();
+                    resultsElement.textContent = `Mostrando ${filteredCount} de ${table.rows().count()} usuarios (búsqueda: "${searchTerm}")`;
+                }
+            };
+            
+            // Actualizar función limpiarBusqueda
+            window.limpiarBusqueda = function() {
+                $('#search-input').val('');
+                table.search('').draw();
+                $('#search-input').focus();
+                document.getElementById('search-results').textContent = `Mostrando ${table.rows().count()} usuarios`;
+            };
+        });
+        
         // Función para mostrar el modal del sistema
         function mostrarModalSistema() {
             const modal = new bootstrap.Modal(document.getElementById('modalSistema'));
             modal.show();
-        }
-        
-        // Función para buscar usuarios
-        function buscarUsuarios() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const rows = document.querySelectorAll('#users-table-body tr');
-            let visibleCount = 0;
-            
-            rows.forEach(row => {
-                const nickname = row.querySelector('.user-nickname').textContent.toLowerCase();
-                const fullname = row.querySelector('.user-fullname')?.textContent.toLowerCase() || '';
-                const text = nickname + ' ' + fullname;
-                
-                if (text.includes(searchTerm)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            const resultsElement = document.getElementById('search-results');
-            if (searchTerm.trim() === '') {
-                resultsElement.textContent = `Mostrando ${rows.length} usuarios`;
-            } else {
-                resultsElement.textContent = `Mostrando ${visibleCount} de ${rows.length} usuarios (búsqueda: "${searchTerm}")`;
-            }
-        }
-        
-        // Función para limpiar búsqueda
-        function limpiarBusqueda() {
-            document.getElementById('search-input').value = '';
-            buscarUsuarios();
-            document.getElementById('search-input').focus();
         }
         
         // Actualizar hora en tiempo real

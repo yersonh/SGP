@@ -1427,82 +1427,95 @@ function setupCedulaValidation() {
     });
     
     // Función para verificar cédula en la base de datos
-    function checkCedulaInDatabase(cedula) {
-        if (isChecking || !cedula) return;
-        
-        isChecking = true;
-        lastValidatedCedula = cedula;
-        
-        // Mostrar estado de carga
-        showValidationMessage('Validando cédula...', 'loading');
-        
-        // Hacer petición AJAX al servidor
-        fetch('ajax/verificar_cedula.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `cedula=${encodeURIComponent(cedula)}`
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error en la conexión');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                if (data.exists) {
-                    // Cédula ya existe
-                    cedulaInput.classList.add('error');
-                    cedulaInput.classList.remove('success');
-                    showValidationMessage('Esta cédula ya está registrada en el sistema', 'error');
-                } else {
-                    // Cédula disponible
-                    cedulaInput.classList.remove('error');
-                    cedulaInput.classList.add('success');
-                    showValidationMessage('Cédula disponible', 'success');
+    // Función para verificar cédula en la base de datos
+function checkCedulaInDatabase(cedula) {
+    if (isChecking || !cedula) return;
+    
+    isChecking = true;
+    lastValidatedCedula = cedula;
+    
+    // Mostrar estado de carga
+    showValidationMessage('Validando cédula...', 'loading');
+    
+    // Hacer petición AJAX al servidor
+    fetch('ajax/verificar_cedula.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `cedula=${encodeURIComponent(cedula)}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error en la conexión');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            if (data.exists) {
+                // Cédula ya existe
+                cedulaInput.classList.add('error');
+                cedulaInput.classList.remove('success');
+                
+                // Construir mensaje con información adicional
+                let mensaje = 'Esta cédula ya está registrada en el sistema';
+                if (data.fecha_registro && data.referenciador) {
+                    mensaje += `<br><small style="font-size: 0.85em; color: #666; display: block; margin-top: 3px;">
+                        Fue ingresado el día ${data.fecha_registro} por el referenciador ${data.referenciador}
+                    </small>`;
                 }
+                
+                showValidationMessage(mensaje, 'error');
+                
             } else {
-                // Error en la validación
-                cedulaInput.classList.remove('error', 'success');
-                showValidationMessage('Error al validar la cédula', 'error');
+                // Cédula disponible
+                cedulaInput.classList.remove('error');
+                cedulaInput.classList.add('success');
+                showValidationMessage('Cédula disponible', 'success');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
+        } else {
+            // Error en la validación
             cedulaInput.classList.remove('error', 'success');
-            showValidationMessage('Error de conexión al validar', 'error');
-        })
-        .finally(() => {
-            isChecking = false;
-        });
+            showValidationMessage('❌ Error al validar la cédula', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        cedulaInput.classList.remove('error', 'success');
+        showValidationMessage('❌ Error de conexión al validar', 'error');
+    })
+    .finally(() => {
+        isChecking = false;
+    });
+}
+    
+   function showValidationMessage(message, type) {
+    if (!validationMessage) return;
+    
+    validationMessage.innerHTML = '';
+    
+    let icon = '';
+    if (type === 'error') {
+        icon = '<i class="fas fa-exclamation-circle"></i>';
+        validationMessage.className = 'validation-message error';
+    } else if (type === 'success') {
+        icon = '<i class="fas fa-check-circle"></i>';
+        validationMessage.className = 'validation-message success';
+    } else if (type === 'loading') {
+        icon = '<div class="spinner-small" style="border-top-color: #666;"></div>';
+        validationMessage.className = 'validation-message loading';
     }
     
-    // Función para mostrar mensaje de validación
-    function showValidationMessage(message, type) {
-        if (!validationMessage) return;
-        
-        validationMessage.innerHTML = '';
-        
-        let icon = '';
-        if (type === 'error') {
-            icon = '<i class="fas fa-exclamation-circle"></i>';
-            validationMessage.className = 'validation-message error';
-        } else if (type === 'success') {
-            icon = '<i class="fas fa-check-circle"></i>';
-            validationMessage.className = 'validation-message success';
-        } else if (type === 'loading') {
-            icon = '<div class="spinner-small" style="border-top-color: #666;"></div>';
-            validationMessage.className = 'validation-message';
-        }
-        
-        validationMessage.innerHTML = `
-            ${icon}
+    // IMPORTANTE: Usar innerHTML en lugar de texto para permitir HTML en el mensaje
+    validationMessage.innerHTML = `
+        ${icon}
+        <div style="flex: 1;">
             <span>${message}</span>
-        `;
-        validationMessage.style.display = 'flex';
-    }
+        </div>
+    `;
+    validationMessage.style.display = 'flex';
+}
     
     // Función para ocultar mensaje de validación
     function hideValidationMessage() {

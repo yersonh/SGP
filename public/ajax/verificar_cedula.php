@@ -29,14 +29,30 @@ if (!preg_match('/^\d+$/', $cedula)) {
 }
 
 try {
-    // Verificar si la cédula ya existe
-    $cedulaExiste = $referenciadoModel->cedulaExiste($cedula);
+    // Verificar si la cédula ya existe (con información adicional)
+    $datosCedula = $referenciadoModel->cedulaExiste($cedula);
     
-    echo json_encode([
-        'success' => true,
-        'exists' => $cedulaExiste,
-        'cedula' => $cedula
-    ]);
+    if ($datosCedula === false) {
+        // Cédula NO existe
+        echo json_encode([
+            'success' => true,
+            'exists' => false,
+            'cedula' => $cedula
+        ]);
+    } else {
+        // Cédula SÍ existe - formatear fecha
+        $fecha = new DateTime($datosCedula['fecha_registro']);
+        $fechaFormateada = $fecha->format('d/m/Y');
+        
+        echo json_encode([
+            'success' => true,
+            'exists' => true,
+            'cedula' => $cedula,
+            'fecha_registro' => $fechaFormateada,
+            'referenciador' => $datosCedula['referenciador_nombre'],
+            'id_referenciado' => $datosCedula['id_referenciado']
+        ]);
+    }
     
 } catch (Exception $e) {
     error_log("Error verificando cédula: " . $e->getMessage());

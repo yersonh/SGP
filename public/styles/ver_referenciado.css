@@ -573,3 +573,34 @@
     border-radius: 4px;
     border: 1px solid rgba(255, 215, 0, 0.2);
 }
+/* Estilos para mensajes de validación */
+.validation-message {
+    margin-top: 5px;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.validation-message.loading {
+    color: #0d6efd;
+    background-color: #e7f1ff;
+    border: 1px solid #b6d4fe;
+}
+
+.validation-message.success {
+    color: #198754;
+    background-color: #d1e7dd;
+    border: 1px solid #a3cfbb;
+}
+
+.validation-message.error {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f1aeb5;
+}
+
+.validation-message small {
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 3px;
+}

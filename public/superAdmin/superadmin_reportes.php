@@ -1009,6 +1009,22 @@ if ($porcentajeRestante > 50) {
                     Métricas de efectividad y análisis de desempeño.
                 </div>
             </a>
+            <!-- Cifras SGP -->
+            <a href="superadmin_cifras_sgp.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
+                    <div class="option-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                </div>
+                <div class="option-title">CIFRAS SGP</div>
+                <div class="option-description">
+                    Resúmen cuantitativo de la estructura de datos operacional
+                    en el cálculo y tratamiento de los datos.
+                </div>
+            </a>
         </div>
     </div>
 

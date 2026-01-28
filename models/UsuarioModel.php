@@ -406,7 +406,12 @@ class UsuarioModel {
         $result = $stmt->fetch();
         return $result['admins'];
     }
-    
+    public function countAdministradoresActivos() {
+        $query = "SELECT COUNT(*) as admins FROM usuario WHERE tipo_usuario = 'Administrador' AND activo = true";
+        $stmt = $this->pdo->query($query);
+        $result = $stmt->fetch();
+        return $result['admins'];
+    }
     // Actualizar último registro de acceso
     public function actualizarUltimoRegistro($id_usuario, $fecha) {
         $query = "UPDATE usuario SET ultimo_registro = ? WHERE id_usuario = ?";
@@ -568,7 +573,12 @@ public function countReferenciadores() {
     $result = $stmt->fetch();
     return $result['referenciadores'];
 }
-
+public function countReferenciadoresActivos() {
+    $query = "SELECT COUNT(*) as referenciadores FROM usuario WHERE tipo_usuario = 'Referenciador' AND activo = true";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['referenciadores'];
+}
 // Contar Descargadores
 public function countDescargadores() {
     $query = "SELECT COUNT(*) as descargadores FROM usuario WHERE tipo_usuario = 'Descargador'";
@@ -576,7 +586,12 @@ public function countDescargadores() {
     $result = $stmt->fetch();
     return $result['descargadores'];
 }
-
+public function countDescargadoresActivos() {
+    $query = "SELECT COUNT(*) as descargadores FROM usuario WHERE tipo_usuario = 'Descargador' AND activo = true";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['descargadores'];
+}
 // Contar SuperAdmin
 public function countSuperAdmin() {
     $query = "SELECT COUNT(*) as superadmin FROM usuario WHERE tipo_usuario = 'SuperAdmin'";
@@ -584,8 +599,20 @@ public function countSuperAdmin() {
     $result = $stmt->fetch();
     return $result['superadmin'];
 }
+public function countSuperAdminActivos() {
+    $query = "SELECT COUNT(*) as superadmin FROM usuario WHERE tipo_usuario = 'SuperAdmin' AND activo = true";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['superadmin'];
+}
 public function countTracking() {
     $query = "SELECT COUNT(*) as tracking FROM usuario WHERE tipo_usuario = 'Tracking'";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['tracking'];
+}
+public function countTrackingActivos() {
+    $query = "SELECT COUNT(*) as tracking FROM usuario WHERE tipo_usuario = 'Tracking' AND activo = true";
     $stmt = $this->pdo->query($query);
     $result = $stmt->fetch();
     return $result['tracking'];
@@ -737,6 +764,41 @@ public function getUsuarioByIdActivo($id) {
         error_log("Error en getUsuarioByIdActivo: " . $e->getMessage());
         return null;
     }
+}
+// Obtener total de tope sumando todos los topes de referenciadores activos
+public function getTotalTope() {
+    $query = "SELECT COALESCE(SUM(tope), 0) as total_tope 
+              FROM usuario 
+              WHERE tipo_usuario = 'Referenciador' 
+              AND activo = true";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['total_tope'];
+}
+
+// Obtener total de trackeadores activos
+public function getTotalTrackeadores() {
+    $query = "SELECT COUNT(*) as total 
+              FROM usuario 
+              WHERE tipo_usuario = 'Tracking' 
+              AND activo = true";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['total'];
+}
+
+// Obtener porcentaje de tracking
+public function getPorcentajeTracking() {
+    $query = "SELECT 
+                (COUNT(DISTINCT lt.id_referenciado) * 100.0 / 
+                (SELECT COUNT(*) FROM referenciados WHERE activo = true)) as porcentaje_tracking
+              FROM llamadas_tracking lt
+              INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+              WHERE r.activo = true";
+              
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['porcentaje_tracking'] ?? 0;
 }
 }
 ?>

@@ -143,102 +143,102 @@ class LlamadaModel {
      * Con información completa del referenciado y última llamada
      */
     public function getReferenciadosConLlamadas($filtros = []) {
-        // Construir la consulta base
-        $sql = "
-            SELECT DISTINCT ON (r.id_referenciado)
-                r.id_referenciado,
-                r.nombre,
-                r.apellido,
-                r.cedula,
-                r.telefono,
-                r.email,
-                r.afinidad,
-                r.activo,
-                r.fecha_registro,
-                
-                -- Información del referenciador
-                CONCAT(ur.nombres, ' ', ur.apellidos) as referenciador_nombre,
-                ur.cedula as referenciador_cedula,
-                
-                -- Última llamada
-                lt.id_llamada,
-                lt.fecha_llamada,
-                lt.rating,
-                lt.observaciones,
-                lt.id_resultado,
-                tr.nombre as resultado_nombre,
-                
-                -- Información del usuario que hizo la llamada
-                CONCAT(ul.nombres, ' ', ul.apellidos) as llamador_nombre,
-                
-                -- Conteo de llamadas totales
-                (SELECT COUNT(*) FROM llamadas_tracking lt2 WHERE lt2.id_referenciado = r.id_referenciado) as total_llamadas
-                
-            FROM referenciados r
-            INNER JOIN llamadas_tracking lt ON r.id_referenciado = lt.id_referenciado
-            LEFT JOIN usuario ur ON r.id_referenciador = ur.id_usuario
-            LEFT JOIN usuario ul ON lt.id_usuario = ul.id_usuario
-            LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
-            WHERE 1=1
-        ";
-        
-        $params = [];
-        $conditions = [];
-        
-        // Aplicar filtros
-        if (!empty($filtros['fecha_desde'])) {
-            $conditions[] = "DATE(lt.fecha_llamada) >= :fecha_desde";
-            $params[':fecha_desde'] = $filtros['fecha_desde'];
-        }
-        
-        if (!empty($filtros['fecha_hasta'])) {
-            $conditions[] = "DATE(lt.fecha_llamada) <= :fecha_hasta";
-            $params[':fecha_hasta'] = $filtros['fecha_hasta'];
-        }
-        
-        if (!empty($filtros['id_resultado'])) {
-            $conditions[] = "lt.id_resultado = :id_resultado";
-            $params[':id_resultado'] = $filtros['id_resultado'];
-        }
-        
-        if (!empty($filtros['rating_min'])) {
-            $conditions[] = "lt.rating >= :rating_min";
-            $params[':rating_min'] = $filtros['rating_min'];
-        }
-        
-        if (!empty($filtros['rating_max'])) {
-            $conditions[] = "lt.rating <= :rating_max";
-            $params[':rating_max'] = $filtros['rating_max'];
-        }
-        
-        if (!empty($filtros['id_referenciador'])) {
-            $conditions[] = "r.id_referenciador = :id_referenciador";
-            $params[':id_referenciador'] = $filtros['id_referenciador'];
-        }
-        
-        // Agregar condiciones a la consulta
-        if (!empty($conditions)) {
-            $sql .= " AND " . implode(" AND ", $conditions);
-        }
-        
-        // Ordenar por última llamada (más reciente primero)
-        $sql .= " ORDER BY r.id_referenciado, lt.fecha_llamada DESC";
-        
-        // Preparar y ejecutar
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Si queremos asegurarnos de obtener solo la última llamada por referenciado
-        $referenciadosUnicos = [];
-        foreach ($resultados as $row) {
-            if (!isset($referenciadosUnicos[$row['id_referenciado']])) {
-                $referenciadosUnicos[$row['id_referenciado']] = $row;
-            }
-        }
-        
-        return array_values($referenciadosUnicos);
+    // Construir la consulta base
+    $sql = "
+        SELECT DISTINCT ON (r.id_referenciado)
+            r.id_referenciado,
+            r.nombre,
+            r.apellido,
+            r.cedula,
+            r.telefono,
+            r.email,
+            r.afinidad,
+            r.activo,
+            r.fecha_registro,
+            
+            -- Información del referenciador
+            CONCAT(ur.nombres, ' ', ur.apellidos) as referenciador_nombre,
+            ur.cedula as referenciador_cedula,
+            
+            -- Última llamada
+            lt.id_llamada,
+            lt.fecha_llamada,
+            lt.rating,
+            lt.observaciones,
+            lt.id_resultado,
+            tr.nombre as resultado_nombre,
+            
+            -- Información del usuario que hizo la llamada
+            CONCAT(ul.nombres, ' ', ul.apellidos) as llamador_nombre,
+            
+            -- Conteo de llamadas totales
+            (SELECT COUNT(*) FROM llamadas_tracking lt2 WHERE lt2.id_referenciado = r.id_referenciado) as total_llamadas
+            
+        FROM referenciados r
+        INNER JOIN llamadas_tracking lt ON r.id_referenciado = lt.id_referenciado
+        LEFT JOIN usuario ur ON r.id_referenciador = ur.id_usuario
+        LEFT JOIN usuario ul ON lt.id_usuario = ul.id_usuario
+        LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
+        WHERE r.activo = true  -- <-- SOLO REFERENCIADOS ACTIVOS
+    ";
+    
+    $params = [];
+    $conditions = [];
+    
+    // Aplicar filtros
+    if (!empty($filtros['fecha_desde'])) {
+        $conditions[] = "DATE(lt.fecha_llamada) >= :fecha_desde";
+        $params[':fecha_desde'] = $filtros['fecha_desde'];
     }
+    
+    if (!empty($filtros['fecha_hasta'])) {
+        $conditions[] = "DATE(lt.fecha_llamada) <= :fecha_hasta";
+        $params[':fecha_hasta'] = $filtros['fecha_hasta'];
+    }
+    
+    if (!empty($filtros['id_resultado'])) {
+        $conditions[] = "lt.id_resultado = :id_resultado";
+        $params[':id_resultado'] = $filtros['id_resultado'];
+    }
+    
+    if (!empty($filtros['rating_min'])) {
+        $conditions[] = "lt.rating >= :rating_min";
+        $params[':rating_min'] = $filtros['rating_min'];
+    }
+    
+    if (!empty($filtros['rating_max'])) {
+        $conditions[] = "lt.rating <= :rating_max";
+        $params[':rating_max'] = $filtros['rating_max'];
+    }
+    
+    if (!empty($filtros['id_referenciador'])) {
+        $conditions[] = "r.id_referenciador = :id_referenciador";
+        $params[':id_referenciador'] = $filtros['id_referenciador'];
+    }
+    
+    // Agregar condiciones a la consulta
+    if (!empty($conditions)) {
+        $sql .= " AND " . implode(" AND ", $conditions);
+    }
+    
+    // Ordenar por última llamada (más reciente primero)
+    $sql .= " ORDER BY r.id_referenciado, lt.fecha_llamada DESC";
+    
+    // Preparar y ejecutar
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Si queremos asegurarnos de obtener solo la última llamada por referenciado
+    $referenciadosUnicos = [];
+    foreach ($resultados as $row) {
+        if (!isset($referenciadosUnicos[$row['id_referenciado']])) {
+            $referenciadosUnicos[$row['id_referenciado']] = $row;
+        }
+    }
+    
+    return array_values($referenciadosUnicos);
+}
     
     /**
      * Obtener conteo de llamadas por día (para gráficos)
@@ -311,5 +311,112 @@ class LlamadaModel {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    /**
+ * Calcular eficiencia general de las llamadas realizadas
+ * Combina: Rating, resultado exitoso, y completitud de datos
+ * Retorna un porcentaje de eficiencia (0-100%)
+ */
+public function getEficienciaGeneralLlamadas() {
+    $sql = "SELECT 
+                -- 1. EFICIENCIA POR RATING (60% del peso)
+                ROUND(
+                    (AVG(
+                        CASE 
+                            WHEN rating >= 4 THEN 100  -- Excelente (4-5 estrellas)
+                            WHEN rating = 3 THEN 75    -- Bueno (3 estrellas)
+                            WHEN rating = 2 THEN 50    -- Regular (2 estrellas)
+                            WHEN rating = 1 THEN 25    -- Malo (1 estrella)
+                            ELSE 0                     -- Sin calificar
+                        END
+                    ) * 0.6), 2
+                ) as eficiencia_rating,
+                
+                -- 2. EFICIENCIA POR RESULTADO (30% del peso)
+                ROUND(
+                    (AVG(
+                        CASE 
+                            -- Resultados exitosos (contacto efectivo)
+                            WHEN id_resultado = 1 THEN 100   -- Contactado
+                            WHEN id_resultado = 6 THEN 80    -- Dejó mensaje
+                            -- Resultados parciales
+                            WHEN id_resultado = 2 THEN 40    -- No contesta
+                            WHEN id_resultado = 5 THEN 30    -- Ocupado
+                            WHEN id_resultado = 7 THEN 20    -- Rechazó llamada
+                            -- Resultados no exitosos
+                            WHEN id_resultado = 3 THEN 10    -- Número equivocado
+                            WHEN id_resultado = 4 THEN 5     -- Teléfono apagado
+                            ELSE 0
+                        END
+                    ) * 0.3), 2
+                ) as eficiencia_resultado,
+                
+                -- 3. EFICIENCIA POR COMPLETITUD DE DATOS (10% del peso)
+                ROUND(
+                    (AVG(
+                        CASE 
+                            -- Llamadas con observaciones detalladas y rating
+                            WHEN observaciones IS NOT NULL 
+                                 AND TRIM(observaciones) != '' 
+                                 AND rating IS NOT NULL THEN 100
+                            -- Llamadas con al menos rating
+                            WHEN rating IS NOT NULL THEN 70
+                            -- Llamadas con al menos observaciones
+                            WHEN observaciones IS NOT NULL 
+                                 AND TRIM(observaciones) != '' THEN 50
+                            -- Llamadas básicas (solo resultado)
+                            ELSE 30
+                        END
+                    ) * 0.1), 2
+                ) as eficiencia_datos
+                
+            FROM llamadas_tracking
+            WHERE id_resultado IS NOT NULL";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($result) {
+        // Sumar las tres eficiencias ponderadas
+        $eficienciaTotal = 
+            ($result['eficiencia_rating'] ?? 0) +
+            ($result['eficiencia_resultado'] ?? 0) +
+            ($result['eficiencia_datos'] ?? 0);
+        
+        return round($eficienciaTotal, 2);
+    }
+    
+    return 0;
+}
+/**
+ * Calcular eficiencia general de llamadas basada SOLO en rating
+ * Convierte rating 1-5 estrellas a porcentaje 0-100%
+ * Retorna un solo número: porcentaje de eficiencia
+ */
+public function getEficienciaGeneralPorRating() {
+    $sql = "SELECT 
+                -- Convertir cada estrella a un valor porcentual
+                ROUND(
+                    AVG(
+                        CASE 
+                            WHEN rating = 5 THEN 100  -- ★★★★★ = 100%
+                            WHEN rating = 4 THEN 80   -- ★★★★☆ = 80%
+                            WHEN rating = 3 THEN 60   -- ★★★☆☆ = 60%
+                            WHEN rating = 2 THEN 40   -- ★★☆☆☆ = 40%
+                            WHEN rating = 1 THEN 20   -- ★☆☆☆☆ = 20%
+                            ELSE 0                    -- Sin calificar = 0%
+                        END
+                    ), 
+                    2
+                ) as eficiencia_porcentaje
+            FROM llamadas_tracking
+            WHERE rating IS NOT NULL";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return $result['eficiencia_porcentaje'] ?? 0;
+}
 }
 ?>

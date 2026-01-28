@@ -259,26 +259,49 @@ class ReferenciadoModel {
         return $referenciado;
     }
     
-    /**
-     * Verifica si una cédula ya está registrada
-     */
-    public function cedulaExiste($cedula, $excluir_id = null) {
-        $sql = "SELECT COUNT(*) FROM referenciados WHERE cedula = :cedula";
-        
-        if ($excluir_id) {
-            $sql .= " AND id_referenciado != :excluir_id";
-        }
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':cedula', $cedula);
-        
-        if ($excluir_id) {
-            $stmt->bindValue(':excluir_id', $excluir_id, PDO::PARAM_INT);
-        }
-        
-        $stmt->execute();
-        return $stmt->fetchColumn() > 0;
+/**
+ * Verifica si una cédula ya está registrada y retorna información adicional
+ */
+public function cedulaExiste($cedula, $excluir_id = null) {
+    $sql = "SELECT 
+                r.id_referenciado,
+                r.fecha_registro,
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                u.id_usuario as referenciador_id
+            FROM referenciados r
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+            WHERE r.cedula = :cedula";
+    
+    if ($excluir_id) {
+        $sql .= " AND r.id_referenciado != :excluir_id";
     }
+    
+    $sql .= " ORDER BY r.fecha_registro DESC LIMIT 1";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':cedula', $cedula);
+    
+    if ($excluir_id) {
+        $stmt->bindValue(':excluir_id', $excluir_id, PDO::PARAM_INT);
+    }
+    
+    $stmt->execute();
+    $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Si no existe, retornamos false
+    if (!$resultado) {
+        return false;
+    }
+    
+    // Si existe, retornamos array con información
+    return [
+        'existe' => true,
+        'id_referenciado' => $resultado['id_referenciado'],
+        'fecha_registro' => $resultado['fecha_registro'],
+        'referenciador_nombre' => $resultado['referenciador_nombre'] ?? 'Sin referenciador',
+        'referenciador_id' => $resultado['referenciador_id']
+    ];
+}
     
     public function getAllReferenciados() {
         $sql = "SELECT r.*, 
@@ -1078,6 +1101,54 @@ public function getFechaRegistroByCedula($cedula) {
         error_log("Error en getFechaRegistroByCedula: " . $e->getMessage());
         return null;
     }
+}
+// Obtener total de referenciados trackeados (con al menos una llamada)
+public function getTotalTrackeados() {
+    $sql = "SELECT COUNT(DISTINCT lt.id_referenciado) as total_trackeados
+            FROM llamadas_tracking lt
+            INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+            WHERE r.activo = true";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total_trackeados'] ?? 0;
+}
+
+// Obtener total de votos por tipo (Cámara, Senado, Ambos)
+public function getTotalPorTipoEleccion() {
+    $sql = "SELECT 
+                COUNT(CASE WHEN id_grupo = 1 THEN 1 END) as total_camara,
+                COUNT(CASE WHEN id_grupo = 2 THEN 1 END) as total_senado,
+                COUNT(CASE WHEN id_grupo = 3 THEN 1 END) as total_ambos
+            FROM referenciados 
+            WHERE activo = true";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return [
+        'camara' => $result['total_camara'] ?? 0,
+        'senado' => $result['total_senado'] ?? 0,
+        'ambos' => $result['total_ambos'] ?? 0,
+        'total_camara_con_ambos' => ($result['total_camara'] ?? 0) + ($result['total_ambos'] ?? 0),
+        'total_senado_con_ambos' => ($result['total_senado'] ?? 0) + ($result['total_ambos'] ?? 0)
+    ];
+}
+/**
+ * Calcular porcentaje de afinidad promedio (convertir escala 1-5 a porcentaje 0-100%)
+ */
+public function getPorcentajeAfinidadPromedio() {
+    $sql = "SELECT 
+                ROUND((AVG(afinidad) - 1) * 25, 2) as porcentaje_afinidad
+            FROM referenciados 
+            WHERE activo = true 
+            AND afinidad IS NOT NULL";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['porcentaje_afinidad'] ?? 0;
 }
 }
 ?>

@@ -107,7 +107,7 @@ if ($porcentajeRestante > 50) {
         <div class="dashboard-header">
             <div class="dashboard-title">
                 <i class="fas fa-tachometer-alt"></i>
-                <span>Panel de Control Super Admin</span>
+                <span>Monitoreo</span>
             </div>
             <p class="dashboard-subtitle">
                 Acceda a los módulos especializados de análisis y seguimiento del sistema de gestión política.

@@ -1050,3 +1050,24 @@
                 align-self: flex-start;
             }
         }
+        /* Contenedor para centrar la imagen */
+        .feature-image-container {
+            text-align: center;
+            margin-bottom: 2rem; /* Espacio antes de las tarjetas */
+        }
+
+        /* Estilos de la imagen redonda */
+        .feature-img-header {
+            width: 190px;
+            height: 190px;
+            object-fit: cover;       /* Asegura que no se deforme */
+            border-radius: 50%;      /* Círculo perfecto */
+            border: 4px solid #ffffff; 
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); /* Sombra elegante */
+            transition: transform 0.3s ease; /* Para el efecto de hover */
+        }
+
+        /* Efecto opcional al pasar el mouse */
+        .feature-img-header:hover {
+            transform: scale(1.05);
+        }

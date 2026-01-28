@@ -1049,135 +1049,136 @@ if ($porcentajeRestante > 50) {
         </div>
     </footer>
 
-    <!-- Modal de Información del Sistema -->
-    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalSistemaLabel">
-                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+   <!-- Modal de Información del Sistema -->
+<div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSistemaLabel">
+                    <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Logo centrado AGRANDADO -->
+                <div class="modal-logo-container">
+                    <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                 </div>
-                <div class="modal-body">
-                    <!-- Logo centrado AGRANDADO -->
-                    <div class="modal-logo-container">
-                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+                
+                <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                <div class="licencia-info">
+                    <div class="licencia-header">
+                        <h6 class="licencia-title">Licencia Runtime</h6>
+                        <span class="licencia-dias">
+                            <?php echo $diasRestantes; ?> días restantes
+                        </span>
                     </div>
                     
-                    <!-- Título del Sistema -->
-                    <div class="text-center mb-4">
-                        <h4 class="text-secondary mb-4">
-                            <strong>Gestión Política de Alta Precisión</strong>
-                        </h4>
-                        
-                        <!-- Información de Licencia -->
-                        <div class="licencia-info">
-                            <div class="licencia-header">
-                                <h6 class="licencia-title">Licencia Runtime</h6>
-                                <span class="licencia-dias">
-                                    <strong><?php echo $diasRestantes; ?> días restantes</strong>
-                                </span>
-                            </div>
-                            
-                            <div class="licencia-progress">
-                                <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                                     style="width: <?php echo $porcentajeRestante; ?>%"
-                                     role="progressbar" 
-                                     aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
-                                </div>
-                            </div>
-                            
-                            <div class="licencia-fecha">
-                                <i class="fas fa-calendar-alt me-1"></i>
-                                Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-                                Válida hasta: <?php echo $validaHastaFormatted; ?>
-                            </div>
+                    <div class="licencia-progress">
+                        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+                        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                            style="width: <?php echo $porcentajeRestante; ?>%"
+                            role="progressbar" 
+                            aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
                         </div>
                     </div>
                     
-                    <div class="feature-image-container">
-                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
-                        <div class="profile-info mt-3">
-                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
-                            
-                            <small class="profile-description">
-                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
-                                Magister en Administración Pública.<br>
-                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
-                            </small>
+                    <div class="licencia-fecha">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                        Válida hasta: <?php echo $validaHastaFormatted; ?>
+                    </div>
+                </div>
+                <div class="feature-image-container">
+                    <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                    <div class="profile-info mt-3">
+                        <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                        
+                        <small class="profile-description">
+                            Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                            Magister en Administración Pública.<br>
+                            <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                        </small>
+                    </div>
+                </div>
+                <!-- Sección de Características -->
+                <div class="row g-4 mb-4">
+                    <!-- Efectividad de la Herramienta -->
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="feature-icon text-primary mb-3">
+                                <i class="fas fa-bolt fa-2x"></i>
+                            </div>
+                            <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                            <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                            <p class="feature-text">
+                                Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                            </p>
                         </div>
                     </div>
                     
-                    <!-- Sección de Características -->
-                    <div class="row g-4 mb-4">
-                        <!-- Efectividad de la Herramienta -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-primary mb-3">
-                                    <i class="fas fa-bolt fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
-                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
-                                <p class="feature-text">
-                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
-                                </p>
+                    <!-- Integridad de Datos -->
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="feature-icon text-success mb-3">
+                                <i class="fas fa-database fa-2x"></i>
                             </div>
+                            <h5 class="feature-title">Integridad de Datos</h5>
+                            <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                            <p class="feature-text">
+                                Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                            </p>
                         </div>
-                        
-                        <!-- Integridad de Datos -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-success mb-3">
-                                    <i class="fas fa-database fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Integridad de Datos</h5>
-                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
-                                <p class="feature-text">
-                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
-                                </p>
+                    </div>
+                    
+                    <!-- Monitoreo de Metas -->
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="feature-icon text-warning mb-3">
+                                <i class="fas fa-chart-line fa-2x"></i>
                             </div>
+                            <h5 class="feature-title">Monitoreo de Metas</h5>
+                            <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                            <p class="feature-text">
+                                Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                            </p>
                         </div>
-                        
-                        <!-- Monitoreo de Metas -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-warning mb-3">
-                                    <i class="fas fa-chart-line fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Monitoreo de Metas</h5>
-                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
-                                <p class="feature-text">
-                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
-                                </p>
+                    </div>
+                    
+                    <!-- Seguridad Avanzada -->
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="feature-icon text-danger mb-3">
+                                <i class="fas fa-shield-alt fa-2x"></i>
                             </div>
+                            <h5 class="feature-title">Seguridad Avanzada</h5>
+                            <h6 class="text-muted mb-2">Control Total</h6>
+                            <p class="feature-text">
+                                Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                            </p>
                         </div>
-                        
-                        <!-- Seguridad Avanzada -->
-                        <div class="col-md-6">
-                            <div class="feature-card">
-                                <div class="feature-icon text-danger mb-3">
-                                    <i class="fas fa-shield-alt fa-2x"></i>
-                                </div>
-                                <h5 class="feature-title">Seguridad Avanzada</h5>
-                                <h6 class="text-muted mb-2">Control Total</h6>
-                                <p class="feature-text">
-                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
-                                </p>
-                            </div>
-                        </div>
-                    </div>  
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i> Cerrar
-                    </button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
+                <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
+                   target="_blank" 
+                   class="btn btn-primary"
+                   onclick="cerrarModalSistema();">
+                    <i class="fas fa-external-link-alt me-1"></i> Uso SGP
+                </a>
+                
+                <!-- Botón Cerrar - Solo cierra el modal -->
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cerrar
+                </button>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

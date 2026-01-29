@@ -35,11 +35,11 @@ $model->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
 $usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
 
 // 4. Obtener todos los usuarios usando el modelo
-$usuarios = $model->getAllUsuarios();
+$usuarios = $model->getAllUsuariosReferenciador();
 
 // 5. Obtener estadísticas usando el modelo
-$total_usuarios = $model->countUsuarios();
-$usuarios_activos = $model->countUsuariosActivos();
+$total_usuarios = count($usuarios);
+$usuarios_activos = $model->countReferenciadoresActivos();
 
 // 6. Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();

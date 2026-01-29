@@ -23,8 +23,10 @@ $usuario_logueado = $usuarioModel->getUsuarioById($id_usuario_logueado);
 
 // Obtener referenciados del usuario
 $referenciados = $referenciadoModel->getReferenciadosByUsuario($id_usuario_logueado);
+$referenciadosActivos = $referenciadoModel->getReferenciadosByUsuarioActivo($id_usuario_logueado);
 
 // Contar referenciados activos e inactivos
+$total_referenciadosActivos = count($referenciadosActivos);
 $total_referenciados = count($referenciados);
 $activos = 0;
 $inactivos = 0;
@@ -41,13 +43,7 @@ $fecha_actual = date('Y-m-d H:i:s');
 $usuarioModel->actualizarUltimoRegistro($id_usuario_logueado, $fecha_actual);
 $fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
 
-// 6. Obtener información del sistema
-$infoSistema = $sistemaModel->getInformacionSistema();
-
-// 7. Formatear fecha para mostrar
-$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
-
-// 8. Obtener información completa de la licencia (MODIFICADO)
+// Obtener información completa de la licencia
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
 
 // Extraer valores
@@ -68,61 +64,36 @@ if ($porcentajeRestante > 50) {
     $barColor = 'bg-danger';
 }
 
-// Calcular porcentaje del tope
-$porcentaje_tope = $usuario_logueado['porcentaje_tope'] ?? 0;
-$porcentaje_tope = min(100, $porcentaje_tope);
-$restante_tope = max(0, ($usuario_logueado['tope'] ?? 0) - ($usuario_logueado['total_referenciados'] ?? 0));
+// Tope asignado
+$tope_asignado = $usuario_logueado['tope'] ?? 0;
 
-// CALCULAR VOTOS POR CÁMARA Y SENADO
-$total_camara = 0;
-$total_senado = 0;
-$total_activos_camara = 0;
-$total_activos_senado = 0;
 // Calcular porcentaje del tope (SOLO ACTIVOS)
-$total_activos = $activos; // Ya tenemos esto calculado
-$tope_asignado = $usuario_logueado['tope'] ?? 0;
+$porcentaje_tope = ($tope_asignado > 0) ? min(100, ($activos * 100) / $tope_asignado) : 0;
+$restante_tope = max(0, $tope_asignado - $activos);
 
-// Calcular porcentaje basado solo en activos
-$porcentaje_tope = ($tope_asignado > 0) ? min(100, ($total_activos * 100) / $tope_asignado) : 0;
-$restante_tope = max(0, $tope_asignado - $total_activos);
-foreach ($referenciados as $referenciado) {
-    // Verificar si el referenciado está activo
-    $esta_activo = ($referenciado['activo'] === true || $referenciado['activo'] === 't' || $referenciado['activo'] == 1);
-    
-    if (!$esta_activo) {
-        continue; // Saltar referenciados inactivos
-    }
-    
-    $id_grupo = $referenciado['id_grupo'] ?? null;
-    
-    if ($id_grupo == 1) {
-        // Solo Cámara
-        $total_camara++;
-        $total_activos_camara++;
-    } elseif ($id_grupo == 2) {
-        // Solo Senado
-        $total_senado++;
-        $total_activos_senado++;
-    } elseif ($id_grupo == 3) {
-        // Ambos (Cámara y Senado)
-        $total_camara++;
-        $total_senado++;
-        $total_activos_camara++;
-        $total_activos_senado++;
-    }
-}
+// ============================================================================
+// ¡¡¡AQUÍ ESTÁ LA PARTE IMPORTANTE!!! - CONSULTA SQL PARA CONTAR VOTOS
+// ============================================================================
+$votos = $referenciadoModel->contarVotosDesglosados($id_usuario_logueado);
 
-// Calcular porcentajes (usando solo activos)
-$tope_asignado = $usuario_logueado['tope'] ?? 0;
+// Extraer todos los valores que necesitamos
+$solo_camara = $votos['solo_camara'] ?? 0;
+$solo_senado = $votos['solo_senado'] ?? 0;
+$pacha = $votos['pacha'] ?? 0;
+$total_camara = $votos['total_camara'] ?? 0;  // (solo_camara + pacha)
+$total_senado = $votos['total_senado'] ?? 0;  // (solo_senado + pacha)
+$total_activos = $votos['total_activos'] ?? 0;
+
+// Calcular porcentajes sobre el tope asignado (para las barras de progreso)
 $porcentaje_camara = ($tope_asignado > 0) ? min(100, ($total_camara * 100) / $tope_asignado) : 0;
 $porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $tope_asignado) : 0;
 
-// También necesitamos el total activos para la gráfica
-$total_conteo = $total_camara + $total_senado;
-$porc_camara = ($total_conteo > 0) ? round(($total_camara * 100) / $total_conteo, 1) : 0;
-$porc_senado = ($total_conteo > 0) ? round(($total_senado * 100) / $total_conteo, 1) : 0;
-$ambos_contados = min($total_camara, $total_senado);
-$porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conteo, 1) : 0;
+// Calcular porcentajes para la gráfica (sobre total activos)
+$porc_camara = ($total_activos > 0) ? round(($total_camara * 100) / $total_activos, 1) : 0;
+$porc_senado = ($total_activos > 0) ? round(($total_senado * 100) / $total_activos, 1) : 0;
+$porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) : 0;
+// ============================================================================
+
 ?>
 
 <!DOCTYPE html>
@@ -224,7 +195,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                     <h4><i class="fas fa-chart-line me-2"></i>Progreso del Tope (Solo Activos)</h4>
                     <div class="tope-stats">
                         <span class="tope-stat">
-                            <strong><?php echo $total_activos; ?></strong> / <?php echo $tope_asignado; ?> referenciados activos
+                            <strong><?php echo $activos; ?></strong> / <?php echo $tope_asignado; ?> referenciados activos
                         </span>
                         <span class="tope-percentage">
                             <?php echo number_format($porcentaje_tope, 1) . '%'; ?>
@@ -254,7 +225,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                         <span class="tope-info-label">Activos actuales:</span>
                         <span class="tope-info-value">
                             <span class="text-success">
-                                <?php echo $total_activos; ?> personas
+                                <?php echo $activos; ?> personas
                             </span>
                         </span>
                     </div>
@@ -358,19 +329,16 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                     <div class="grupos-stats">
                         <div class="grupo-item">
                             <span class="grupo-label">Solo Cámara:</span>
-                            <span class="grupo-value"><?php echo $total_camara - min($total_camara, $total_senado); ?> personas</span>
+                            <span class="grupo-value"><?php echo $solo_camara; ?> personas</span>
                         </div>
                         <div class="grupo-item">
                             <span class="grupo-label">Solo Senado:</span>
-                            <span class="grupo-value"><?php echo $total_senado - min($total_camara, $total_senado); ?> personas</span>
+                            <span class="grupo-value"><?php echo $solo_senado; ?> personas</span>
                         </div>
                         <div class="grupo-item">
                             <span class="grupo-label">Ambos (PACHA):</span>
                             <span class="grupo-value">
-                                <?php 
-                                $ambos = min($total_camara, $total_senado);
-                                echo $ambos . ' personas';
-                                ?>
+                                <?php echo $pacha; ?> personas
                             </span>
                         </div>
                     </div>
@@ -408,6 +376,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                 <th>Teléfono</th>
                                 <th>Email</th>
                                 <th>Afinidad</th>
+                                <th>Grupo Parlamentario</th>
                                 <th>Vota</th>
                                 <th>Puesto/Mesa</th>
                                 <th>Fecha Registro</th>
@@ -457,7 +426,21 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                         </span>
                                     </div>
                                 </td>
-                                
+                                <!-- NUEVA COLUMNA: Grupo Parlamentario -->
+                                <td>
+                                    <?php 
+                                    $grupo_nombre = !empty($referenciado['grupo_nombre']) 
+                                        ? htmlspecialchars($referenciado['grupo_nombre']) 
+                                        : 'Sin asignar';
+                                    
+                                    // Opcional: mostrar badge con color según el grupo
+                                    if ($grupo_nombre === 'Sin asignar') {
+                                        echo '<span class="badge bg-secondary">' . $grupo_nombre . '</span>';
+                                    } else {
+                                        echo '<span class="badge bg-primary">' . $grupo_nombre . '</span>';
+                                    }
+                                    ?>
+                                </td>
                                 <!-- Vota -->
                                 <td>
                                     <?php if ($vota_fuera): ?>
@@ -723,11 +706,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                         <div class="estadistica-label">Referidos a Cámara</div>
                                         <div class="estadistica-value"><?php echo $total_camara; ?></div>
                                         <div class="estadistica-porcentaje">
-                                            <?php 
-                                            $total_conteo = $total_camara + $total_senado;
-                                            $porc_camara = ($total_conteo > 0) ? round(($total_camara * 100) / $total_conteo, 1) : 0;
-                                            echo $porc_camara . '%';
-                                            ?>
+                                            <?php echo $porc_camara . '%'; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -740,10 +719,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                         <div class="estadistica-label">Referidos a Senado</div>
                                         <div class="estadistica-value"><?php echo $total_senado; ?></div>
                                         <div class="estadistica-porcentaje">
-                                            <?php 
-                                            $porc_senado = ($total_conteo > 0) ? round(($total_senado * 100) / $total_conteo, 1) : 0;
-                                            echo $porc_senado . '%';
-                                            ?>
+                                            <?php echo $porc_senado . '%'; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -755,14 +731,10 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                     <div class="estadistica-content">
                                         <div class="estadistica-label">Votan por ambos</div>
                                         <div class="estadistica-value">
-                                            <?php echo min($total_camara, $total_senado); ?>
+                                            <?php echo $pacha; ?>
                                         </div>
                                         <div class="estadistica-porcentaje">
-                                            <?php 
-                                            $ambos_contados = min($total_camara, $total_senado);
-                                            $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conteo, 1) : 0;
-                                            echo $porc_ambos . '%';
-                                            ?>
+                                            <?php echo $porc_ambos . '%'; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -773,7 +745,7 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                     </div>
                                     <div class="estadistica-content">
                                         <div class="estadistica-label">Total Referenciados</div>
-                                        <div class="estadistica-value"><?php echo $total_referenciados; ?></div>
+                                        <div class="estadistica-value"><?php echo $total_referenciadosActivos; ?></div>
                                         <div class="estadistica-porcentaje">100%</div>
                                     </div>
                                 </div>
@@ -784,15 +756,15 @@ $porc_ambos = ($total_conteo > 0) ? round(($ambos_contados * 100) / $total_conte
                                 <h5><i class="fas fa-info-circle me-2"></i>Detalles de la Distribución (Solo Activos)</h5>
                                 <div class="detalle-item">
                                     <span class="detalle-label">Solo votan por Cámara:</span>
-                                    <span class="detalle-value"><?php echo $total_camara - min($total_camara, $total_senado); ?> personas</span>
+                                    <span class="detalle-value"><?php echo $solo_camara; ?> personas</span>
                                 </div>
                                 <div class="detalle-item">
                                     <span class="detalle-label">Solo votan por Senado:</span>
-                                    <span class="detalle-value"><?php echo $total_senado - min($total_camara, $total_senado); ?> personas</span>
+                                    <span class="detalle-value"><?php echo $solo_senado; ?> personas</span>
                                 </div>
                                 <div class="detalle-item">
                                     <span class="detalle-label">Votan por ambos:</span>
-                                    <span class="detalle-value"><?php echo min($total_camara, $total_senado); ?> personas</span>
+                                    <span class="detalle-value"><?php echo $pacha; ?> personas</span>
                                 </div>
                                 <div class="detalle-item">
                                     <span class="detalle-label">Total referenciados activos:</span>

@@ -261,6 +261,7 @@ if ($porcentajeRestante > 50) {
                             <th>Municipio</th>
                             <th>Oferta</th>
                             <th>Grupo</th>
+                            <th>Grupo Parlamentario</th>
                             <th>Barrio</th>
                             <th>Referenciador</th>
                             <th>Fecha Registro</th>
@@ -305,6 +306,19 @@ if ($porcentajeRestante > 50) {
                             <td><?php echo isset($referenciado['id_municipio']) && isset($municipiosMap[$referenciado['id_municipio']]) ? htmlspecialchars($municipiosMap[$referenciado['id_municipio']]) : 'N/A'; ?></td>
                             <td><?php echo isset($referenciado['id_oferta_apoyo']) && isset($ofertasMap[$referenciado['id_oferta_apoyo']]) ? htmlspecialchars($ofertasMap[$referenciado['id_oferta_apoyo']]) : 'N/A'; ?></td>
                             <td><?php echo isset($referenciado['id_grupo_poblacional']) && isset($gruposMap[$referenciado['id_grupo_poblacional']]) ? htmlspecialchars($gruposMap[$referenciado['id_grupo_poblacional']]) : 'N/A'; ?></td>
+                            
+                            <!-- NUEVA COLUMNA: Grupo Parlamentario -->
+                            <!-- Como ya viene en la consulta como 'grupo_nombre', podemos usarlo directamente -->
+                            <td>
+                                <?php 
+                                // Mostrar el grupo parlamentario desde la consulta
+                                $grupoParlamentario = !empty($referenciado['grupo_nombre']) 
+                                    ? htmlspecialchars($referenciado['grupo_nombre']) 
+                                    : 'N/A';
+                                echo $grupoParlamentario;
+                                ?>
+                            </td>
+                            
                             <td><?php echo isset($referenciado['id_barrio']) && isset($barriosMap[$referenciado['id_barrio']]) ? htmlspecialchars($barriosMap[$referenciado['id_barrio']]) : 'N/A'; ?></td>
                             <td><?php echo htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A'); ?></td>
                             <td><?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i', strtotime($referenciado['fecha_registro'])) : ''; ?></td>

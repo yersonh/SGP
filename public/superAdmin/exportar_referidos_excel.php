@@ -133,6 +133,8 @@ echo '<th>Departamento</th>';
 echo '<th>Municipio</th>';
 echo '<th>Oferta Apoyo</th>';
 echo '<th>Grupo Poblacional</th>';
+// NUEVA COLUMNA AQUÍ
+echo '<th>Grupo Parlamentario</th>';
 echo '<th>Barrio</th>';
 echo '<th>Referenciador</th>';
 echo '<th>Fecha Registro</th>';
@@ -162,6 +164,8 @@ foreach ($referenciados as $referenciado) {
     echo '<td>' . (isset($referenciado['id_municipio']) && isset($municipiosMap[$referenciado['id_municipio']]) ? htmlspecialchars($municipiosMap[$referenciado['id_municipio']]) : 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['id_oferta_apoyo']) && isset($ofertasMap[$referenciado['id_oferta_apoyo']]) ? htmlspecialchars($ofertasMap[$referenciado['id_oferta_apoyo']]) : 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['id_grupo_poblacional']) && isset($gruposMap[$referenciado['id_grupo_poblacional']]) ? htmlspecialchars($gruposMap[$referenciado['id_grupo_poblacional']]) : 'N/A') . '</td>';
+    // NUEVA COLUMNA DE DATOS AQUÍ
+    echo '<td>' . (!empty($referenciado['grupo_nombre']) ? htmlspecialchars($referenciado['grupo_nombre']) : 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['id_barrio']) && isset($barriosMap[$referenciado['id_barrio']]) ? htmlspecialchars($barriosMap[$referenciado['id_barrio']]) : 'N/A') . '</td>';
     echo '<td>' . htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['fecha_registro']) ? date('d/m/Y H:i', strtotime($referenciado['fecha_registro'])) : '') . '</td>';

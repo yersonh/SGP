@@ -26,7 +26,7 @@ $sistemaModel = new SistemaModel($pdo);
 $infoSistema = $sistemaModel->getInformacionSistema();
 
 // Obtener datos del usuario logueado
-$usuario_logueado = $model->getUsuarioById($id_usuario_logueado);
+$usuario_logueado = $model->getUsuarioByIdActivo($id_usuario_logueado);
 
 // Actualizar último registro
 $fecha_actual = date('Y-m-d H:i:s');

@@ -90,6 +90,8 @@ echo '<th>Cédula</th>';
 echo '<th>Teléfono</th>';
 echo '<th>Email</th>';
 echo '<th>Afinidad</th>';
+// NUEVA COLUMNA AQUÍ
+echo '<th>Grupo Parlamentario</th>';
 echo '<th>Vota Aquí/Fuera</th>';
 echo '<th>Puesto Votación</th>';
 echo '<th>Mesa</th>';
@@ -112,6 +114,8 @@ foreach ($referenciados as $referenciado) {
     echo '<td>' . htmlspecialchars($referenciado['telefono'] ?? '') . '</td>';
     echo '<td>' . htmlspecialchars($referenciado['email'] ?? '') . '</td>';
     echo '<td>' . ($referenciado['afinidad'] ?? '0') . '/5</td>';
+    // NUEVA COLUMNA DE DATOS AQUÍ
+    echo '<td>' . (!empty($referenciado['grupo_nombre']) ? htmlspecialchars($referenciado['grupo_nombre']) : 'Sin asignar') . '</td>';
     echo '<td>' . ($vota_fuera ? 'FUERA' : 'AQUÍ') . '</td>';
     
     if ($vota_fuera) {
@@ -135,6 +139,7 @@ echo '<tr><th colspan="2" style="background-color: #4e73df; color: white;">RESUM
 echo '<tr><td><strong>Total Referidos:</strong></td><td>' . $totalReferidos . '</td></tr>';
 echo '<tr><td><strong>Activos:</strong></td><td>' . $totalActivos . '</td></tr>';
 echo '<tr><td><strong>Inactivos:</strong></td><td>' . $totalInactivos . '</td></tr>';
+// También puedes agregar estadísticas de grupos parlamentarios
 echo '<tr><td><strong>Fecha de Exportación:</strong></td><td>' . date('d/m/Y H:i:s') . '</td></tr>';
 echo '<tr><td><strong>Exportado por:</strong></td><td>' . htmlspecialchars($usuario['nombres'] ?? '') . ' ' . htmlspecialchars($usuario['apellidos'] ?? '') . '</td></tr>';
 echo '<tr><td><strong>Tope del Referenciador:</strong></td><td>' . ($usuario['total_referenciados'] ?? 0) . '/' . ($usuario['tope'] ?? 0) . '</td></tr>';

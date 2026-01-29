@@ -303,7 +303,7 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                         $claseBoton = $tieneLlamada ? 'llamada-realizada' : '';
                         $tituloBoton = $tieneLlamada ? 'Llamada ya realizada' : 'Llamar a ' . $nombre_completo;
                         ?>
-                        <tr>
+                        <tr class="<?php echo !$esta_activo ? 'inactive-row' : ''; ?>">
                             <td><?php echo $counter++; ?></td>
                             
                             <td>

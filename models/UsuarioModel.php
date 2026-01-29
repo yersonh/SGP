@@ -35,6 +35,36 @@ class UsuarioModel {
         
         return $usuarios;
     }
+
+    public function getAllUsuariosReferenciador() {
+    $query = "SELECT 
+                u.*,
+                COALESCE(r.total_referenciados, 0) as total_referenciados,
+                CASE 
+                    WHEN u.tope > 0 THEN 
+                        ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                    ELSE 0 
+                END as porcentaje_tope
+              FROM usuario u 
+              LEFT JOIN (
+                  SELECT id_referenciador, COUNT(*) as total_referenciados 
+                  FROM referenciados 
+                  WHERE activo = true
+                  GROUP BY id_referenciador
+              ) r ON u.id_usuario = r.id_referenciador
+              WHERE u.tipo_usuario = 'Referenciador'
+              ORDER BY u.fecha_creacion DESC";
+              
+    $stmt = $this->pdo->query($query);
+    $usuarios = $stmt->fetchAll();
+    
+    // Agregar URLs de fotos
+    foreach ($usuarios as &$usuario) {
+        $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
+    }
+    
+    return $usuarios;
+}
     public function getAllUsuariosActivos() {
         $query = "SELECT 
                     u.*,
@@ -412,6 +442,7 @@ class UsuarioModel {
         $result = $stmt->fetch();
         return $result['admins'];
     }
+    
     // Actualizar último registro de acceso
     public function actualizarUltimoRegistro($id_usuario, $fecha) {
         $query = "UPDATE usuario SET ultimo_registro = ? WHERE id_usuario = ?";

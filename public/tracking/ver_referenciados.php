@@ -47,6 +47,13 @@ if ($referenciador['tipo_usuario'] !== 'Referenciador') {
 
 // Obtener los referenciados de este usuario
 $referenciados = $referenciadoModel->getReferenciadosByUsuario($id_referenciador);
+$referenciadosActivos = $referenciadoModel->getReferenciadosByUsuarioActivo($id_referenciador);
+
+// Obtener % de tracking - CORREGIDO: usar $referenciador['id_usuario']
+$trackingData = $llamadaModel->getPorcentajeTrackingPorReferenciador($referenciador['id_usuario']);
+
+// Obtener estadísticas de votación - USANDO EL NUEVO MÉTODO
+$estadisticasVotacion = $referenciadoModel->getEstadisticasVotacionPorReferenciador($id_referenciador);
 
 // Verificar qué referenciados ya tienen llamada registrada
 $referenciadosConLlamada = [];
@@ -57,8 +64,10 @@ foreach ($referenciados as $referenciado) {
 
 // Obtener estadísticas
 $total_referenciados = count($referenciados);
+$total_referenciadoActivos = count($referenciadosActivos);
+
 $tope_usuario = $referenciador['tope'];
-$porcentaje_completado = ($tope_usuario > 0) ? round(($total_referenciados * 100) / $tope_usuario, 2) : 0;
+$porcentaje_completado = ($tope_usuario > 0) ? round(($total_referenciadoActivos * 100) / $tope_usuario, 2) : 0;
 
 // Estadísticas de afinidad
 $afinidad_stats = [];
@@ -70,14 +79,9 @@ foreach ($referenciados as $ref) {
     $afinidad_stats[$nivel]++;
 }
 
-// Estadísticas de votación
-$vota_fuera_count = 0;
-foreach ($referenciados as $ref) {
-    if ($ref['vota_fuera'] === 'Si') {
-        $vota_fuera_count++;
-    }
-}
-$vota_aqui_count = $total_referenciados - $vota_fuera_count;
+// Estadísticas de votación - CORREGIDO
+$vota_fuera_count = $estadisticasVotacion['vota_fuera'] ?? 0;
+$vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -172,7 +176,7 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
             <div class="progress-container">
                 <div class="progress-label">
                     <span>Progreso de referenciación</span>
-                    <span><strong><?php echo $porcentaje_completado; ?>%</strong> (<?php echo $total_referenciados; ?>/<?php echo $tope_usuario; ?>)</span>
+                    <span><strong><?php echo $porcentaje_completado; ?>%</strong> (<?php echo $total_referenciadoActivos; ?>/<?php echo $tope_usuario; ?>)</span>
                 </div>
                 <div class="progress">
                     <div class="progress-bar" style="width: <?php echo min($porcentaje_completado, 100); ?>%;"></div>
@@ -181,40 +185,53 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
         </div>
 
         <!-- Estadísticas rápidas -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon" style="color: #3498db;">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-number"><?php echo number_format($total_referenciados); ?></div>
-                <div class="stat-label">Total Referenciados</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon" style="color: #27ae60;">
-                    <i class="fas fa-map-marker-alt"></i>
-                </div>
-                <div class="stat-number"><?php echo number_format($vota_aqui_count); ?></div>
-                <div class="stat-label">Votan aquí</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon" style="color: #e74c3c;">
-                    <i class="fas fa-map-marked-alt"></i>
-                </div>
-                <div class="stat-number"><?php echo number_format($vota_fuera_count); ?></div>
-                <div class="stat-label">Votan fuera</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon" style="color: #f39c12;">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="stat-number"><?php echo $porcentaje_completado; ?>%</div>
-                <div class="stat-label">Avance del tope</div>
-            </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="color: #3498db;">
+            <i class="fas fa-users"></i>
         </div>
-
+        <div class="stat-number"><?php echo number_format($total_referenciadoActivos); ?></div>
+        <div class="stat-label">Referenciados Activos</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="color: #27ae60;">
+            <i class="fas fa-map-marker-alt"></i>
+        </div>
+        <div class="stat-number"><?php echo number_format($vota_aqui_count); ?></div>
+        <div class="stat-label">Votan aquí</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="color: #e74c3c;">
+            <i class="fas fa-map-marked-alt"></i>
+        </div>
+        <div class="stat-number"><?php echo number_format($vota_fuera_count); ?></div>
+        <div class="stat-label">Votan fuera</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="color: #f39c12;">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-number">
+            <?php 
+            // Formatear con un solo decimal
+            echo number_format($trackingData['porcentaje_tracking'] ?? 0, 1); 
+            ?>%
+        </div>
+        <div class="stat-label">Avance Tracking</div>
+        <div class="stat-subtext">
+            <?php 
+            if ($trackingData) {
+                echo $trackingData['referidos_llamados'] . ' de ' . $trackingData['total_referidos'] . ' referidos';
+            } else {
+                echo '0 de ' . $total_referenciadoActivos . ' referidos';
+            }
+            ?>
+        </div>
+    </div>
+</div>
         <!-- Gráfico de afinidad -->
         <?php if (!empty($afinidad_stats)): ?>
         <div class="afinidad-chart">
@@ -301,7 +318,8 @@ $vota_aqui_count = $total_referenciados - $vota_fuera_count;
                         $claseBoton = $tieneLlamada ? 'llamada-realizada' : '';
                         $tituloBoton = $tieneLlamada ? 'Llamada ya realizada' : 'Llamar a ' . $nombre_completo;
                         ?>
-                        <tr>
+                        
+                        <tr class="<?php echo !$esta_activo ? 'inactive-row' : ''; ?>">
                             <td><?php echo $counter++; ?></td>
                             
                             <td>

@@ -832,3 +832,18 @@ body {
     border: 1px solid #dee2e6 !important;
     border-left: 5px solid #6c757d !important;
 }
+    /* En la sección de estilos de tu archivo CSS o en <style> */
+    .stat-subtext {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 4px;
+        font-weight: normal;
+    }
+    /* Fondo rojizo para filas con usuarios inactivos */
+.referenciados-table tbody tr:has(.status-inactive) {
+    background-color: #ffe6e8;
+}
+/* Opcional: Asegura que el texto sea legible */
+.referenciados-table tbody tr:has(.status-inactive) td {
+    color: #666;
+}

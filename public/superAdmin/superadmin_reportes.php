@@ -1000,7 +1000,7 @@ if ($porcentajeRestante > 50) {
                 </div>
                 <div class="option-icon-wrapper">
                     <div class="option-icon">
-                        <i class="fas fa-chart-pie"></i>
+                        <i class="fas fa-phone"></i>
                     </div>
                 </div>
                 <div class="option-title">VALORACIÓN TRACKING</div>

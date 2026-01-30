@@ -78,7 +78,7 @@ if ($porcentajeRestante > 50) {
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
-                <li class="breadcrumb-item active"><i class="fas fa-database"></i> Monitores</li>
+                <li class="breadcrumb-item active"><i class="fas fa-database"></i> Monitoreo</li>
             </ol>
         </nav>
     </div>

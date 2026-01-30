@@ -810,7 +810,7 @@ $isFullscreen = isset($_GET['fullscreen']) && $_GET['fullscreen'] == '1';
         <div class="header-container">
             <div class="header-top">
                 <div class="header-title">
-                    <h1><i class="fas fa-map-marked-alt"></i> Mapa de Puntos</h1>
+                    <h1><i class="fas fa-map-marked-alt"></i> Mapa de Puesto de Votación</h1>
                     <div class="user-info">
                         <i class="fas fa-user-circle"></i>
                         <span>Super Admin: <?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>

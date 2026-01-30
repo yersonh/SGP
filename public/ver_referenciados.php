@@ -67,9 +67,14 @@ if ($porcentajeRestante > 50) {
 // Tope asignado
 $tope_asignado = $usuario_logueado['tope'] ?? 0;
 
-// Calcular porcentaje del tope (SOLO ACTIVOS)
-$porcentaje_tope = ($tope_asignado > 0) ? min(100, ($activos * 100) / $tope_asignado) : 0;
+// Calcular porcentaje REAL del tope (puede ser más de 100%)
+$porcentaje_tope_real = ($tope_asignado > 0) ? ($activos * 100) / $tope_asignado : 0;
+// Calcular porcentaje para la barra (no más de 100%)
+$porcentaje_tope_barra = ($tope_asignado > 0) ? min(100, ($activos * 100) / $tope_asignado) : 0;
 $restante_tope = max(0, $tope_asignado - $activos);
+
+// Verificar si se alcanzó o superó el 100% para mostrar el ícono de trofeo
+$mostrar_trofeo_tope = $porcentaje_tope_real >= 100;
 
 // ============================================================================
 // ¡¡¡AQUÍ ESTÁ LA PARTE IMPORTANTE!!! - CONSULTA SQL PARA CONTAR VOTOS
@@ -84,9 +89,17 @@ $total_camara = $votos['total_camara'] ?? 0;  // (solo_camara + pacha)
 $total_senado = $votos['total_senado'] ?? 0;  // (solo_senado + pacha)
 $total_activos = $votos['total_activos'] ?? 0;
 
-// Calcular porcentajes sobre el tope asignado (para las barras de progreso)
-$porcentaje_camara = ($tope_asignado > 0) ? min(100, ($total_camara * 100) / $tope_asignado) : 0;
-$porcentaje_senado = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $tope_asignado) : 0;
+// Calcular porcentajes REALES sobre el tope asignado (pueden ser más de 100%)
+$porcentaje_camara_real = ($tope_asignado > 0) ? ($total_camara * 100) / $tope_asignado : 0;
+$porcentaje_senado_real = ($tope_asignado > 0) ? ($total_senado * 100) / $tope_asignado : 0;
+
+// Calcular porcentajes para las barras (no más de 100%)
+$porcentaje_camara_barra = ($tope_asignado > 0) ? min(100, ($total_camara * 100) / $tope_asignado) : 0;
+$porcentaje_senado_barra = ($tope_asignado > 0) ? min(100, ($total_senado * 100) / $tope_asignado) : 0;
+
+// Verificar si se alcanzó o superó el 100% para mostrar íconos de trofeo
+$mostrar_trofeo_camara = $porcentaje_camara_real >= 100;
+$mostrar_trofeo_senado = $porcentaje_senado_real >= 100;
 
 // Calcular porcentajes para la gráfica (sobre total activos)
 $porc_camara = ($total_activos > 0) ? round(($total_camara * 100) / $total_activos, 1) : 0;
@@ -107,6 +120,40 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
     <link rel="stylesheet" href="styles/ver_referenciados_referenciador.css">
+    <style>
+        /* Estilos para el ícono de trofeo */
+        .trofeo-icon {
+            color: #FFD700; /* Color dorado */
+            margin-left: 8px;
+            font-size: 1.2em;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .tropeo-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .trofeo-badge {
+            background-color: #FFD700;
+            color: #8B4513;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+    </style>
     <!-- Cargar Chart.js ANTES de que se use -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -192,24 +239,34 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
             <!-- NUEVA BARRA DE PROGRESO DEL TOPE -->
             <div class="tope-progress-container">
                 <div class="tope-progress-header">
-                    <h4><i class="fas fa-chart-line me-2"></i>Progreso del Tope (Solo Activos)</h4>
+                    <div class="tropeo-container">
+                        <h4><i class="fas fa-chart-line me-2"></i>Progreso del Tope (Solo Activos)</h4>
+                        <?php if ($mostrar_trofeo_tope): ?>
+                        <div class="trofeo-badge">
+                            <i class="fas fa-trophy"></i> ¡Meta Superada!
+                        </div>
+                        <?php endif; ?>
+                    </div>
                     <div class="tope-stats">
                         <span class="tope-stat">
                             <strong><?php echo $activos; ?></strong> / <?php echo $tope_asignado; ?> referenciados activos
                         </span>
                         <span class="tope-percentage">
-                            <?php echo number_format($porcentaje_tope, 1) . '%'; ?>
+                            <?php echo number_format($porcentaje_tope_real, 1) . '%'; ?>
+                            <?php if ($mostrar_trofeo_tope): ?>
+                                <i class="fas fa-trophy trofeo-icon"></i>
+                            <?php endif; ?>
                         </span>
                     </div>
                 </div>
                 
                 <div class="tope-progress-bar">
                     <div class="tope-progress-fill" 
-                         style="width: <?php echo $porcentaje_tope; ?>%; 
+                         style="width: <?php echo $porcentaje_tope_barra; ?>%; 
                                 background: <?php 
-                                    if ($porcentaje_tope >= 100) echo '#2ecc71';
-                                    elseif ($porcentaje_tope >= 75) echo '#3498db';
-                                    elseif ($porcentaje_tope >= 50) echo '#f39c12';
+                                    if ($porcentaje_tope_real >= 100) echo '#2ecc71';
+                                    elseif ($porcentaje_tope_real >= 75) echo '#3498db';
+                                    elseif ($porcentaje_tope_real >= 50) echo '#f39c12';
                                     else echo '#e74c3c';
                                 ?>;">
                     </div>
@@ -254,24 +311,30 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
                             <div class="voto-title">
                                 <i class="fas fa-landmark me-2" style="color: #3498db;"></i>
                                 <h5>Votos Cámara</h5>
+                                <?php if ($mostrar_trofeo_camara): ?>
+                                <i class="fas fa-trophy trofeo-icon" title="¡Meta de Cámara alcanzada o superada!"></i>
+                                <?php endif; ?>
                             </div>
                             <div class="voto-stats">
                                 <span class="voto-count">
                                     <strong><?php echo $total_camara; ?></strong> / <?php echo $tope_asignado; ?>
                                 </span>
                                 <span class="voto-percentage">
-                                    <?php echo number_format($porcentaje_camara, 1) . '%'; ?>
+                                    <?php echo number_format($porcentaje_camara_real, 1) . '%'; ?>
+                                    <?php if ($mostrar_trofeo_camara): ?>
+                                        <i class="fas fa-trophy trofeo-icon"></i>
+                                    <?php endif; ?>
                                 </span>
                             </div>
                         </div>
                         
                         <div class="voto-progress-bar">
                             <div class="voto-progress-fill" 
-                                 style="width: <?php echo $porcentaje_camara; ?>%; 
+                                 style="width: <?php echo $porcentaje_camara_barra; ?>%; 
                                         background: <?php 
-                                            if ($porcentaje_camara >= 100) echo '#2ecc71';
-                                            elseif ($porcentaje_camara >= 75) echo '#3498db';
-                                            elseif ($porcentaje_camara >= 50) echo '#f39c12';
+                                            if ($porcentaje_camara_real >= 100) echo '#2ecc71';
+                                            elseif ($porcentaje_camara_real >= 75) echo '#3498db';
+                                            elseif ($porcentaje_camara_real >= 50) echo '#f39c12';
                                             else echo '#e74c3c';
                                         ?>;">
                             </div>
@@ -291,24 +354,30 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
                             <div class="voto-title">
                                 <i class="fas fa-balance-scale me-2" style="color: #9b59b6;"></i>
                                 <h5>Votos Senado</h5>
+                                <?php if ($mostrar_trofeo_senado): ?>
+                                <i class="fas fa-trophy trofeo-icon" title="¡Meta de Senado alcanzada o superada!"></i>
+                                <?php endif; ?>
                             </div>
                             <div class="voto-stats">
                                 <span class="voto-count">
                                     <strong><?php echo $total_senado; ?></strong> / <?php echo $tope_asignado; ?>
                                 </span>
                                 <span class="voto-percentage">
-                                    <?php echo number_format($porcentaje_senado, 1) . '%'; ?>
+                                    <?php echo number_format($porcentaje_senado_real, 1) . '%'; ?>
+                                    <?php if ($mostrar_trofeo_senado): ?>
+                                        <i class="fas fa-trophy trofeo-icon"></i>
+                                    <?php endif; ?>
                                 </span>
                             </div>
                         </div>
                         
                         <div class="voto-progress-bar">
                             <div class="voto-progress-fill" 
-                                 style="width: <?php echo $porcentaje_senado; ?>%; 
+                                 style="width: <?php echo $porcentaje_senado_barra; ?>%; 
                                         background: <?php 
-                                            if ($porcentaje_senado >= 100) echo '#2ecc71';
-                                            elseif ($porcentaje_senado >= 75) echo '#9b59b6';
-                                            elseif ($porcentaje_senado >= 50) echo '#f39c12';
+                                            if ($porcentaje_senado_real >= 100) echo '#2ecc71';
+                                            elseif ($porcentaje_senado_real >= 75) echo '#9b59b6';
+                                            elseif ($porcentaje_senado_real >= 50) echo '#f39c12';
                                             else echo '#e74c3c';
                                         ?>;">
                             </div>

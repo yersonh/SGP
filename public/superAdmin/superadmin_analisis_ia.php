@@ -48,6 +48,70 @@ if ($porcentajeRestante > 50) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/superadmin_analisis_ia.css">
+    <style>
+        /* Reducir tamaño de los botones */
+        .dashboard-grid-two {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-option {
+            padding: 20px;
+            min-height: 250px;
+        }
+        
+        .option-icon-wrapper {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 15px;
+        }
+        
+        .option-icon {
+            width: 70px;
+            height: 70px;
+            font-size: 30px;
+        }
+        
+        .option-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .option-description {
+            font-size: 13px;
+            margin-bottom: 15px;
+            min-height: 70px;
+        }
+        
+        .option-features {
+            margin-top: 15px;
+        }
+        
+        .feature-badge {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 0 3px 6px 0;
+        }
+        
+        .access-indicator {
+            font-size: 12px;
+            padding: 6px 12px;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid-two {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .dashboard-option {
+                min-height: 230px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -111,12 +175,12 @@ if ($porcentajeRestante > 50) {
             </p>
         </div>
         
-        <!-- ÚNICO BOTÓN CENTRADO -->
-        <div class="dashboard-grid-single">
+        <!-- BOTONES EN DOS COLUMNAS - TAMAÑO REDUCIDO -->
+        <div class="dashboard-grid-two">
             <!-- RENDIMIENTO DIARIO DE VOTOS -->
             <a href="superadmin_reporte_votos.php" class="dashboard-option option-rendimiento">
                 <div class="access-indicator">
-                    <i class="fas fa-chart-line"></i> VER REPORTE COMPLETO
+                    <i class="fas fa-chart-line"></i> VER REPORTE
                 </div>
                 <div class="option-icon-wrapper">
                     <div class="option-icon">
@@ -126,17 +190,40 @@ if ($porcentajeRestante > 50) {
                 <div class="option-title">ANÁLISIS DIARIO DE CARGUE</div>
                 <div class="option-description">
                     Análisis detallado del rendimiento diario de votos registrados en el sistema.
-                    Reportes por fecha, comparativas históricas y tendencias de crecimiento.
                 </div>
                 <div class="option-features">
                     <div class="feature-badge">
-                        <i class="fas fa-chart-bar"></i> Gráficas diarias
+                        <i class="fas fa-chart-bar"></i> Gráficas
                     </div>
                     <div class="feature-badge">
-                        <i class="fas fa-calendar-alt"></i> Comparativas por fecha
+                        <i class="fas fa-calendar-alt"></i> Fechas
                     </div>
                     <div class="feature-badge">
                         <i class="fas fa-trend-up"></i> Tendencias
+                    </div>
+                </div>
+            </a>
+            
+            <!-- TRACKING DIARIO - NUEVO BOTÓN -->
+            <a href="superadmin_tracking_diario.php" class="dashboard-option option-rendimiento">
+                <div class="access-indicator">
+                    <i class="fas fa-map-marked-alt"></i> VER TRACKING
+                </div>
+                <div class="option-icon-wrapper">
+                    <div class="option-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+                <div class="option-title">TRACKING DIARIO</div>
+                <div class="option-description">
+                    Sistema de seguimiento y monitoreo en tiempo real de llamadas diarias.
+                </div>
+                <div class="option-features">
+                    <div class="feature-badge">
+                        <i class="fas fa-map-marker-alt"></i> Llamadas
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-clock"></i> Tiempo real
                     </div>
                 </div>
             </a>
@@ -299,42 +386,39 @@ if ($porcentajeRestante > 50) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Efecto de carga suave
         document.addEventListener('DOMContentLoaded', function() {
-            // Efecto hover mejorado para el botón único
-            const option = document.querySelector('.dashboard-option');
+            const options = document.querySelectorAll('.dashboard-option');
             
-            option.addEventListener('mouseenter', function() {
-                this.style.zIndex = '10';
+            options.forEach(option => {
+                option.addEventListener('mouseenter', function() {
+                    this.style.zIndex = '10';
+                });
+                
+                option.addEventListener('mouseleave', function() {
+                    this.style.zIndex = '1';
+                });
+                
+                option.addEventListener('click', function(e) {
+                    if (!this.classList.contains('disabled')) {
+                        const originalHTML = this.innerHTML;
+                        this.innerHTML = `
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px; color: #9b59b6;"></i>
+                                <span>Cargando...</span>
+                            </div>
+                        `;
+                        this.classList.add('disabled');
+                        this.style.pointerEvents = 'none';
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalHTML;
+                            this.classList.remove('disabled');
+                            this.style.pointerEvents = 'auto';
+                        }, 3000);
+                    }
+                });
             });
             
-            option.addEventListener('mouseleave', function() {
-                this.style.zIndex = '1';
-            });
-            
-            // Prevenir clics múltiples rápidos
-            option.addEventListener('click', function(e) {
-                if (!this.classList.contains('disabled')) {
-                    const originalHTML = this.innerHTML;
-                    this.innerHTML = `
-                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; margin-bottom: 15px; color: #9b59b6;"></i>
-                            <span>Cargando reporte de rendimiento...</span>
-                        </div>
-                    `;
-                    this.classList.add('disabled');
-                    this.style.pointerEvents = 'none';
-                    
-                    // Restaurar después de 3 segundos (por si falla la navegación)
-                    setTimeout(() => {
-                        this.innerHTML = originalHTML;
-                        this.classList.remove('disabled');
-                        this.style.pointerEvents = 'auto';
-                    }, 3000);
-                }
-            });
-            
-            // Breadcrumb hover effect
             const breadcrumbLinks = document.querySelectorAll('.breadcrumb-item a');
             breadcrumbLinks.forEach(link => {
                 link.addEventListener('mouseenter', function() {
@@ -345,28 +429,27 @@ if ($porcentajeRestante > 50) {
                 });
             });
         });
+        
         function actualizarLogoSegunTema() {
-    const logo = document.getElementById('footer-logo');
-    if (!logo) return;
-    
-    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (isDarkMode) {
-        logo.src = logo.getAttribute('data-img-oscuro');
-    } else {
-        logo.src = logo.getAttribute('data-img-claro');
-    }
-}
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
 
-// Ejecutar al cargar y cuando cambie el tema
-document.addEventListener('DOMContentLoaded', function() {
-    actualizarLogoSegunTema();
-});
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
 
-// Escuchar cambios en el tema del sistema
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-    actualizarLogoSegunTema();
-});
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
     </script>
     <script src="../js/modal-sistema.js"></script>
     <script src="../js/contador.js"></script>

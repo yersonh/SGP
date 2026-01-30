@@ -1,0 +1,68 @@
+/* Header - Solo en modo normal */
+.main-header {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    padding: 15px 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title h1 {
+    font-size: 1.8rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title h1 i {
+    color: #4fc3f7;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #cbd5e0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.header-btn {
+    background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.header-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+}
+
+.back-btn:hover {
+    box-shadow: 0 4px 12px rgba(113, 128, 150, 0.3);
+}

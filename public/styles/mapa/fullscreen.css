@@ -1,0 +1,91 @@
+/* Estilos específicos para modo fullscreen */
+body {
+    background: #1a1a2e;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
+
+/* El Mapa en modo fullscreen */
+#map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh !important;
+    width: 100vw !important;
+    border: none;
+}
+
+/* Botón de salir de pantalla completa */
+.fullscreen-exit-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 0.9;
+}
+
+.fullscreen-exit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+    opacity: 1;
+}
+
+/* Indicador de tecla ESC */
+.esc-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(45, 55, 72, 0.9);
+    color: #cbd5e0;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 12px;
+    border: 1px solid #4a5568;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.esc-hint kbd {
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #4fc3f7;
+}
+
+/* Responsive para fullscreen */
+@media (max-width: 768px) {
+    .fullscreen-exit-btn {
+        bottom: 10px;
+        left: 10px;
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+    
+    .esc-hint {
+        bottom: 10px;
+        right: 10px;
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+}

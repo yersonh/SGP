@@ -1,0 +1,38 @@
+/* Leaflet Customization */
+.leaflet-control-zoom {
+    border: 2px solid #4a5568 !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+    background: #2d3748 !important;
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid #4a5568 !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: #4a5568 !important;
+}
+
+.leaflet-control-attribution {
+    background: rgba(45, 55, 72, 0.9) !important;
+    color: #cbd5e0 !important;
+    padding: 5px 10px !important;
+    border-radius: 4px !important;
+    font-size: 0.8rem !important;
+}
+
+.leaflet-control-attribution a {
+    color: #4fc3f7 !important;
+}
+
+/* Estilos para marcadores personalizados */
+.custom-marker {
+    transition: all 0.3s ease;
+}
+
+.custom-marker:hover {
+    transform: scale(1.2);
+    z-index: 1000 !important;
+}

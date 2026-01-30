@@ -407,7 +407,7 @@ function validarNumeroMesa(input) {
     }
 }
 
-// Validar número de mesa fuera (máximo 40)
+// Validar número de mesa fuera (máximo 60)
 function validarNumeroMesaFuera(input) {
     const value = parseInt(input.value);
     
@@ -937,13 +937,13 @@ function setupFormEvents() {
             
             if (!mesaFuera || !mesaFuera.value || parseInt(mesaFuera.value) < 1) {
                 isValid = false;
-                errorMessage = 'Por favor ingrese un número de mesa válido (1-40) para voto fuera';
+                errorMessage = 'Por favor ingrese un número de mesa válido (1-60) para voto fuera';
                 if (mesaFuera && !firstErrorField) {
                     firstErrorField = mesaFuera;
                 }
-            } else if (parseInt(mesaFuera.value) > 40) {
+            } else if (parseInt(mesaFuera.value) > 60) {
                 isValid = false;
-                errorMessage = 'El número de mesa fuera no puede ser mayor a 40';
+                errorMessage = 'El número de mesa fuera no puede ser mayor a 60';
                 if (mesaFuera && !firstErrorField) {
                     firstErrorField = mesaFuera;
                 }

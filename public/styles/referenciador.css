@@ -468,19 +468,21 @@
             position: relative;
             transition: all 0.3s ease;
             margin-left: 10px;
+            flex-shrink: 0;
         }
-        
+
         .switch-slider {
             position: absolute;
             top: 3px;
             left: 3px;
-            width: 20px;
-            height: 20px;
+            width: 20px; /* Disminuido de 20px a 18px */
+            height: 20px; /* Disminuido de 20px a 18px */
             background: white;
             border-radius: 50%;
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
+
         
         .insumo-checkbox:checked + .insumo-label .insumo-switch {
             background: #4caf50;
@@ -1071,3 +1073,20 @@
         .feature-img-header:hover {
             transform: scale(1.05);
         }
+/* Estilo adicional para campos de fecha */
+input[type="date"].form-control {
+    padding: 10px 15px 10px 40px; /* Espacio para el ícono */
+}
+
+.input-with-icon .input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    z-index: 1;
+}
+
+.input-with-icon {
+    position: relative;
+}

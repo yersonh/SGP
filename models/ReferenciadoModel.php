@@ -5,127 +5,134 @@ class ReferenciadoModel {
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
+   public function guardarReferenciado($data) {
+    // Asegurar que afinidad sea válida (1-5)
+    $afinidad = max(1, min(5, intval($data['afinidad'])));
     
-    public function guardarReferenciado($data) {
-        // Asegurar que afinidad sea válida (1-5)
-        $afinidad = max(1, min(5, intval($data['afinidad'])));
+    // Determinar valores según si vota fuera o no
+    $votaFuera = $data['vota_fuera'] ?? 'No';
+    
+    if ($votaFuera === 'Si') {
+        // Cuando vota fuera, los campos normales de votación deben ser nulos
+        $id_zona = null;
+        $id_sector = null;
+        $id_puesto_votacion = null;
+        $mesa = null;
+        $puesto_votacion_fuera = $data['puesto_votacion_fuera'] ?? '';
+        $mesa_fuera = $data['mesa_fuera'] ?? null;
         
-        // Determinar valores según si vota fuera o no
-        $votaFuera = $data['vota_fuera'] ?? 'No';
-        
-        if ($votaFuera === 'Si') {
-            // Cuando vota fuera, los campos normales de votación deben ser nulos
-            $id_zona = null;
-            $id_sector = null;
-            $id_puesto_votacion = null;
-            $mesa = null;
-            $puesto_votacion_fuera = $data['puesto_votacion_fuera'] ?? '';
-            $mesa_fuera = $data['mesa_fuera'] ?? null;
-            
-            // Validar que los campos fuera estén presentes
-            if (empty($puesto_votacion_fuera)) {
-                throw new Exception('El puesto de votación fuera es requerido cuando vota fuera');
-            }
-            if (empty($mesa_fuera) || $mesa_fuera < 1) {
-                throw new Exception('El número de mesa fuera es requerido y debe ser mayor a 0');
-            }
-            if ($mesa_fuera > 40) {
-                throw new Exception('El número de mesa fuera no puede ser mayor a 40');
-            }
-        } else {
-            // Cuando NO vota fuera, los campos fuera deben ser nulos
-            $id_zona = $data['id_zona'] ?? null;
-            $id_sector = $data['id_sector'] ?? null;
-            $id_puesto_votacion = $data['id_puesto_votacion'] ?? null;
-            $mesa = $data['mesa'] ?? null;
-            $puesto_votacion_fuera = null;
-            $mesa_fuera = null;
-            
-            // Validar que los campos normales estén presentes
-            if (empty($id_zona)) {
-                throw new Exception('La zona es requerida cuando no vota fuera');
-            }
+        // Validar que los campos fuera estén presentes
+        if (empty($puesto_votacion_fuera)) {
+            throw new Exception('El puesto de votación fuera es requerido cuando vota fuera');
         }
+        if (empty($mesa_fuera) || $mesa_fuera < 1) {
+            throw new Exception('El número de mesa fuera es requerido y debe ser mayor a 0');
+        }
+    } else {
+        // Cuando NO vota fuera, los campos fuera deben ser nulos
+        $id_zona = $data['id_zona'] ?? null;
+        $id_sector = $data['id_sector'] ?? null;
+        $id_puesto_votacion = $data['id_puesto_votacion'] ?? null;
+        $mesa = $data['mesa'] ?? null;
+        $puesto_votacion_fuera = null;
+        $mesa_fuera = null;
         
-        // Iniciar transacción para asegurar que todo se guarde o nada
-        $this->pdo->beginTransaction();
-        
-        try {
-            // SQL actualizado con el campo id_grupo
-            $sql = "INSERT INTO referenciados (
-                nombre, apellido, cedula, direccion, email, telefono, 
-                afinidad, id_zona, id_sector, id_puesto_votacion, mesa,
-                id_departamento, id_municipio, id_barrio, id_oferta_apoyo, id_grupo_poblacional,
-                compromiso, id_referenciador, fecha_registro,
-                sexo, vota_fuera, puesto_votacion_fuera, mesa_fuera,
-                id_grupo  -- NUEVO CAMPO: id_grupo
-            ) VALUES (
-                :nombre, :apellido, :cedula, :direccion, :email, :telefono,
-                :afinidad, :id_zona, :id_sector, :id_puesto_votacion, :mesa,
-                :id_departamento, :id_municipio, :id_barrio, :id_oferta_apoyo, :id_grupo_poblacional,
-                :compromiso, :id_referenciador, NOW(),
-                :sexo, :vota_fuera, :puesto_votacion_fuera, :mesa_fuera,
-                :id_grupo  -- NUEVO CAMPO: id_grupo
-            ) RETURNING id_referenciado";
-            
-            $stmt = $this->pdo->prepare($sql);
-            
-            // Asignar valores
-            $stmt->bindValue(':nombre', $data['nombre']);
-            $stmt->bindValue(':apellido', $data['apellido']);
-            $stmt->bindValue(':cedula', $data['cedula']);
-            $stmt->bindValue(':direccion', $data['direccion']);
-            $stmt->bindValue(':email', $data['email']);
-            $stmt->bindValue(':telefono', $data['telefono']);
-            $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
-            
-            // Campos de votación normales
-            $stmt->bindValue(':id_zona', $id_zona, PDO::PARAM_INT);
-            $stmt->bindValue(':id_sector', $id_sector, PDO::PARAM_INT);
-            $stmt->bindValue(':id_puesto_votacion', $id_puesto_votacion, PDO::PARAM_INT);
-            $stmt->bindValue(':mesa', $mesa, PDO::PARAM_INT);
-            
-            // Campos de ubicación
-            $stmt->bindValue(':id_departamento', $data['id_departamento'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_municipio', $data['id_municipio'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_barrio', $data['id_barrio'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':compromiso', $data['compromiso'] ?? '');
-            $stmt->bindValue(':id_referenciador', $data['id_referenciador'], PDO::PARAM_INT);
-            
-            // Campos de información personal
-            $stmt->bindValue(':sexo', $data['sexo'] ?? null);
-            $stmt->bindValue(':vota_fuera', $votaFuera);
-            
-            // Campos de votación fuera
-            $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
-            $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
-            
-            // NUEVO CAMPO: id_grupo
-            $stmt->bindValue(':id_grupo', $data['id_grupo'] ?? null, PDO::PARAM_INT);
-            
-            $stmt->execute();
-            
-            // Obtener el ID del referenciado recién insertado
-            $id_referenciado = $stmt->fetchColumn();
-            
-            // Guardar los insumos si existen
-            if (!empty($data['insumos']) && is_array($data['insumos'])) {
-                $this->guardarInsumosReferenciado($id_referenciado, $data['insumos']);
-            }
-            
-            // Confirmar la transacción
-            $this->pdo->commit();
-            
-            return $id_referenciado;
-            
-        } catch (Exception $e) {
-            // Revertir la transacción en caso de error
-            $this->pdo->rollBack();
-            throw $e;
+        // Validar que los campos normales estén presentes
+        if (empty($id_zona)) {
+            throw new Exception('La zona es requerida cuando no vota fuera');
         }
     }
+    
+    // Procesar fechas - convertir string vacío a null
+    $fecha_nacimiento = !empty($data['fecha_nacimiento']) ? $data['fecha_nacimiento'] : null;
+    
+    // Fecha cumplimiento: si está vacía, convertir a null
+    $fecha_cumplimiento = !empty($data['fecha_cumplimiento']) ? $data['fecha_cumplimiento'] : null;
+    
+    // Iniciar transacción para asegurar que todo se guarde o nada
+    $this->pdo->beginTransaction();
+    
+    try {
+        // SQL actualizado con todos los campos nuevos
+        $sql = "INSERT INTO referenciados (
+            nombre, apellido, cedula, direccion, email, telefono, 
+            afinidad, id_zona, id_sector, id_puesto_votacion, mesa,
+            id_departamento, id_municipio, id_barrio, id_oferta_apoyo, id_grupo_poblacional,
+            compromiso, id_referenciador, fecha_registro,
+            sexo, vota_fuera, puesto_votacion_fuera, mesa_fuera,
+            id_grupo, fecha_nacimiento, fecha_cumplimiento, id_lider  -- CAMPOS NUEVOS
+        ) VALUES (
+            :nombre, :apellido, :cedula, :direccion, :email, :telefono,
+            :afinidad, :id_zona, :id_sector, :id_puesto_votacion, :mesa,
+            :id_departamento, :id_municipio, :id_barrio, :id_oferta_apoyo, :id_grupo_poblacional,
+            :compromiso, :id_referenciador, NOW(),
+            :sexo, :vota_fuera, :puesto_votacion_fuera, :mesa_fuera,
+            :id_grupo, :fecha_nacimiento, :fecha_cumplimiento, :id_lider  -- CAMPOS NUEVOS
+        ) RETURNING id_referenciado";
+        
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Asignar valores
+        $stmt->bindValue(':nombre', $data['nombre']);
+        $stmt->bindValue(':apellido', $data['apellido']);
+        $stmt->bindValue(':cedula', $data['cedula']);
+        $stmt->bindValue(':direccion', $data['direccion']);
+        $stmt->bindValue(':email', $data['email']);
+        $stmt->bindValue(':telefono', $data['telefono']);
+        $stmt->bindValue(':afinidad', $afinidad, PDO::PARAM_INT);
+        
+        // Campos de votación normales
+        $stmt->bindValue(':id_zona', $id_zona, PDO::PARAM_INT);
+        $stmt->bindValue(':id_sector', $id_sector, PDO::PARAM_INT);
+        $stmt->bindValue(':id_puesto_votacion', $id_puesto_votacion, PDO::PARAM_INT);
+        $stmt->bindValue(':mesa', $mesa, PDO::PARAM_INT);
+        
+        // Campos de ubicación
+        $stmt->bindValue(':id_departamento', $data['id_departamento'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_municipio', $data['id_municipio'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_barrio', $data['id_barrio'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_oferta_apoyo', $data['id_oferta_apoyo'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_grupo_poblacional', $data['id_grupo_poblacional'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':compromiso', $data['compromiso'] ?? '');
+        $stmt->bindValue(':id_referenciador', $data['id_referenciador'], PDO::PARAM_INT);
+        
+        // Campos de información personal
+        $stmt->bindValue(':sexo', $data['sexo'] ?? null);
+        $stmt->bindValue(':vota_fuera', $votaFuera);
+        
+        // Campos de votación fuera
+        $stmt->bindValue(':puesto_votacion_fuera', $puesto_votacion_fuera);
+        $stmt->bindValue(':mesa_fuera', $mesa_fuera, PDO::PARAM_INT);
+        
+        // Campo grupo parlamentario
+        $stmt->bindValue(':id_grupo', $data['id_grupo'] ?? null, PDO::PARAM_INT);
+        
+        // CAMPOS NUEVOS - IMPORTANTE: fecha_cumplimiento como null si está vacío
+        $stmt->bindValue(':fecha_nacimiento', $fecha_nacimiento);
+        $stmt->bindValue(':fecha_cumplimiento', $fecha_cumplimiento); // Esto será null si está vacío
+        $stmt->bindValue(':id_lider', $data['id_lider'] ?? null, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        
+        // Obtener el ID del referenciado recién insertado
+        $id_referenciado = $stmt->fetchColumn();
+        
+        // Guardar los insumos si existen
+        if (!empty($data['insumos']) && is_array($data['insumos'])) {
+            $this->guardarInsumosReferenciado($id_referenciado, $data['insumos']);
+        }
+        
+        // Confirmar la transacción
+        $this->pdo->commit();
+        
+        return $id_referenciado;
+        
+    } catch (Exception $e) {
+        // Revertir la transacción en caso de error
+        $this->pdo->rollBack();
+        throw $e;
+    }
+}
     
     /**
      * Guarda los insumos del referenciado en la tabla pivote

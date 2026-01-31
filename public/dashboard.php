@@ -155,7 +155,9 @@ if ($porcentajeRestante > 50) {
             <a href="agregar_usuario.php" class="btn-add-user">
                 <i class="fas fa-plus-circle"></i> AGREGAR USUARIO
             </a>
-            
+            <a href="administrador/anadir_lider.php" class="btn-add-user">
+                <i class="fas fa-user-plus"></i> AÑADIR LÍDER
+            </a>
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $total_usuarios; ?></div>

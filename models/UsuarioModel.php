@@ -760,6 +760,41 @@ public function getAllReferenciadores() {
         return [];
     }
 }
+public function getAllReferenciadoresActivos() {
+    try {
+        $query = "SELECT 
+                    u.*,
+                    COALESCE(r.total_referenciados, 0) as total_referenciados,
+                    CASE 
+                        WHEN u.tope > 0 THEN 
+                            ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
+                        ELSE 0 
+                    END as porcentaje_tope
+                  FROM usuario u 
+                  LEFT JOIN (
+                      SELECT id_referenciador, COUNT(*) as total_referenciados 
+                      FROM referenciados 
+                      WHERE activo = true
+                      GROUP BY id_referenciador
+                  ) r ON u.id_usuario = r.id_referenciador
+                  WHERE u.tipo_usuario = 'Referenciador'
+                  AND u.activo = true
+                  ORDER BY u.nombres, u.apellidos";
+        
+        $stmt = $this->pdo->query($query);
+        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Agregar URLs de fotos
+        foreach ($usuarios as &$usuario) {
+            $usuario['foto_url'] = FileHelper::getPhotoUrl($usuario['foto']);
+        }
+        
+        return $usuarios;
+    } catch (Exception $e) {
+        error_log("Error en getReferenciadoresActivos: " . $e->getMessage());
+        return [];
+    }
+}
 public function getUsuarioByIdActivo($id) {
     try {
         $sql = "SELECT 

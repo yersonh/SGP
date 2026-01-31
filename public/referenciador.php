@@ -10,6 +10,7 @@ require_once __DIR__ . '/../models/BarrioModel.php';
 require_once __DIR__ . '/../models/Grupos_ParlamentariosModel.php';
 require_once __DIR__ . '/../models/SistemaModel.php';
 require_once __DIR__ . '/../lib/BrevoEmail.php';
+require_once __DIR__ . '/../models/LiderModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referenciador') {
@@ -39,6 +40,7 @@ $departamentoModel = new DepartamentoModel($pdo);
 $zonaModel = new ZonaModel($pdo);
 $barrioModel = new BarrioModel($pdo);
 $gruposParlamentariosModel = new Grupos_ParlamentariosModel($pdo);
+$liderModel = new LiderModel($pdo);
 // Obtener datos para los combos
 $gruposPoblacionales = $grupoPoblacionalModel->getAll();
 $ofertasApoyo = $ofertaApoyoModel->getAll();
@@ -46,6 +48,9 @@ $departamentos = $departamentoModel->getAll();
 $zonas = $zonaModel->getAll();
 $barrios = $barrioModel->getAll();
 $gruposParlamentarios = $gruposParlamentariosModel->getAll();
+
+// Obtener líderes activos usando la nueva función
+$lideres = $liderModel->getActivos();
 
 // 6. Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
@@ -358,7 +363,21 @@ if ($porcentajeRestante > 50) {
                                required
                                data-progress="5">
                     </div>
-                    
+                    <!-- Fecha Nacimiento -->
+                    <div class="form-group">
+                        <label class="form-label" for="fecha_nacimiento">
+                            <i class="fas fa-birthday-cake"></i> Fecha Nacimiento *
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-calendar-alt input-icon"></i>
+                            <input type="date" 
+                                   id="fecha_nacimiento" 
+                                   name="fecha_nacimiento" 
+                                   class="form-control" 
+                                   required
+                                   data-progress="3">
+                        </div>
+                    </div>
                     <!-- Cédula -->
                     <div class="form-group">
                         <label class="form-label" for="cedula">
@@ -653,9 +672,46 @@ if ($porcentajeRestante > 50) {
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <!-- Lider (Combo box) -->
+                    <div class="form-group">
+                        <label class="form-label" for="lider">
+                            <i class="fas fa-user-tie"></i> Lider
+                        </label>
+                        <select id="lider" name="id_lider" class="form-select" data-progress="3">
+                            <option value="">Seleccione un líder</option>
+                            <?php if (!empty($lideres)): ?>
+                                <?php foreach ($lideres as $lider): ?>
+                                <option value="<?php echo $lider['id_lider']; ?>">
+                                    <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos'] ); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="" disabled>No hay líderes activos disponibles</option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <!-- Switch para mostrar/ocultar compromiso -->
+                    <div class="form-group">
+                        <label class="form-label" for="mostrar_compromiso_switch">
+                            <i class="fas fa-handshake"></i> Compromiso
+                        </label>
+                        <div class="switch-container">
+                            <input type="checkbox" 
+                                   id="mostrar_compromiso_switch" 
+                                   name="mostrar_compromiso_switch" 
+                                   class="switch-checkbox"
+                                   data-progress="0">
+                            <label for="mostrar_compromiso_switch" class="switch-label">
+                                <div class="switch-slider">
+                                    <span class="switch-text-off">No</span>
+                                    <span class="switch-text-on">Sí</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                     
                     <!-- Compromiso (NO obligatorio) -->
-                    <div class="form-group full-width">
+                    <div class="form-group full-width" id="compromiso-container">
                         <label class="form-label" for="compromiso">
                             <i class="fas fa-handshake"></i> Compromiso del Referido
                         </label>
@@ -668,6 +724,20 @@ if ($porcentajeRestante > 50) {
                             data-progress="5"></textarea>
                         <div class="textarea-counter" id="compromiso-counter">
                             <span id="compromiso-chars">0</span>/500 caracteres
+                        </div>
+                    </div>
+                    <!-- Fecha Cumplimiento -->
+                    <div class="form-group" id="fecha_cumplimiento-container">
+                        <label class="form-label" for="fecha_cumplimiento">
+                            <i class="fas fa-calendar-check"></i> Fecha Cumplimiento
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-calendar-alt input-icon"></i>
+                            <input type="date" 
+                                   id="fecha_cumplimiento" 
+                                   name="fecha_cumplimiento" 
+                                   class="form-control" 
+                                   data-progress="3">
                         </div>
                     </div>
                     
@@ -940,6 +1010,66 @@ if ($porcentajeRestante > 50) {
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Script para manejar la lógica de campos obligatorios condicionales -->
+    <script>
+    window.camposCondicionalesConfigurados = false;
+    </script>
+    
+       <!-- Script para mostrar/ocultar campos compromiso y fecha cumplimiento -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mostrarSwitch = document.getElementById('mostrar_compromiso_switch');
+        const compromisoContainer = document.getElementById('compromiso-container');
+        const fechaCumplimientoContainer = document.getElementById('fecha_cumplimiento-container');
+        
+        // Función para actualizar la visibilidad de los campos
+        function actualizarVisibilidadCampos() {
+            if (mostrarSwitch.checked) {
+                compromisoContainer.style.display = 'block';
+                fechaCumplimientoContainer.style.display = 'block';
+            } else {
+                compromisoContainer.style.display = 'none';
+                fechaCumplimientoContainer.style.display = 'none';
+                
+                // Limpiar los campos cuando se ocultan
+                document.getElementById('compromiso').value = '';
+                document.getElementById('fecha_cumplimiento').value = '';
+            }
+        }
+        
+        // Configurar el evento del switch
+        mostrarSwitch.addEventListener('change', actualizarVisibilidadCampos);
+        
+        // Establecer estado inicial - OCULTOS por defecto
+        mostrarSwitch.checked = false;
+        actualizarVisibilidadCampos();
+        
+        // Asegurar que el campo fecha_nacimiento tenga un máximo de hoy
+        const fechaNacimiento = document.getElementById('fecha_nacimiento');
+        const today = new Date().toISOString().split('T')[0];
+        fechaNacimiento.setAttribute('max', today);
+        
+        // Prevenir que el usuario escriba fechas futuras manualmente
+        fechaNacimiento.addEventListener('input', function() {
+            const selectedDate = new Date(this.value);
+            const todayDate = new Date(today);
+            
+            if (selectedDate > todayDate) {
+                this.value = today;
+            }
+        });
+        
+        // También prevenir con el evento change por si acaso
+        fechaNacimiento.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const todayDate = new Date(today);
+            
+            if (selectedDate > todayDate) {
+                this.value = today;
+            }
+        });
+    });
+    </script>
     <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
     <script src="js/modal-sistema.js"></script>

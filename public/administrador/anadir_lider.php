@@ -281,6 +281,44 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
             padding-left: 40px;
         }
         
+        /* Estilos específicos para el estado de verificación de cédula */
+        .cedula-status {
+            margin-top: 5px;
+            font-size: 0.85rem;
+            padding: 8px 10px;
+            border-radius: 6px;
+            display: none;
+            line-height: 1.4;
+            border-left: 3px solid transparent;
+        }
+        
+        .cedula-available {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+            border-left-color: #27ae60;
+        }
+        
+        .cedula-taken {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            border-left-color: #e74c3c;
+        }
+        
+        .cedula-loading {
+            color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+            border-left-color: #f39c12;
+        }
+        
+        .cedula-status i {
+            margin-right: 5px;
+        }
+        
+        .cedula-status strong {
+            color: inherit;
+            opacity: 0.9;
+        }
+        
         .form-actions {
             grid-column: 1 / -1;
             display: flex;
@@ -311,6 +349,13 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
             background: linear-gradient(135deg, #05c593, #0d7a9c);
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(6, 214, 160, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         
         .cancel-btn {
@@ -575,6 +620,8 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
                                autocomplete="off">
                     </div>
                     <span class="field-hint">6-10 dígitos numéricos</span>
+                    <!-- Mensaje de estado de verificación de cédula -->
+                    <div id="cedula-status" class="cedula-status"></div>
                 </div>
                 
                 <!-- Teléfono -->
@@ -680,6 +727,85 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
         }, 5000);
     }
     
+    // ==================== FUNCIÓN PARA VERIFICAR CÉDULA EN LÍDERES ====================
+    async function verificarCedula(cedula) {
+        const statusElement = document.getElementById('cedula-status');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        if (!cedula || cedula.length < 6) {
+            statusElement.style.display = 'none';
+            submitBtn.disabled = false;
+            return false;
+        }
+        
+        // Mostrar estado de carga
+        statusElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando cédula en líderes...';
+        statusElement.className = 'cedula-status cedula-loading';
+        statusElement.style.display = 'block';
+        submitBtn.disabled = true;
+        
+        try {
+            const formData = new FormData();
+            formData.append('cedula', cedula);
+            
+            const response = await fetch('../ajax/verificar_cedula_lider.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.exists) {
+                    // Cédula ya existe en líderes
+                    const fechaRegistro = data.fecha_registro || 'fecha desconocida';
+                    const liderNombre = data.lider_nombre || 'nombre desconocido';
+                    const referenciador = data.referenciador_nombre || 'sin coordinador asignado';
+                    const estado = data.estado || 'estado desconocido';
+                    
+                    let mensaje = `<i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Esta cédula ya está registrada como líder.</strong><br>
+                        <strong>Líder:</strong> ${liderNombre}<br>
+                        <strong>Fecha registro:</strong> ${fechaRegistro}<br>
+                        <strong>Estado:</strong> ${estado}<br>`;
+                    
+                    if (data.referenciador_nombre) {
+                        mensaje += `<strong>Coordinador:</strong> ${referenciador}<br>`;
+                    }
+                    
+                    if (data.tambien_en_referenciados) {
+                        mensaje += `<strong>⚠ También está registrado como referenciado</strong><br>
+                        <strong>Fecha registro referenciado:</strong> ${data.referenciado_info.fecha_registro}<br>
+                        <strong>Referenciador:</strong> ${data.referenciado_info.referenciador}`;
+                    }
+                    
+                    statusElement.innerHTML = mensaje;
+                    statusElement.className = 'cedula-status cedula-taken';
+                    submitBtn.disabled = true;
+                    return false;
+                } else {
+                    // Cédula disponible
+                    statusElement.innerHTML = '<i class="fas fa-check-circle"></i> Cédula disponible para registro como líder';
+                    statusElement.className = 'cedula-status cedula-available';
+                    submitBtn.disabled = false;
+                    return true;
+                }
+            } else {
+                // Error en la verificación
+                statusElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.message || 'Error al verificar cédula'}`;
+                statusElement.className = 'cedula-status cedula-taken';
+                submitBtn.disabled = false; // Permitir enviar pero con advertencia
+                return false;
+            }
+        } catch (error) {
+            console.error('Error verificando cédula:', error);
+            statusElement.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error de conexión al verificar cédula';
+            statusElement.className = 'cedula-status cedula-taken';
+            submitBtn.disabled = false; // Permitir enviar en caso de error
+            return false;
+        }
+    }
+    
     // ==================== INICIALIZACIÓN ====================
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Formulario de líder cargado');
@@ -687,10 +813,45 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
         // Deshabilitar validación HTML5 nativa
         document.getElementById('lider-form').setAttribute('novalidate', 'novalidate');
         
+        // Variables globales
+        let cedulaVerificada = false;
+        let timeoutVerificacion = null;
+        
         // Formato de cédula (solo números)
         const cedulaInput = document.getElementById('cedula');
         cedulaInput.addEventListener('input', function(e) {
             e.target.value = e.target.value.replace(/\D/g, '');
+            
+            // Limpiar timeout anterior
+            if (timeoutVerificacion) {
+                clearTimeout(timeoutVerificacion);
+            }
+            
+            // Limpiar estado de verificación
+            const statusElement = document.getElementById('cedula-status');
+            statusElement.style.display = 'none';
+            cedulaVerificada = false;
+            
+            // Habilitar botón mientras se verifica
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = false;
+            
+            // Verificar después de 1 segundo sin cambios (debounce)
+            timeoutVerificacion = setTimeout(async () => {
+                const cedula = e.target.value;
+                if (cedula.length >= 6) {
+                    const resultado = await verificarCedula(cedula);
+                    cedulaVerificada = resultado;
+                }
+            }, 1000);
+        });
+        
+        // Cuando se pierde el foco de la cédula, verificar inmediatamente
+        cedulaInput.addEventListener('blur', function() {
+            const cedula = this.value.trim();
+            if (cedula.length >= 6 && !cedulaVerificada) {
+                verificarCedula(cedula);
+            }
         });
         
         // Formato de teléfono (solo números)
@@ -706,8 +867,19 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
         const liderForm = document.getElementById('lider-form');
         const submitBtn = document.getElementById('submit-btn');
         
-        liderForm.addEventListener('submit', function(e) {
+        liderForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Verificar si la cédula fue verificada
+            const cedula = cedulaInput.value.replace(/\D/g, '');
+            if (cedula.length >= 6 && !cedulaVerificada) {
+                // Forzar verificación antes de enviar
+                const resultado = await verificarCedula(cedula);
+                if (!resultado) {
+                    showNotification('Debe verificar que la cédula esté disponible antes de registrar.', 'warning');
+                    return;
+                }
+            }
             
             // Validar campos obligatorios
             const requiredFields = ['nombres', 'apellidos', 'cedula', 'telefono', 'correo'];
@@ -729,7 +901,6 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
             }
             
             // Validar cédula
-            const cedula = cedulaInput.value.replace(/\D/g, '');
             if (cedula.length < 6) {
                 showNotification('La cédula debe tener al menos 6 dígitos.', 'error');
                 cedulaInput.focus();
@@ -761,18 +932,17 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
             // Crear FormData con los datos del formulario
             const formData = new FormData(liderForm);
             
-            // Enviar datos por AJAX al archivo PHP
-            fetch('../ajax/guardar_lider.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
+            try {
+                const response = await fetch('../ajax/guardar_lider.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
                 if (!response.ok) {
                     throw new Error('Error en la respuesta del servidor: ' + response.status);
                 }
-                return response.json();
-            })
-            .then(data => {
+                
+                const data = await response.json();
                 console.log('Respuesta del servidor:', data);
                 
                 if (data.success) {
@@ -781,22 +951,22 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
                     // Resetear formulario después de éxito
                     setTimeout(() => {
                         liderForm.reset();
+                        cedulaVerificada = false;
+                        document.getElementById('cedula-status').style.display = 'none';
                         showNotification('Formulario listo para registrar otro líder', 'info');
                     }, 2000);
                     
                 } else {
                     showNotification(data.message, 'error');
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error de red:', error);
                 showNotification('Error de conexión con el servidor. Verifica tu conexión a internet.', 'error');
-            })
-            .finally(() => {
+            } finally {
                 // Restaurar estado del botón
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-            });
+            }
         });
         
         console.log('Formulario de líder inicializado correctamente');

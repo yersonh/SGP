@@ -54,753 +54,1328 @@ $isFullscreen = isset($_GET['fullscreen']) && $_GET['fullscreen'] == '1';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            <?php if(!$isFullscreen): ?>
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e2e8f0;
-            height: 100vh;
-            overflow: hidden;
-            <?php else: ?>
-            background: #1a1a2e;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            <?php endif; ?>
-        }
-        
-        <?php if(!$isFullscreen): ?>
-        /* Header - Solo en modo normal */
-        .main-header {
-            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-            padding: 15px 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-        }
-        
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header-title h1 {
-            font-size: 1.8rem;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .header-title h1 i {
-            color: #4fc3f7;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.9rem;
-            color: #cbd5e0;
-        }
-        
-        .header-actions {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .header-btn {
-            background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 6px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .header-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
-        }
-        
-        .back-btn {
-            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
-        }
-        
-        .back-btn:hover {
-            box-shadow: 0 4px 12px rgba(113, 128, 150, 0.3);
-        }
-        
-        /* Main Content - Solo en modo normal */
-        .main-container {
-            margin-top: 80px;
-            height: calc(100vh - 80px);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        /* Layout principal con dos columnas */
-        .main-layout {
-            display: flex;
-            gap: 20px;
-            height: 100%;
-        }
-        
-        /* Columna izquierda - Mapa */
-        .map-column {
-            flex: 3;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        /* Columna derecha - Panel de puntos */
-        .points-column {
-            flex: 1;
-            min-width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        /* Mapa Container - Solo en modo normal */
-        .map-container {
-            flex: 1;
-            background: #2d3748;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .map-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4a5568;
-        }
-        
-        .map-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .map-title h2 {
-            font-size: 1.4rem;
-            color: #fff;
-        }
-        
-        .map-title h2 i {
-            color: #4fc3f7;
-        }
-        
-        .location-badge {
-            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .map-controls {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .map-btn {
-            background: #4a5568;
-            color: #e2e8f0;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-        
-        .map-btn:hover {
-            background: #5a6578;
-            transform: translateY(-2px);
-        }
-        
-        .map-btn.active {
-            background: #4fc3f7;
-            color: white;
-        }
-        
-        /* Panel de puntos */
-        .points-panel {
-            background: #2d3748;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4a5568;
-        }
-        
-        .panel-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #4fc3f7;
-            font-size: 1.2rem;
-        }
-        
-        .add-point-btn {
-            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-        
-        .add-point-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-        }
-        
-        /* Lista de puntos */
-        .points-list {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 500px;
-        }
-        
-        .point-item {
-            background: #4a5568;
-            border-radius: 8px;
-            padding: 15px;
-            border-left: 4px solid #4fc3f7;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .point-item:hover {
-            background: #5a6578;
-            transform: translateX(5px);
-        }
-        
-        .point-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-        
-        .point-name {
-            font-weight: 600;
-            color: white;
-            font-size: 1rem;
-        }
-        
-        .point-type {
-            background: rgba(79, 195, 247, 0.2);
-            color: #4fc3f7;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-        
-        .point-description {
-            color: #cbd5e0;
-            font-size: 0.85rem;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-        
-        .point-coords {
-            color: #a0aec0;
-            font-size: 0.8rem;
-            font-family: monospace;
-        }
-        
-        .point-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .point-item:hover .point-actions {
-            opacity: 1;
-        }
-        
-        .action-btn {
-            background: none;
-            border: none;
-            color: #cbd5e0;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-        
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .edit-btn:hover {
-            color: #4fc3f7;
-        }
-        
-        .delete-btn:hover {
-            color: #f44336;
-        }
-        
-        /* Modal para agregar/editar puntos */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .modal-content {
-            background: #2d3748;
-            border-radius: 12px;
-            padding: 30px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-        
-        .modal-overlay.active .modal-content {
-            transform: translateY(0);
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4a5568;
-        }
-        
-        .modal-title {
-            color: #4fc3f7;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .close-modal {
-            background: none;
-            border: none;
-            color: #cbd5e0;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-        
-        .close-modal:hover {
-            color: #f44336;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            color: #e2e8f0;
-            font-weight: 500;
-        }
-        
-        .form-input,
-        .form-select,
-        .form-textarea {
-            width: 100%;
-            padding: 12px 15px;
-            background: #4a5568;
-            border: 2px solid #5a6578;
-            border-radius: 6px;
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: #4fc3f7;
-            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
-        }
-        
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .color-preview {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 2px solid white;
-            margin-right: 10px;
-            display: inline-block;
-        }
-        
-        .coords-input-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        
-        .coords-input {
-            flex: 1;
-            padding: 12px 15px;
-            background: #4a5568;
-            border: 2px solid #5a6578;
-            border-radius: 6px;
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .coords-input:focus {
-            outline: none;
-            border-color: #4fc3f7;
-            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
-        }
-        
-        .coords-display {
-            background: #4a5568;
-            padding: 10px;
-            border-radius: 6px;
-            font-family: monospace;
-            margin-top: 8px;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            color: #cbd5e0;
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-        
-        .btn-primary {
-            flex: 1;
-            background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
-        }
-        
-        .btn-secondary {
-            flex: 1;
-            background: #4a5568;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6578;
-        }
-        
-        /* Contador de puntos */
-        .points-counter {
-            background: rgba(79, 195, 247, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        
-        .counter-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #4fc3f7;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        
-        .counter-label {
-            text-align: center;
-            color: #cbd5e0;
-            font-size: 0.9rem;
-        }
-        <?php endif; ?>
-        
-        /* El Mapa - Estilos comunes */
-        #map {
-            <?php if(!$isFullscreen): ?>
-            flex: 1;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid #4a5568;
-            <?php else: ?>
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 100vh !important;
-            width: 100vw !important;
-            border: none;
-            <?php endif; ?>
-        }
-        
-        /* Leaflet Customization */
-        .leaflet-control-zoom {
-            border: 2px solid #4a5568 !important;
-            border-radius: 6px !important;
-            overflow: hidden;
-        }
-        
-        .leaflet-control-zoom a {
-            background: #2d3748 !important;
-            color: #e2e8f0 !important;
-            border-bottom: 1px solid #4a5568 !important;
-        }
-        
-        .leaflet-control-zoom a:hover {
-            background: #4a5568 !important;
-        }
-        
-        .leaflet-control-attribution {
-            background: rgba(45, 55, 72, 0.9) !important;
-            color: #cbd5e0 !important;
-            padding: 5px 10px !important;
-            border-radius: 4px !important;
-            font-size: 0.8rem !important;
-        }
-        
-        .leaflet-control-attribution a {
-            color: #4fc3f7 !important;
-        }
-        
-        /* Estilos para marcadores personalizados */
-        .custom-marker {
-            transition: all 0.3s ease;
-        }
-        
-        .custom-marker:hover {
-            transform: scale(1.2);
-            z-index: 1000 !important;
-        }
-        
-        /* Botón de salir de pantalla completa - Solo en modo fullscreen */
-        <?php if($isFullscreen): ?>
-        .fullscreen-exit-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            opacity: 0.9;
-        }
-        
-        .fullscreen-exit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
-            opacity: 1;
-        }
-        
-        /* Indicador de tecla ESC */
-        .esc-hint {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: rgba(45, 55, 72, 0.9);
-            color: #cbd5e0;
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-size: 12px;
-            border: 1px solid #4a5568;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .esc-hint kbd {
-            background: #2d3748;
-            border: 1px solid #4a5568;
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #4fc3f7;
-        }
-        <?php endif; ?>
-        
-        /* Responsive */
-        @media (max-width: 1024px) {
-            <?php if(!$isFullscreen): ?>
-            .main-layout {
-                flex-direction: column;
-            }
-            
-            .points-column {
-                min-width: auto;
-                max-height: 400px;
-            }
-            
-            .points-list {
-                max-height: 300px;
-            }
-            <?php endif; ?>
-        }
-        
-        @media (max-width: 768px) {
-            <?php if(!$isFullscreen): ?>
-            .main-container {
-                padding: 10px;
-            }
-            
-            .map-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-            
-            .map-controls {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .modal-content {
-                width: 95%;
-                padding: 20px;
-            }
-            
-            .coords-input-group {
-                flex-direction: column;
-            }
-            <?php else: ?>
-            .fullscreen-exit-btn {
-                bottom: 10px;
-                left: 10px;
-                padding: 10px 18px;
-                font-size: 13px;
-            }
-            
-            .esc-hint {
-                bottom: 10px;
-                right: 10px;
-                font-size: 11px;
-                padding: 6px 12px;
-            }
-            <?php endif; ?>
-        }
-        
-        /* Scrollbar personalizado */
-        .points-list::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .points-list::-webkit-scrollbar-track {
-            background: #4a5568;
-            border-radius: 4px;
-        }
-        
-        .points-list::-webkit-scrollbar-thumb {
-            background: #718096;
-            border-radius: 4px;
-        }
-        
-        .points-list::-webkit-scrollbar-thumb:hover {
-            background: #4fc3f7;
-        }
+       * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    <?php if(!$isFullscreen): ?>
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #e2e8f0;
+    height: 100vh;
+    overflow: hidden;
+    <?php else: ?>
+    background: #1a1a2e;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    <?php endif; ?>
+}
+
+<?php if(!$isFullscreen): ?>
+/* ============ HEADER - ESCRITORIO ============ */
+.main-header {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    padding: 15px 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title h1 {
+    font-size: 1.8rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title h1 i {
+    color: #4fc3f7;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #cbd5e0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.header-btn {
+    background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.header-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+}
+
+.back-btn:hover {
+    box-shadow: 0 4px 12px rgba(113, 128, 150, 0.3);
+}
+
+/* ============ MAIN CONTENT - ESCRITORIO ============ */
+.main-container {
+    margin-top: 80px;
+    height: calc(100vh - 80px);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.main-layout {
+    display: flex;
+    gap: 20px;
+    height: 100%;
+}
+
+/* Columna izquierda - Mapa */
+.map-column {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Columna derecha - Panel de puntos */
+.points-column {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Mapa Container */
+.map-container {
+    flex: 1;
+    background: #2d3748;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+}
+
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #4a5568;
+}
+
+.map-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.map-title h2 {
+    font-size: 1.4rem;
+    color: #fff;
+}
+
+.map-title h2 i {
+    color: #4fc3f7;
+}
+
+.location-badge {
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.map-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.map-btn {
+    background: #4a5568;
+    color: #e2e8f0;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.map-btn:hover {
+    background: #5a6578;
+    transform: translateY(-2px);
+}
+
+.map-btn.active {
+    background: #4fc3f7;
+    color: white;
+}
+
+/* Botón de geolocalización específico */
+.locate-btn {
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%) !important;
+    color: white !important;
+}
+
+.locate-btn:hover {
+    background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%) !important;
+}
+
+.locate-btn.active {
+    background: linear-gradient(135deg, #1B5E20 0%, #0D3B0D 100%) !important;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3) !important;
+}
+
+/* Panel de puntos */
+.points-panel {
+    background: #2d3748;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #4a5568;
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #4fc3f7;
+    font-size: 1.2rem;
+}
+
+.add-point-btn {
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.add-point-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Lista de puntos */
+.points-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 500px;
+}
+
+.point-item {
+    background: #4a5568;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #4fc3f7;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.point-item:hover {
+    background: #5a6578;
+    transform: translateX(5px);
+}
+
+.point-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.point-name {
+    font-weight: 600;
+    color: white;
+    font-size: 1rem;
+}
+
+.point-type {
+    background: rgba(79, 195, 247, 0.2);
+    color: #4fc3f7;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+.point-description {
+    color: #cbd5e0;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.point-coords {
+    color: #a0aec0;
+    font-size: 0.8rem;
+    font-family: monospace;
+}
+
+.point-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.point-item:hover .point-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: #cbd5e0;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.edit-btn:hover {
+    color: #4fc3f7;
+}
+
+.delete-btn:hover {
+    color: #f44336;
+}
+
+/* Modal para agregar/editar puntos */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: #2d3748;
+    border-radius: 12px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #4a5568;
+}
+
+.modal-title {
+    color: #4fc3f7;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    color: #cbd5e0;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+    color: #f44336;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 12px 15px;
+    background: #4a5568;
+    border: 2px solid #5a6578;
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #4fc3f7;
+    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.color-preview {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+    margin-right: 10px;
+    display: inline-block;
+}
+
+.coords-input-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.coords-input {
+    flex: 1;
+    padding: 12px 15px;
+    background: #4a5568;
+    border: 2px solid #5a6578;
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.coords-input:focus {
+    outline: none;
+    border-color: #4fc3f7;
+    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
+}
+
+.coords-display {
+    background: #4a5568;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    margin-top: 8px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    color: #cbd5e0;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn-primary {
+    flex: 1;
+    background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+}
+
+.btn-secondary {
+    flex: 1;
+    background: #4a5568;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #5a6578;
+}
+
+/* Contador de puntos */
+.points-counter {
+    background: rgba(79, 195, 247, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.counter-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4fc3f7;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.counter-label {
+    text-align: center;
+    color: #cbd5e0;
+    font-size: 0.9rem;
+}
+<?php endif; ?>
+
+/* ============ MAPA - ESTILOS COMUNES ============ */
+#map {
+    <?php if(!$isFullscreen): ?>
+    flex: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #4a5568;
+    <?php else: ?>
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh !important;
+    width: 100vw !important;
+    border: none;
+    <?php endif; ?>
+}
+
+/* ============ LEAFLET PERSONALIZACIÓN ============ */
+.leaflet-control-zoom {
+    border: 2px solid #4a5568 !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+    background: #2d3748 !important;
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid #4a5568 !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: #4a5568 !important;
+}
+
+.leaflet-control-attribution {
+    background: rgba(45, 55, 72, 0.9) !important;
+    color: #cbd5e0 !important;
+    padding: 5px 10px !important;
+    border-radius: 4px !important;
+    font-size: 0.8rem !important;
+}
+
+.leaflet-control-attribution a {
+    color: #4fc3f7 !important;
+}
+
+/* Estilos para marcadores personalizados */
+.custom-marker {
+    transition: all 0.3s ease;
+}
+
+.custom-marker:hover {
+    transform: scale(1.2);
+    z-index: 1000 !important;
+}
+
+/* ============ GEOLOCALIZACIÓN ============ */
+/* Estilos para el marcador de ubicación del usuario */
+.user-location-marker {
+    background-color: #2196F3 !important;
+    border: 3px solid white !important;
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.7) !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+    }
+}
+
+/* Popup de ubicación del usuario */
+.user-location-popup .leaflet-popup-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.user-location-popup .leaflet-popup-content-wrapper {
+    background: #2196F3;
+    color: white;
+    border-radius: 8px;
+}
+
+.user-location-popup .leaflet-popup-tip {
+    background: #2196F3;
+}
+
+/* Notificaciones de ubicación */
+.location-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s ease;
+}
+
+.location-notification.success {
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+}
+
+.location-notification.error {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* ============ BOTÓN FULLSCREEN ============ */
+<?php if($isFullscreen): ?>
+.fullscreen-exit-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 0.9;
+}
+
+.fullscreen-exit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+    opacity: 1;
+}
+
+/* Indicador de tecla ESC */
+.esc-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(45, 55, 72, 0.9);
+    color: #cbd5e0;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 12px;
+    border: 1px solid #4a5568;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.esc-hint kbd {
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #4fc3f7;
+}
+<?php endif; ?>
+
+/* ============ SCROLLBAR PERSONALIZADO ============ */
+.points-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.points-list::-webkit-scrollbar-track {
+    background: #4a5568;
+    border-radius: 4px;
+}
+
+.points-list::-webkit-scrollbar-thumb {
+    background: #718096;
+    border-radius: 4px;
+}
+
+.points-list::-webkit-scrollbar-thumb:hover {
+    background: #4fc3f7;
+}
+
+/* ============ RESPONSIVE - TABLET (1024px y menos) ============ */
+@media (max-width: 1024px) {
+    <?php if(!$isFullscreen): ?>
+    .main-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 80px);
+    }
+    
+    .map-column {
+        flex: 1;
+        min-height: 50vh;
+    }
+    
+    .points-column {
+        min-width: auto;
+        max-height: 400px;
+        flex: 0 0 auto;
+    }
+    
+    .points-list {
+        max-height: 300px;
+    }
+    
+    .header-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .user-info {
+        font-size: 0.8rem;
+    }
+    
+    .header-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+    <?php endif; ?>
+}
+
+/* ============ RESPONSIVE - TABLET PEQUEÑA (768px y menos) ============ */
+@media (max-width: 768px) {
+    <?php if(!$isFullscreen): ?>
+    /* Header optimizado para móvil */
+    .main-header {
+        padding: 10px 15px;
+    }
+    
+    .header-top {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .header-title h1 {
+        font-size: 1.3rem;
+        flex-wrap: wrap;
+    }
+    
+    .user-info {
+        margin-top: 5px;
+        font-size: 0.75rem;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    
+    .header-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .header-btn i {
+        margin-right: 5px;
+    }
+    
+    .header-btn span {
+        display: inline-block;
+    }
+    
+    /* Main content optimizado */
+    .main-container {
+        margin-top: 140px; /* Más espacio para header más grande */
+        height: calc(100vh - 140px);
+        padding: 10px;
+        gap: 15px;
+    }
+    
+    .map-container {
+        padding: 10px;
+        border-radius: 10px;
+    }
+    
+    .map-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+    }
+    
+    .map-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .map-title h2 {
+        font-size: 1.2rem;
+    }
+    
+    .location-badge {
+        align-self: flex-start;
+        font-size: 0.8rem;
+        padding: 5px 10px;
+    }
+    
+    .map-controls {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    
+    .map-btn {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        justify-content: center;
+    }
+    
+    .map-btn i {
+        margin-right: 5px;
+    }
+    
+    .map-btn span {
+        display: inline-block;
+    }
+    
+    /* Panel de puntos optimizado */
+    .points-panel {
+        padding: 15px;
+        border-radius: 10px;
+    }
+    
+    .panel-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        margin-bottom: 15px;
+    }
+    
+    .panel-title {
+        font-size: 1.1rem;
+    }
+    
+    .add-point-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+    }
+    
+    .point-item {
+        padding: 12px;
+    }
+    
+    .point-item-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .point-type {
+        align-self: flex-start;
+    }
+    
+    .point-actions {
+        opacity: 1; /* Siempre visible en móvil */
+        justify-content: space-between;
+    }
+    
+    .action-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px;
+        font-size: 0.75rem;
+    }
+    
+    /* Modal optimizado para móvil */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 10px;
+        max-height: 85vh;
+    }
+    
+    .modal-title {
+        font-size: 1.2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+    
+    .coords-input-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .coords-input {
+        width: 100%;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        padding: 12px;
+        width: 100%;
+    }
+    
+    /* Contador de puntos */
+    .points-counter {
+        padding: 12px;
+        margin-top: 15px;
+    }
+    
+    .counter-value {
+        font-size: 1.8rem;
+    }
+    <?php else: ?>
+    /* Fullscreen en móvil */
+    .fullscreen-exit-btn {
+        bottom: 10px;
+        left: 10px;
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+    
+    .esc-hint {
+        bottom: 10px;
+        right: 10px;
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+    <?php endif; ?>
+}
+
+/* ============ RESPONSIVE - MÓVIL PEQUEÑO (480px y menos) ============ */
+@media (max-width: 480px) {
+    <?php if(!$isFullscreen): ?>
+    .header-title h1 {
+        font-size: 1.1rem;
+    }
+    
+    .header-btn {
+        font-size: 0.75rem;
+        padding: 6px 8px;
+    }
+    
+    .header-btn i {
+        margin-right: 3px;
+        font-size: 0.9rem;
+    }
+    
+    .main-container {
+        margin-top: 150px;
+        height: calc(100vh - 150px);
+        padding: 8px;
+    }
+    
+    .map-container {
+        padding: 8px;
+        border-radius: 8px;
+    }
+    
+    .map-title h2 {
+        font-size: 1.1rem;
+    }
+    
+    .location-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+    
+    .map-controls {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    
+    .map-btn {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .points-panel {
+        padding: 12px;
+    }
+    
+    .panel-title {
+        font-size: 1rem;
+    }
+    
+    .point-name {
+        font-size: 0.9rem;
+    }
+    
+    .point-description {
+        font-size: 0.8rem;
+    }
+    
+    .point-coords {
+        font-size: 0.75rem;
+    }
+    
+    .modal-content {
+        padding: 15px;
+        margin: 5px;
+    }
+    
+    .modal-title {
+        font-size: 1.1rem;
+    }
+    
+    .form-label {
+        font-size: 0.9rem;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 0.9rem;
+        padding: 8px 10px;
+    }
+    <?php endif; ?>
+    
+    <?php if($isFullscreen): ?>
+    .fullscreen-exit-btn {
+        padding: 8px 15px;
+        font-size: 12px;
+        bottom: 5px;
+        left: 5px;
+    }
+    
+    .esc-hint {
+        padding: 5px 10px;
+        font-size: 10px;
+        bottom: 5px;
+        right: 5px;
+    }
+    <?php endif; ?>
+}
+
+/* ============ RESPONSIVE - MÓVIL MUY PEQUEÑO (320px y menos) ============ */
+@media (max-width: 320px) {
+    <?php if(!$isFullscreen): ?>
+    .header-title h1 {
+        font-size: 1rem;
+    }
+    
+    .header-btn span {
+        display: none; /* Ocultar texto en botones muy pequeños */
+    }
+    
+    .header-btn i {
+        margin-right: 0;
+        font-size: 1rem;
+    }
+    
+    .map-btn span {
+        display: none;
+    }
+    
+    .map-btn i {
+        margin-right: 0;
+        font-size: 1rem;
+    }
+    
+    .action-btn span {
+        display: none;
+    }
+    
+    .action-btn i {
+        margin-right: 0;
+        font-size: 1rem;
+    }
+    <?php endif; ?>
+}
+
+/* ============ ORIENTACIÓN HORIZONTAL EN MÓVIL ============ */
+@media (max-height: 600px) and (orientation: landscape) {
+    <?php if(!$isFullscreen): ?>
+    .main-layout {
+        flex-direction: row;
+        height: 100%;
+    }
+    
+    .map-column {
+        min-height: auto;
+    }
+    
+    .points-column {
+        max-height: calc(100vh - 160px);
+    }
+    
+    .main-container {
+        margin-top: 90px;
+        height: calc(100vh - 90px);
+    }
+    
+    .map-controls {
+        grid-template-columns: 1fr 1fr;
+    }
+    <?php endif; ?>
+}
+
+/* ============ ALTO CONTRASTE Y ACCESIBILIDAD ============ */
+@media (prefers-contrast: high) {
+    .map-btn {
+        border: 2px solid white;
+    }
+    
+    .point-item {
+        border-left: 4px solid white;
+    }
+    
+    .action-btn {
+        border: 1px solid white;
+    }
+}
+
+/* ============ REDUCCIÓN DE MOVIMIENTO ============ */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .user-location-marker {
+        animation: none !important;
+    }
+    
+    .map-btn:hover {
+        transform: none;
+    }
+    
+    .point-item:hover {
+        transform: none;
+    }
+}
+
+/* ============ DARK/LIGHT MODE SUPPORT ============ */
+@media (prefers-color-scheme: light) {
+    <?php if(!$isFullscreen): ?>
+    body {
+        background: linear-gradient(135deg, #f0f2f5 0%, #e4e6eb 100%);
+        color: #2d3748;
+    }
+    
+    .main-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-title h1 {
+        color: #2d3748;
+    }
+    
+    .user-info {
+        color: #4a5568;
+    }
+    
+    .map-container,
+    .points-panel {
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .map-title h2 {
+        color: #2d3748;
+    }
+    
+    .point-item {
+        background: #f8f9fa;
+        border-left: 4px solid #4fc3f7;
+    }
+    
+    .point-name {
+        color: #2d3748;
+    }
+    
+    .point-description {
+        color: #4a5568;
+    }
+    
+    .point-coords {
+        color: #718096;
+    }
+    
+    .modal-content {
+        background: #ffffff;
+        color: #2d3748;
+    }
+    
+    .form-label {
+        color: #2d3748;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        background: #f8f9fa;
+        border-color: #e2e8f0;
+        color: #2d3748;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        border-color: #4fc3f7;
+    }
+    <?php endif; ?>
+}
     </style>
 </head>
 <body>
@@ -845,6 +1420,9 @@ $isFullscreen = isset($_GET['fullscreen']) && $_GET['fullscreen'] == '1';
                         <div class="map-controls">
                             <button class="map-btn" id="addPointModeBtn">
                                 <i class="fas fa-map-marker-alt"></i> Agregar Punto
+                            </button>
+                            <button class="map-btn" id="locateUserBtn">
+                                <i class="fas fa-location-crosshairs"></i> Mi Ubicación
                             </button>
                         </div>
                     </div>
@@ -1726,7 +2304,486 @@ pointForm.addEventListener('submit', async function(e) {
 
     // Agregar el control al mapa
     map.addControl(new FullscreenControl());
+// Agregar estas variables globales al inicio de la sección JavaScript
+let userLocationMarker = null;
+let isTrackingUser = false;
+let watchId = null;
+let locateBtn = null;
 
+// Después de inicializar el mapa, agregar esta función:
+function initGeolocation() {
+    locateBtn = document.getElementById('locateUserBtn');
+    
+    if (!locateBtn) {
+        console.log('Botón de geolocalización no encontrado');
+        return;
+    }
+    
+    locateBtn.addEventListener('click', toggleUserTracking);
+    
+    // Verificar si el navegador soporta geolocalización
+    if (!navigator.geolocation) {
+        locateBtn.innerHTML = '<i class="fas fa-location-slash"></i> No soportado';
+        locateBtn.disabled = true;
+        alert('La geolocalización no es soportada por tu navegador.');
+        return;
+    }
+    
+    // Solicitar permisos al cargar la página
+    requestLocationPermission();
+}
+
+// Función para solicitar permiso de ubicación
+function requestLocationPermission() {
+    if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' })
+            .then(function(permissionStatus) {
+                console.log('Estado del permiso de ubicación:', permissionStatus.state);
+                
+                permissionStatus.onchange = function() {
+                    console.log('Permiso de ubicación cambiado:', this.state);
+                    updateLocateButtonState(this.state);
+                };
+                
+                updateLocateButtonState(permissionStatus.state);
+            })
+            .catch(function(error) {
+                console.error('Error al consultar permisos:', error);
+            });
+    } else {
+        // Navegadores antiguos - solicitar permiso al intentar usar
+        console.log('API de permisos no disponible');
+    }
+}
+
+// Función para actualizar el estado del botón según los permisos
+function updateLocateButtonState(permissionState) {
+    if (!locateBtn) return;
+    
+    switch(permissionState) {
+        case 'granted':
+            locateBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Mi Ubicación';
+            locateBtn.disabled = false;
+            locateBtn.title = 'Mostrar mi ubicación en el mapa';
+            break;
+        case 'prompt':
+            locateBtn.innerHTML = '<i class="fas fa-location-dot"></i> Permitir Ubicación';
+            locateBtn.disabled = false;
+            locateBtn.title = 'Haz clic para permitir acceso a tu ubicación';
+            break;
+        case 'denied':
+            locateBtn.innerHTML = '<i class="fas fa-location-slash"></i> Ubicación Bloqueada';
+            locateBtn.disabled = true;
+            locateBtn.title = 'El acceso a la ubicación está bloqueado. Permítelo en la configuración del navegador.';
+            break;
+    }
+}
+
+// Función para alternar el seguimiento de ubicación
+function toggleUserTracking() {
+    if (isTrackingUser) {
+        stopTrackingUser();
+    } else {
+        startTrackingUser();
+    }
+}
+
+// Función para iniciar el seguimiento de ubicación
+function startTrackingUser() {
+    if (!navigator.geolocation) return;
+    
+    locateBtn.classList.add('active');
+    locateBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Siguiendo...';
+    isTrackingUser = true;
+    
+    // Opciones para geolocalización
+    const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    };
+    
+    // Obtener ubicación actual
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            showUserLocation(position);
+            
+            // Iniciar seguimiento continuo
+            watchId = navigator.geolocation.watchPosition(
+                updateUserLocation,
+                handleLocationError,
+                options
+            );
+        },
+        handleLocationError,
+        options
+    );
+}
+
+// Función para detener el seguimiento de ubicación
+function stopTrackingUser() {
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+    
+    locateBtn.classList.remove('active');
+    locateBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Mi Ubicación';
+    isTrackingUser = false;
+    
+    // No eliminar el marcador, solo dejar de actualizarlo
+    // El usuario puede seguir viendo su última ubicación conocida
+}
+
+// Función para mostrar la ubicación del usuario
+function showUserLocation(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+    
+    console.log('Ubicación del usuario:', lat, lng, 'Precisión:', accuracy + 'm');
+    
+    // Crear o actualizar marcador
+    if (!userLocationMarker) {
+        // Crear icono personalizado para ubicación del usuario
+        const userIcon = L.divIcon({
+            html: `
+                <div style="
+                    background-color: #2196F3;
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
+                    animation: pulse 2s infinite;
+                ">
+                    <i class="fas fa-user" style="color: white; font-size: 12px;"></i>
+                </div>
+            `,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            className: 'user-location-marker'
+        });
+        
+        userLocationMarker = L.marker([lat, lng], {
+            icon: userIcon,
+            zIndexOffset: 2000
+        }).addTo(map);
+        
+        // Crear círculo de precisión
+        const accuracyCircle = L.circle([lat, lng], {
+            color: '#2196F3',
+            fillColor: '#2196F3',
+            fillOpacity: 0.2,
+            radius: accuracy
+        }).addTo(map);
+        
+        // Vincular el círculo al marcador
+        userLocationMarker.accuracyCircle = accuracyCircle;
+    } else {
+        userLocationMarker.setLatLng([lat, lng]);
+        if (userLocationMarker.accuracyCircle) {
+            userLocationMarker.accuracyCircle.setLatLng([lat, lng]);
+            userLocationMarker.accuracyCircle.setRadius(accuracy);
+        }
+    }
+    
+    // Actualizar popup
+    const popupContent = `
+        <div style="padding: 10px; min-width: 200px;">
+            <strong style="color: white; font-size: 14px;">
+                <i class="fas fa-user"></i> Tu Ubicación
+            </strong>
+            <div style="margin-top: 8px;">
+                <div style="font-size: 12px; margin-bottom: 4px;">
+                    <strong>Coordenadas:</strong>
+                </div>
+                <div style="font-family: monospace; font-size: 11px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">
+                    Lat: ${lat.toFixed(6)}° N<br>
+                    Lng: ${lng.toFixed(6)}° W
+                </div>
+                <div style="margin-top: 8px; font-size: 11px;">
+                    <i class="fas fa-crosshairs"></i> Precisión: ${Math.round(accuracy)} metros
+                </div>
+                <div style="margin-top: 8px; font-size: 11px;">
+                    <i class="fas fa-clock"></i> Actualizado: ${new Date().toLocaleTimeString()}
+                </div>
+            </div>
+            <div style="margin-top: 10px;">
+                <button onclick="centerOnUserLocation()" 
+                        style="background: white; color: #2196F3; border: none; padding: 6px 12px; 
+                               border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;
+                               font-weight: bold;">
+                    <i class="fas fa-search-location"></i> Centrar aquí
+                </button>
+            </div>
+        </div>
+    `;
+    
+    userLocationMarker.bindPopup(popupContent, {
+        className: 'user-location-popup',
+        closeButton: false,
+        autoClose: false,
+        closeOnClick: false
+    }).openPopup();
+    
+    // Centrar el mapa en la ubicación del usuario con zoom apropiado
+    const zoomLevel = accuracy < 100 ? 16 : accuracy < 500 ? 15 : 14;
+    map.setView([lat, lng], zoomLevel);
+    
+    // Mostrar notificación
+    showLocationNotification('Ubicación encontrada', 'success');
+}
+
+// Función para actualizar la ubicación del usuario
+function updateUserLocation(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+    
+    if (userLocationMarker) {
+        userLocationMarker.setLatLng([lat, lng]);
+        
+        if (userLocationMarker.accuracyCircle) {
+            userLocationMarker.accuracyCircle.setLatLng([lat, lng]);
+            userLocationMarker.accuracyCircle.setRadius(accuracy);
+        }
+        
+        // Actualizar popup
+        const popupContent = `
+            <div style="padding: 10px; min-width: 200px;">
+                <strong style="color: white; font-size: 14px;">
+                    <i class="fas fa-user"></i> Tu Ubicación
+                </strong>
+                <div style="margin-top: 8px;">
+                    <div style="font-size: 12px; margin-bottom: 4px;">
+                        <strong>Coordenadas:</strong>
+                    </div>
+                    <div style="font-family: monospace; font-size: 11px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">
+                        Lat: ${lat.toFixed(6)}° N<br>
+                        Lng: ${lng.toFixed(6)}° W
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px;">
+                        <i class="fas fa-crosshairs"></i> Precisión: ${Math.round(accuracy)} metros
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px;">
+                        <i class="fas fa-clock"></i> Actualizado: ${new Date().toLocaleTimeString()}
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button onclick="centerOnUserLocation()" 
+                            style="background: white; color: #2196F3; border: none; padding: 6px 12px; 
+                                   border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;
+                                   font-weight: bold;">
+                        <i class="fas fa-search-location"></i> Centrar aquí
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        userLocationMarker.getPopup().setContent(popupContent);
+    }
+}
+
+// Función para manejar errores de geolocalización
+function handleLocationError(error) {
+    console.error('Error de geolocalización:', error);
+    
+    stopTrackingUser();
+    
+    let errorMessage = 'No se pudo obtener tu ubicación. ';
+    
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            errorMessage += 'Permiso denegado. Por favor, permite el acceso a la ubicación en la configuración de tu navegador.';
+            showLocationNotification('Permiso de ubicación denegado', 'error');
+            break;
+        case error.POSITION_UNAVAILABLE:
+            errorMessage += 'La información de ubicación no está disponible.';
+            showLocationNotification('Ubicación no disponible', 'error');
+            break;
+        case error.TIMEOUT:
+            errorMessage += 'La solicitud de ubicación ha expirado.';
+            showLocationNotification('Tiempo de espera agotado', 'error');
+            break;
+        case error.UNKNOWN_ERROR:
+            errorMessage += 'Ocurrió un error desconocido.';
+            showLocationNotification('Error desconocido', 'error');
+            break;
+    }
+    
+    alert(errorMessage);
+}
+
+// Función para centrar en la ubicación del usuario
+window.centerOnUserLocation = function() {
+    if (userLocationMarker) {
+        const latLng = userLocationMarker.getLatLng();
+        map.setView(latLng, 16);
+        userLocationMarker.openPopup();
+    }
+};
+
+// Función para mostrar notificaciones de ubicación
+function showLocationNotification(message, type) {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    if (type === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)';
+        notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)';
+        notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Remover después de 5 segundos
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Agregar estilos de animación para notificaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Inicializar geolocalización después de cargar el mapa
+setTimeout(() => {
+    initGeolocation();
+}, 1000);
+
+// También agregar en modo fullscreen
+<?php if($isFullscreen): ?>
+// En modo fullscreen, crear botón de ubicación
+const locateControl = L.Control.extend({
+    options: {
+        position: 'bottomright'
+    },
+    
+    onAdd: function(map) {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        container.style.backgroundColor = '#2d3748';
+        container.style.border = '2px solid #4a5568';
+        container.style.borderRadius = '6px';
+        container.style.overflow = 'hidden';
+        container.style.marginRight = '10px';
+        container.style.marginBottom = '80px';
+        
+        const button = L.DomUtil.create('a', '', container);
+        button.href = '#';
+        button.title = 'Mi Ubicación';
+        button.style.width = '36px';
+        button.style.height = '36px';
+        button.style.display = 'flex';
+        button.style.alignItems = 'center';
+        button.style.justifyContent = 'center';
+        button.style.color = '#4a5568';
+        button.style.textDecoration = 'none';
+        button.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+        
+        L.DomEvent.on(button, 'click', L.DomEvent.stopPropagation)
+                  .on(button, 'click', L.DomEvent.preventDefault)
+                  .on(button, 'click', function() {
+                      if (!navigator.geolocation) {
+                          alert('La geolocalización no es soportada por tu navegador.');
+                          return;
+                      }
+                      
+                      navigator.geolocation.getCurrentPosition(function(position) {
+                          const lat = position.coords.latitude;
+                          const lng = position.coords.longitude;
+                          
+                          // Crear marcador de ubicación del usuario
+                          const userIcon = L.divIcon({
+                              html: `<div style="
+                                  background-color: #2196F3;
+                                  border: 3px solid white;
+                                  border-radius: 50%;
+                                  width: 24px;
+                                  height: 24px;
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                  box-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
+                              "><i class="fas fa-user" style="color: white; font-size: 12px;"></i></div>`,
+                              iconSize: [24, 24],
+                              iconAnchor: [12, 12]
+                          });
+                          
+                          const marker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
+                          marker.bindPopup(`<b>Tu ubicación</b><br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`).openPopup();
+                          
+                          map.setView([lat, lng], 16);
+                      }, function(error) {
+                          alert('Error al obtener ubicación: ' + error.message);
+                      });
+                  });
+        
+        L.DomEvent.on(button, 'mouseover', function() {
+            button.style.backgroundColor = '#4a5568';
+            button.style.color = 'white';
+        });
+        
+        L.DomEvent.on(button, 'mouseout', function() {
+            button.style.backgroundColor = '#2d3748';
+            button.style.color = '#e2e8f0';
+        });
+        
+        return container;
+    }
+});
+
+// Agregar control de ubicación en modo fullscreen
+map.addControl(new locateControl());
+<?php endif; ?>
     // Función para abrir pantalla completa
     function abrirPantallaCompleta() {
         // Obtener la posición y zoom actual del mapa

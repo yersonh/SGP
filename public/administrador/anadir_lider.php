@@ -618,7 +618,7 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
                 <!-- Referenciador Asignado (Usando tu función getAllReferenciadoresActivos) -->
                 <div class="form-group">
                     <label class="form-label" for="id_referenciador">
-                        <i class="fas fa-user-tie"></i> Referenciador Asignado
+                        <i class="fas fa-user-tie"></i> Coordinador Asignado
                     </label>
                     <select id="id_referenciador" name="id_referenciador" class="form-select">
                         <option value="">Seleccione un referenciador</option>

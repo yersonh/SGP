@@ -65,7 +65,6 @@ if (empty($data['cedula'])) $errors[] = 'La cédula es obligatoria';
 if (empty($data['direccion'])) $errors[] = 'La dirección es obligatoria';
 if (empty($data['email'])) $errors[] = 'El email es obligatorio';
 if (empty($data['telefono'])) $errors[] = 'El teléfono es obligatorio';
-if (empty($data['fecha_nacimiento'])) $errors[] = 'La fecha de nacimiento es obligatoria'; // NUEVA VALIDACIÓN
 
 // Validar afinidad
 if ($data['afinidad'] < 1 || $data['afinidad'] > 5) {

@@ -881,7 +881,6 @@ function setupFormEvents() {
         const camposObligatoriosFijos = [
             {id: 'nombre', nombre: 'Nombre'},
             {id: 'apellido', nombre: 'Apellido'},
-            {id: 'fecha_nacimiento', nombre: 'Fecha de Nacimiento'},
             {id: 'cedula', nombre: 'Cédula'},
             {id: 'email', nombre: 'Email'},
             {id: 'telefono', nombre: 'Teléfono'},
@@ -909,43 +908,37 @@ function setupFormEvents() {
                 }
             }
         });
-        // Validar fecha de nacimiento específicamente
+        
+        // Validar fecha de nacimiento - AHORA ES OPCIONAL
         const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
-        if (fechaNacimientoInput) {
-            // Validar que no esté vacío
-            if (!fechaNacimientoInput.value) {
+        if (fechaNacimientoInput && fechaNacimientoInput.value) {
+            // Solo validar si se ingresó una fecha (opcional)
+            const fechaNacimiento = new Date(fechaNacimientoInput.value);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0); // Para comparar solo fechas
+            
+            // Validar que no sea futura
+            if (fechaNacimiento > hoy) {
                 isValid = false;
-                errorMessage = 'La fecha de nacimiento es obligatoria';
+                errorMessage = 'La fecha de nacimiento no puede ser una fecha futura';
                 if (!firstErrorField) {
                     firstErrorField = fechaNacimientoInput;
                 }
-            } else {
-                // Validar que no sea futura
-                const fechaNacimiento = new Date(fechaNacimientoInput.value);
-                const hoy = new Date();
-                hoy.setHours(0, 0, 0, 0); // Para comparar solo fechas
-                
-                if (fechaNacimiento > hoy) {
-                    isValid = false;
-                    errorMessage = 'La fecha de nacimiento no puede ser una fecha futura';
-                    if (!firstErrorField) {
-                        firstErrorField = fechaNacimientoInput;
-                    }
-                }
-                
-                // Validar que sea una fecha válida (no muy antigua, por ejemplo mayor de 120 años)
-                const edadMinima = new Date();
-                edadMinima.setFullYear(edadMinima.getFullYear() - 120);
-                
-                if (fechaNacimiento < edadMinima) {
-                    isValid = false;
-                    errorMessage = 'La fecha de nacimiento no es válida';
-                    if (!firstErrorField) {
-                        firstErrorField = fechaNacimientoInput;
-                    }
+            }
+            
+            // Validar que sea una fecha válida (no muy antigua, por ejemplo mayor de 120 años)
+            const edadMinima = new Date();
+            edadMinima.setFullYear(edadMinima.getFullYear() - 120);
+            
+            if (fechaNacimiento < edadMinima) {
+                isValid = false;
+                errorMessage = 'La fecha de nacimiento no es válida';
+                if (!firstErrorField) {
+                    firstErrorField = fechaNacimientoInput;
                 }
             }
         }
+        
         // Validar afinidad (estrellas)
         if (currentRating === 0) {
             isValid = false;

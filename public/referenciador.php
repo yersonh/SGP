@@ -374,7 +374,6 @@ if ($porcentajeRestante > 50) {
                                    id="fecha_nacimiento" 
                                    name="fecha_nacimiento" 
                                    class="form-control" 
-                                   required
                                    data-progress="3">
                         </div>
                     </div>

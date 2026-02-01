@@ -259,50 +259,54 @@ class ReferenciadoModel {
     /**
      * Obtiene un referenciado con todos sus datos (incluyendo insumos)
      */
-    public function getReferenciadoCompleto($id_referenciado) {
-        $sql = "SELECT r.*, 
-                d.nombre as departamento_nombre,
-                m.nombre as municipio_nombre,
-                b.nombre as barrio_nombre,
-                gp.nombre as grupo_poblacional_nombre,
-                oa.nombre as oferta_apoyo_nombre,
-                z.nombre as zona_nombre,
-                s.nombre as sector_nombre,
-                pv.nombre as puesto_votacion_nombre,
-                gr.nombre as grupo_nombre,  -- NUEVO: información del grupo
-                CASE 
-                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
-                    ELSE pv.nombre
-                END as puesto_votacion_display,
-                CASE 
-                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
-                    ELSE r.mesa
-                END as mesa_display
-                FROM referenciados r
-                LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
-                LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
-                LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
-                LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
-                LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
-                LEFT JOIN zona z ON r.id_zona = z.id_zona
-                LEFT JOIN sector s ON r.id_sector = s.id_sector
-                LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
-                WHERE r.id_referenciado = :id_referenciado";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
-        $stmt->execute();
-        
-        $referenciado = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($referenciado) {
-            $referenciado['insumos'] = $this->getInsumosByReferenciado($id_referenciado);
-        }
-        
-        return $referenciado;
+public function getReferenciadoCompleto($id_referenciado) {
+    $sql = "SELECT r.*, 
+            r.id_puesto_votacion,
+            d.nombre as departamento_nombre,
+            m.nombre as municipio_nombre,
+            b.nombre as barrio_nombre,
+            gp.nombre as grupo_poblacional_nombre,
+            oa.nombre as oferta_apoyo_nombre,
+            z.nombre as zona_nombre,
+            s.nombre as sector_nombre,
+            pv.nombre as puesto_votacion_nombre,
+            gr.nombre as grupo_nombre,
+            l.nombres as lider_nombres,
+            l.apellidos as lider_apellidos,
+            l.cc as lider_cc,
+            CASE 
+                WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                ELSE pv.nombre
+            END as puesto_votacion_display,
+            CASE 
+                WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                ELSE r.mesa
+            END as mesa_display
+            FROM referenciados r
+            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+            LEFT JOIN lideres l ON r.id_lider = l.id_lider
+            WHERE r.id_referenciado = :id_referenciado";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    $referenciado = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($referenciado) {
+        $referenciado['insumos'] = $this->getInsumosByReferenciado($id_referenciado);
     }
     
+    return $referenciado;
+}
 /**
  * Verifica si una cédula ya está registrada y retorna información adicional
  */
@@ -627,11 +631,31 @@ public function actualizarReferenciado($id_referenciado, $data) {
         
         error_log("Valor final de 'activo': " . ($activo ? 'true' : 'false'));
         
+        // Procesar fechas nuevas
+        $fechaNacimiento = null;
+        if (!empty($data['fecha_nacimiento'])) {
+            $fechaNacimiento = $data['fecha_nacimiento'];
+            error_log("Fecha nacimiento: $fechaNacimiento");
+        }
+        
+        $fechaCumplimiento = null;
+        if (!empty($data['fecha_cumplimiento'])) {
+            $fechaCumplimiento = $data['fecha_cumplimiento'];
+            error_log("Fecha cumplimiento: $fechaCumplimiento");
+        }
+        
+        // Procesar id_lider
+        $idLider = null;
+        if (!empty($data['id_lider'])) {
+            $idLider = $data['id_lider'];
+            error_log("ID Líder: $idLider");
+        }
+        
         // Iniciar transacción
         $this->pdo->beginTransaction();
         error_log("Transacción iniciada");
         
-        // **SQL CORREGIDO: Todos los campos exactos de tu tabla**
+        // **SQL ACTUALIZADO: Incluye nuevos campos**
         $sql = "UPDATE referenciados SET
                 nombre = :nombre,
                 apellido = :apellido,
@@ -657,7 +681,10 @@ public function actualizarReferenciado($id_referenciado, $data) {
                 mesa_fuera = :mesa_fuera,
                 id_grupo = :id_grupo,
                 id_referenciador = :id_referenciador,
-                activo = :activo
+                activo = :activo,
+                fecha_nacimiento = :fecha_nacimiento,
+                fecha_cumplimiento = :fecha_cumplimiento,
+                id_lider = :id_lider
                 WHERE id_referenciado = :id_referenciado";
         
         error_log("SQL preparado");
@@ -708,6 +735,19 @@ public function actualizarReferenciado($id_referenciado, $data) {
         // Campo activo
         error_log("Bind activo: " . ($activo ? 'true' : 'false'));
         $stmt->bindValue(':activo', $activo, PDO::PARAM_BOOL);
+        
+        // **NUEVOS CAMPOS**
+        // Fecha nacimiento
+        error_log("Bind fecha_nacimiento: " . ($fechaNacimiento ?? 'NULL'));
+        $stmt->bindValue(':fecha_nacimiento', $fechaNacimiento);
+        
+        // Fecha cumplimiento
+        error_log("Bind fecha_cumplimiento: " . ($fechaCumplimiento ?? 'NULL'));
+        $stmt->bindValue(':fecha_cumplimiento', $fechaCumplimiento);
+        
+        // ID Líder
+        error_log("Bind id_lider: " . ($idLider ?? 'NULL'));
+        $stmt->bindValue(':id_lider', $idLider, PDO::PARAM_INT);
         
         // ID del referenciado
         $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);

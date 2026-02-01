@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/InsumoModel.php';
 require_once __DIR__ . '/../../models/Grupos_ParlamentariosModel.php';
+require_once __DIR__ . '/../../models/LiderModel.php'; // NUEVO: Añadir el modelo de Lider
 
 header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
 header("Pragma: no-cache"); // HTTP 1.0
@@ -48,6 +49,7 @@ $ofertaModel = new OfertaApoyoModel($pdo);
 $grupoModel = new GrupoPoblacionalModel($pdo);
 $barrioModel = new BarrioModel($pdo);
 $gruposParlamentariosModel = new Grupos_ParlamentariosModel($pdo);
+$liderModel = new LiderModel($pdo); // NUEVO: Instanciar modelo de Líder
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
@@ -61,6 +63,14 @@ if (!$referenciado) {
     exit();
 }
 
+// ===== DIAGNÓSTICO: Verificar qué datos llegan del referenciado =====
+echo "<!-- DIAGNÓSTICO REFERENCIADO ID: $id_referenciado -->";
+echo "<!-- id_zona: " . ($referenciado['id_zona'] ?? 'NULL') . " -->";
+echo "<!-- id_sector: " . ($referenciado['id_sector'] ?? 'NULL') . " -->";
+echo "<!-- id_puesto_votacion: " . ($referenciado['id_puesto_votacion'] ?? 'NULL') . " -->";
+echo "<!-- vota_fuera: " . ($referenciado['vota_fuera'] ?? 'No') . " -->";
+// ====================================================================
+
 // Obtener datos para los selects
 $zonas = $zonaModel->getAll();
 $sectores = $sectorModel->getAll();
@@ -72,6 +82,7 @@ $grupos = $grupoModel->getAll();
 $barrios = $barrioModel->getAll();
 $insumos_disponibles = $insumoModel->getAll();
 $gruposParlamentarios = $gruposParlamentariosModel->getAll();
+$lideres = $liderModel->getActivos(); // NUEVO: Obtener líderes activos
 
 // Obtener insumos del referenciado
 $insumos_referenciado = $insumoModel->getInsumosByReferenciado($id_referenciado);
@@ -79,9 +90,13 @@ $insumos_referenciado = $insumoModel->getInsumosByReferenciado($id_referenciado)
 // Obtener información del referenciador
 $referenciador = $usuarioModel->getUsuarioById($referenciado['id_referenciador'] ?? 0);
 
-// Función para marcar un campo como seleccionado en select
+// Función para marcar un campo como seleccionado en select - MEJORADA
 function isSelected($value, $compare) {
-    return $value == $compare ? 'selected' : '';
+    // Comparar como strings para evitar problemas de tipo (int vs string)
+    if ($value === '' || $compare === '') {
+        return '';
+    }
+    return (string)$value === (string)$compare ? 'selected' : '';
 }
 
 // Función para marcar un checkbox como checked
@@ -93,6 +108,7 @@ function isChecked($insumo_id, $insumos_referenciado) {
     }
     return '';
 }
+
 // Función para mostrar estado de actividad (igual que en ver_referenciado.php)
 function getEstadoActividad($activo) {
     if ($activo === true || $activo === 't' || $activo == 1) {
@@ -101,6 +117,7 @@ function getEstadoActividad($activo) {
         return '<span class="status-inactive"><i class="fas fa-times-circle"></i> Inactivo</span>';
     }
 }
+
 // Variables para mensajes
 $error_message = '';
 $success_message = '';
@@ -109,40 +126,54 @@ $success_message = '';
 if (isset($_GET['success'])) {
     $success_message = 'Referenciado actualizado correctamente.';
 }
+
 error_log("=== Intentando actualizar referenciado ID: $id_referenciado ===");
+
 // Procesar el formulario cuando se envíe
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Recopilar datos del formulario
-$datos_actualizar = [
-    'nombre' => $_POST['nombre'] ?? '',
-    'apellido' => $_POST['apellido'] ?? '',
-    'cedula' => $_POST['cedula'] ?? '',
-    'direccion' => $_POST['direccion'] ?? '',
-    'email' => $_POST['email'] ?? '',
-    'telefono' => $_POST['telefono'] ?? '',
-    'sexo' => $_POST['sexo'] ?? '',
-    'vota_fuera' => $_POST['vota_fuera'] ?? 'No',
-    'id_grupo' => !empty($_POST['id_grupo']) ? $_POST['id_grupo'] : null,
-    'afinidad' => $_POST['afinidad'] ?? 1,
-    'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
-    'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
-    'id_puesto_votacion' => !empty($_POST['id_puesto_votacion']) ? $_POST['id_puesto_votacion'] : null,
-    'mesa' => !empty($_POST['mesa']) ? $_POST['mesa'] : null,
-    'id_departamento' => !empty($_POST['id_departamento']) ? $_POST['id_departamento'] : null,
-    'id_municipio' => !empty($_POST['id_municipio']) ? $_POST['id_municipio'] : null,
-    'id_barrio' => !empty($_POST['id_barrio']) ? $_POST['id_barrio'] : null,
-    'id_oferta_apoyo' => !empty($_POST['id_oferta_apoyo']) ? $_POST['id_oferta_apoyo'] : null,
-    'id_grupo_poblacional' => !empty($_POST['id_grupo_poblacional']) ? $_POST['id_grupo_poblacional'] : null,
-    'compromiso' => $_POST['compromiso'] ?? '',
-    'insumos_nuevos' => $_POST['insumos_nuevos'] ?? [],
-    'insumos_eliminar' => $_POST['insumos_eliminar'] ?? [],
-    'id_referenciador' => !empty($_POST['id_referenciador']) ? intval($_POST['id_referenciador']) : $referenciado['id_referenciador']
-];
-error_log("=== DEPURACIÓN: Datos que se enviarán ===");
-error_log("id_referenciador: " . ($datos_actualizar['id_referenciador'] ?? 'NO DEFINIDO'));
-error_log("afinidad: " . ($datos_actualizar['afinidad'] ?? 'NO DEFINIDO'));
-error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
+        $datos_actualizar = [
+            'nombre' => $_POST['nombre'] ?? '',
+            'apellido' => $_POST['apellido'] ?? '',
+            'cedula' => $_POST['cedula'] ?? '',
+            'direccion' => $_POST['direccion'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'telefono' => $_POST['telefono'] ?? '',
+            'sexo' => $_POST['sexo'] ?? '',
+            'vota_fuera' => $_POST['vota_fuera'] ?? 'No',
+            'id_grupo' => !empty($_POST['id_grupo']) ? $_POST['id_grupo'] : null,
+            'afinidad' => $_POST['afinidad'] ?? 1,
+            'id_zona' => !empty($_POST['id_zona']) ? $_POST['id_zona'] : null,
+            'id_sector' => !empty($_POST['id_sector']) ? $_POST['id_sector'] : null,
+            'id_puesto_votacion' => !empty($_POST['id_puesto_votacion']) ? $_POST['id_puesto_votacion'] : null,
+            'mesa' => !empty($_POST['mesa']) ? $_POST['mesa'] : null,
+            'id_departamento' => !empty($_POST['id_departamento']) ? $_POST['id_departamento'] : null,
+            'id_municipio' => !empty($_POST['id_municipio']) ? $_POST['id_municipio'] : null,
+            'id_barrio' => !empty($_POST['id_barrio']) ? $_POST['id_barrio'] : null,
+            'id_oferta_apoyo' => !empty($_POST['id_oferta_apoyo']) ? $_POST['id_oferta_apoyo'] : null,
+            'id_grupo_poblacional' => !empty($_POST['id_grupo_poblacional']) ? $_POST['id_grupo_poblacional'] : null,
+            'id_lider' => !empty($_POST['id_lider']) ? $_POST['id_lider'] : null, // NUEVO: Campo Líder
+            'compromiso' => $_POST['compromiso'] ?? '',
+            'insumos_nuevos' => $_POST['insumos_nuevos'] ?? [],
+            'insumos_eliminar' => $_POST['insumos_eliminar'] ?? [],
+            'id_referenciador' => !empty($_POST['id_referenciador']) ? intval($_POST['id_referenciador']) : $referenciado['id_referenciador']
+        ];
+
+        // Agregar nuevos campos
+        if (isset($_POST['fecha_nacimiento']) && !empty($_POST['fecha_nacimiento'])) {
+            $datos_actualizar['fecha_nacimiento'] = $_POST['fecha_nacimiento'];
+        }
+        
+        if (isset($_POST['fecha_cumplimiento']) && !empty($_POST['fecha_cumplimiento'])) {
+            $datos_actualizar['fecha_cumplimiento'] = $_POST['fecha_cumplimiento'];
+        }
+
+        error_log("=== DEPURACIÓN: Datos que se enviarán ===");
+        error_log("id_puesto_votacion: " . ($datos_actualizar['id_puesto_votacion'] ?? 'NO DEFINIDO'));
+        error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
+        error_log("id_lider: " . ($datos_actualizar['id_lider'] ?? 'NO DEFINIDO')); // NUEVO: Log para Líder
+
         // Agregar campos de votación fuera si están presentes
         if (isset($_POST['puesto_votacion_fuera'])) {
             $datos_actualizar['puesto_votacion_fuera'] = $_POST['puesto_votacion_fuera'];
@@ -197,6 +228,7 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
         if (!empty($datos_actualizar['sexo']) && !in_array($datos_actualizar['sexo'], ['Masculino', 'Femenino', 'Otro'])) {
             throw new Exception('El sexo seleccionado no es válido.');
         }
+        
         // Validar grupo parlamentario (OBLIGATORIO)
         if (empty($_POST['id_grupo'])) {
             throw new Exception('El Grupo Parlamentario es obligatorio.');
@@ -206,6 +238,7 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
         if (!empty($_POST['id_grupo']) && $_POST['id_grupo'] <= 0) {
             throw new Exception('El Grupo Parlamentario seleccionado no es válido.');
         }
+        
         // Validar vota_fuera
         if (!in_array($datos_actualizar['vota_fuera'], ['Si', 'No'])) {
             throw new Exception('El campo "Vota Fuera" debe ser Si o No.');
@@ -326,6 +359,17 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                                    name="apellido" 
                                    value="<?php echo htmlspecialchars($referenciado['apellido'] ?? ''); ?>" 
                                    required>
+                        </div>
+                        
+                        <!-- NUEVO CAMPO: Fecha de Nacimiento -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-birthday-cake"></i> Fecha de Nacimiento
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   name="fecha_nacimiento" 
+                                   value="<?php echo htmlspecialchars($referenciado['fecha_nacimiento'] ?? ''); ?>">
                         </div>
                         
                         <div class="form-group">
@@ -455,6 +499,7 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        
                         <!-- Campo Vota Fuera -->
                         <div class="form-group">
                             <label class="form-label">
@@ -523,7 +568,7 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                             <label class="form-label">
                                 <i class="fas fa-th-large"></i> Sector
                             </label>
-                            <select class="form-control" name="id_sector" id="id_sector" <?php echo empty($referenciado['id_zona']) ? 'disabled' : ''; ?>>
+                            <select class="form-control" name="id_sector" id="id_sector">
                                 <option value="">Seleccionar...</option>
                                 <?php foreach ($sectores as $sector): ?>
                                     <option value="<?php echo $sector['id_sector']; ?>" 
@@ -538,15 +583,21 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                             <label class="form-label">
                                 <i class="fas fa-vote-yea"></i> Puesto de votación
                             </label>
-                            <select class="form-control" name="id_puesto_votacion" id="id_puesto_votacion" <?php echo empty($referenciado['id_sector']) ? 'disabled' : ''; ?>>
+                            <select class="form-control" name="id_puesto_votacion" id="id_puesto_votacion">
                                 <option value="">Seleccionar...</option>
-                                <?php foreach ($puestos as $puesto): ?>
+                                <?php 
+                                $id_puesto_actual = $referenciado['id_puesto_votacion'] ?? '';
+                                foreach ($puestos as $puesto): 
+                                    $selected = isSelected($puesto['id_puesto'], $id_puesto_actual);
+                                ?>
                                     <option value="<?php echo $puesto['id_puesto']; ?>" 
-                                        <?php echo isSelected($puesto['id_puesto'], $referenciado['id_puesto_votacion'] ?? ''); ?>>
+                                        <?php echo $selected; ?>>
                                         <?php echo htmlspecialchars($puesto['nombre']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <!-- Campo hidden para preservar el valor original si JavaScript lo sobreescribe -->
+                            <input type="hidden" id="id_puesto_votacion_original" value="<?php echo htmlspecialchars($id_puesto_actual); ?>">
                         </div>
                         
                         <div class="form-group campo-votacion <?php echo ($referenciado['vota_fuera'] ?? 'No') === 'Si' ? 'hidden' : ''; ?>">
@@ -598,6 +649,23 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                             </select>
                         </div>
                         
+                        <!-- NUEVO CAMPO: Lider - AHORA ES UN COMBOBOX -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-crown"></i> Lider
+                            </label>
+                            <select class="form-control" name="id_lider">
+                                <option value="">Seleccionar Líder...</option>
+                                <?php foreach ($lideres as $lider): ?>
+                                    <option value="<?php echo $lider['id_lider']; ?>" 
+                                        <?php echo isSelected($lider['id_lider'], $referenciado['id_lider'] ?? ''); ?>>
+                                        <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>
+                                        (<?php echo htmlspecialchars($lider['cc']); ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-hands-helping"></i> Oferta de apoyo
@@ -620,6 +688,17 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                             <textarea class="form-control" 
                                       name="compromiso" 
                                       rows="4"><?php echo htmlspecialchars($referenciado['compromiso'] ?? ''); ?></textarea>
+                        </div>
+                        
+                        <!-- NUEVO CAMPO: Fecha de Cumplimiento -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-check"></i> Fecha de Cumplimiento
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   name="fecha_cumplimiento" 
+                                   value="<?php echo htmlspecialchars($referenciado['fecha_cumplimiento'] ?? ''); ?>">
                         </div>
                     </div>
                     
@@ -774,6 +853,7 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                             </div>
                         </div>
                     </div>
+                    
                     <!-- Sección 6: Información de Registro -->
                     <div class="section-title">
                         <i class="fas fa-history"></i> Información de Registro
@@ -849,6 +929,7 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
                             </div>
                         </div>
                     </div>
+                    
                     <!-- Botones de Acción -->
                     <div class="form-actions">
                         <a href="ver_referenciado.php?id=<?php echo $id_referenciado; ?>" class="cancel-btn">
@@ -864,619 +945,584 @@ error_log("vota_fuera: " . ($datos_actualizar['vota_fuera'] ?? 'NO DEFINIDO'));
     </div>
 
     <script>
-   // Script para las estrellas de afinidad
-document.addEventListener('DOMContentLoaded', function() {
-    const estrellas = document.querySelectorAll('.estrellas-afinidad .estrella');
-    const valorInput = document.getElementById('afinidad-valor');
-    const valorSpan = document.getElementById('valor-afinidad');
-    
-    // Datos del referenciado actual (pasados desde PHP)
-    const zonaActual = '<?php echo $referenciado["id_zona"] ?? ""; ?>';
-    const sectorActual = '<?php echo $referenciado["id_sector"] ?? ""; ?>';
-    const puestoActual = '<?php echo $referenciado["id_puesto_votacion"] ?? ""; ?>';
-    const votaFueraActual = '<?php echo $referenciado["vota_fuera"] ?? "No"; ?>';
-    
-    // Referencias a los elementos del DOM
-    const zonaSelect = document.getElementById('id_zona');
-    const sectorSelect = document.getElementById('id_sector');
-    const puestoSelect = document.getElementById('id_puesto_votacion');
-    const votaFueraSwitch = document.getElementById('vota_fuera_switch');
-    const votaFueraHidden = document.getElementById('vota_fuera');
-    const camposFuera = document.querySelectorAll('.campo-fuera');
-    const camposVotacion = document.querySelectorAll('.campo-votacion');
-    
-    // Establecer estrellas iniciales
-    const valorInicial = parseInt(valorInput.value);
-    actualizarEstrellas(valorInicial);
-    
-    // Agregar event listeners a las estrellas
-    estrellas.forEach(estrella => {
-        estrella.addEventListener('click', function() {
-            const valor = parseInt(this.getAttribute('data-value'));
-            valorInput.value = valor;
-            actualizarEstrellas(valor);
-        });
-    });
-    
-    function actualizarEstrellas(valor) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const estrellas = document.querySelectorAll('.estrellas-afinidad .estrella');
+        const valorInput = document.getElementById('afinidad-valor');
+        const valorSpan = document.getElementById('valor-afinidad');
+        
+        // Datos del referenciado actual (pasados desde PHP)
+        const zonaActual = '<?php echo $referenciado["id_zona"] ?? ""; ?>';
+        const sectorActual = '<?php echo $referenciado["id_sector"] ?? ""; ?>';
+        const puestoActual = '<?php echo $referenciado["id_puesto_votacion"] ?? ""; ?>';
+        const votaFueraActual = '<?php echo $referenciado["vota_fuera"] ?? "No"; ?>';
+        
+        // Referencias a los elementos del DOM
+        const zonaSelect = document.getElementById('id_zona');
+        const sectorSelect = document.getElementById('id_sector');
+        const puestoSelect = document.getElementById('id_puesto_votacion');
+        const puestoOriginalInput = document.getElementById('id_puesto_votacion_original');
+        const votaFueraSwitch = document.getElementById('vota_fuera_switch');
+        const votaFueraHidden = document.getElementById('vota_fuera');
+        const camposFuera = document.querySelectorAll('.campo-fuera');
+        const camposVotacion = document.querySelectorAll('.campo-votacion');
+        
+        console.log('=== DATOS INICIALES ===');
+        console.log('zonaActual:', zonaActual);
+        console.log('sectorActual:', sectorActual);
+        console.log('puestoActual:', puestoActual);
+        console.log('puestoOriginalInput value:', puestoOriginalInput ? puestoOriginalInput.value : 'no encontrado');
+        console.log('votaFueraActual:', votaFueraActual);
+        
+        // Establecer estrellas iniciales
+        const valorInicial = parseInt(valorInput.value);
+        actualizarEstrellas(valorInicial);
+        
+        // Agregar event listeners a las estrellas
         estrellas.forEach(estrella => {
-            const estrellaValor = parseInt(estrella.getAttribute('data-value'));
-            if (estrellaValor <= valor) {
-                estrella.classList.add('active');
-                estrella.classList.remove('far');
-                estrella.classList.add('fas');
-            } else {
-                estrella.classList.remove('active');
-                estrella.classList.remove('fas');
-                estrella.classList.add('far');
-            }
+            estrella.addEventListener('click', function() {
+                const valor = parseInt(this.getAttribute('data-value'));
+                valorInput.value = valor;
+                actualizarEstrellas(valor);
+            });
         });
-        valorSpan.textContent = valor + '/5';
-    }
-    
-    // ============ FUNCIONES PARA DEPENDENCIAS DE ZONA-SECTOR-PUESTO ============
-    
-    // Función para cargar sectores según la zona seleccionada
-    function cargarSectoresPorZona(zonaId, sectorSeleccionado = null) {
-        if (!zonaId || zonaId === '') {
-            sectorSelect.innerHTML = '<option value="">Seleccionar...</option>';
-            sectorSelect.disabled = true;
-            sectorSelect.required = false;
-            puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
-            puestoSelect.disabled = true;
-            puestoSelect.required = false;
-            return;
+        
+        function actualizarEstrellas(valor) {
+            estrellas.forEach(estrella => {
+                const estrellaValor = parseInt(estrella.getAttribute('data-value'));
+                if (estrellaValor <= valor) {
+                    estrella.classList.add('active');
+                    estrella.classList.remove('far');
+                    estrella.classList.add('fas');
+                } else {
+                    estrella.classList.remove('active');
+                    estrella.classList.remove('fas');
+                    estrella.classList.add('far');
+                }
+            });
+            valorSpan.textContent = valor + '/5';
         }
-
-        // Mostrar indicador de carga
-        sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
-        sectorSelect.disabled = true;
-
-        // Hacer petición AJAX a tu endpoint existente
-        fetch(`../ajax/cargar_sectores.php?zona_id=${zonaId}`)
-            .then(response => response.json())
-            .then(data => {
+        // Agregar esto después de inicializar otras dependencias
+    setTimeout(() => {
+        inicializarMunicipios();
+    }, 300);
+        // ============ FUNCIONES PARA DEPENDENCIAS ============
+        
+        function cargarSectoresPorZona(zonaId, sectorSeleccionado = null) {
+            if (!zonaId || zonaId === '') {
                 sectorSelect.innerHTML = '<option value="">Seleccionar...</option>';
-                
-                if (data.success && data.sectores && data.sectores.length > 0) {
-                    data.sectores.forEach(sector => {
-                        const option = document.createElement('option');
-                        option.value = sector.id_sector;
-                        option.textContent = sector.nombre;
-                        
-                        // Seleccionar si es el valor del referenciado o el pasado como parámetro
-                        if ((sectorSeleccionado && sector.id_sector == sectorSeleccionado)) {
-                            option.selected = true;
-                        }
-                        
-                        sectorSelect.appendChild(option);
-                    });
-                    
-                    sectorSelect.disabled = false;
-                    sectorSelect.required = false;
-                    
-                    // Si se seleccionó un sector automáticamente, cargar sus puestos
-                    if (sectorSeleccionado) {
-                        cargarPuestosPorSector(sectorSeleccionado);
-                    }
-                } else {
-                    sectorSelect.innerHTML += '<option value="" disabled>No hay sectores para esta zona</option>';
-                    sectorSelect.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error cargando sectores:', error);
-                sectorSelect.innerHTML = '<option value="">Error cargando sectores</option>';
                 sectorSelect.disabled = true;
-            });
-    }
-
-    // Función para cargar puestos según el sector seleccionado
-    function cargarPuestosPorSector(sectorId, puestoSeleccionado = null) {
-        if (!sectorId || sectorId === '') {
-            puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
-            puestoSelect.disabled = true;
-            puestoSelect.required = false;
-            return;
-        }
-
-        // Mostrar indicador de carga
-        puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
-        puestoSelect.disabled = true;
-
-        // Hacer petición AJAX a tu endpoint existente
-        fetch(`../ajax/cargar_puestos.php?sector_id=${sectorId}`)
-            .then(response => response.json())
-            .then(data => {
                 puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
-                
-                if (data.success && data.puestos && data.puestos.length > 0) {
-                    data.puestos.forEach(puesto => {
-                        const option = document.createElement('option');
-                        option.value = puesto.id_puesto;
-                        
-                        // Formatear texto del puesto con número de mesas
-                        let texto = puesto.nombre;
-                        if (puesto.num_mesas !== undefined) {
-                            if (puesto.num_mesas === 0) {
-                                texto += ' (Sin mesas)';
-                                option.style.color = '#e67e22';
-                            } else {
-                                texto += ` (${puesto.num_mesas} mesa${puesto.num_mesas !== 1 ? 's' : ''})`;
-                                option.style.color = '#27ae60';
-                            }
-                        }
-                        
-                        option.textContent = texto;
-                        option.setAttribute('data-mesas', puesto.num_mesas || 0);
-                        
-                        // Seleccionar si es el valor del referenciado
-                        if (puestoSeleccionado && puesto.id_puesto == puestoSeleccionado) {
-                            option.selected = true;
-                        }
-                        
-                        puestoSelect.appendChild(option);
-                    });
-                    
-                    puestoSelect.disabled = false;
-                    puestoSelect.required = false;
-                } else {
-                    puestoSelect.innerHTML += '<option value="" disabled>No hay puestos para este sector</option>';
-                    puestoSelect.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error cargando puestos:', error);
-                puestoSelect.innerHTML = '<option value="">Error cargando puestos</option>';
                 puestoSelect.disabled = true;
-            });
-    }
+                return;
+            }
 
-    // Función para inicializar las dependencias cuando la página carga
-    function inicializarDependencias() {
-        // Si el referenciado vota fuera, no cargar dependencias (los campos estarán ocultos)
-        if (votaFueraActual === 'Si') {
-            console.log('Referenciado vota fuera, dependencias no aplican');
-            return;
-        }
-        
-        // Si hay una zona seleccionada en el referenciado, cargar sus sectores
-        if (zonaActual) {
-            console.log('Inicializando con zona:', zonaActual, 'sector:', sectorActual);
-            cargarSectoresPorZona(zonaActual, sectorActual);
-        }
-    }
-    
-    // ============ EVENT LISTENERS PARA DEPENDENCIAS ============
-    
-    // Cuando cambia la zona
-    zonaSelect.addEventListener('change', function() {
-        const zonaId = this.value;
-        
-        // Solo procesar si el campo está visible (NO vota fuera)
-        const zonaContainer = this.closest('.campo-votacion');
-        if (zonaContainer && zonaContainer.classList.contains('hidden')) {
-            return;
-        }
-        
-        cargarSectoresPorZona(zonaId);
-        
-        // Limpiar puesto si cambia la zona
-        puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
-        puestoSelect.disabled = true;
-        puestoSelect.required = false;
-    });
-    
-    // Cuando cambia el sector
-    sectorSelect.addEventListener('change', function() {
-        const sectorId = this.value;
-        
-        // Solo procesar si el campo está visible (NO vota fuera)
-        const sectorContainer = this.closest('.campo-votacion');
-        if (sectorContainer && sectorContainer.classList.contains('hidden')) {
-            return;
-        }
-        
-        cargarPuestosPorSector(sectorId);
-    });
-    
-    // ============ MANEJO DEL SWITCH VOTA FUERA (EXISTENTE - NO MODIFICAR) ============
-    
-    function toggleCamposVotacion() {
-        const votaFuera = votaFueraSwitch.checked ? 'Si' : 'No';
-        votaFueraHidden.value = votaFuera;
-        
-        if (votaFuera === 'Si') {
-            // Mostrar campos fuera, ocultar campos normales
-            camposFuera.forEach(campo => {
-                campo.classList.remove('hidden');
-                const input = campo.querySelector('input');
-                if (input) input.required = true;
-            });
-            
-            camposVotacion.forEach(campo => {
-                campo.classList.add('hidden');
-                const input = campo.querySelector('input, select');
-                if (input) {
-                    input.required = false;
-                    // NO deshabilitar el campo mesa
-                    if (input.name !== 'mesa') {
-                        input.disabled = true;
-                    }
-                }
-            });
-        } else {
-            // Mostrar campos normales, ocultar campos fuera
-            camposFuera.forEach(campo => {
-                campo.classList.add('hidden');
-                const input = campo.querySelector('input');
-                if (input) input.required = false;
-            });
-            
-            camposVotacion.forEach(campo => {
-                campo.classList.remove('hidden');
-                const input = campo.querySelector('input, select');
-                if (input) {
-                    // Solo el campo zona es requerido
-                    if (input.name === 'id_zona') {
-                        input.required = true;
-                        input.disabled = false;
+            sectorSelect.innerHTML = '<option value="">Cargando sectores...</option>';
+            sectorSelect.disabled = true;
+
+            fetch(`../ajax/cargar_sectores.php?zona_id=${zonaId}`)
+                .then(response => response.json())
+                .then(data => {
+                    sectorSelect.innerHTML = '<option value="">Seleccionar...</option>';
+                    
+                    if (data.success && data.sectores && data.sectores.length > 0) {
+                        data.sectores.forEach(sector => {
+                            const option = document.createElement('option');
+                            option.value = sector.id_sector;
+                            option.textContent = sector.nombre;
+                            
+                            if (sectorSeleccionado && sector.id_sector == sectorSeleccionado) {
+                                option.selected = true;
+                            }
+                            
+                            sectorSelect.appendChild(option);
+                        });
                         
-                        // Si hay una zona seleccionada, cargar sus sectores
-                        if (input.value && votaFuera === 'No') {
+                        sectorSelect.disabled = false;
+                        
+                        // Si se seleccionó un sector automáticamente, cargar sus puestos
+                        if (sectorSeleccionado) {
+                            cargarPuestosPorSector(sectorSeleccionado, puestoActual);
+                        }
+                    } else {
+                        sectorSelect.innerHTML += '<option value="" disabled>No hay sectores para esta zona</option>';
+                        sectorSelect.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando sectores:', error);
+                    sectorSelect.innerHTML = '<option value="">Error cargando sectores</option>';
+                    sectorSelect.disabled = true;
+                });
+        }
+
+        function cargarPuestosPorSector(sectorId, puestoSeleccionado = null) {
+            if (!sectorId || sectorId === '') {
+                puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+                puestoSelect.disabled = true;
+                return;
+            }
+
+            puestoSelect.innerHTML = '<option value="">Cargando puestos...</option>';
+            puestoSelect.disabled = true;
+
+            fetch(`../ajax/cargar_puestos.php?sector_id=${sectorId}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Puestos cargados para sector', sectorId, ':', data);
+                    puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+                    
+                    if (data.success && data.puestos && data.puestos.length > 0) {
+                        data.puestos.forEach(puesto => {
+                            const option = document.createElement('option');
+                            option.value = puesto.id_puesto;
+                            
+                            let texto = puesto.nombre;
+                            if (puesto.num_mesas !== undefined) {
+                                if (puesto.num_mesas === 0) {
+                                    texto += ' (Sin mesas)';
+                                    option.style.color = '#e67e22';
+                                } else {
+                                    texto += ` (${puesto.num_mesas} mesa${puesto.num_mesas !== 1 ? 's' : ''})`;
+                                    option.style.color = '#27ae60';
+                                }
+                            }
+                            
+                            option.textContent = texto;
+                            option.setAttribute('data-mesas', puesto.num_mesas || 0);
+                            
+                            // Seleccionar si es el valor del referenciado
+                            if (puestoSeleccionado && puesto.id_puesto == puestoSeleccionado) {
+                                option.selected = true;
+                                console.log('Puesto seleccionado automáticamente:', puesto.id_puesto);
+                            }
+                            
+                            puestoSelect.appendChild(option);
+                        });
+                        
+                        puestoSelect.disabled = false;
+                        
+                        // Si NO se encontró el puesto seleccionado, restaurar del campo hidden
+                        if (puestoOriginalInput && puestoOriginalInput.value && !puestoSelect.value) {
                             setTimeout(() => {
-                                cargarSectoresPorZona(input.value, sectorActual);
+                                console.log('Restaurando puesto original:', puestoOriginalInput.value);
+                                puestoSelect.value = puestoOriginalInput.value;
                             }, 100);
                         }
                     } else {
-                        input.required = false;
-                        input.disabled = false; // IMPORTANTE: habilitar todos los campos
+                        puestoSelect.innerHTML += '<option value="" disabled>No hay puestos para este sector</option>';
+                        puestoSelect.disabled = false;
                     }
+                })
+                .catch(error => {
+                    console.error('Error cargando puestos:', error);
+                    puestoSelect.innerHTML = '<option value="">Error cargando puestos</option>';
+                    puestoSelect.disabled = true;
+                });
+        }
+
+        function inicializarDependencias() {
+            // Si el referenciado vota fuera, no cargar dependencias
+            if (votaFueraActual === 'Si') {
+                console.log('Referenciado vota fuera, dependencias no aplican');
+                return;
+            }
+            
+            // Si hay una zona seleccionada en el referenciado, cargar sus sectores
+            if (zonaActual) {
+                console.log('Inicializando con zona:', zonaActual, 'sector:', sectorActual, 'puesto:', puestoActual);
+                cargarSectoresPorZona(zonaActual, sectorActual);
+            }
+            
+            // Verificar si el puesto ya está seleccionado
+            if (puestoActual && puestoSelect) {
+                setTimeout(() => {
+                    if (puestoSelect.value !== puestoActual) {
+                        console.log('Puesto no coincidió. Intentando restaurar...');
+                        puestoSelect.value = puestoActual;
+                    }
+                }, 500);
+            }
+        }
+        
+        // Event listeners para dependencias
+        zonaSelect.addEventListener('change', function() {
+            const zonaId = this.value;
+            const zonaContainer = this.closest('.campo-votacion');
+            if (zonaContainer && zonaContainer.classList.contains('hidden')) {
+                return;
+            }
+            
+            cargarSectoresPorZona(zonaId);
+            puestoSelect.innerHTML = '<option value="">Seleccionar...</option>';
+            puestoSelect.disabled = true;
+        });
+        
+        sectorSelect.addEventListener('change', function() {
+            const sectorId = this.value;
+            const sectorContainer = this.closest('.campo-votacion');
+            if (sectorContainer && sectorContainer.classList.contains('hidden')) {
+                return;
+            }
+            
+            cargarPuestosPorSector(sectorId);
+        });
+        
+        // ============ MANEJO DEL SWITCH VOTA FUERA ============
+        
+        function toggleCamposVotacion() {
+            const votaFuera = votaFueraSwitch.checked ? 'Si' : 'No';
+            votaFueraHidden.value = votaFuera;
+            
+            if (votaFuera === 'Si') {
+                camposFuera.forEach(campo => {
+                    campo.classList.remove('hidden');
+                    const input = campo.querySelector('input');
+                    if (input) input.required = true;
+                });
+                
+                camposVotacion.forEach(campo => {
+                    campo.classList.add('hidden');
+                    const input = campo.querySelector('input, select');
+                    if (input) {
+                        input.required = false;
+                        if (input.name !== 'mesa') {
+                            input.disabled = true;
+                        }
+                    }
+                });
+            } else {
+                camposFuera.forEach(campo => {
+                    campo.classList.add('hidden');
+                    const input = campo.querySelector('input');
+                    if (input) input.required = false;
+                });
+                
+                camposVotacion.forEach(campo => {
+                    campo.classList.remove('hidden');
+                    const input = campo.querySelector('input, select');
+                    if (input) {
+                        if (input.name === 'id_zona') {
+                            input.required = true;
+                            input.disabled = false;
+                            
+                            if (input.value) {
+                                setTimeout(() => {
+                                    cargarSectoresPorZona(input.value, sectorActual);
+                                }, 100);
+                            }
+                        } else {
+                            input.required = false;
+                            input.disabled = false;
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Inicializar estado del switch Vota Fuera
+        toggleCamposVotacion();
+        votaFueraSwitch.addEventListener('change', toggleCamposVotacion);
+        
+        // Inicializar dependencias después de un pequeño delay
+        setTimeout(() => {
+            inicializarDependencias();
+        }, 300);
+        
+        // ============ RESTO DEL CÓDIGO ============
+        
+        // Manejar botones de eliminar insumo
+        document.querySelectorAll('.btn-remove-insumo').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const insumoId = this.getAttribute('data-insumo-id');
+                const insumoCard = this.closest('.insumo-card-asignado');
+                
+                if (confirm('¿Está seguro de quitar este insumo?')) {
+                    const deleteInput = document.createElement('input');
+                    deleteInput.type = 'hidden';
+                    deleteInput.name = 'insumos_eliminar[]';
+                    deleteInput.value = insumoId;
+                    document.querySelector('form').appendChild(deleteInput);
+                    
+                    insumoCard.style.opacity = '0.5';
+                    insumoCard.style.transform = 'translateX(-20px)';
+                    
+                    setTimeout(() => {
+                        insumoCard.remove();
+                        showNotification('Insumo marcado para eliminar. Guarde los cambios para aplicar.', 'warning');
+                    }, 300);
                 }
             });
-        }
+        });
+        
+        // Mostrar/ocultar campos de detalle al seleccionar insumos nuevos
+        document.querySelectorAll('.insumo-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const detailsForm = this.parentElement.querySelector('.insumo-details-form');
+                if (detailsForm) {
+                    detailsForm.style.display = this.checked ? 'block' : 'none';
+                }
+            });
+        });
+        // ============ CARGAR MUNICIPIOS POR DEPARTAMENTO ============
+
+function cargarMunicipiosPorDepartamento(departamentoId, municipioSeleccionado = null) {
+    const municipioSelect = document.querySelector('select[name="id_municipio"]');
+    
+    if (!departamentoId || departamentoId === '') {
+        municipioSelect.innerHTML = '<option value="">Seleccionar...</option>';
+        municipioSelect.disabled = true;
+        return;
     }
-    
-    // Inicializar estado del switch Vota Fuera
-    toggleCamposVotacion();
-    
-    // Agregar evento change al switch (ya existente)
-    votaFueraSwitch.addEventListener('change', toggleCamposVotacion);
-    
-    // Inicializar dependencias cuando el DOM esté listo
-    setTimeout(() => {
-        inicializarDependencias();
-    }, 100);
-    
-    // ============ RESTO DEL CÓDIGO EXISTENTE (NO MODIFICAR) ============
-    
-    // Manejar botones de eliminar insumo
-    document.querySelectorAll('.btn-remove-insumo').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const insumoId = this.getAttribute('data-insumo-id');
-            const insumoCard = this.closest('.insumo-card-asignado');
+
+    municipioSelect.innerHTML = '<option value="">Cargando municipios...</option>';
+    municipioSelect.disabled = true;
+
+    fetch(`../ajax/cargar_municipios.php?departamento_id=${departamentoId}`)
+        .then(response => response.json())
+        .then(data => {
+            municipioSelect.innerHTML = '<option value="">Seleccionar...</option>';
             
-            if (confirm('¿Está seguro de quitar este insumo?')) {
-                // Crear campo hidden para marcar el insumo como eliminado
-                const deleteInput = document.createElement('input');
-                deleteInput.type = 'hidden';
-                deleteInput.name = 'insumos_eliminar[]';
-                deleteInput.value = insumoId;
-                document.querySelector('form').appendChild(deleteInput);
-                
-                // Eliminar visualmente el card
-                insumoCard.style.opacity = '0.5';
-                insumoCard.style.transform = 'translateX(-20px)';
-                
-                setTimeout(() => {
-                    insumoCard.remove();
-                    showNotification('Insumo marcado para eliminar. Guarde los cambios para aplicar.', 'warning');
+            if (data.success && data.municipios && data.municipios.length > 0) {
+                data.municipios.forEach(municipio => {
+                    const option = document.createElement('option');
+                    option.value = municipio.id_municipio;
+                    option.textContent = municipio.nombre;
                     
-                    // Actualizar contador de insumos asignados
-                    actualizarContadorInsumos();
-                }, 300);
+                    if (municipioSeleccionado && municipio.id_municipio == municipioSeleccionado) {
+                        option.selected = true;
+                    }
+                    
+                    municipioSelect.appendChild(option);
+                });
+                
+                municipioSelect.disabled = false;
+            } else {
+                municipioSelect.innerHTML += '<option value="" disabled>No hay municipios para este departamento</option>';
+                municipioSelect.disabled = false;
             }
+        })
+        .catch(error => {
+            console.error('Error cargando municipios:', error);
+            municipioSelect.innerHTML = '<option value="">Error cargando municipios</option>';
+            municipioSelect.disabled = true;
         });
+}
+// Inicializar municipios si hay departamento seleccionado
+const departamentoActual = '<?php echo $referenciado["id_departamento"] ?? ""; ?>';
+const municipioActual = '<?php echo $referenciado["id_municipio"] ?? ""; ?>';
+
+if (departamentoActual) {
+    setTimeout(() => {
+        cargarMunicipiosPorDepartamento(departamentoActual, municipioActual);
+    }, 300);
+}
+
+// Event listener para cambio de departamento
+const departamentoSelect = document.querySelector('select[name="id_departamento"]');
+if (departamentoSelect) {
+    departamentoSelect.addEventListener('change', function() {
+        cargarMunicipiosPorDepartamento(this.value);
     });
-    
-    // Mostrar/ocultar campos de detalle al seleccionar insumos nuevos
-    document.querySelectorAll('.insumo-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const detailsForm = this.parentElement.querySelector('.insumo-details-form');
-            if (detailsForm) {
-                if (this.checked) {
-                    detailsForm.style.display = 'block';
-                } else {
-                    detailsForm.style.display = 'none';
-                }
-            }
-        });
-    });
-    
-    // Función para actualizar contador de insumos asignados
-    function actualizarContadorInsumos() {
-        const insumosAsignados = document.querySelectorAll('.insumo-card-asignado').length;
-        const contadorElement = document.querySelector('.insumos-asignados-contador');
-        if (contadorElement) {
-            contadorElement.textContent = insumosAsignados + ' asignados';
-        }
+}
+
+// También puedes agregar esto en el objeto de inicialización si lo tienes
+function inicializarMunicipios() {
+    if (departamentoActual) {
+        cargarMunicipiosPorDepartamento(departamentoActual, municipioActual);
     }
-    
-    // Mostrar notificaciones
-    function showNotification(message, type = 'info') {
-        // Eliminar notificación anterior si existe
-        const oldNotification = document.querySelector('.notification-temp');
-        if (oldNotification) {
-            oldNotification.remove();
-        }
-        
-        const notification = document.createElement('div');
-        notification.className = `notification-temp notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                <span>${message}</span>
-            </div>
-            <button class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        // Estilos para la notificación
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            min-width: 300px;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 2000;
-            animation: slideIn 0.3s ease-out;
-            background: ${type === 'warning' ? '#fff3cd' : 
-                        type === 'error' ? '#f8d7da' : 
-                        type === 'success' ? '#d4edda' : '#d1ecf1'};
-            color: ${type === 'warning' ? '#856404' : 
-                    type === 'error' ? '#721c24' : 
-                    type === 'success' ? '#155724' : '#0c5460'};
-            border: 1px solid ${type === 'warning' ? '#ffeaa7' : 
-                          type === 'error' ? '#f5c6cb' : 
-                          type === 'success' ? '#c3e6cb' : '#bee5eb'};
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Botón para cerrar
-        notification.querySelector('.notification-close').addEventListener('click', () => {
-            notification.remove();
-        });
-        
-        // Auto-eliminar después de 5 segundos
-        setTimeout(() => {
-            if (notification.parentNode) {
+}
+        // Mostrar notificaciones
+        function showNotification(message, type = 'info') {
+            const oldNotification = document.querySelector('.notification-temp');
+            if (oldNotification) {
+                oldNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification-temp notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+                <button class="notification-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-width: 300px;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 2000;
+                animation: slideIn 0.3s ease-out;
+                background: ${type === 'warning' ? '#fff3cd' : 
+                            type === 'error' ? '#f8d7da' : 
+                            type === 'success' ? '#d4edda' : '#d1ecf1'};
+                color: ${type === 'warning' ? '#856404' : 
+                        type === 'error' ? '#721c24' : 
+                        type === 'success' ? '#155724' : '#0c5460'};
+                border: 1px solid ${type === 'warning' ? '#ffeaa7' : 
+                              type === 'error' ? '#f5c6cb' : 
+                              type === 'success' ? '#c3e6cb' : '#bee5eb'};
+            `;
+            
+            document.body.appendChild(notification);
+            
+            notification.querySelector('.notification-close').addEventListener('click', () => {
                 notification.remove();
-            }
-        }, 5000);
-        
-        // Animación slideIn
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    // Validación del formulario
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        // Limpiar estilos de error previos
-        document.querySelectorAll('.form-control').forEach(field => {
-            field.style.borderColor = '';
-        });
-        
-        // Validar cédula (solo números)
-        const cedula = document.querySelector('input[name="cedula"]').value;
-        if (!/^\d+$/.test(cedula)) {
-            e.preventDefault();
-            showNotification('La cédula debe contener solo números', 'warning');
-            document.querySelector('input[name="cedula"]').style.borderColor = '#e74c3c';
-            document.querySelector('input[name="cedula"]').focus();
-            return false;
-        }
-        
-        // Validar afinidad (1-5)
-        const afinidad = parseInt(document.getElementById('afinidad-valor').value);
-        if (afinidad < 1 || afinidad > 5) {
-            e.preventDefault();
-            showNotification('La afinidad debe estar entre 1 y 5', 'warning');
-            return false;
-        }
-        
-        // Validar email si está presente
-        const email = document.querySelector('input[name="email"]').value;
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            e.preventDefault();
-            showNotification('Por favor ingrese un email válido', 'warning');
-            document.querySelector('input[name="email"]').style.borderColor = '#e74c3c';
-            document.querySelector('input[name="email"]').focus();
-            return false;
-        }
-        
-        // Validar teléfono si está presente (solo números, mínimo 7 dígitos)
-        const telefono = document.querySelector('input[name="telefono"]').value;
-        if (telefono && !/^\d{7,15}$/.test(telefono)) {
-            e.preventDefault();
-            showNotification('El teléfono debe contener entre 7 y 15 dígitos numéricos', 'warning');
-            document.querySelector('input[name="telefono"]').style.borderColor = '#e74c3c';
-            document.querySelector('input[name="telefono"]').focus();
-            return false;
-        }
-        
-        // Validaciones condicionales según si vota fuera o no
-        const votaFuera = document.getElementById('vota_fuera').value;
-        
-        if (votaFuera === 'Si') {
-            // Validar campos de votación fuera
-            const puestoFuera = document.getElementById('puesto_votacion_fuera');
-            const mesaFuera = document.getElementById('mesa_fuera');
+            });
             
-            if (!puestoFuera.value.trim()) {
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Validación del formulario
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            document.querySelectorAll('.form-control').forEach(field => {
+                field.style.borderColor = '';
+            });
+            
+            // Validar cédula (solo números)
+            const cedula = document.querySelector('input[name="cedula"]').value;
+            if (!/^\d+$/.test(cedula)) {
                 e.preventDefault();
-                showNotification('El puesto de votación fuera es obligatorio cuando vota fuera', 'warning');
-                puestoFuera.style.borderColor = '#e74c3c';
-                puestoFuera.focus();
+                showNotification('La cédula debe contener solo números', 'warning');
+                document.querySelector('input[name="cedula"]').style.borderColor = '#e74c3c';
+                document.querySelector('input[name="cedula"]').focus();
                 return false;
             }
             
-            if (!mesaFuera.value || parseInt(mesaFuera.value) < 1) {
+            // Validar afinidad (1-5)
+            const afinidad = parseInt(document.getElementById('afinidad-valor').value);
+            if (afinidad < 1 || afinidad > 5) {
                 e.preventDefault();
-                showNotification('La mesa fuera es obligatoria y debe ser mayor a 0', 'warning');
-                mesaFuera.style.borderColor = '#e74c3c';
-                mesaFuera.focus();
+                showNotification('La afinidad debe estar entre 1 y 5', 'warning');
                 return false;
             }
             
-            if (parseInt(mesaFuera.value) > 40) {
+            // Validar email si está presente
+            const email = document.querySelector('input[name="email"]').value;
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 e.preventDefault();
-                showNotification('La mesa fuera no puede ser mayor a 40', 'warning');
-                mesaFuera.style.borderColor = '#e74c3c';
-                mesaFuera.focus();
-                return false;
-            }
-        } else {
-            // Validar campos de votación normal
-            const zona = document.getElementById('id_zona');
-            if (!zona.value) {
-                e.preventDefault();
-                showNotification('La zona es obligatoria cuando NO vota fuera', 'warning');
-                zona.style.borderColor = '#e74c3c';
-                zona.focus();
+                showNotification('Por favor ingrese un email válido', 'warning');
+                document.querySelector('input[name="email"]').style.borderColor = '#e74c3c';
+                document.querySelector('input[name="email"]').focus();
                 return false;
             }
             
-            // Validar mesa normal si está presente
-            const mesa = document.querySelector('input[name="mesa"]');
-            if (mesa.value && (parseInt(mesa.value) < 1 || isNaN(parseInt(mesa.value)))) {
-                e.preventDefault();
-                showNotification('La mesa debe ser un número positivo', 'warning');
-                mesa.style.borderColor = '#e74c3c';
-                mesa.focus();
-                return false;
-            }
-        }
-        
-        // Validar que los campos requeridos no estén vacíos
-        const requiredFields = form.querySelectorAll('[required]');
-        let isValid = true;
-        let firstInvalidField = null;
-        
-        requiredFields.forEach(field => {
-            if (!field.value.trim()) {
-                isValid = false;
-                field.style.borderColor = '#e74c3c';
-                if (!firstInvalidField) {
-                    firstInvalidField = field;
+            // Validaciones condicionales según si vota fuera o no
+            const votaFuera = document.getElementById('vota_fuera').value;
+            
+            if (votaFuera === 'Si') {
+                const puestoFuera = document.getElementById('puesto_votacion_fuera');
+                const mesaFuera = document.getElementById('mesa_fuera');
+                
+                if (!puestoFuera.value.trim()) {
+                    e.preventDefault();
+                    showNotification('El puesto de votación fuera es obligatorio cuando vota fuera', 'warning');
+                    puestoFuera.style.borderColor = '#e74c3c';
+                    puestoFuera.focus();
+                    return false;
+                }
+                
+                if (!mesaFuera.value || parseInt(mesaFuera.value) < 1) {
+                    e.preventDefault();
+                    showNotification('La mesa fuera es obligatoria y debe ser mayor a 0', 'warning');
+                    mesaFuera.style.borderColor = '#e74c3c';
+                    mesaFuera.focus();
+                    return false;
+                }
+                
+                if (parseInt(mesaFuera.value) > 40) {
+                    e.preventDefault();
+                    showNotification('La mesa fuera no puede ser mayor a 40', 'warning');
+                    mesaFuera.style.borderColor = '#e74c3c';
+                    mesaFuera.focus();
+                    return false;
+                }
+            } else {
+                const zona = document.getElementById('id_zona');
+                if (!zona.value) {
+                    e.preventDefault();
+                    showNotification('La zona es obligatoria cuando NO vota fuera', 'warning');
+                    zona.style.borderColor = '#e74c3c';
+                    zona.focus();
+                    return false;
+                }
+                
+                const mesa = document.querySelector('input[name="mesa"]');
+                if (mesa.value && (parseInt(mesa.value) < 1 || isNaN(parseInt(mesa.value)))) {
+                    e.preventDefault();
+                    showNotification('La mesa debe ser un número positivo', 'warning');
+                    mesa.style.borderColor = '#e74c3c';
+                    mesa.focus();
+                    return false;
                 }
             }
-        });
-        
-        if (!isValid) {
-            e.preventDefault();
-            showNotification('Por favor complete todos los campos requeridos (*)', 'warning');
-            if (firstInvalidField) {
-                firstInvalidField.focus();
-            }
-            return false;
-        }
-        
-        // Validar que se haya seleccionado al menos una opción válida en selects si tienen valor
-        const selects = form.querySelectorAll('select.form-control');
-        selects.forEach(select => {
-            if (select.value && select.value !== '' && select.options[select.selectedIndex].value === '') {
+            
+            // Validar grupo parlamentario
+            const grupoParlamentario = document.querySelector('select[name="id_grupo"]');
+            if (!grupoParlamentario.value) {
                 e.preventDefault();
-                showNotification('Por favor seleccione una opción válida para ' + select.previousElementSibling.textContent, 'warning');
-                select.style.borderColor = '#e74c3c';
-                select.focus();
+                showNotification('El Grupo Parlamentario es obligatorio', 'warning');
+                grupoParlamentario.style.borderColor = '#e74c3c';
+                grupoParlamentario.focus();
                 return false;
             }
-        });
-        // En la validación del formulario, agrega esto:
-        const grupoParlamentario = document.querySelector('select[name="id_grupo"]');
-        if (!grupoParlamentario.value) {
-            e.preventDefault();
-            showNotification('El Grupo Parlamentario es obligatorio', 'warning');
-            grupoParlamentario.style.borderColor = '#e74c3c';
-            grupoParlamentario.focus();
-            return false;
-        }
-        
-        // Mostrar mensaje de confirmación
-        if (!confirm('¿Está seguro de guardar los cambios?')) {
-            e.preventDefault();
-            return false;
-        }
-        
-        // Mostrar indicador de carga
-        const saveBtn = form.querySelector('.save-btn');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        saveBtn.disabled = true;
-        
-        // Restaurar botón después de 3 segundos (por si hay error en el servidor)
-        setTimeout(() => {
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
-        }, 3000);
-        
-        return true;
-    });
-    
-    // Mostrar mensaje de éxito si existe
-    <?php if ($success_message): ?>
-        setTimeout(() => {
-            showNotification('<?php echo addslashes($success_message); ?>', 'success');
-        }, 500);
-    <?php endif; ?>
-    
-    // Mostrar mensaje de error si existe
-    <?php if ($error_message): ?>
-        setTimeout(() => {
-            showNotification('<?php echo addslashes($error_message); ?>', 'error');
-        }, 500);
-    <?php endif; ?>
-    
-    // Mejorar experiencia de usuario en campos numéricos
-    const numericFields = document.querySelectorAll('input[type="number"]');
-    numericFields.forEach(field => {
-        field.addEventListener('input', function() {
-            if (this.value < 0) {
-                this.value = Math.abs(this.value);
+            
+            if (!confirm('¿Está seguro de guardar los cambios?')) {
+                e.preventDefault();
+                return false;
             }
-        });
-    });
-    
-    // Agregar efecto de hover a todos los cards de insumos
-    document.querySelectorAll('.insumo-card, .insumo-card-asignado').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px)';
-            this.style.transition = 'all 0.3s ease';
+            
+            const saveBtn = form.querySelector('.save-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            saveBtn.disabled = true;
+            
+            setTimeout(() => {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }, 3000);
+            
+            return true;
         });
         
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
+        // Mostrar mensajes del servidor
+        <?php if ($success_message): ?>
+            setTimeout(() => {
+                showNotification('<?php echo addslashes($success_message); ?>', 'success');
+            }, 500);
+        <?php endif; ?>
+        
+        <?php if ($error_message): ?>
+            setTimeout(() => {
+                showNotification('<?php echo addslashes($error_message); ?>', 'error');
+            }, 500);
+        <?php endif; ?>
     });
-    
-    // Inicializar contador de insumos
-    actualizarContadorInsumos();
-});
     </script>
 </body>
 </html>

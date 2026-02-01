@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/InsumoModel.php';
 require_once __DIR__ . '/../../helpers/navigation_helper.php';
+require_once __DIR__ . '/../../models/LiderModel.php'; // NUEVO: Incluir modelo Lider
 
 header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
 header("Pragma: no-cache"); // HTTP 1.0
@@ -40,6 +41,7 @@ $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
 $insumoModel = new InsumoModel($pdo);
+$liderModel = new LiderModel($pdo); // NUEVO: Instanciar modelo Lider
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
@@ -52,6 +54,12 @@ if (!$referenciado) {
     exit();
 }
 
+// Obtener información del líder si está asignado
+$lider = null;
+if (!empty($referenciado['id_lider'])) {
+    $lider = $liderModel->getById($referenciado['id_lider']);
+}
+
 // Obtener insumos del referenciado
 $insumos_referenciado = $insumoModel->getInsumosByReferenciado($id_referenciado);
 
@@ -61,6 +69,14 @@ $referenciador = $usuarioModel->getUsuarioById($referenciado['id_referenciador']
 // Función para obtener nombre de campo o mostrar "N/A"
 function getFieldValue($value) {
     return !empty($value) ? htmlspecialchars($value) : '<span class="na-text">N/A</span>';
+}
+
+// Función para formatear fecha
+function formatDate($date) {
+    if (empty($date) || $date === '0000-00-00') {
+        return '<span class="na-text">N/A</span>';
+    }
+    return date('d/m/Y', strtotime($date));
 }
 
 // Función para mostrar estado de actividad
@@ -268,6 +284,16 @@ function getAfinidadIcon($afinidad) {
                         </label>
                         <div class="field-value">
                             <?php echo getFieldValue($referenciado['apellido']); ?>
+                        </div>
+                    </div>
+                    
+                    <!-- NUEVO CAMPO: Fecha de Nacimiento -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-birthday-cake"></i> Fecha de Nacimiento
+                        </label>
+                        <div class="field-value">
+                            <?php echo isset($referenciado['fecha_nacimiento']) ? formatDate($referenciado['fecha_nacimiento']) : '<span class="na-text">N/A</span>'; ?>
                         </div>
                     </div>
                     
@@ -487,6 +513,32 @@ function getAfinidadIcon($afinidad) {
                         </div>
                     </div>
                     
+                    <!-- NUEVO CAMPO: Lider -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-crown"></i> Lider
+                        </label>
+                        <div class="field-value">
+                            <?php 
+                            if ($lider): 
+                                $nombreLider = htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']);
+                                $ccLider = htmlspecialchars($lider['cc'] ?? '');
+                            ?>
+                                <div class="lider-info">
+                                    <i class="fas fa-user-tie"></i> 
+                                    <?php echo $nombreLider; ?>
+                                    <?php if ($ccLider): ?>
+                                        <div style="font-size: 0.85rem; color: #90a4ae; margin-top: 4px;">
+                                            <i class="fas fa-id-card"></i> Cédula: <?php echo $ccLider; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <span class="na-text">N/A</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-hands-helping"></i> Oferta de apoyo
@@ -502,6 +554,16 @@ function getAfinidadIcon($afinidad) {
                         </label>
                         <div class="compromiso-text">
                             <?php echo getFieldValue($referenciado['compromiso']); ?>
+                        </div>
+                    </div>
+                    
+                    <!-- NUEVO CAMPO: Fecha de Cumplimiento -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-check"></i> Fecha de Cumplimiento
+                        </label>
+                        <div class="field-value">
+                            <?php echo isset($referenciado['fecha_cumplimiento']) ? formatDate($referenciado['fecha_cumplimiento']) : '<span class="na-text">N/A</span>'; ?>
                         </div>
                     </div>
                 </div>

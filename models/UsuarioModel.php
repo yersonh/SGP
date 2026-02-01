@@ -866,5 +866,28 @@ public function getPorcentajeTracking() {
     $result = $stmt->fetch();
     return $result['porcentaje_tracking'] ?? 0;
 }
+// Método específico para combo box (sin foto_url que causa problemas con JSON)
+public function getReferenciadoresParaCombo() {
+    try {
+        $query = "SELECT 
+                    u.id_usuario,
+                    u.nombres,
+                    u.apellidos,
+                    u.cedula,
+                    u.correo,
+                    u.telefono
+                  FROM usuario u 
+                  WHERE u.tipo_usuario = 'Referenciador' 
+                  AND u.activo = true
+                  ORDER BY u.nombres, u.apellidos";
+        
+        $stmt = $this->pdo->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (Exception $e) {
+        error_log("Error en getReferenciadoresParaCombo: " . $e->getMessage());
+        return [];
+    }
+}
 }
 ?>

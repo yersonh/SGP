@@ -381,4 +381,25 @@ public function getActivos() {
         return [];
     }
 }
+/**
+ * Obtener todos los líderes activos por referenciador
+ */
+public function getActivosByReferenciador($id_usuario) {
+    try {
+        $query = "SELECT id_lider, nombres, apellidos, cc, telefono, correo 
+                  FROM public.lideres 
+                  WHERE estado = true 
+                  AND id_usuario = :id_usuario
+                  ORDER BY nombres, apellidos";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([':id_usuario' => $id_usuario]);
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error en getActivosByReferenciador LiderModel: " . $e->getMessage());
+        return [];
+    }
+}
 }

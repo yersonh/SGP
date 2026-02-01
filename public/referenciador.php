@@ -41,6 +41,7 @@ $zonaModel = new ZonaModel($pdo);
 $barrioModel = new BarrioModel($pdo);
 $gruposParlamentariosModel = new Grupos_ParlamentariosModel($pdo);
 $liderModel = new LiderModel($pdo);
+
 // Obtener datos para los combos
 $gruposPoblacionales = $grupoPoblacionalModel->getAll();
 $ofertasApoyo = $ofertaApoyoModel->getAll();
@@ -49,8 +50,11 @@ $zonas = $zonaModel->getAll();
 $barrios = $barrioModel->getAll();
 $gruposParlamentarios = $gruposParlamentariosModel->getAll();
 
-// Obtener líderes activos usando la nueva función
-$lideres = $liderModel->getActivos();
+// Obtener líderes activos asignados al referenciador logueado
+$lideres = $liderModel->getActivosByReferenciador($id_usuario_logueado);
+
+// Calcular el total de líderes asignados para mostrarlo en el header
+$total_lideres_asignados = count($lideres);
 
 // 6. Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
@@ -140,6 +144,21 @@ if ($porcentajeRestante > 50) {
             gap: 15px;
         }
         
+        /* Badge para mostrar líderes asignados */
+        .lideres-badge {
+            background: linear-gradient(135deg, #6f42c1, #5a379c);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+            box-shadow: 0 2px 5px rgba(111, 66, 193, 0.3);
+        }
+        
         @media (max-width: 768px) {
             .header-top {
                 flex-direction: column;
@@ -156,155 +175,184 @@ if ($porcentajeRestante > 50) {
                 padding: 8px 16px;
                 font-size: 0.9rem;
             }
+            
+            .lideres-badge {
+                margin-left: 5px;
+                font-size: 0.8rem;
+                padding: 4px 10px;
+            }
         }
+        
         /* CONTADOR COMPACTO */
-.countdown-compact-container {
-    max-width: 1400px;
-    margin: 0 auto 20px;
-    padding: 0 15px;
-}
+        .countdown-compact-container {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            padding: 0 15px;
+        }
 
-.countdown-compact {
-    background: linear-gradient(135deg, #2c3e50, #3498db);
-    border-radius: 10px;
-    padding: 15px 20px;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-    border: 1px solid rgba(255,255,255,0.1);
-}
+        .countdown-compact {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            border-radius: 10px;
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
 
-.countdown-compact-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-}
+        .countdown-compact-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
 
-.countdown-compact-title i {
-    color: #f1c40f;
-    font-size: 1.2rem;
-}
+        .countdown-compact-title i {
+            color: #f1c40f;
+            font-size: 1.2rem;
+        }
 
-.countdown-compact-title span {
-    font-weight: 600;
-    font-size: 1rem;
-}
+        .countdown-compact-title span {
+            font-weight: 600;
+            font-size: 1rem;
+        }
 
-.countdown-compact-timer {
-    flex: 2;
-    text-align: center;
-    font-family: 'Segoe UI', monospace;
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
+        .countdown-compact-timer {
+            flex: 2;
+            text-align: center;
+            font-family: 'Segoe UI', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
 
-.countdown-compact-timer span {
-    display: inline-block;
-    min-width: 35px;
-    text-align: center;
-}
+        .countdown-compact-timer span {
+            display: inline-block;
+            min-width: 35px;
+            text-align: center;
+        }
 
-.countdown-compact-date {
-    flex: 1;
-    text-align: right;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.9);
-}
+        .countdown-compact-date {
+            flex: 1;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.9);
+        }
 
-.countdown-compact-date i {
-    color: #f1c40f;
-}
+        .countdown-compact-date i {
+            color: #f1c40f;
+        }
 
-/* Modo oscuro */
-@media (prefers-color-scheme: dark) {
-    .countdown-compact {
-        background: linear-gradient(135deg, #1a252f, #2980b9);
-    }
-}
+        /* Modo oscuro */
+        @media (prefers-color-scheme: dark) {
+            .countdown-compact {
+                background: linear-gradient(135deg, #1a252f, #2980b9);
+            }
+        }
 
-/* Responsive para contador compacto */
-@media (max-width: 768px) {
-    .countdown-compact {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-        padding: 15px;
-    }
-    
-    .countdown-compact-timer {
-        order: 2;
-        width: 100%;
-    }
-    
-    .countdown-compact-title {
-        order: 1;
-        justify-content: center;
-        width: 100%;
-    }
-    
-    .countdown-compact-date {
-        order: 3;
-        justify-content: center;
-        width: 100%;
-    }
-}
+        /* Responsive para contador compacto */
+        @media (max-width: 768px) {
+            .countdown-compact {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+                padding: 15px;
+            }
+            
+            .countdown-compact-timer {
+                order: 2;
+                width: 100%;
+            }
+            
+            .countdown-compact-title {
+                order: 1;
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .countdown-compact-date {
+                order: 3;
+                justify-content: center;
+                width: 100%;
+            }
+        }
 
-@media (max-width: 480px) {
-    .countdown-compact-timer {
-        font-size: 1.3rem;
-    }
-    
-    .countdown-compact-title span {
-        font-size: 0.9rem;
-    }
-}
+        @media (max-width: 480px) {
+            .countdown-compact-timer {
+                font-size: 1.3rem;
+            }
+            
+            .countdown-compact-title span {
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Estilos para el mensaje cuando no hay líderes */
+        .no-lideres-message {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .lider-option {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .lider-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
-<header class="main-header">
-    <div class="header-container">
-        <div class="header-top">
-            <div class="header-title">
-                <h1><i class="fas fa-user-tie"></i> Formulario de Referenciación</h1>
-                <div class="user-info">
-                    <i class="fas fa-user-circle"></i>
-                    <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="header-top">
+                <div class="header-title">
+                    <h1><i class="fas fa-user-tie"></i> Formulario de Referenciación</h1>
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
+                        <span class="lideres-badge">
+                            <i class="fas fa-user-tie"></i> <?php echo $total_lideres_asignados; ?> Líder(es)
+                        </span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <!-- BOTÓN PARA VER REFERENCIADOS -->
+                    <a href="ver_referenciados.php" class="view-referrals-btn">
+                        <i class="fas fa-users"></i> Ver Referenciados
+                    </a>
+                    
+                    <a href="logout.php" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
                 </div>
             </div>
-            <div class="header-actions">
-                <!-- BOTÓN PARA VER REFERENCIADOS -->
-                <a href="ver_referenciados.php" class="view-referrals-btn">
-                    <i class="fas fa-users"></i> Ver Referenciados
-                </a>
-                
-                <a href="logout.php" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
+            
+            <!-- Barra de Progreso del Tope (NUEVA EN EL HEADER) -->
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span>Progreso del Tope: <?php echo $usuario_logueado['total_referenciados'] ?? 0; ?>/<?php echo $usuario_logueado['tope'] ?? 0; ?></span>
+                    <span id="tope-percentage"><?php echo $usuario_logueado['porcentaje_tope'] ?? 0; ?>%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="tope-progress-fill"></div>
+                </div>
             </div>
         </div>
-        
-        <!-- Barra de Progreso del Tope (NUEVA EN EL HEADER) -->
-        <div class="progress-container">
-            <div class="progress-header">
-                <span>Progreso del Tope: <?php echo $usuario_logueado['total_referenciados'] ?? 0; ?>/<?php echo $usuario_logueado['tope'] ?? 0; ?></span>
-                <span id="tope-percentage"><?php echo $usuario_logueado['porcentaje_tope'] ?? 0; ?>%</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="tope-progress-fill"></div>
-            </div>
-        </div>
-    </div>
-</header>
-<!-- CONTADOR COMPACTO -->
+    </header>
+    
+    <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">
             <div class="countdown-compact-title">
@@ -323,6 +371,7 @@ if ($porcentajeRestante > 50) {
             </div>
         </div>
     </div>
+    
     <!-- Main Form -->
     <div class="main-container">
         <div class="form-card">
@@ -363,6 +412,7 @@ if ($porcentajeRestante > 50) {
                                required
                                data-progress="5">
                     </div>
+                    
                     <!-- Fecha Nacimiento -->
                     <div class="form-group">
                         <label class="form-label" for="fecha_nacimiento">
@@ -377,6 +427,7 @@ if ($porcentajeRestante > 50) {
                                    data-progress="3">
                         </div>
                     </div>
+                    
                     <!-- Cédula -->
                     <div class="form-group">
                         <label class="form-label" for="cedula">
@@ -525,6 +576,7 @@ if ($porcentajeRestante > 50) {
                             <input type="hidden" id="afinidad" name="afinidad" value="0" data-progress="5" required>
                         </div>
                     </div>
+                    
                     <!--Grupo Parlamentario (OBLIGATORIO) -->
                     <div class="form-group">
                         <label class="form-label" for="grupo_parlamentario">
@@ -539,6 +591,7 @@ if ($porcentajeRestante > 50) {
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    
                     <!-- Vota Fuera -->
                     <div class="form-group">
                         <label class="form-label" for="vota_fuera_switch">
@@ -671,7 +724,8 @@ if ($porcentajeRestante > 50) {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <!-- Lider (Combo box) -->
+                    
+                    <!-- Lider (Combo box) - MOSTRAR SOLO LÍDERES ASIGNADOS -->
                     <div class="form-group">
                         <label class="form-label" for="lider">
                             <i class="fas fa-user-tie"></i> Lider
@@ -681,14 +735,20 @@ if ($porcentajeRestante > 50) {
                             <?php if (!empty($lideres)): ?>
                                 <?php foreach ($lideres as $lider): ?>
                                 <option value="<?php echo $lider['id_lider']; ?>">
-                                    <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos'] ); ?>
+                                    <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>
                                 </option>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <option value="" disabled>No hay líderes activos disponibles</option>
+                                <option value="" disabled>No tiene líderes asignados</option>
                             <?php endif; ?>
                         </select>
+                        <?php if (empty($lideres)): ?>
+                            <div class="no-lideres-message">
+                                <i class="fas fa-info-circle"></i> No hay líderes asignados a su cuenta. Contacte al administrador si necesita asignación de líderes.
+                            </div>
+                        <?php endif; ?>
                     </div>
+                    
                     <!-- Switch para mostrar/ocultar compromiso -->
                     <div class="form-group">
                         <label class="form-label" for="mostrar_compromiso_switch">
@@ -725,6 +785,7 @@ if ($porcentajeRestante > 50) {
                             <span id="compromiso-chars">0</span>/500 caracteres
                         </div>
                     </div>
+                    
                     <!-- Fecha Cumplimiento -->
                     <div class="form-group" id="fecha_cumplimiento-container">
                         <label class="form-label" for="fecha_cumplimiento">
@@ -876,145 +937,147 @@ if ($porcentajeRestante > 50) {
             </p>
         </div>
     </footer>
-<!-- Modal de Información del Sistema -->
-<div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalSistemaLabel">
-                    <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Logo centrado AGRANDADO -->
-                <div class="modal-logo-container">
-                    <img src="imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+    
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
-                <div class="licencia-info">
-                    <div class="licencia-header">
-                        <h6 class="licencia-title">Licencia Runtime</h6>
-                        <span class="licencia-dias">
-                            <?php echo $diasRestantes; ?> días restantes
-                        </span>
+                <div class="modal-body">
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                     </div>
                     
-                    <div class="licencia-progress">
-                        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-                        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                            style="width: <?php echo $porcentajeRestante; ?>%"
-                            role="progressbar" 
-                            aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                            aria-valuemin="0" 
-                            aria-valuemax="100">
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <div class="licencia-info">
+                        <div class="licencia-header">
+                            <h6 class="licencia-title">Licencia Runtime</h6>
+                            <span class="licencia-dias">
+                                <?php echo $diasRestantes; ?> días restantes
+                            </span>
                         </div>
-                    </div>
-                    
-                    <div class="licencia-fecha">
-                        <i class="fas fa-calendar-alt me-1"></i>
-                        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-                        Válida hasta: <?php echo $validaHastaFormatted; ?>
-                    </div>
-                </div>
-                <div class="feature-image-container">
-                    <img src="imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
-                    <div class="profile-info mt-3">
-                        <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
                         
-                        <small class="profile-description">
-                            Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
-                            Magister en Administración Pública.<br>
-                            <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
-                        </small>
+                        <div class="licencia-progress">
+                            <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+                            <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                style="width: <?php echo $porcentajeRestante; ?>%"
+                                role="progressbar" 
+                                aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                            </div>
+                        </div>
+                        
+                        <div class="licencia-fecha">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                            Válida hasta: <?php echo $validaHastaFormatted; ?>
+                        </div>
+                    </div>
+                    <div class="feature-image-container">
+                        <img src="imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Sección de Características -->
-                <div class="row g-4 mb-4">
-                    <!-- Efectividad de la Herramienta -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-primary mb-3">
-                                <i class="fas fa-bolt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Efectividad de la Herramienta</h5>
-                            <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
-                            <p class="feature-text">
-                                Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
-                            </p>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
+                    <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
+                       target="_blank" 
+                       class="btn btn-primary"
+                       onclick="cerrarModalSistema();">
+                        <i class="fas fa-external-link-alt me-1"></i> Uso SGP
+                    </a>
                     
-                    <!-- Integridad de Datos -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-success mb-3">
-                                <i class="fas fa-database fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Integridad de Datos</h5>
-                            <h6 class="text-muted mb-2">Validación Inteligente</h6>
-                            <p class="feature-text">
-                                Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Monitoreo de Metas -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-warning mb-3">
-                                <i class="fas fa-chart-line fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Monitoreo de Metas</h5>
-                            <h6 class="text-muted mb-2">Seguimiento Visual</h6>
-                            <p class="feature-text">
-                                Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Seguridad Avanzada -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-danger mb-3">
-                                <i class="fas fa-shield-alt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Seguridad Avanzada</h5>
-                            <h6 class="text-muted mb-2">Control Total</h6>
-                            <p class="feature-text">
-                                Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
-                            </p>
-                        </div>
-                    </div>
+                    <!-- Botón Cerrar - Solo cierra el modal -->
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
-                <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
-                   target="_blank" 
-                   class="btn btn-primary"
-                   onclick="cerrarModalSistema();">
-                    <i class="fas fa-external-link-alt me-1"></i> Uso SGP
-                </a>
-                
-                <!-- Botón Cerrar - Solo cierra el modal -->
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i> Cerrar
-                </button>
             </div>
         </div>
     </div>
-</div>
+    
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Script para manejar la lógica de campos obligatorios condicionales -->
+    <!-- Script para manejar la lógica de campos obligatorios condicionales -->
     <script>
     window.camposCondicionalesConfigurados = false;
     </script>
     
-       <!-- Script para mostrar/ocultar campos compromiso y fecha cumplimiento -->
+    <!-- Script para mostrar/ocultar campos compromiso y fecha cumplimiento -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const mostrarSwitch = document.getElementById('mostrar_compromiso_switch');
@@ -1069,6 +1132,7 @@ if ($porcentajeRestante > 50) {
         });
     });
     </script>
+    
     <!-- JavaScript separado -->
     <script src="js/referenciador.js"></script>
     <script src="js/modal-sistema.js"></script>

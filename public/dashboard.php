@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/SistemaModel.php';
+require_once __DIR__ . '/../models/LiderModel.php';
 
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -20,6 +21,7 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administra
 $pdo = Database::getConnection();
 $model = new UsuarioModel($pdo);
 $sistemaModel = new SistemaModel($pdo);
+$liderModel = new LiderModel($pdo);
 
 $id_usuario_logueado = $_SESSION['id_usuario'];
 
@@ -43,6 +45,7 @@ $referenciadores = $model->countReferenciadores();
 $descargadores = $model->countDescargadores();
 $superadmin = $model->countSuperAdmin();
 $tracking = $model->countTracking();
+$lideres = $liderModel->countLideres();
 
 // 6. Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
@@ -186,6 +189,10 @@ if ($porcentajeRestante > 50) {
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $tracking; ?></div>
                     <div class="stat-label">Tracking</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $lideres; ?></div>
+                    <div class="stat-label">Lideres</div>
                 </div>
             </div>
         </div>

@@ -402,4 +402,10 @@ public function getActivosByReferenciador($id_usuario) {
         return [];
     }
 }
+public function countLideres() {
+    $query = "SELECT COUNT(*) as lider FROM lideres";
+    $stmt = $this->pdo->query($query);
+    $result = $stmt->fetch();
+    return $result['lider'];
+}
 }

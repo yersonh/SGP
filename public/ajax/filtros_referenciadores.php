@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/ZonaModel.php';
 require_once __DIR__ . '/../../models/SectorModel.php';
 require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
+require_once __DIR__ . '/../../models/LlamadaModel.php';
 
 // Validar petición AJAX
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
@@ -39,6 +40,7 @@ try {
     $zonaModel = new ZonaModel($pdo);
     $sectorModel = new SectorModel($pdo);
     $puestoVotacionModel = new PuestoVotacionModel($pdo);
+    $llamadaModel = new LlamadaModel($pdo);
     
     // Cache para datos estáticos (5 minutos)
     $cacheKey = 'cache_filtros_' . md5(serialize([$filtros['id_zona'], $filtros['id_sector']]));
@@ -157,7 +159,28 @@ try {
 
     $referenciadores = array_values($referenciadores);
     
-    // Ordenar según el filtro seleccionado
+    // =============================================
+    // CALCULAR TOP 5 ENTRE LOS RESULTADOS FILTRADOS
+    // =============================================
+    $referenciadoresOrdenadosParaTop = $referenciadores; // Copiar array para ordenar
+    
+    // Ordenar por cantidad de referidos (descendente) para el top 5
+    usort($referenciadoresOrdenadosParaTop, function($a, $b) {
+        $referidos_a = $a['total_referenciados'] ?? 0;
+        $referidos_b = $b['total_referenciados'] ?? 0;
+        return $referidos_b <=> $referidos_a;
+    });
+    
+    // Tomar los primeros 5 (o menos si hay menos resultados)
+    $top5Filtrados = array_slice($referenciadoresOrdenadosParaTop, 0, 5);
+    
+    // Crear un array con posición para cada ID (1 = Top 1, 2 = Top 2, etc.)
+    $posicionesTop = [];
+    foreach ($top5Filtrados as $index => $top) {
+        $posicionesTop[$top['id_usuario']] = $index + 1; // Posición comienza en 1
+    }
+    
+    // Ordenar según el filtro seleccionado (para la visualización)
     usort($referenciadores, function($a, $b) use ($filtros) {
         switch ($filtros['ordenar_por']) {
             case 'porcentaje_desc':
@@ -207,6 +230,19 @@ try {
         $referenciador['id_puesto'] = $referenciador['id_puesto'] ?? 0;
         $referenciador['ultimo_registro'] = $referenciador['ultimo_registro'] ?? null;
         $referenciador['fecha_creacion'] = $referenciador['fecha_creacion'] ?? date('Y-m-d H:i:s');
+        
+        // Obtener métricas de tracking y calidad
+        $referenciador['trackeados'] = $llamadaModel->getCantidadTrackeados($referenciador['id_usuario']);
+        $referenciador['porcentaje_calidad'] = $llamadaModel->getPorcentajeCalidadPorRating($referenciador['id_usuario']);
+        
+        // Marcar si está en el top 5 filtrado y asignar posición
+        if (isset($posicionesTop[$referenciador['id_usuario']])) {
+            $referenciador['es_top5'] = true;
+            $referenciador['posicion_top'] = $posicionesTop[$referenciador['id_usuario']];
+        } else {
+            $referenciador['es_top5'] = false;
+            $referenciador['posicion_top'] = 0;
+        }
     }
     
     $porcentajeFiltrado = 0;
@@ -245,7 +281,8 @@ try {
                 'referenciadoresFiltradosCount' => $referenciadoresFiltradosCount,
                 'totalReferidosFiltrados' => $totalReferidosFiltrados,
                 'totalTopeFiltrados' => $totalTopeFiltrados,
-                'porcentajeFiltrado' => $porcentajeFiltrado
+                'porcentajeFiltrado' => $porcentajeFiltrado,
+                'posicionesTop' => $posicionesTop // <-- NUEVO: Enviamos las posiciones
             ],
             'referenciadores' => $referenciadoresPaginados,
             'paginacion' => [
@@ -266,7 +303,8 @@ try {
             'timestamp' => date('Y-m-d H:i:s'),
             'cache' => isset($_SESSION[$cacheKey . '_time']) ? 
                 (time() - $_SESSION[$cacheKey . '_time']) . ' segundos' : 
-                'no cache'
+                'no cache',
+            'top5_count' => count($posicionesTop)
         ]
     ];
     

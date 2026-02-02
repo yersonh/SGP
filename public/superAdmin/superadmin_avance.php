@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../models/ZonaModel.php';
 require_once __DIR__ . '/../../models/SectorModel.php';
 require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
 require_once __DIR__ . '/../../models/SistemaModel.php';
+require_once __DIR__ . '/../../models/LlamadaModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -19,6 +20,7 @@ $zonaModel = new ZonaModel($pdo);
 $sectorModel = new SectorModel($pdo);
 $puestoVotacionModel = new PuestoVotacionModel($pdo);
 $sistemaModel = new SistemaModel($pdo);
+$llamadaModel = new LlamadaModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
@@ -79,6 +81,23 @@ try {
         return $fecha_b <=> $fecha_a; // Más recientes primero
     });
     
+    // Calcular top 5 por referidos
+    $referenciadoresOrdenadosPorReferidos = $referenciadoresIniciales;
+    usort($referenciadoresOrdenadosPorReferidos, function($a, $b) {
+        $referidos_a = $a['total_referenciados'] ?? 0;
+        $referidos_b = $b['total_referenciados'] ?? 0;
+        return $referidos_b <=> $referidos_a;
+    });
+    
+    // Tomar los primeros 5
+    $top5PorReferidos = array_slice($referenciadoresOrdenadosPorReferidos, 0, 5);
+    
+    // Crear un array con IDs de los top 5 para fácil verificación
+    $top5Ids = [];
+    foreach ($top5PorReferidos as $top) {
+        $top5Ids[] = $top['id_usuario'];
+    }
+    
     // Calcular estadísticas para los referenciadores iniciales
     $totalIniciales = count($referenciadoresIniciales);
     
@@ -91,8 +110,13 @@ try {
     $totalTope = 0;
     $porcentajeGlobal = 0;
     $totalIniciales = 0;
+    $top5PorReferidos = [];
+    $top5Ids = [];
     error_log("Error al obtener referenciadores: " . $e->getMessage());
 }
+
+// Obtener referenciadores para el combo box
+$referenciadoresCombo = $usuarioModel->getReferenciadoresParaCombo();
 
 // Info del sistema (igual que antes)
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
@@ -121,6 +145,41 @@ if ($porcentajeRestante > 50) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/superadmin_avance.css">
+    <style>
+        /* Estilos adicionales para top 5 */
+        .top5-badge {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #000;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 5px;
+        }
+        
+        .stat-item.top5 {
+            position: relative;
+        }
+        
+        .stat-item.top5::after {
+            content: '👑';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 12px;
+        }
+        
+        .referenciador-card.top5 {
+            border-left: 4px solid #FFD700;
+            background: linear-gradient(90deg, rgba(255,215,0,0.05) 0%, rgba(255,255,255,1) 100%);
+        }
+        
+        .crown-icon {
+            color: #FFD700;
+            margin-left: 3px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
     <!-- Header (mantener igual) -->
@@ -278,6 +337,19 @@ if ($porcentajeRestante > 50) {
                            data-filtro="nombre">
                 </div>
                 
+                <!-- NUEVO: Combo Box de Referenciadores -->
+                <div class="form-group">
+                    <label for="id_referenciador"><i class="fas fa-user-tie"></i> Referenciador</label>
+                    <select id="id_referenciador" class="form-select filtro-select" data-filtro="id_referenciador">
+                        <option value="">Todos los referenciadores</option>
+                        <?php foreach ($referenciadoresCombo as $ref): ?>
+                            <option value="<?php echo $ref['id_usuario']; ?>">
+                                <?php echo htmlspecialchars($ref['nombres'] . ' ' . $ref['apellidos'] . ' '); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
                 <!-- Zona -->
                 <div class="form-group">
                     <label for="id_zona"><i class="fas fa-map-marker-alt"></i> Zona</label>
@@ -416,9 +488,13 @@ if ($porcentajeRestante > 50) {
                         if ($porcentaje >= 75) $progressClass = 'progress-excelente';
                         elseif ($porcentaje >= 50) $progressClass = 'progress-bueno';
                         elseif ($porcentaje >= 25) $progressClass = 'progress-medio';
+                        
+                        // Verificar si está en el top 5
+                        $esTop5 = in_array($referenciador['id_usuario'], $top5Ids);
+                        $cardClass = $esTop5 ? 'referenciador-card top5' : 'referenciador-card';
                         ?>
                         
-                        <div class="referenciador-card" data-id="<?php echo $referenciador['id_usuario']; ?>">
+                        <div class="<?php echo $cardClass; ?>" data-id="<?php echo $referenciador['id_usuario']; ?>">
                             <div class="referenciador-header">
                                 <div class="user-info-section">
                                     <div class="user-avatar">
@@ -433,13 +509,18 @@ if ($porcentajeRestante > 50) {
                                     <div class="user-details">
                                         <div class="user-name">
                                             <?php echo htmlspecialchars($referenciador['nombres'] . ' ' . $referenciador['apellidos']); ?>
-                                            <?php if ($porcentaje >= 100): ?>
+                                            
+                                            <?php if ($esTop5): ?>
+                                                <span class="top5-badge" title="Top 5 en referidos">
+                                                    <i class="fas fa-trophy"></i> Top 5
+                                                </span>
+                                            <?php elseif ($porcentaje >= 100): ?>
                                                 <span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;">
                                                     <i class="fas fa-check-circle"></i> Completado
                                                 </span>
                                             <?php elseif ($porcentaje >= 75): ?>
                                                 <span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;">
-                                                    <i class="fas fa-trophy"></i> Avanzado
+                                                    <i class="fas fa-chart-line"></i> Avanzado
                                                 </span>
                                             <?php endif; ?>
                                         </div>
@@ -455,8 +536,13 @@ if ($porcentajeRestante > 50) {
                                 </div>
                                 
                                 <div class="user-stats">
-                                    <div class="stat-item">
-                                        <div class="stat-number"><?php echo $referenciador['total_referenciados'] ?? 0; ?></div>
+                                    <div class="stat-item <?php echo $esTop5 ? 'top5' : ''; ?>">
+                                        <div class="stat-number <?php echo $esTop5 ? 'text-warning fw-bold' : ''; ?>">
+                                            <?php echo $referenciador['total_referenciados'] ?? 0; ?>
+                                            <?php if ($esTop5): ?>
+                                                <i class="fas fa-crown crown-icon"></i>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="stat-desc">Referidos</div>
                                     </div>
                                     <div class="stat-item">
@@ -464,10 +550,31 @@ if ($porcentajeRestante > 50) {
                                         <div class="stat-desc">Tope</div>
                                     </div>
                                     <div class="stat-item">
-                                        <div class="stat-number <?php echo $porcentaje >= 100 ? 'text-success' : ($porcentaje >= 75 ? 'text-primary' : ''); ?>">
-                                            <?php echo $porcentaje; ?>%
+                                        <?php
+                                        // Obtener cantidad de trackeados
+                                        $trackeados = $llamadaModel->getCantidadTrackeados($referenciador['id_usuario']);
+                                        ?>
+                                        <div class="stat-number">
+                                            <?php echo $trackeados; ?>
                                         </div>
-                                        <div class="stat-desc">Avance</div>
+                                        <div class="stat-desc">Trackeados</div>
+                                    </div>
+                                    <!-- NUEVO: Porcentaje de Calidad -->
+                                    <div class="stat-item">
+                                        <?php
+                                        // Obtener porcentaje de calidad
+                                        $porcentajeCalidad = $llamadaModel->getPorcentajeCalidadPorRating($referenciador['id_usuario']);
+                                        ?>
+                                        <div class="stat-number 
+                                            <?php 
+                                            // Color según porcentaje
+                                            if ($porcentajeCalidad >= 80) echo 'text-success';      // Excelente: 80-100%
+                                            elseif ($porcentajeCalidad >= 60) echo 'text-warning';  // Bueno: 60-79%
+                                            else echo 'text-danger';                               // Bajo: 0-59%
+                                            ?>">
+                                            <?php echo $porcentajeCalidad; ?>%
+                                        </div>
+                                        <div class="stat-desc">Calidad</div>
                                     </div>
                                 </div>
                             </div>
@@ -661,493 +768,777 @@ if ($porcentajeRestante > 50) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Variable global para controlar las peticiones AJAX
-        var filtrosActuales = {};
-        var timerBusqueda;
-        
-        function actualizarLogoSegunTema() {
-            const logo = document.getElementById('footer-logo');
-            if (!logo) return;
-            
-            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (isDarkMode) {
-                logo.src = logo.getAttribute('data-img-oscuro');
-            } else {
-                logo.src = logo.getAttribute('data-img-claro');
-            }
-        }
+       // ====================================================================
+// FUNCIONES PRINCIPALES PARA EL SISTEMA DE FILTRADO AJAX
+// ====================================================================
 
-        // Ejecutar al cargar y cuando cambie el tema
-        document.addEventListener('DOMContentLoaded', function() {
-            actualizarLogoSegunTema();
-        });
+// Variable para controlar el estado actual
+var vistaActual = 'referenciadores'; // 'referenciadores' o 'lideres'
+var referenciadorSeleccionado = null;
 
-        // Escuchar cambios en el tema del sistema
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            actualizarLogoSegunTema();
-        });
-        // ====================================================================
-        // FUNCIONES PRINCIPALES PARA EL SISTEMA DE FILTRADO AJAX
-        // ====================================================================
-        
-        // 1. Función para obtener valores de los filtros
-        function obtenerFiltros() {
-            return {
-                nombre: $('#nombre').val().trim(),
-                id_zona: $('#id_zona').val() || 0,
-                id_sector: $('#id_sector').val() || 0,
-                id_puesto: $('#id_puesto').val() || 0,
-                fecha_acceso: $('#fecha_acceso').val() || '',
-                porcentaje_minimo: $('#porcentaje_minimo').val() || 0,
-                ordenar_por: $('#ordenar_por').val() || 'fecha_creacion',
-                page: 1, // Siempre empezar en página 1 al filtrar
-                limit: 50 // Puedes ajustar esto
-            };
-        }
-        
-        // 2. Función para mostrar/ocultar filtros activos
-        function actualizarFiltrosActivos(filtros) {
-            var container = $('#activeFiltersContainer');
-            var list = $('#activeFiltersList');
-            list.empty();
-            
-            var filtrosMostrar = [];
-            
-            // Nombre
-            if (filtros.nombre) {
-                filtrosMostrar.push({
-                    key: 'nombre',
-                    label: 'Nombre: ' + filtros.nombre
-                });
-            }
-            
-            // Zona
-            if (filtros.id_zona > 0) {
-                var zonaNombre = $('#id_zona option:selected').text();
-                filtrosMostrar.push({
-                    key: 'id_zona',
-                    label: 'Zona: ' + zonaNombre
-                });
-            }
-            
-            // Sector
-            if (filtros.id_sector > 0) {
-                var sectorNombre = $('#id_sector option:selected').text();
-                filtrosMostrar.push({
-                    key: 'id_sector',
-                    label: 'Sector: ' + sectorNombre
-                });
-            }
-            
-            // Puesto de votación
-            if (filtros.id_puesto > 0) {
-                var puestoNombre = $('#id_puesto option:selected').text();
-                filtrosMostrar.push({
-                    key: 'id_puesto',
-                    label: 'Puesto: ' + puestoNombre
-                });
-            }
-            
-            // Porcentaje mínimo
-            if (filtros.porcentaje_minimo > 0) {
-                var porcentajeText = '';
-                switch(filtros.porcentaje_minimo.toString()) {
-                    case '100': porcentajeText = '100% (Completado)'; break;
-                    case '90': porcentajeText = '90% o más'; break;
-                    case '75': porcentajeText = '75% o más'; break;
-                    case '50': porcentajeText = '50% o más'; break;
-                    case '25': porcentajeText = '25% o más'; break;
-                    case '0': porcentajeText = 'Con algún avance'; break;
-                    default: porcentajeText = filtros.porcentaje_minimo + '% o más';
-                }
-                filtrosMostrar.push({
-                    key: 'porcentaje_minimo',
-                    label: 'Avance mínimo: ' + porcentajeText
-                });
-            }
-            
-            // Fecha acceso
-            if (filtros.fecha_acceso) {
-                filtrosMostrar.push({
-                    key: 'fecha_acceso',
-                    label: 'Último acceso: ' + filtros.fecha_acceso
-                });
-            }
-            
-            // Ordenar por (si no es el default)
-            if (filtros.ordenar_por !== 'fecha_creacion') {
-                var ordenText = '';
-                switch(filtros.ordenar_por) {
-                    case 'porcentaje_desc': ordenText = 'Orden: % Avance'; break;
-                    case 'referidos_desc': ordenText = 'Orden: Cant. Referidos'; break;
-                }
-                filtrosMostrar.push({
-                    key: 'ordenar_por',
-                    label: ordenText
-                });
-            }
-            
-            // Mostrar u ocultar contenedor
-            if (filtrosMostrar.length > 0) {
-                container.show();
-                $('#filtroIndicator').show();
-                
-                // Crear badges para cada filtro
-                filtrosMostrar.forEach(function(filtro) {
-                    var badge = $('<span class="filter-badge">')
-                        .html(filtro.label + ' <span class="close" data-filtro="' + filtro.key + '">&times;</span>')
-                        .appendTo(list);
-                });
-            } else {
-                container.hide();
-                $('#filtroIndicator').hide();
-            }
-        }
-        
-        // 3. Función principal para buscar con AJAX
-        function buscarReferenciadores() {
-            filtrosActuales = obtenerFiltros();
-            
-            // Mostrar loading
-            $('#loadingIndicator').show();
-            $('#referenciadoresList').hide();
-            $('#paginacionContainer').hide();
-            
-            // Actualizar filtros activos
-            actualizarFiltrosActivos(filtrosActuales);
-            
-            // Construir URL para AJAX
-            var url = '../ajax/filtros_referenciadores.php?' + $.param(filtrosActuales);
-            
-            $.ajax({
-                url: url,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        mostrarResultados(response.data);
-                    } else {
-                        mostrarError(response.error || 'Error en la búsqueda');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    mostrarError('Error de conexión: ' + error);
-                },
-                complete: function() {
-                    $('#loadingIndicator').hide();
-                }
+// 1. Función para obtener valores de los filtros
+function obtenerFiltros() {
+    return {
+        nombre: $('#nombre').val().trim(),
+        id_referenciador: $('#id_referenciador').val() || 0,
+        id_zona: $('#id_zona').val() || 0,
+        id_sector: $('#id_sector').val() || 0,
+        id_puesto: $('#id_puesto').val() || 0,
+        fecha_acceso: $('#fecha_acceso').val() || '',
+        porcentaje_minimo: $('#porcentaje_minimo').val() || 0,
+        ordenar_por: $('#ordenar_por').val() || 'fecha_creacion',
+        page: 1,
+        limit: 50
+    };
+}
+
+// 2. Función para mostrar/ocultar filtros activos
+function actualizarFiltrosActivos(filtros) {
+    var container = $('#activeFiltersContainer');
+    var list = $('#activeFiltersList');
+    list.empty();
+    
+    var filtrosMostrar = [];
+    
+    // Solo mostrar filtros activos cuando no estamos en vista de líderes
+    if (vistaActual === 'referenciadores') {
+        // Nombre
+        if (filtros.nombre) {
+            filtrosMostrar.push({
+                key: 'nombre',
+                label: 'Nombre: ' + filtros.nombre
             });
         }
         
-        // 4. Función para mostrar resultados
-        function mostrarResultados(data) {
-            var container = $('#referenciadoresList');
-            container.empty();
-            
-            // Actualizar info de resultados
-            if (data.filtrosActivos) {
-                $('#resultadosInfo').show();
-                $('#resultadosText').html(
-                    'Mostrando <strong>' + data.paginacion.mostrandoDesde + '-' + data.paginacion.mostrandoHasta + 
-                    '</strong> de <strong>' + data.paginacion.totalResultados + '</strong> referenciadores filtrados'
-                );
-            } else {
-                $('#resultadosInfo').hide();
-            }
-            
-            // Mostrar estadísticas filtradas (opcional, si quieres mostrarlas)
-            console.log('Estadísticas filtradas:', data.estadisticas);
-            
-            // Mostrar referenciadores
-            if (data.referenciadores.length === 0) {
-                var noResults = $('<div class="no-results">')
-                    .html('<i class="fas fa-search"></i><p>No se encontraron referenciadores con los filtros aplicados.</p>')
-                    .appendTo(container);
-                
-                if (data.filtrosActivos) {
-                    $('<button type="button" class="btn-reset-filters" onclick="limpiarFiltros()">')
-                        .html('<i class="fas fa-times"></i> Limpiar filtros')
-                        .appendTo(noResults);
-                }
-            } else {
-                data.referenciadores.forEach(function(referenciador) {
-                    var porcentaje = referenciador.porcentaje_tope || 0;
-                    
-                    // Determinar clase de progreso
-                    var progressClass = 'progress-bajo';
-                    if (porcentaje >= 75) progressClass = 'progress-excelente';
-                    else if (porcentaje >= 50) progressClass = 'progress-bueno';
-                    else if (porcentaje >= 25) progressClass = 'progress-medio';
-                    
-                    // Crear tarjeta
-                    var card = $('<div class="referenciador-card">')
-                        .attr('data-id', referenciador.id_usuario)
-                        .appendTo(container);
-                    
-                    // Construir contenido (similar al PHP)
-                    var html = `
-                        <div class="referenciador-header">
-                            <div class="user-info-section">
-                                <div class="user-avatar">
-                                    ${referenciador.foto_url ? 
-                                        '<img src="' + referenciador.foto_url + '" alt="Foto">' : 
-                                        '<div style="width: 100%; height: 100%; background: #eaeaea; display: flex; align-items: center; justify-content: center;">' +
-                                        '<i class="fas fa-user" style="color: #95a5a6; font-size: 1.5rem;"></i></div>'}
-                                </div>
-                                <div class="user-details">
-                                    <div class="user-name">
-                                        ${referenciador.nombres} ${referenciador.apellidos}
-                                        ${porcentaje >= 100 ? 
-                                            '<span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Completado</span>' : 
-                                            (porcentaje >= 75 ? 
-                                                '<span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;"><i class="fas fa-trophy"></i> Avanzado</span>' : '')}
-                                    </div>
-                                    <div class="user-info-text">
-                                        <span>Cédula: ${referenciador.cedula || 'N/A'}</span>
-                                        <span>Usuario: ${referenciador.nickname || 'N/A'}</span>
-                                        <span>Fecha registro: ${new Date(referenciador.fecha_creacion).toLocaleDateString('es-ES')}</span>
-                                        ${referenciador.ultimo_registro ? 
-                                            '<span>Último acceso: ' + new Date(referenciador.ultimo_registro).toLocaleString('es-ES') + '</span>' : ''}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="user-stats">
-                                <div class="stat-item ${filtrosActuales.ordenar_por === 'referidos_desc' ? 'stat-destacado' : ''}">
-                                    <div class="stat-number">${referenciador.total_referenciados || 0}</div>
-                                    <div class="stat-desc">Referidos</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">${referenciador.tope || 0}</div>
-                                    <div class="stat-desc">Tope</div>
-                                </div>
-                                <div class="stat-item ${filtrosActuales.ordenar_por === 'porcentaje_desc' ? 'stat-destacado' : ''}">
-                                    <div class="stat-number ${porcentaje >= 100 ? 'text-success' : (porcentaje >= 75 ? 'text-primary' : '')}">
-                                        ${porcentaje}%
-                                    </div>
-                                    <div class="stat-desc">Avance</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="individual-progress">
-                            <div class="progress-label-small">
-                                Progreso individual: ${referenciador.total_referenciados || 0} de ${referenciador.tope || 0} referidos
-                                <span style="float: right; font-weight: bold; color: ${porcentaje >= 100 ? '#4caf50' : (porcentaje >= 75 ? '#2196f3' : '#666')}">
-                                    ${porcentaje}%
-                                </span>
-                            </div>
-                            <div class="progress-container-small">
-                                <div class="progress-bar-small ${progressClass}" 
-                                     style="width: ${porcentaje}%">
-                                </div>
-                            </div>
-                            <div class="progress-numbers">
-                                <span>0%</span>
-                                <span>25%</span>
-                                <span>50%</span>
-                                <span>75%</span>
-                                <span>100%</span>
-                            </div>
-                        </div>
-                    `;
-                    
-                    card.html(html);
-                });
-            }
-            
-            // Mostrar paginación
-            if (data.paginacion.totalPaginas > 1) {
-                mostrarPaginacion(data.paginacion);
-            } else {
-                $('#paginacionContainer').hide();
-            }
-            
-            // Mostrar contenedor
-            container.show();
-            
-            // Animación de barras
-            setTimeout(function() {
-                $('.progress-bar-small').each(function() {
-                    var width = $(this).css('width');
-                    $(this).css('width', '0');
-                    $(this).animate({ width: width }, 1000);
-                });
-            }, 300);
-        }
-        
-        // 5. Función para mostrar paginación
-        function mostrarPaginacion(paginacion) {
-            var container = $('#paginacionContainer');
-            container.empty().show();
-            
-            var paginacionHTML = `
-                <nav aria-label="Paginación de referenciadores">
-                    <ul class="pagination justify-content-center">
-            `;
-            
-            // Botón anterior
-            paginacionHTML += `
-                <li class="page-item ${paginacion.paginaActual === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="cambiarPagina(${paginacion.paginaActual - 1})" aria-label="Anterior">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-            `;
-            
-            // Páginas
-            for (var i = 1; i <= paginacion.totalPaginas; i++) {
-                if (i === 1 || i === paginacion.totalPaginas || 
-                    (i >= paginacion.paginaActual - 2 && i <= paginacion.paginaActual + 2)) {
-                    
-                    paginacionHTML += `
-                        <li class="page-item ${i === paginacion.paginaActual ? 'active' : ''}">
-                            <a class="page-link" href="#" onclick="cambiarPagina(${i})">${i}</a>
-                        </li>
-                    `;
-                } else if (i === paginacion.paginaActual - 3 || i === paginacion.paginaActual + 3) {
-                    paginacionHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-            }
-            
-            // Botón siguiente
-            paginacionHTML += `
-                <li class="page-item ${paginacion.paginaActual === paginacion.totalPaginas ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="cambiarPagina(${paginacion.paginaActual + 1})" aria-label="Siguiente">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            `;
-            
-            paginacionHTML += `
-                    </ul>
-                </nav>
-                <div class="text-center text-muted mt-2">
-                    Mostrando ${paginacion.mostrandoDesde}-${paginacion.mostrandoHasta} de ${paginacion.totalResultados} resultados
-                </div>
-            `;
-            
-            container.html(paginacionHTML);
-        }
-        
-        // 6. Función para cambiar de página
-        function cambiarPagina(pagina) {
-            filtrosActuales.page = pagina;
-            
-            // Actualizar URL de AJAX con nueva página
-            var url = '../ajax/filtros_referenciadores.php?' + $.param(filtrosActuales);
-            
-            $('#loadingIndicator').show();
-            
-            $.ajax({
-                url: url,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        mostrarResultados(response.data);
-                        // Scroll suave hacia la lista
-                        $('html, body').animate({
-                            scrollTop: $('#referenciadoresContainer').offset().top - 20
-                        }, 500);
-                    }
-                },
-                complete: function() {
-                    $('#loadingIndicator').hide();
-                }
+        // Zona
+        if (filtros.id_zona > 0) {
+            var zonaNombre = $('#id_zona option:selected').text();
+            filtrosMostrar.push({
+                key: 'id_zona',
+                label: 'Zona: ' + zonaNombre
             });
         }
         
-        // 7. Función para limpiar filtros
-        function limpiarFiltros() {
-            // Limpiar todos los campos
-            $('.filtro-input').val('');
-            $('.filtro-select').val('');
-            $('#ordenar_por').val('fecha_creacion');
-            
-            // Ocultar contenedores
-            $('#activeFiltersContainer').hide();
-            $('#resultadosInfo').hide();
-            $('#filtroIndicator').hide();
-            
-            // Resetear resultados a estado inicial
-            $('#loadingIndicator').show();
-            $('#referenciadoresList').hide();
-            $('#paginacionContainer').hide();
-            
-            // Recargar la página para mostrar datos iniciales (o hacer AJAX sin filtros)
-            setTimeout(function() {
-                location.reload(); // Opción 1: Recargar página
-                // Opción 2: Hacer AJAX sin filtros:
-                // filtrosActuales = {page: 1, limit: 50, ordenar_por: 'fecha_creacion'};
-                // buscarReferenciadores();
-            }, 300);
+        // Sector
+        if (filtros.id_sector > 0) {
+            var sectorNombre = $('#id_sector option:selected').text();
+            filtrosMostrar.push({
+                key: 'id_sector',
+                label: 'Sector: ' + sectorNombre
+            });
         }
         
-        // 8. Función para mostrar error
-        function mostrarError(mensaje) {
-            $('#referenciadoresList').html(`
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i> ${mensaje}
+        // Puesto de votación
+        if (filtros.id_puesto > 0) {
+            var puestoNombre = $('#id_puesto option:selected').text();
+            filtrosMostrar.push({
+                key: 'id_puesto',
+                label: 'Puesto: ' + puestoNombre
+            });
+        }
+        
+        // Porcentaje mínimo
+        if (filtros.porcentaje_minimo > 0) {
+            var porcentajeText = '';
+            switch(filtros.porcentaje_minimo.toString()) {
+                case '100': porcentajeText = '100% (Completado)'; break;
+                case '90': porcentajeText = '90% o más'; break;
+                case '75': porcentajeText = '75% o más'; break;
+                case '50': porcentajeText = '50% o más'; break;
+                case '25': porcentajeText = '25% o más'; break;
+                case '0': porcentajeText = 'Con algún avance'; break;
+                default: porcentajeText = filtros.porcentaje_minimo + '% o más';
+            }
+            filtrosMostrar.push({
+                key: 'porcentaje_minimo',
+                label: 'Avance mínimo: ' + porcentajeText
+            });
+        }
+        
+        // Fecha acceso
+        if (filtros.fecha_acceso) {
+            filtrosMostrar.push({
+                key: 'fecha_acceso',
+                label: 'Último acceso: ' + filtros.fecha_acceso
+            });
+        }
+        
+        // Ordenar por (si no es el default)
+        if (filtros.ordenar_por !== 'fecha_creacion') {
+            var ordenText = '';
+            switch(filtros.ordenar_por) {
+                case 'porcentaje_desc': ordenText = 'Orden: % Avance'; break;
+                case 'referidos_desc': ordenText = 'Orden: Cant. Referidos'; break;
+            }
+            filtrosMostrar.push({
+                key: 'ordenar_por',
+                label: ordenText
+            });
+        }
+    }
+    
+    // Mostrar filtro de referenciador si está seleccionado
+    if (referenciadorSeleccionado) {
+        var referenciadorNombre = $('#id_referenciador option:selected').text();
+        filtrosMostrar.push({
+            key: 'id_referenciador',
+            label: 'Referenciador: ' + referenciadorNombre
+        });
+    }
+    
+    // Mostrar u ocultar contenedor
+    if (filtrosMostrar.length > 0) {
+        container.show();
+        $('#filtroIndicator').show();
+        
+        // Crear badges para cada filtro
+        filtrosMostrar.forEach(function(filtro) {
+            var badge = $('<span class="filter-badge">')
+                .html(filtro.label + ' <span class="close" data-filtro="' + filtro.key + '">&times;</span>')
+                .appendTo(list);
+        });
+    } else {
+        container.hide();
+        $('#filtroIndicator').hide();
+    }
+}
+
+// 3. Función principal para buscar
+function buscarReferenciadores() {
+    var id_referenciador = $('#id_referenciador').val() || 0;
+    
+    // Si se seleccionó un referenciador, mostrar sus líderes
+    if (id_referenciador > 0) {
+        buscarLideresPorReferenciador(id_referenciador);
+        return;
+    }
+    
+    // Si no hay referenciador seleccionado, buscar referenciadores normalmente
+    vistaActual = 'referenciadores';
+    referenciadorSeleccionado = null;
+    
+    filtrosActuales = obtenerFiltros();
+    
+    // Mostrar loading
+    $('#loadingIndicator').show();
+    $('#referenciadoresList').hide();
+    $('#paginacionContainer').hide();
+    
+    // Actualizar filtros activos
+    actualizarFiltrosActivos(filtrosActuales);
+    
+    // Restaurar título
+    $('.list-title span:first').text('Progreso Individual por Referenciador');
+    
+    // Construir URL para AJAX
+    var url = '../ajax/filtros_referenciadores.php?' + $.param(filtrosActuales);
+    
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                mostrarResultadosReferenciadores(response.data);
+            } else {
+                mostrarError(response.error || 'Error en la búsqueda');
+            }
+        },
+        error: function(xhr, status, error) {
+            mostrarError('Error de conexión: ' + error);
+        },
+        complete: function() {
+            $('#loadingIndicator').hide();
+        }
+    });
+}
+
+// 4. Función para mostrar resultados de referenciadores
+function mostrarResultadosReferenciadores(data) {
+    var container = $('#referenciadoresList');
+    container.empty();
+    
+    // Actualizar info de resultados
+    if (data.filtrosActivos) {
+        $('#resultadosInfo').show();
+        $('#resultadosText').html(
+            'Mostrando <strong>' + data.paginacion.mostrandoDesde + '-' + data.paginacion.mostrandoHasta + 
+            '</strong> de <strong>' + data.paginacion.totalResultados + '</strong> referenciadores filtrados'
+        );
+    } else {
+        $('#resultadosInfo').hide();
+    }
+    
+    // Mostrar referenciadores
+    if (data.referenciadores.length === 0) {
+        var noResults = $('<div class="no-data">')
+            .html('<i class="fas fa-search"></i><p>No se encontraron referenciadores con los filtros aplicados.</p>')
+            .appendTo(container);
+        
+        if (data.filtrosActivos) {
+            $('<button type="button" class="btn-reset-filters" onclick="limpiarFiltros()">')
+                .html('<i class="fas fa-times"></i> Limpiar filtros')
+                .appendTo(noResults);
+        }
+    } else {
+        data.referenciadores.forEach(function(referenciador) {
+            var porcentaje = referenciador.porcentaje_tope || 0;
+            
+            // Determinar clase de progreso
+            var progressClass = 'progress-bajo';
+            if (porcentaje >= 75) progressClass = 'progress-excelente';
+            else if (porcentaje >= 50) progressClass = 'progress-bueno';
+            else if (porcentaje >= 25) progressClass = 'progress-medio';
+            
+            // Crear tarjeta
+            var card = $('<div class="referenciador-card">')
+                .attr('data-id', referenciador.id_usuario)
+                .appendTo(container);
+            
+            // Construir contenido
+            var html = `
+                <div class="referenciador-header">
+                    <div class="user-info-section">
+                        <div class="user-avatar">
+                            ${referenciador.foto_url ? 
+                                '<img src="' + referenciador.foto_url + '" alt="Foto">' : 
+                                '<div style="width: 100%; height: 100%; background: #eaeaea; display: flex; align-items: center; justify-content: center;">' +
+                                '<i class="fas fa-user" style="color: #95a5a6; font-size: 1.5rem;"></i></div>'}
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">
+                                ${referenciador.nombres} ${referenciador.apellidos}
+                                ${porcentaje >= 100 ? 
+                                    '<span style="color: #4caf50; margin-left: 5px; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Completado</span>' : 
+                                    (porcentaje >= 75 ? 
+                                        '<span style="color: #2196f3; margin-left: 5px; font-size: 0.8rem;"><i class="fas fa-trophy"></i> Avanzado</span>' : '')}
+                            </div>
+                            <div class="user-info-text">
+                                <span>Cédula: ${referenciador.cedula || 'N/A'}</span>
+                                <span>Usuario: ${referenciador.nickname || 'N/A'}</span>
+                                <span>Fecha registro: ${new Date(referenciador.fecha_creacion).toLocaleDateString('es-ES')}</span>
+                                ${referenciador.ultimo_registro ? 
+                                    '<span>Último acceso: ' + new Date(referenciador.ultimo_registro).toLocaleString('es-ES') + '</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats">
+                        <div class="stat-item ${filtrosActuales.ordenar_por === 'referidos_desc' ? 'stat-destacado' : ''}">
+                            <div class="stat-number">${referenciador.total_referenciados || 0}</div>
+                            <div class="stat-desc">Referidos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${referenciador.tope || 0}</div>
+                            <div class="stat-desc">Tope</div>
+                        </div>
+                        <div class="stat-item ${filtrosActuales.ordenar_por === 'porcentaje_desc' ? 'stat-destacado' : ''}">
+                            <div class="stat-number ${porcentaje >= 100 ? 'text-success' : (porcentaje >= 75 ? 'text-primary' : '')}">
+                                ${porcentaje}%
+                            </div>
+                            <div class="stat-desc">Avance</div>
+                        </div>
+                    </div>
                 </div>
-            `).show();
+                
+                <div class="individual-progress">
+                    <div class="progress-label-small">
+                        Progreso individual: ${referenciador.total_referenciados || 0} de ${referenciador.tope || 0} referidos
+                        <span style="float: right; font-weight: bold; color: ${porcentaje >= 100 ? '#4caf50' : (porcentaje >= 75 ? '#2196f3' : '#666')}">
+                            ${porcentaje}%
+                        </span>
+                    </div>
+                    <div class="progress-container-small">
+                        <div class="progress-bar-small ${progressClass}" 
+                             style="width: ${porcentaje}%">
+                        </div>
+                    </div>
+                    <div class="progress-numbers">
+                        <span>0%</span>
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>75%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            `;
+            
+            card.html(html);
+        });
+    }
+    
+    // Mostrar paginación
+    if (data.paginacion.totalPaginas > 1) {
+        mostrarPaginacionReferenciadores(data.paginacion);
+    } else {
+        $('#paginacionContainer').hide();
+    }
+    
+    // Mostrar contenedor
+    container.show();
+    
+    // Animación de barras
+    setTimeout(function() {
+        $('.progress-bar-small').each(function() {
+            var width = $(this).css('width');
+            $(this).css('width', '0');
+            $(this).animate({ width: width }, 1000);
+        });
+    }, 300);
+}
+
+// 5. NUEVA FUNCIÓN: Buscar líderes por referenciador
+function buscarLideresPorReferenciador(id_referenciador) {
+    vistaActual = 'lideres';
+    referenciadorSeleccionado = id_referenciador;
+    
+    // Mostrar loading
+    $('#loadingIndicator').show();
+    $('#referenciadoresList').hide();
+    $('#paginacionContainer').hide();
+    
+    // Obtener nombre del referenciador seleccionado
+    var referenciadorNombre = $('#id_referenciador option:selected').text();
+    
+    // Actualizar filtros activos
+    $('#activeFiltersContainer').show();
+    $('#filtroIndicator').show();
+    $('#activeFiltersList').html(`
+        <span class="filter-badge">
+            Referenciador: ${referenciadorNombre}
+            <span class="close" onclick="limpiarFiltroReferenciador()">&times;</span>
+        </span>
+    `);
+    
+    // Actualizar título
+    $('.list-title span:first').text('Líderes del Referenciador');
+    
+    // Construir URL para AJAX
+    var url = '../ajax/filtro_referenciador_lideres.php?id_referenciador=' + id_referenciador;
+    
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                mostrarResultadosLideres(response.data);
+            } else {
+                mostrarError(response.error || 'Error al obtener líderes');
+            }
+        },
+        error: function(xhr, status, error) {
+            mostrarError('Error de conexión: ' + error);
+        },
+        complete: function() {
+            $('#loadingIndicator').hide();
         }
-        
-        // ====================================================================
-        // EVENT LISTENERS
-        // ====================================================================
-        
-        $(document).ready(function() {
-            // Buscar al hacer clic en botón
-            $('#btnBuscarAjax').click(buscarReferenciadores);
+    });
+}
+
+// 6. NUEVA FUNCIÓN: Mostrar líderes
+function mostrarResultadosLideres(data) {
+    var container = $('#referenciadoresList');
+    container.empty();
+    
+    // Mostrar estadísticas
+    if (data.estadisticas) {
+        $('#resultadosInfo').show();
+        $('#resultadosText').html(`
+            <strong>${data.estadisticas.total_lideres}</strong> líderes | 
+            <strong>${data.estadisticas.lideres_activos}</strong> activos | 
+            <strong>${data.estadisticas.total_referidos}</strong> referidos totales
+        `);
+    }
+    
+    // Mostrar líderes
+    if (data.lideres.length === 0) {
+        var noResults = $('<div class="no-data">')
+            .html('<i class="fas fa-users-slash"></i><p>El referenciador seleccionado no tiene líderes asignados.</p>')
+            .appendTo(container);
+    } else {
+        data.lideres.forEach(function(lider) {
+            // Crear tarjeta de líder
+            var card = $('<div class="referenciador-card lider-card">')
+                .attr('data-id', lider.id_lider)
+                .appendTo(container);
             
-            // Limpiar filtros
-            $('#btnLimpiarAjax').click(limpiarFiltros);
+            // Determinar estado
+            var estado = lider.estado ? true : false;
+            var estadoText = estado ? 
+                '<span class="badge bg-success">Activo</span>' : 
+                '<span class="badge bg-secondary">Inactivo</span>';
             
-            // Búsqueda en tiempo real en campo de nombre
-            $('#nombre').on('keyup', function() {
-                clearTimeout(timerBusqueda);
-                timerBusqueda = setTimeout(function() {
-                    if ($('#nombre').val().trim().length >= 3 || $('#nombre').val().trim().length === 0) {
-                        buscarReferenciadores();
-                    }
+            // Determinar color según cantidad de referidos
+            var referidos = lider.cantidad_referidos || 0;
+            var referidosClass = '';
+            if (referidos >= 50) referidosClass = 'text-success fw-bold';
+            else if (referidos >= 20) referidosClass = 'text-primary';
+            else if (referidos >= 10) referidosClass = 'text-warning';
+            
+            // Porcentaje de eficiencia (basado en referidos)
+            var eficiencia = Math.min(referidos, 100);
+            
+            // Construir HTML de la tarjeta
+            var html = `
+                <div class="referenciador-header">
+                    <div class="user-info-section">
+                        <div class="user-avatar">
+                            <div style="width: 100%; height: 100%; background: #e0f7fa; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                <i class="fas fa-user-friends" style="color: #00796b; font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">
+                                ${lider.nombres} ${lider.apellidos}
+                                ${estadoText}
+                            </div>
+                            <div class="user-info-text">
+                                <span>Cédula: ${lider.cc || 'N/A'}</span>
+                                <span>Teléfono: ${lider.telefono || 'N/A'}</span>
+                                <span>Correo: ${lider.correo || 'N/A'}</span>
+                                <span>Fecha registro: ${new Date(lider.fecha_creacion).toLocaleDateString('es-ES')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats">
+                        <div class="stat-item stat-destacado">
+                            <div class="stat-number ${referidosClass}">
+                                ${referidos}
+                            </div>
+                            <div class="stat-desc">Referidos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">
+                                <i class="fas ${estado ? 'fa-check-circle text-success' : 'fa-times-circle text-secondary'}"></i>
+                            </div>
+                            <div class="stat-desc">Estado</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">
+                                ${eficiencia}%
+                            </div>
+                            <div class="stat-desc">Eficiencia</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="individual-progress">
+                    <div class="progress-label-small">
+                        Referidos conseguidos: <strong>${referidos}</strong>
+                        <span style="float: right; font-weight: bold; color: #00796b;">
+                            <i class="fas fa-user-tie"></i> Líder
+                        </span>
+                    </div>
+                    <div class="progress-container-small">
+                        <div class="progress-bar-small progress-bueno" 
+                             style="width: ${eficiencia}%">
+                        </div>
+                    </div>
+                    <div class="progress-numbers">
+                        <span>0</span>
+                        <span>25</span>
+                        <span>50</span>
+                        <span>75</span>
+                        <span>100+</span>
+                    </div>
+                </div>
+            `;
+            
+            card.html(html);
+        });
+    }
+    
+    // Mostrar paginación si es necesario
+    if (data.paginacion.totalPaginas > 1) {
+        mostrarPaginacionLideres(data.paginacion, data.estadisticas.referenciador_id);
+    } else {
+        $('#paginacionContainer').hide();
+    }
+    
+    // Mostrar contenedor
+    container.show();
+}
+
+// 7. Función para mostrar paginación de referenciadores
+function mostrarPaginacionReferenciadores(paginacion) {
+    var container = $('#paginacionContainer');
+    container.empty().show();
+    
+    var paginacionHTML = `
+        <nav aria-label="Paginación de referenciadores">
+            <ul class="pagination justify-content-center">
+    `;
+    
+    // Botón anterior
+    paginacionHTML += `
+        <li class="page-item ${paginacion.paginaActual === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="cambiarPaginaReferenciadores(${paginacion.paginaActual - 1})" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    `;
+    
+    // Páginas
+    for (var i = 1; i <= paginacion.totalPaginas; i++) {
+        if (i === 1 || i === paginacion.totalPaginas || 
+            (i >= paginacion.paginaActual - 2 && i <= paginacion.paginaActual + 2)) {
+            
+            paginacionHTML += `
+                <li class="page-item ${i === paginacion.paginaActual ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="cambiarPaginaReferenciadores(${i})">${i}</a>
+                </li>
+            `;
+        } else if (i === paginacion.paginaActual - 3 || i === paginacion.paginaActual + 3) {
+            paginacionHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+    
+    // Botón siguiente
+    paginacionHTML += `
+        <li class="page-item ${paginacion.paginaActual === paginacion.totalPaginas ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="cambiarPaginaReferenciadores(${paginacion.paginaActual + 1})" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    `;
+    
+    paginacionHTML += `
+            </ul>
+        </nav>
+        <div class="text-center text-muted mt-2">
+            Mostrando ${paginacion.mostrandoDesde}-${paginacion.mostrandoHasta} de ${paginacion.totalResultados} resultados
+        </div>
+    `;
+    
+    container.html(paginacionHTML);
+}
+
+// 8. NUEVA FUNCIÓN: Paginación para líderes
+function mostrarPaginacionLideres(paginacion, id_referenciador) {
+    var container = $('#paginacionContainer');
+    container.empty().show();
+    
+    var paginacionHTML = `
+        <nav aria-label="Paginación de líderes">
+            <ul class="pagination justify-content-center">
+    `;
+    
+    // Botón anterior
+    paginacionHTML += `
+        <li class="page-item ${paginacion.paginaActual === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="cambiarPaginaLideres(${id_referenciador}, ${paginacion.paginaActual - 1})" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    `;
+    
+    // Páginas
+    for (var i = 1; i <= paginacion.totalPaginas; i++) {
+        if (i === 1 || i === paginacion.totalPaginas || 
+            (i >= paginacion.paginaActual - 2 && i <= paginacion.paginaActual + 2)) {
+            
+            paginacionHTML += `
+                <li class="page-item ${i === paginacion.paginaActual ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="cambiarPaginaLideres(${id_referenciador}, ${i})">${i}</a>
+                </li>
+            `;
+        } else if (i === paginacion.paginaActual - 3 || i === paginacion.paginaActual + 3) {
+            paginacionHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+    
+    // Botón siguiente
+    paginacionHTML += `
+        <li class="page-item ${paginacion.paginaActual === paginacion.totalPaginas ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="cambiarPaginaLideres(${id_referenciador}, ${paginacion.paginaActual + 1})" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    `;
+    
+    paginacionHTML += `
+            </ul>
+        </nav>
+        <div class="text-center text-muted mt-2">
+            Mostrando ${paginacion.mostrandoDesde}-${paginacion.mostrandoHasta} de ${paginacion.totalResultados} líderes
+        </div>
+    `;
+    
+    container.html(paginacionHTML);
+}
+
+// 9. Función para cambiar página de referenciadores
+function cambiarPaginaReferenciadores(pagina) {
+    filtrosActuales.page = pagina;
+    
+    // Actualizar URL de AJAX con nueva página
+    var url = '../ajax/filtros_referenciadores.php?' + $.param(filtrosActuales);
+    
+    $('#loadingIndicator').show();
+    
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                mostrarResultadosReferenciadores(response.data);
+                // Scroll suave hacia la lista
+                $('html, body').animate({
+                    scrollTop: $('#referenciadoresContainer').offset().top - 20
                 }, 500);
-            });
-            
-            // Cambios en selects (excepto ordenar que no dispara búsqueda automática)
-            $('#id_zona, #id_sector, #id_puesto, #porcentaje_minimo, #fecha_acceso').change(function() {
+            }
+        },
+        complete: function() {
+            $('#loadingIndicator').hide();
+        }
+    });
+}
+
+// 10. NUEVA FUNCIÓN: Cambiar página de líderes
+function cambiarPaginaLideres(id_referenciador, pagina) {
+    $('#loadingIndicator').show();
+    
+    $.ajax({
+        url: '../ajax/filtro_referenciador_lideres.php?id_referenciador=' + id_referenciador + '&page=' + pagina,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                mostrarResultadosLideres(response.data);
+                // Scroll suave hacia la lista
+                $('html, body').animate({
+                    scrollTop: $('#referenciadoresContainer').offset().top - 20
+                }, 500);
+            }
+        },
+        complete: function() {
+            $('#loadingIndicator').hide();
+        }
+    });
+}
+
+// 11. Función para limpiar filtro de referenciador específico
+function limpiarFiltroReferenciador() {
+    $('#id_referenciador').val('');
+    referenciadorSeleccionado = null;
+    buscarReferenciadores();
+}
+
+// 12. Función para limpiar todos los filtros
+function limpiarFiltros() {
+    // Limpiar todos los campos
+    $('.filtro-input').val('');
+    $('.filtro-select').val('');
+    $('#id_referenciador').val('');
+    $('#ordenar_por').val('fecha_creacion');
+    
+    // Resetear estado
+    vistaActual = 'referenciadores';
+    referenciadorSeleccionado = null;
+    
+    // Restaurar título original
+    $('.list-title span:first').text('Progreso Individual por Referenciador');
+    
+    // Ocultar contenedores
+    $('#activeFiltersContainer').hide();
+    $('#resultadosInfo').hide();
+    $('#filtroIndicator').hide();
+    
+    // Resetear resultados a estado inicial
+    $('#loadingIndicator').show();
+    $('#referenciadoresList').hide();
+    $('#paginacionContainer').hide();
+    
+    // Recargar la página para mostrar datos iniciales
+    setTimeout(function() {
+        location.reload();
+    }, 300);
+}
+
+// 13. Función para mostrar error
+function mostrarError(mensaje) {
+    $('#referenciadoresList').html(`
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> ${mensaje}
+        </div>
+    `).show();
+}
+
+// ====================================================================
+// EVENT LISTENERS
+// ====================================================================
+
+$(document).ready(function() {
+    // Buscar al hacer clic en botón
+    $('#btnBuscarAjax').click(buscarReferenciadores);
+    
+    // Limpiar filtros
+    $('#btnLimpiarAjax').click(limpiarFiltros);
+    
+    // Búsqueda en tiempo real en campo de nombre
+    $('#nombre').on('keyup', function() {
+        clearTimeout(timerBusqueda);
+        timerBusqueda = setTimeout(function() {
+            if ($('#nombre').val().trim().length >= 3 || $('#nombre').val().trim().length === 0) {
                 buscarReferenciadores();
-            });
-            
-            // Ordenar por - búsqueda al cambiar
-            $('#ordenar_por').change(function() {
-                buscarReferenciadores();
-            });
-            
-            // Eliminar filtro individual al hacer clic en X
-            $(document).on('click', '.filter-badge .close', function() {
-                var filtroKey = $(this).data('filtro');
-                
-                // Limpiar ese filtro específico
-                $('#' + filtroKey).val('');
-                if (filtroKey === 'ordenar_por') {
-                    $('#' + filtroKey).val('fecha_creacion');
-                }
-                
-                // Volver a buscar
-                buscarReferenciadores();
-            });
-            
-            // Efecto hover en tarjetas
-            $(document).on('mouseenter', '.referenciador-card', function() {
-                $(this).css('transform', 'translateY(-5px)');
-                $(this).css('box-shadow', '0 5px 15px rgba(0,0,0,0.1)');
-            }).on('mouseleave', '.referenciador-card', function() {
-                $(this).css('transform', 'translateY(0)');
-                $(this).css('box-shadow', '0 2px 5px rgba(0,0,0,0.05)');
-            });
-        });
+            }
+        }, 500);
+    });
+    
+    // Cambios en selects (excepto ordenar que no dispara búsqueda automática)
+    $('#id_zona, #id_sector, #id_puesto, #porcentaje_minimo, #fecha_acceso').change(function() {
+        buscarReferenciadores();
+    });
+    
+    // Ordenar por - búsqueda al cambiar
+    $('#ordenar_por').change(function() {
+        buscarReferenciadores();
+    });
+    
+    // Cambios en el combo box de referenciador
+    $('#id_referenciador').change(function() {
+        var id_referenciador = $(this).val() || 0;
+        
+        if (id_referenciador > 0) {
+            buscarReferenciadores(); // Esta función ahora detecta si hay referenciador seleccionado
+        } else {
+            // Si se selecciona "Todos los referenciadores", mostrar todos los referenciadores
+            referenciadorSeleccionado = null;
+            buscarReferenciadores();
+        }
+    });
+    
+    // Eliminar filtro individual al hacer clic en X
+    $(document).on('click', '.filter-badge .close', function() {
+        var filtroKey = $(this).data('filtro');
+        
+        if (filtroKey === 'id_referenciador') {
+            limpiarFiltroReferenciador();
+            return;
+        }
+        
+        // Limpiar ese filtro específico
+        $('#' + filtroKey).val('');
+        if (filtroKey === 'ordenar_por') {
+            $('#' + filtroKey).val('fecha_creacion');
+        }
+        
+        // Volver a buscar
+        buscarReferenciadores();
+    });
+    
+    // Efecto hover en tarjetas
+    $(document).on('mouseenter', '.referenciador-card', function() {
+        $(this).css('transform', 'translateY(-5px)');
+        $(this).css('box-shadow', '0 5px 15px rgba(0,0,0,0.1)');
+    }).on('mouseleave', '.referenciador-card', function() {
+        $(this).css('transform', 'translateY(0)');
+        $(this).css('box-shadow', '0 2px 5px rgba(0,0,0,0.05)');
+    });
+});
     </script>
     <script src="../js/modal-sistema.js"></script>
     <script src="../js/contador.js"></script>

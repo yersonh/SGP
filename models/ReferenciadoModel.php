@@ -1279,5 +1279,26 @@ public function contarVotosDesglosados($id_referenciador) {
     
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
+/**
+ * Contar referidos por líder
+ */
+public function countByLider($id_lider) {
+    try {
+        $query = "SELECT COUNT(*) as cantidad 
+                  FROM public.referenciados 
+                  WHERE id_lider = :id_lider 
+                  AND activo = true";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([':id_lider' => $id_lider]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['cantidad'] ?? 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error en countByLider ReferenciadoModel: " . $e->getMessage());
+        return 0;
+    }
+}
 }
 ?>

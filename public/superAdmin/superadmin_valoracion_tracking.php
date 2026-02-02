@@ -359,6 +359,7 @@ if ($porcentajeRestante > 50) {
                             <th>Referenciador</th>
                             <th>Última Llamada</th>
                             <th>Rating</th>
+                             <th>Grupo Parlamentario</th>
                             <th>Resultado</th>
                             <th>Total Llamadas</th>
                             <th>Estado</th>
@@ -368,7 +369,7 @@ if ($porcentajeRestante > 50) {
                     <tbody>
                         <?php if (empty($referenciadosConLlamadas)): ?>
                             <tr>
-                                <td colspan="11" class="text-center py-4"> <!-- Cambia colspan de 10 a 11 -->
+                                <td colspan="12" class="text-center py-4"> <!-- Cambia colspan de 11 a 12 -->
                                     <i class="fas fa-inbox fa-2x mb-3" style="color: #bdc3c7;"></i>
                                     <p class="mb-0">No se encontraron registros con los filtros aplicados</p>
                                 </td>
@@ -425,6 +426,13 @@ if ($porcentajeRestante > 50) {
                                                 <span class="ms-1">(<?php echo $rating; ?>)</span>
                                             <?php endif; ?>
                                         </div>
+                                    </td>
+                                     <td>
+                                        <?php if (!empty($referenciado['grupo_nombre'])): ?>
+                                            <?php echo htmlspecialchars($referenciado['grupo_nombre']); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">Sin grupo</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <span class="status-badge <?php echo $referenciado['id_resultado'] == 1 ? 'status-active' : 'status-inactive'; ?>">
@@ -783,9 +791,9 @@ if ($porcentajeRestante > 50) {
 $(document).ready(function() {
     const table = $('#trackingTable');
     
-    // Contar cuántas filas con datos reales hay (filas con 11 columnas ahora)
+    // Contar cuántas filas con datos reales hay (filas con 12 columnas ahora)
     const dataRows = table.find('tbody tr').filter(function() {
-        return $(this).find('td').length === 11; // Cambiado de 10 a 11
+        return $(this).find('td').length === 12; // Cambiado de 11 a 12
     });
     
     // Solo inicializar DataTables si hay al menos 1 fila con datos

@@ -155,6 +155,10 @@ class LlamadaModel {
             r.afinidad,
             r.activo,
             r.fecha_registro,
+            r.id_grupo,  -- <-- AÑADIDO: id_grupo de referenciados
+            
+            -- Información del grupo parlamentario
+            gp.nombre as grupo_nombre,  -- <-- AÑADIDO: nombre del grupo
             
             -- Información del referenciador
             CONCAT(ur.nombres, ' ', ur.apellidos) as referenciador_nombre,
@@ -179,7 +183,8 @@ class LlamadaModel {
         LEFT JOIN usuario ur ON r.id_referenciador = ur.id_usuario
         LEFT JOIN usuario ul ON lt.id_usuario = ul.id_usuario
         LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
-        WHERE r.activo = true  -- <-- SOLO REFERENCIADOS ACTIVOS
+        LEFT JOIN grupos_parlamentarios gp ON r.id_grupo = gp.id_grupo  -- <-- AÑADIDO: JOIN con grupos_parlamentarios
+        WHERE r.activo = true
     ";
     
     $params = [];
@@ -214,6 +219,12 @@ class LlamadaModel {
     if (!empty($filtros['id_referenciador'])) {
         $conditions[] = "r.id_referenciador = :id_referenciador";
         $params[':id_referenciador'] = $filtros['id_referenciador'];
+    }
+    
+    // <-- AÑADIDO: Filtro por grupo parlamentario
+    if (!empty($filtros['id_grupo'])) {
+        $conditions[] = "r.id_grupo = :id_grupo";
+        $params[':id_grupo'] = $filtros['id_grupo'];
     }
     
     // Agregar condiciones a la consulta
@@ -507,6 +518,42 @@ public function getCantidadTrackeados($id_referenciador) {
     $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
     
     return $resultado['trackeados'] ?? 0;
+}
+/**
+ * Calcular porcentaje de calidad basado en rating
+ * Convierte rating 1-5 estrellas a porcentaje 0-100%
+ * 
+ * @param int $id_referenciador ID del usuario referenciador
+ * @return float Porcentaje de calidad (0-100%)
+ */
+public function getPorcentajeCalidadPorRating($id_referenciador) {
+    $sql = "SELECT 
+                -- Convertir cada rating a porcentaje y promediar
+                ROUND(
+                    AVG(
+                        CASE 
+                            WHEN lt.rating = 5 THEN 100  -- ★★★★★ = 100%
+                            WHEN lt.rating = 4 THEN 80   -- ★★★★☆ = 80%
+                            WHEN lt.rating = 3 THEN 60   -- ★★★☆☆ = 60%
+                            WHEN lt.rating = 2 THEN 40   -- ★★☆☆☆ = 40%
+                            WHEN lt.rating = 1 THEN 20   -- ★☆☆☆☆ = 20%
+                            ELSE 0                       -- Sin calificar = 0%
+                        END
+                    ), 
+                    2
+                ) as porcentaje_calidad
+            FROM llamadas_tracking lt
+            INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+            WHERE r.id_referenciador = :id_referenciador
+            AND lt.rating IS NOT NULL";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return $resultado['porcentaje_calidad'] ?? 0;
 }
 }
 ?>

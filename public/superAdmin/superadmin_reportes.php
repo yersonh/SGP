@@ -986,7 +986,7 @@ if ($porcentajeRestante > 50) {
                         <i class="fas fa-user-clock"></i>
                     </div>
                 </div>
-                <div class="option-title">VER REFERENCIADOS INACTIVOS</div>
+                <div class="option-title">REFERIDOS INACTIVOS</div>
                 <div class="option-description">
                     Reporte detallado de referenciados sin actividad reciente.
                     Identifique oportunidades de reactivación y seguimiento.

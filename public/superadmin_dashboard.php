@@ -246,7 +246,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Grid de 2 columnas para los botones */
+/* Grid de 2 columnas para los botones - MANTENIDO COMO ORIGINAL */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1112,7 +1112,7 @@ body {
             </p>
         </div>
         
-        <!-- Grid de 2 columnas -->
+        <!-- Grid de 2 columnas (mantenido como original) -->
         <div class="dashboard-grid">
             <!-- Monitoreos -->
             <a href="superAdmin/superadmin_monitoreos.php" class="dashboard-option">
@@ -1179,6 +1179,40 @@ body {
                 <div class="option-description">
                     Gestión integral de bases de datos, 
                     administración de referidos y descargadores del sistema
+                </div>
+            </a>
+            
+            <!-- NUEVO: COMUNICACIONES -->
+            <a href="superAdmin/superadmin_comunicaciones.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
+                    <div class="option-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+                <div class="option-title">COMUNICACIONES</div>
+                <div class="option-description">
+                    Gestión de mensajes, notificaciones, 
+                    envío de alertas y comunicación con referenciadores y usuarios del sistema
+                </div>
+            </a>
+            
+            <!-- NUEVO: AUDITORIA -->
+            <a href="superAdmin/superadmin_auditoria.php" class="dashboard-option">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
+                    <div class="option-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                </div>
+                <div class="option-title">AUDITORIA</div>
+                <div class="option-description">
+                    Registro de actividades del sistema, 
+                    trazabilidad de operaciones y control de accesos para seguridad y transparencia
                 </div>
             </a>
         </div>

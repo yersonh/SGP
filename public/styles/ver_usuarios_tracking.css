@@ -770,3 +770,76 @@
         .feature-img-header:hover {
             transform: scale(1.05);
         }
+/* Estilos para TOPE */
+.tope-value {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    min-width: 40px;
+}
+
+/* Estilos para AVANCE CARGA */
+.avance-carga {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 60px;
+}
+
+.avance-carga-empty {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.avance-carga-low {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.avance-carga-medium {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.avance-carga-high {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.avance-carga-complete {
+    background-color: #28a745;
+    color: white;
+    border: 1px solid #218838;
+}
+
+.avance-carga:hover {
+    opacity: 0.9;
+    cursor: help;
+}
+
+/* Estilos para CANTIDAD REFERIDOS */
+.cantidad-referidos {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    background-color: #e8f4fd;
+    color: #0d6efd;
+    border: 1px solid #b6d4fe;
+    min-width: 35px;
+}
+
+.cantidad-referidos:hover {
+    background-color: #cfe2ff;
+    cursor: help;
+}

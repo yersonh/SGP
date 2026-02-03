@@ -509,7 +509,11 @@ if ($porcentajeRestante > 50) {
                             <th>ESTADO</th>
                             <th>ACCIONES</th>
                             <th>%TRACKING</th>
-                            <th>CANTIDAD</th>
+                            <th>CANTIDAD LLAMADAS</th>
+                            <th>TOPE</th>
+                            <th>AVANCE CARGA</th>
+                            <th>CANTIDAD REFERIDOS</th>
+                            <th>% CALIDAD TRACKING</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
@@ -522,11 +526,15 @@ if ($porcentajeRestante > 50) {
                         // OBTENER ESTADÍSTICAS DE TRACKING SOLO PARA REFERENCIADORES
                         $trackingData = null;
                         $trackingCantidad = 0;
+                        $calidadTracking = 0;
+                        
                         if ($usuario['tipo_usuario'] === 'Referenciador') {
                             // Obtener % de tracking
                             $trackingData = $llamadaModel->getPorcentajeTrackingPorReferenciador($usuario['id_usuario']);
                             // Obtener cantidad de trackeados
                             $trackingCantidad = $llamadaModel->getCantidadTrackeados($usuario['id_usuario']);
+                            // Obtener % de calidad tracking
+                            $calidadTracking = $llamadaModel->getPorcentajeCalidadPorRating($usuario['id_usuario']);
                         }
                         ?>
                         <tr>
@@ -554,6 +562,10 @@ if ($porcentajeRestante > 50) {
                             </td>
                             
                             <td>
+                                <?php 
+                                $activo = $usuario['activo'];
+                                $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                                ?>
                                 <?php if ($esta_activo): ?>
                                     <span class="user-status status-active">
                                         <i class="fas fa-check-circle"></i> Activo
@@ -564,6 +576,7 @@ if ($porcentajeRestante > 50) {
                                     </span>
                                 <?php endif; ?>
                             </td>
+                            
                             <td>
                                 <div class="action-buttons">
                                     <!-- BOTÓN DE VER PERSONAS REFERENCIADAS - SOLO PARA REFERENCIADORES -->
@@ -596,7 +609,7 @@ if ($porcentajeRestante > 50) {
                                     }
                                     ?>
                                     <span class="tracking-percentage <?php echo $claseTracking; ?>" 
-                                          title="<?php echo $trackingData['referidos_llamados']; ?> de <?php echo $trackingData['total_referidos']; ?> referidos trackeados">
+                                        title="<?php echo $trackingData['referidos_llamados']; ?> de <?php echo $trackingData['total_referidos']; ?> referidos trackeados">
                                         <?php echo $porcentaje; ?>%
                                     </span>
                                 <?php else: ?>
@@ -608,11 +621,82 @@ if ($porcentajeRestante > 50) {
                                 <?php if ($usuario['tipo_usuario'] === 'Referenciador'): ?>
                                     <?php if ($trackingCantidad > 0): ?>
                                         <span class="tracking-count" 
-                                              title="<?php echo $trackingCantidad; ?> referidos trackeados">
+                                            title="<?php echo $trackingCantidad; ?> referidos trackeados">
                                             <?php echo $trackingCantidad; ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="text-muted" title="No hay tracking registrado">0</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-muted" title="No aplica">-</span>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <!-- COLUMNAS: TOPE, AVANCE CARGA, CANTIDAD REFERIDOS -->
+                            <td class="text-center">
+                                <span class="tope-value" title="Tope asignado: <?php echo htmlspecialchars($usuario['tope'] ?? 0); ?>">
+                                    <?php echo htmlspecialchars($usuario['tope'] ?? 0); ?>
+                                </span>
+                            </td>
+                            
+                            <td class="text-center">
+                                <?php 
+                                $porcentajeAvance = $usuario['porcentaje_avance'] ?? 0;
+                                $cantidadReferidos = $usuario['cantidad_referidos'] ?? 0;
+                                
+                                // Determinar clase CSS según el porcentaje de avance
+                                $claseAvance = '';
+                                if ($porcentajeAvance == 0) {
+                                    $claseAvance = 'avance-carga-empty';
+                                } elseif ($porcentajeAvance < 50) {
+                                    $claseAvance = 'avance-carga-low';
+                                } elseif ($porcentajeAvance < 80) {
+                                    $claseAvance = 'avance-carga-medium';
+                                } elseif ($porcentajeAvance < 100) {
+                                    $claseAvance = 'avance-carga-high';
+                                } else {
+                                    $claseAvance = 'avance-carga-complete';
+                                }
+                                ?>
+                                <span class="avance-carga <?php echo $claseAvance; ?>" 
+                                    title="<?php echo $cantidadReferidos; ?> de <?php echo $usuario['tope'] ?? 0; ?> referidos (<?php echo $porcentajeAvance; ?>%)">
+                                    <?php echo $porcentajeAvance; ?>%
+                                </span>
+                            </td>
+                            
+                            <td class="text-center">
+                                <span class="cantidad-referidos" 
+                                    title="Total de referidos activos: <?php echo $cantidadReferidos; ?>">
+                                    <?php echo $cantidadReferidos; ?>
+                                </span>
+                            </td>
+                            
+                            <!-- NUEVA COLUMNA: % CALIDAD TRACKING -->
+                            <td class="text-center">
+                                <?php if ($usuario['tipo_usuario'] === 'Referenciador'): ?>
+                                    <?php 
+                                    // Formatear calidad tracking con un decimal
+                                    $calidadFormateada = number_format($calidadTracking, 1);
+                                    
+                                    // Determinar clase CSS según la calidad
+                                    $claseCalidad = '';
+                                    if ($calidadTracking == 0) {
+                                        $claseCalidad = 'tracking-percentage-bad';
+                                    } elseif ($calidadTracking <= 50) {
+                                        $claseCalidad = 'tracking-percentage-regular';
+                                    } elseif ($calidadTracking <= 80) {
+                                        $claseCalidad = 'tracking-percentage-good';
+                                    } else {
+                                        $claseCalidad = 'tracking-percentage-excellent';
+                                    }
+                                    ?>
+                                    <?php if ($trackingCantidad > 0): ?>
+                                        <span class="tracking-percentage <?php echo $claseCalidad; ?>" 
+                                              title="Calidad promedio de tracking: <?php echo $calidadFormateada; ?>% (basado en rating de llamadas)">
+                                            <?php echo $calidadFormateada; ?>%
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted" title="No hay llamadas registradas para calcular calidad">-</span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span class="text-muted" title="No aplica">-</span>
@@ -814,7 +898,12 @@ if ($porcentajeRestante > 50) {
                         searchable: false
                     },
                     {
-                        targets: [6, 7], // Columnas %TRACKING y CANTIDAD
+                        targets: [8, 9, 10, 11], // Columnas TOPE, AVANCE CARGA, CANTIDAD REFERIDOS, % CALIDAD TRACKING
+                        width: '100px',
+                        searchable: false
+                    },
+                    {
+                        targets: [6, 7], // Columnas %TRACKING y CANTIDAD LLAMADAS
                         width: '100px',
                         searchable: false
                     }

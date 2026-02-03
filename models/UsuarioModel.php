@@ -39,12 +39,12 @@ class UsuarioModel {
     public function getAllUsuariosReferenciador() {
     $query = "SELECT 
                 u.*,
-                COALESCE(r.total_referenciados, 0) as total_referenciados,
+                COALESCE(r.total_referenciados, 0) as cantidad_referidos,
                 CASE 
                     WHEN u.tope > 0 THEN 
                         ROUND((COALESCE(r.total_referenciados, 0) * 100.0 / u.tope), 2)
                     ELSE 0 
-                END as porcentaje_tope
+                END as porcentaje_avance
               FROM usuario u 
               LEFT JOIN (
                   SELECT id_referenciador, COUNT(*) as total_referenciados 

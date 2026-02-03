@@ -166,43 +166,6 @@ class ReferenciadoModel {
      * Obtiene todos los referenciados de un usuario con sus relaciones
      */
     public function getReferenciadosByUsuario($id_referenciador) {
-        $sql = "SELECT r.*, 
-                d.nombre as departamento_nombre,
-                m.nombre as municipio_nombre,
-                b.nombre as barrio_nombre,
-                gp.nombre as grupo_poblacional_nombre,
-                oa.nombre as oferta_apoyo_nombre,
-                z.nombre as zona_nombre,
-                s.nombre as sector_nombre,
-                pv.nombre as puesto_votacion_nombre,
-                gr.nombre as grupo_nombre,  -- NUEVO: información del grupo
-                CASE 
-                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
-                    ELSE pv.nombre
-                END as puesto_votacion_display,
-                CASE 
-                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
-                    ELSE r.mesa
-                END as mesa_display
-                FROM referenciados r
-                LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
-                LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
-                LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
-                LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
-                LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
-                LEFT JOIN zona z ON r.id_zona = z.id_zona
-                LEFT JOIN sector s ON r.id_sector = s.id_sector
-                LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo  -- NUEVO: join con tabla grupos
-                WHERE r.id_referenciador = :id_referenciador
-                ORDER BY r.fecha_registro DESC";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    public function getReferenciadosByUsuarioActivo($id_referenciador) {
     $sql = "SELECT r.*, 
             d.nombre as departamento_nombre,
             m.nombre as municipio_nombre,
@@ -212,7 +175,10 @@ class ReferenciadoModel {
             z.nombre as zona_nombre,
             s.nombre as sector_nombre,
             pv.nombre as puesto_votacion_nombre,
-            gr.nombre as grupo_nombre, 
+            gr.nombre as grupo_nombre,
+            l.nombres as lider_nombres,  -- NUEVO
+            l.apellidos as lider_apellidos,  -- NUEVO
+            l.cc as lider_cc,  -- NUEVO
             CASE 
                 WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
                 ELSE pv.nombre
@@ -230,7 +196,49 @@ class ReferenciadoModel {
             LEFT JOIN zona z ON r.id_zona = z.id_zona
             LEFT JOIN sector s ON r.id_sector = s.id_sector
             LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo 
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+            LEFT JOIN lideres l ON r.id_lider = l.id_lider  -- NUEVO: LEFT JOIN con líderes
+            WHERE r.id_referenciador = :id_referenciador
+            ORDER BY r.fecha_registro DESC";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_referenciador', $id_referenciador, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+    public function getReferenciadosByUsuarioActivo($id_referenciador) {
+    $sql = "SELECT r.*, 
+            d.nombre as departamento_nombre,
+            m.nombre as municipio_nombre,
+            b.nombre as barrio_nombre,
+            gp.nombre as grupo_poblacional_nombre,
+            oa.nombre as oferta_apoyo_nombre,
+            z.nombre as zona_nombre,
+            s.nombre as sector_nombre,
+            pv.nombre as puesto_votacion_nombre,
+            gr.nombre as grupo_nombre,
+            l.nombres as lider_nombres,  -- NUEVO
+            l.apellidos as lider_apellidos,  -- NUEVO
+            l.cc as lider_cc,  -- NUEVO
+            CASE 
+                WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                ELSE pv.nombre
+            END as puesto_votacion_display,
+            CASE 
+                WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                ELSE r.mesa
+            END as mesa_display
+            FROM referenciados r
+            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+            LEFT JOIN lideres l ON r.id_lider = l.id_lider  -- NUEVO: LEFT JOIN con líderes
             WHERE r.id_referenciador = :id_referenciador
             AND r.activo = true
             ORDER BY r.fecha_registro DESC";

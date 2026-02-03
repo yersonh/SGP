@@ -287,143 +287,184 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
                             <th>TELÉFONO</th>
                             <th>EMAIL</th>
                             <th>AFINIDAD</th>
+                            <th>GRUPO PARLAMENTARIO</th>
+                            <th>LÍDER ASIGNADO</th>       
                             <th>VOTA</th>
                             <th>PUESTO/MESA</th>
                             <th>FECHA REGISTRO</th>
                             <th>ESTADO</th>
-                            <th>TRACKING</th> <!-- NUEVA COLUMNA -->
+                            <th>TRACKING</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $counter = 1; ?>
-                        <?php foreach ($referenciados as $referenciado): ?>
-                        <?php 
-                        $esta_activo = ($referenciado['activo'] === true || $referenciado['activo'] === 't' || $referenciado['activo'] == 1);
-                        $nombre_completo = htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']);
-                        
-                        // Determinar información de votación
-                        $vota_info = '';
-                        if ($referenciado['vota_fuera'] === 'Si') {
-                            $vota_info = 'Fuera';
-                            $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? '') . 
-                                          ' - Mesa ' . ($referenciado['mesa_fuera'] ?? '');
-                        } else {
-                            $vota_info = 'Aquí';
-                            $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? '') . 
-                                          ' - Mesa ' . ($referenciado['mesa'] ?? '');
-                        }
-                        
-                        // Verificar si ya tiene llamada registrada
-                        $tieneLlamada = $referenciadosConLlamada[$referenciado['id_referenciado']] ?? false;
-                        $claseBoton = $tieneLlamada ? 'llamada-realizada' : '';
-                        $tituloBoton = $tieneLlamada ? 'Llamada ya realizada' : 'Llamar a ' . $nombre_completo;
-                        ?>
-                        
-                        <tr class="<?php echo !$esta_activo ? 'inactive-row' : ''; ?>">
-                            <td><?php echo $counter++; ?></td>
-                            
-                            <td>
-                                <strong><?php echo $nombre_completo; ?></strong>
-                                <?php if (!empty($referenciado['direccion'])): ?>
-                                <br><small class="text-muted"><?php echo htmlspecialchars($referenciado['direccion']); ?></small>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <td>
-                                <code><?php echo htmlspecialchars($referenciado['cedula']); ?></code>
-                            </td>
-                            
-                            <td>
-                                <?php echo !empty($referenciado['telefono']) ? htmlspecialchars($referenciado['telefono']) : '<span class="text-muted">No registrado</span>'; ?>
-                            </td>
-                            
-                            <td>
-                                <?php if (!empty($referenciado['email'])): ?>
-                                <a href="mailto:<?php echo htmlspecialchars($referenciado['email']); ?>">
-                                    <?php echo htmlspecialchars($referenciado['email']); ?>
-                                </a>
-                                <?php else: ?>
-                                <span class="text-muted">No registrado</span>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <td>
-                                <span class="afinidad-badge afinidad-<?php echo $referenciado['afinidad']; ?>">
-                                    Nivel <?php echo $referenciado['afinidad']; ?>
-                                </span>
-                            </td>
-                            
-                            <td>
-                                <?php if ($referenciado['vota_fuera'] === 'Si'): ?>
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-external-link-alt"></i> <?php echo $vota_info; ?>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-home"></i> <?php echo $vota_info; ?>
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <td>
-                                <?php echo $puesto_mesa; ?>
-                                <?php if (!empty($referenciado['zona_nombre'])): ?>
-                                <br><small>Zona: <?php echo htmlspecialchars($referenciado['zona_nombre']); ?></small>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <td>
-                                <?php 
-                                $fecha = new DateTime($referenciado['fecha_registro']);
-                                echo $fecha->format('d/m/Y H:i');
-                                ?>
-                            </td>
-                            
-                            <td>
-                                <?php if ($esta_activo): ?>
-                                    <span class="status-badge status-active">
-                                        <i class="fas fa-check-circle"></i> Activo
-                                    </span>
-                                <?php else: ?>
-                                    <span class="status-badge status-inactive">
-                                        <i class="fas fa-times-circle"></i> Inactivo
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <!-- COLUMNA TRACKING CON BOTÓN DE TELÉFONO -->
-<td>
-    <div class="d-flex align-items-center justify-content-start gap-1">
-        <?php if ($tieneLlamada): ?>
-            <!-- Primero el botón de llamada (amarillo) -->
-            <button class="tracking-btn llamada-realizada" 
-                    title="Llamada ya realizada - Click para llamar de nuevo"
-                    onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
-                    <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
-                <i class="fas fa-phone-alt"></i>
-                <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
-            </button>
-            
-            <!-- Luego el botón de detalles (verde) -->
-            <button class="tracking-btn tracking-detalle" 
-                    title="Ver detalles de la llamada"
-                    onclick="mostrarDetalleLlamada('<?php echo $referenciado['id_referenciado']; ?>', '<?php echo addslashes($nombre_completo); ?>')">
-                <i class="fas fa-eye"></i>
-            </button>
-        <?php else: ?>
-            <!-- Si no tiene llamada, solo mostrar botón de llamada normal -->
-            <button class="tracking-btn" 
-                    title="Llamar a <?php echo htmlspecialchars($nombre_completo); ?>"
-                    onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
-                    <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
-                <i class="fas fa-phone-alt"></i>
-            </button>
-        <?php endif; ?>
-    </div>
-</td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
+    <?php $counter = 1; ?>
+    <?php foreach ($referenciados as $referenciado): ?>
+    <?php 
+    $esta_activo = ($referenciado['activo'] === true || $referenciado['activo'] === 't' || $referenciado['activo'] == 1);
+    $nombre_completo = htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']);
+    
+    // Determinar información de votación
+    $vota_info = '';
+    if ($referenciado['vota_fuera'] === 'Si') {
+        $vota_info = 'Fuera';
+        $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? '') . 
+                      ' - Mesa ' . ($referenciado['mesa_fuera'] ?? '');
+    } else {
+        $vota_info = 'Aquí';
+        $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? '') . 
+                      ' - Mesa ' . ($referenciado['mesa'] ?? '');
+    }
+    
+    // Obtener información del grupo parlamentario (ya existe en tu consulta como 'grupo_nombre')
+    $grupo_nombre = $referenciado['grupo_nombre'] ?? 'No asignado';
+    
+    // Obtener información del líder (nuevos campos)
+    $lider_info = '';
+    if (!empty($referenciado['lider_nombres']) && !empty($referenciado['lider_apellidos'])) {
+        $lider_nombre_completo = $referenciado['lider_nombres'] . ' ' . $referenciado['lider_apellidos'];
+        $lider_info = htmlspecialchars($lider_nombre_completo);
+        if (!empty($referenciado['lider_cc'])) {
+            $lider_info .= '<br><small class="text-muted">CC: ' . htmlspecialchars($referenciado['lider_cc']) . '</small>';
+        }
+    } else {
+        $lider_info = '<span class="text-muted">No cuenta con líder</span>';
+    }
+    
+    // Verificar si ya tiene llamada registrada
+    $tieneLlamada = $referenciadosConLlamada[$referenciado['id_referenciado']] ?? false;
+    ?>
+    
+    <tr class="<?php echo !$esta_activo ? 'inactive-row' : ''; ?>">
+        <td><?php echo $counter++; ?></td>
+        
+        <td>
+            <strong><?php echo $nombre_completo; ?></strong>
+            <?php if (!empty($referenciado['direccion'])): ?>
+            <br><small class="text-muted"><?php echo htmlspecialchars($referenciado['direccion']); ?></small>
+            <?php endif; ?>
+        </td>
+        
+        <td>
+            <code><?php echo htmlspecialchars($referenciado['cedula']); ?></code>
+        </td>
+        
+        <td>
+            <?php echo !empty($referenciado['telefono']) ? htmlspecialchars($referenciado['telefono']) : '<span class="text-muted">No registrado</span>'; ?>
+        </td>
+        
+        <td>
+            <?php if (!empty($referenciado['email'])): ?>
+            <a href="mailto:<?php echo htmlspecialchars($referenciado['email']); ?>">
+                <?php echo htmlspecialchars($referenciado['email']); ?>
+            </a>
+            <?php else: ?>
+            <span class="text-muted">No registrado</span>
+            <?php endif; ?>
+        </td>
+        
+        <td>
+            <span class="afinidad-badge afinidad-<?php echo $referenciado['afinidad']; ?>">
+                Nivel <?php echo $referenciado['afinidad']; ?>
+            </span>
+        </td>
+        
+        <!-- COLUMNA GRUPO PARLAMENTARIO -->
+        <td>
+            <?php 
+            if (!empty($grupo_nombre) && $grupo_nombre != 'No asignado') {
+                $grupo_class = '';
+                $grupo_nombre_lower = strtolower($grupo_nombre);
+                if (strpos($grupo_nombre_lower, 'cámara') !== false || strpos($grupo_nombre_lower, 'camara') !== false) {
+                    $grupo_class = 'bg-primary';
+                } elseif (strpos($grupo_nombre_lower, 'senado') !== false) {
+                    $grupo_class = 'bg-success';
+                } elseif (strpos($grupo_nombre_lower, 'ambos') !== false || strpos($grupo_nombre_lower, 'pacha') !== false) {
+                    $grupo_class = 'bg-warning text-dark';
+                } else {
+                    $grupo_class = 'bg-secondary';
+                }
+            ?>
+                <span class="badge <?php echo $grupo_class; ?>">
+                    <?php echo htmlspecialchars($grupo_nombre); ?>
+                </span>
+            <?php } else { ?>
+                <span class="text-muted"><?php echo $grupo_nombre; ?></span>
+            <?php } ?>
+        </td>
+        
+        <!-- COLUMNA LÍDER -->
+        <td>
+            <?php echo $lider_info; ?>
+        </td>
+        
+        <td>
+            <?php if ($referenciado['vota_fuera'] === 'Si'): ?>
+                <span class="badge bg-warning text-dark">
+                    <i class="fas fa-external-link-alt"></i> <?php echo $vota_info; ?>
+                </span>
+            <?php else: ?>
+                <span class="badge bg-success">
+                    <i class="fas fa-home"></i> <?php echo $vota_info; ?>
+                </span>
+            <?php endif; ?>
+        </td>
+        
+        <td>
+            <?php echo $puesto_mesa; ?>
+            <?php if (!empty($referenciado['zona_nombre'])): ?>
+            <br><small>Zona: <?php echo htmlspecialchars($referenciado['zona_nombre']); ?></small>
+            <?php endif; ?>
+        </td>
+        
+        <td>
+            <?php 
+            $fecha = new DateTime($referenciado['fecha_registro']);
+            echo $fecha->format('d/m/Y H:i');
+            ?>
+        </td>
+        
+        <td>
+            <?php if ($esta_activo): ?>
+                <span class="status-badge status-active">
+                    <i class="fas fa-check-circle"></i> Activo
+                </span>
+            <?php else: ?>
+                <span class="status-badge status-inactive">
+                    <i class="fas fa-times-circle"></i> Inactivo
+                </span>
+            <?php endif; ?>
+        </td>
+        
+        <!-- COLUMNA TRACKING -->
+        <td>
+            <div class="d-flex align-items-center justify-content-start gap-1">
+                <?php if ($tieneLlamada): ?>
+                    <button class="tracking-btn llamada-realizada" 
+                            title="Llamada ya realizada - Click para llamar de nuevo"
+                            onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
+                            <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
+                        <i class="fas fa-phone-alt"></i>
+                        <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
+                    </button>
+                    
+                    <button class="tracking-btn tracking-detalle" 
+                            title="Ver detalles de la llamada"
+                            onclick="mostrarDetalleLlamada('<?php echo $referenciado['id_referenciado']; ?>', '<?php echo addslashes($nombre_completo); ?>')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                <?php else: ?>
+                    <button class="tracking-btn" 
+                            title="Llamar a <?php echo htmlspecialchars($nombre_completo); ?>"
+                            onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
+                            <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
+                        <i class="fas fa-phone-alt"></i>
+                    </button>
+                <?php endif; ?>
+            </div>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+</tbody>
                 </table>
             </div>
             <?php else: ?>

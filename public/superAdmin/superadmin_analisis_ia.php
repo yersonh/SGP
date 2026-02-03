@@ -205,7 +205,7 @@ if ($porcentajeRestante > 50) {
             </a>
             
             <!-- TRACKING DIARIO - NUEVO BOTÓN -->
-            <a href="superadmin_tracking_diario.php" class="dashboard-option option-rendimiento">
+            <a href="superadmin_reporte_tracking.php" class="dashboard-option option-rendimiento">
                 <div class="access-indicator">
                     <i class="fas fa-map-marked-alt"></i> VER TRACKING
                 </div>

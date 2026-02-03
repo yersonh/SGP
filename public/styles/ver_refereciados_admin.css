@@ -847,3 +847,37 @@ body {
 .referenciados-table tbody tr:has(.status-inactive) td {
     color: #666;
 }
+/* Estilos para badges de grupo parlamentario */
+.badge.bg-primary {
+    background-color: #007bff !important;
+}
+
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning.text-dark {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Estilos para la información del líder */
+.lider-info {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.lider-nombre {
+    font-weight: 500;
+    display: block;
+}
+
+.lider-cedula {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-family: monospace;
+}

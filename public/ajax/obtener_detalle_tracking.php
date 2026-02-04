@@ -9,7 +9,7 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
 }
 
 $pdo = Database::getConnection();
-$llamadaModel = new LlamadaModel($pdo);
+// $llamadaModel = new LlamadaModel($pdo); // No se usa en este archivo
 
 $filtros = [
     'fecha' => $_POST['fecha'] ?? date('Y-m-d'),
@@ -23,7 +23,58 @@ $filtros = [
 $offset = ($filtros['pagina'] - 1) * $filtros['limite'];
 
 try {
-    // Construir consulta
+    // Construir WHERE común
+    $where = "WHERE 1=1";
+    $params = [];
+    
+    if (!empty($filtros['fecha']) && $filtros['rango'] !== 'personalizado') {
+        $where .= " AND DATE(lt.fecha_llamada) = :fecha";
+        $params[':fecha'] = $filtros['fecha'];
+    }
+    
+    // Para rango personalizado
+    if ($filtros['rango'] === 'personalizado' && isset($_POST['fecha_desde']) && isset($_POST['fecha_hasta'])) {
+        $where .= " AND DATE(lt.fecha_llamada) BETWEEN :fecha_desde AND :fecha_hasta";
+        $params[':fecha_desde'] = $_POST['fecha_desde'];
+        $params[':fecha_hasta'] = $_POST['fecha_hasta'];
+    }
+    
+    // Para otros rangos
+    switch ($filtros['rango']) {
+        case 'ayer':
+            $fechaAyer = date('Y-m-d', strtotime('-1 day'));
+            $where .= " AND DATE(lt.fecha_llamada) = :fecha";
+            $params[':fecha'] = $fechaAyer;
+            break;
+        case 'semana':
+            $where .= " AND DATE(lt.fecha_llamada) >= DATE_TRUNC('week', CURRENT_DATE)";
+            break;
+        case 'mes':
+            $where .= " AND DATE(lt.fecha_llamada) >= DATE_TRUNC('month', CURRENT_DATE)";
+            break;
+    }
+    
+    if (!empty($filtros['tipo_resultado']) && $filtros['tipo_resultado'] !== 'todos') {
+        $where .= " AND lt.id_resultado = :tipo_resultado";
+        $params[':tipo_resultado'] = $filtros['tipo_resultado'];
+    }
+    
+    if (!empty($filtros['rating']) && $filtros['rating'] !== 'todos') {
+        if ($filtros['rating'] === '0') {
+            $where .= " AND lt.rating IS NULL";
+        } else {
+            $where .= " AND lt.rating = :rating";
+            $params[':rating'] = $filtros['rating'];
+        }
+    }
+    
+    // Consulta para TOTAL de registros (CORREGIDA)
+    $sqlTotal = "SELECT COUNT(*) as total FROM llamadas_tracking lt {$where}";
+    $stmtTotal = $pdo->prepare($sqlTotal);
+    $stmtTotal->execute($params);
+    $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Consulta paginada para los datos
     $sql = "SELECT 
                 lt.*,
                 CONCAT(u.nombres, ' ', u.apellidos) as llamador_nombre,
@@ -36,49 +87,30 @@ try {
             INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
             INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
             LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
-            WHERE 1=1";
+            {$where}
+            ORDER BY lt.fecha_llamada DESC 
+            LIMIT :limite OFFSET :offset";
     
-    $params = [];
-    
-    if (!empty($filtros['fecha'])) {
-        $sql .= " AND DATE(lt.fecha_llamada) = :fecha";
-        $params[':fecha'] = $filtros['fecha'];
-    }
-    
-    if (!empty($filtros['tipo_resultado']) && $filtros['tipo_resultado'] !== 'todos') {
-        $sql .= " AND lt.id_resultado = :tipo_resultado";
-        $params[':tipo_resultado'] = $filtros['tipo_resultado'];
-    }
-    
-    if (!empty($filtros['rating']) && $filtros['rating'] !== 'todos') {
-        if ($filtros['rating'] === '0') {
-            $sql .= " AND lt.rating IS NULL";
-        } else {
-            $sql .= " AND lt.rating = :rating";
-            $params[':rating'] = $filtros['rating'];
-        }
-    }
-    
-    // Total de registros
-    $sqlTotal = "SELECT COUNT(*) as total FROM llamadas_tracking lt WHERE 1=1" . substr($sql, strpos($sql, "WHERE") + 5);
-    $stmtTotal = $pdo->prepare($sqlTotal);
-    $stmtTotal->execute($params);
-    $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'];
-    
-    // Consulta paginada
-    $sql .= " ORDER BY lt.fecha_llamada DESC LIMIT :limite OFFSET :offset";
     $stmt = $pdo->prepare($sql);
     
+    // Vincular parámetros del WHERE
     foreach ($params as $key => $value) {
         $stmt->bindValue($key, $value);
     }
     
+    // Vincular parámetros de paginación
     $stmt->bindValue(':limite', (int)$filtros['limite'], PDO::PARAM_INT);
     $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    $stmt->execute();
     
+    $stmt->execute();
     $llamadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $totalPaginas = ceil($total / $filtros['limite']);
+    $totalPaginas = $filtros['limite'] > 0 ? ceil($total / $filtros['limite']) : 0;
+    
+    // DEBUG: Ver qué datos se están obteniendo
+    error_log("Total registros: " . $total);
+    error_log("Número de llamadas obtenidas: " . count($llamadas));
+    error_log("Filtros aplicados: " . json_encode($filtros));
+    error_log("SQL ejecutado: " . $sql);
     
     echo json_encode([
         'success' => true,
@@ -91,6 +123,10 @@ try {
     ]);
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log("Error en obtener_detalle_tracking.php: " . $e->getMessage());
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Error del servidor: ' . $e->getMessage()
+    ]);
 }
 ?>

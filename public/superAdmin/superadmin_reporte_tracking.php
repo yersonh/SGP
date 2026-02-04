@@ -1107,72 +1107,89 @@ if ($porcentajeRestante > 50) {
         }
         
         // Función para crear gráfica de calidad
-        function crearGraficaCalidad(data) {
-            const ctx = document.getElementById('graficaCalidad').getContext('2d');
-            
-            if (chartCalidad) {
-                chartCalidad.destroy();
-            }
-            
-            const labels = ['★☆☆☆☆ (1)', '★★☆☆☆ (2)', '★★★☆☆ (3)', '★★★★☆ (4)', '★★★★★ (5)'];
-            const valores = [
-                data.distribucion_rating['1'] || 0,
-                data.distribucion_rating['2'] || 0,
-                data.distribucion_rating['3'] || 0,
-                data.distribucion_rating['4'] || 0,
-                data.distribucion_rating['5'] || 0
-            ];
-            
-            chartCalidad = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Cantidad de Llamadas',
-                        data: valores,
-                        backgroundColor: [
-                            'rgba(220, 53, 69, 0.7)',
-                            'rgba(253, 126, 20, 0.7)',
-                            'rgba(255, 193, 7, 0.7)',
-                            'rgba(23, 162, 184, 0.7)',
-                            'rgba(40, 167, 69, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(220, 53, 69, 1)',
-                            'rgba(253, 126, 20, 1)',
-                            'rgba(255, 193, 7, 1)',
-                            'rgba(23, 162, 184, 1)',
-                            'rgba(40, 167, 69, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
+function crearGraficaCalidad(data) {
+    const ctx = document.getElementById('graficaCalidad').getContext('2d');
+    
+    // Destruir gráfica anterior si existe
+    if (window.chartCalidad) {
+        window.chartCalidad.destroy();
+    }
+    
+    // Preparar datos de la distribución de rating
+    // data.distribucion_rating viene del AJAX
+    const distribucion = data.distribucion_rating || {};
+    
+    // Crear arrays para la gráfica
+    const labels = ['★☆☆☆☆ (1)', '★★☆☆☆ (2)', '★★★☆☆ (3)', '★★★★☆ (4)', '★★★★★ (5)'];
+    const valores = [
+        distribucion['1']?.cantidad || 0,  // Rating 1
+        distribucion['2']?.cantidad || 0,  // Rating 2
+        distribucion['3']?.cantidad || 0,  // Rating 3
+        distribucion['4']?.cantidad || 0,  // Rating 4
+        distribucion['5']?.cantidad || 0   // Rating 5
+    ];
+    
+    // Crear la gráfica con Chart.js
+    window.chartCalidad = new Chart(ctx, {
+        type: 'bar',  // Tipo: gráfica de barras
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Cantidad de Llamadas',
+                data: valores,
+                backgroundColor: [
+                    'rgba(220, 53, 69, 0.7)',    // Rojo para 1 estrella
+                    'rgba(253, 126, 20, 0.7)',   // Naranja para 2 estrellas
+                    'rgba(255, 193, 7, 0.7)',    // Amarillo para 3 estrellas
+                    'rgba(23, 162, 184, 0.7)',   // Azul claro para 4 estrellas
+                    'rgba(40, 167, 69, 0.7)'     // Verde para 5 estrellas
+                ],
+                borderColor: [
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(253, 126, 20, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(23, 162, 184, 1)',
+                    'rgba(40, 167, 69, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false  // Ocultar leyenda
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Cantidad'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Rating'
-                            }
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const valor = context.raw;
+                            const total = valores.reduce((a, b) => a + b, 0);
+                            const porcentaje = total > 0 ? ((valor / total) * 100).toFixed(1) : 0;
+                            return `${valor} llamadas (${porcentaje}%)`;
                         }
                     }
                 }
-            });
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Llamadas'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Rating (Estrellas)'
+                    }
+                }
+            }
         }
+    });
+}
         
         // Función para actualizar calidad por resultado
         function actualizarCalidadPorResultado(datos) {
@@ -1322,73 +1339,113 @@ if ($porcentajeRestante > 50) {
         
         // Función para actualizar tabla de top llamadores
         function actualizarTablaTopLlamadores(datos) {
-            const tbody = $('#tablaTopLlamadores tbody');
-            tbody.empty();
-            
-            if (datos.length === 0) {
-                tbody.append(`
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            No hay datos de llamadores para los filtros seleccionados
-                        </td>
-                    </tr>
-                `);
-                return;
-            }
-            
-            datos.forEach((item, index) => {
-                // Estrellas del rating promedio
-                let starsHtml = '';
-                const rating = item.rating_promedio || 0;
-                const estrellasLlenas = Math.floor(rating);
-                const mediaEstrella = rating - estrellasLlenas >= 0.5;
-                
-                for (let i = 1; i <= 5; i++) {
-                    if (i <= estrellasLlenas) {
-                        starsHtml += '<i class="fas fa-star text-warning"></i>';
-                    } else if (i === estrellasLlenas + 1 && mediaEstrella) {
-                        starsHtml += '<i class="fas fa-star-half-alt text-warning"></i>';
-                    } else {
-                        starsHtml += '<i class="far fa-star text-muted"></i>';
-                    }
-                }
-                
-                // Color de eficiencia
-                const eficiencia = item.eficiencia || 0;
-                let eficienciaClass = 'success';
-                if (eficiencia < 60) eficienciaClass = 'danger';
-                else if (eficiencia < 80) eficienciaClass = 'warning';
-                
-                tbody.append(`
-                    <tr>
-                        <td>
-                            <span class="badge ${index < 3 ? 'bg-warning' : 'bg-secondary'}">
-                                ${index + 1}
-                            </span>
-                        </td>
-                        <td>
-                            <strong>${item.nombre_completo}</strong><br>
-                            <small class="text-muted">${item.cedula}</small>
-                        </td>
-                        <td class="text-center">
-                            <span class="h5">${item.total_llamadas}</span>
-                        </td>
-                        <td class="text-center">
-                            <div>${starsHtml}</div>
-                            <small class="text-muted">${rating.toFixed(1)}</small>
-                        </td>
-                        <td class="text-center">
-                            <span class="h6">${item.contactos_efectivos || 0}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-${eficienciaClass}">
-                                ${eficiencia}%
-                            </span>
-                        </td>
-                    </tr>
-                `);
-            });
+    const tbody = $('#tablaTopLlamadores tbody');
+    
+    console.log("Datos recibidos para tabla:", datos); // DEBUG
+    
+    // Verificar si hay datos
+    if (!datos || !Array.isArray(datos) || datos.length === 0) {
+        tbody.html(`
+            <tr>
+                <td colspan="6" class="text-center py-5">
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-user-slash me-2"></i>
+                        No se encontraron datos de llamadores para los filtros seleccionados.
+                    </div>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    // Limpiar tabla
+    tbody.empty();
+    
+    // Agregar cada fila
+    datos.forEach((item, index) => {
+        console.log("Procesando item:", item); // DEBUG
+        
+        // Manejar valores nulos o indefinidos SEGURO
+        const nombre = item.nombre_completo || 'Usuario desconocido';
+        const cedula = item.cedula || 'N/A';
+        const totalLlamadas = parseInt(item.total_llamadas) || 0;
+        
+        // VALIDACIÓN CRÍTICA: Asegurar que rating sea número
+        let rating = 0;
+        if (item.rating_promedio !== null && item.rating_promedio !== undefined) {
+            rating = parseFloat(item.rating_promedio);
+            if (isNaN(rating)) rating = 0;
         }
+        
+        const contactosEfectivos = parseInt(item.contactos_efectivos) || 0;
+        
+        // VALIDACIÓN CRÍTICA: Asegurar que eficiencia sea número
+        let eficiencia = 0;
+        if (item.eficiencia !== null && item.eficiencia !== undefined) {
+            eficiencia = parseFloat(item.eficiencia);
+            if (isNaN(eficiencia)) eficiencia = 0;
+        }
+        
+        // Generar estrellas SEGURO
+        let starsHtml = '';
+        const ratingEntero = Math.floor(rating);
+        const tieneMedia = rating - ratingEntero >= 0.5;
+        
+        for (let i = 1; i <= 5; i++) {
+            if (i <= ratingEntero) {
+                starsHtml += '<i class="fas fa-star text-warning"></i>';
+            } else if (i === ratingEntero + 1 && tieneMedia) {
+                starsHtml += '<i class="fas fa-star-half-alt text-warning"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star text-muted"></i>';
+            }
+        }
+        
+        // Color de eficiencia
+        let eficienciaClass = 'success';
+        let eficienciaIcon = '<i class="fas fa-arrow-up"></i>';
+        
+        if (eficiencia < 60) {
+            eficienciaClass = 'danger';
+            eficienciaIcon = '<i class="fas fa-arrow-down"></i>';
+        } else if (eficiencia < 80) {
+            eficienciaClass = 'warning';
+            eficienciaIcon = '<i class="fas fa-minus"></i>';
+        }
+        
+        // Crear fila
+        const filaHtml = `
+            <tr>
+                <td class="text-center">
+                    <span class="badge ${index < 3 ? 'bg-warning' : 'bg-secondary'}">
+                        ${index + 1}
+                    </span>
+                </td>
+                <td>
+                    <strong>${nombre}</strong><br>
+                    <small class="text-muted">${cedula}</small>
+                </td>
+                <td class="text-center">
+                    <span class="h5">${totalLlamadas}</span>
+                </td>
+                <td class="text-center">
+                    <div>${starsHtml}</div>
+                    <small class="text-muted">${rating.toFixed(1)}</small>
+                </td>
+                <td class="text-center">
+                    <span class="h6">${contactosEfectivos}</span>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-${eficienciaClass}">
+                        ${eficienciaIcon} ${eficiencia}%
+                    </span>
+                </td>
+            </tr>
+        `;
+        
+        tbody.append(filaHtml);
+    });
+}
         
         // Función para crear gráfica de distribución por llamador
         function crearGraficaLlamadores(datos) {
@@ -1487,110 +1544,257 @@ if ($porcentajeRestante > 50) {
             });
         }
         
-        // Función para cargar datos de tendencias
-        function cargarDatosTendencias() {
-            const filtros = obtenerFiltros();
+        // Función para cargar datos de tendencias - VERSIÓN MEJORADA
+function cargarDatosTendencias() {
+    const filtros = obtenerFiltros();
+    
+    // Mostrar loading
+    $('#graficaTendencias').html(`
+        <div class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="mt-2">Cargando tendencias...</p>
+        </div>
+    `);
+    
+    $.ajax({
+        url: '../ajax/obtener_datos_tracking_tendencias.php',
+        type: 'POST',
+        data: filtros,
+        dataType: 'json',
+        success: function(response) {
+            console.log("Respuesta tendencias:", response); // DEBUG
             
-            $.ajax({
-                url: '../ajax/obtener_datos_tracking_tendencias.php',
-                type: 'POST',
-                data: filtros,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        crearGraficaTendencias(response.data.tendencias);
-                        crearGraficaComparativaSemanal(response.data.comparativa_semanal);
-                        actualizarProyeccion(response.data.proyeccion);
-                    }
+            if (response.success) {
+                if (response.data.tendencias && response.data.tendencias.length > 0) {
+                    // Crear gráfica con período inicial de 7 días
+                    crearGraficaTendencias(response.data.tendencias, 7);
+                    crearGraficaComparativaSemanal(response.data.comparativa_semanal);
+                    actualizarProyeccion(response.data.proyeccion);
+                } else {
+                    mostrarMensajeSinDatosTendencias();
                 }
-            });
-        }
-        
-        // Función para crear gráfica de tendencias
-        function crearGraficaTendencias(datos) {
-            const ctx = document.getElementById('graficaTendencias').getContext('2d');
-            
-            if (chartTendencias) {
-                chartTendencias.destroy();
+            } else {
+                mostrarErrorTendencias(response.error || 'Error desconocido');
             }
-            
-            const fechas = datos.map(item => item.fecha);
-            const cantidades = datos.map(item => item.cantidad_llamadas);
-            const ratings = datos.map(item => item.rating_promedio * 20); // Escalar para visualización
-            
-            chartTendencias = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: fechas,
-                    datasets: [
-                        {
-                            label: 'Llamadas',
-                            data: cantidades,
-                            borderColor: 'rgba(52, 152, 219, 1)',
-                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                            borderWidth: 3,
-                            tension: 0.3,
-                            fill: true,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Rating (escalado)',
-                            data: ratings,
-                            borderColor: 'rgba(255, 193, 7, 1)',
-                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            borderDash: [5, 5],
-                            yAxisID: 'y1'
-                        }
-                    ]
+        },
+        error: function(xhr, status, error) {
+            console.error("Error AJAX tendencias:", error);
+            mostrarErrorTendencias('Error de conexión: ' + error);
+        }
+    });
+}
+
+// Función para mostrar mensaje cuando no hay datos de tendencias
+function mostrarMensajeSinDatosTendencias() {
+    $('#graficaTendencias').html(`
+        <div class="text-center py-5">
+            <i class="fas fa-chart-line fa-3x text-muted"></i>
+            <h5 class="mt-3">No hay datos de tendencias</h5>
+            <p class="text-muted">No hay suficientes datos para mostrar tendencias</p>
+        </div>
+    `);
+}
+
+// Función para mostrar error en tendencias
+function mostrarErrorTendencias(mensaje) {
+    $('#graficaTendencias').html(`
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+            <h5 class="mt-3">Error</h5>
+            <p class="text-muted">${mensaje}</p>
+        </div>
+    `);
+}
+        
+  // Función para crear gráfica de tendencias - VERSIÓN MEJORADA Y CORREGIDA
+function crearGraficaTendencias(datos, periodo = 7) {
+    const ctx = document.getElementById('graficaTendencias').getContext('2d');
+    
+    if (chartTendencias) {
+        chartTendencias.destroy();
+    }
+    
+    // Verificar si hay datos
+    if (!datos || datos.length === 0) {
+        mostrarMensajeSinDatosTendencias();
+        return;
+    }
+    
+    // Determinar el rango de fechas basado en el período
+    let fechaInicio;
+    const hoy = new Date();
+    
+    switch(periodo) {
+        case 7:
+            fechaInicio = new Date(hoy);
+            fechaInicio.setDate(hoy.getDate() - 6); // Últimos 7 días incluido hoy
+            break;
+        case 30:
+            fechaInicio = new Date(hoy);
+            fechaInicio.setDate(hoy.getDate() - 29); // Últimos 30 días
+            break;
+        case 90:
+            fechaInicio = new Date(hoy);
+            fechaInicio.setDate(hoy.getDate() - 89); // Últimos 90 días
+            break;
+        default:
+            fechaInicio = new Date(hoy);
+            fechaInicio.setDate(hoy.getDate() - 6); // Por defecto 7 días
+    }
+    
+    // Crear array con todas las fechas del rango
+    const todasFechas = [];
+    const fechaActual = new Date(fechaInicio);
+    
+    while (fechaActual <= hoy) {
+        todasFechas.push(new Date(fechaActual));
+        fechaActual.setDate(fechaActual.getDate() + 1);
+    }
+    
+    // Crear un mapa de los datos recibidos para fácil acceso
+    const datosMap = {};
+    datos.forEach(item => {
+        const fecha = new Date(item.fecha);
+        const fechaKey = fecha.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        datosMap[fechaKey] = {
+            cantidad_llamadas: item.cantidad_llamadas || 0,
+            rating_promedio: item.rating_promedio || 0
+        };
+    });
+    
+    // Preparar arrays para la gráfica
+    const fechasFormateadas = [];
+    const cantidades = [];
+    const ratings = [];
+    
+    todasFechas.forEach(fecha => {
+        const fechaKey = fecha.toISOString().split('T')[0];
+        
+        // Formatear fecha para el eje X (ej: "03/Feb")
+        const dia = fecha.getDate().toString().padStart(2, '0');
+        const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
+        fechasFormateadas.push(`${dia}/${mes}`);
+        
+        // Obtener datos o usar 0 si no existen
+        if (datosMap[fechaKey]) {
+            cantidades.push(datosMap[fechaKey].cantidad_llamadas);
+            ratings.push((datosMap[fechaKey].rating_promedio || 0) * 20); // Escalar a 0-100
+        } else {
+            cantidades.push(0);
+            ratings.push(0);
+        }
+    });
+    
+    // Si todos los valores son 0, mostrar mensaje
+    if (cantidades.every(val => val === 0) && ratings.every(val => val === 0)) {
+        mostrarMensajeSinDatosTendencias();
+        return;
+    }
+    
+    // Crear la gráfica
+    chartTendencias = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: fechasFormateadas,
+            datasets: [
+                {
+                    label: 'Llamadas',
+                    data: cantidades,
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'y'
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Cantidad de Llamadas'
+                {
+                    label: 'Rating (escalado)',
+                    data: ratings,
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false,
+                    borderDash: [5, 5],
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return `Llamadas: ${context.raw}`;
+                            } else {
+                                return `Rating: ${(context.raw / 20).toFixed(1)}/5`;
                             }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'Rating Promedio (escalado)'
-                            },
-                            grid: {
-                                drawOnChartArea: false
-                            },
-                            min: 0,
-                            max: 100
+                        }
+                    }
+                },
+                legend: {
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 6
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Llamadas'
+                    },
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Rating Promedio (escalado)'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return (value / 20).toFixed(1); // Mostrar como 0-5
                         }
                     }
                 }
-            });
-            
-            // Botones de período
-            $('[data-periodo]').click(function() {
-                $('[data-periodo]').removeClass('active');
-                $(this).addClass('active');
-                
-                // Aquí podrías recargar datos con el período seleccionado
-                const periodo = $(this).data('periodo');
-                // cargarDatosTendenciasConPeriodo(periodo);
-            });
+            }
         }
+    });
+    
+    // Actualizar botones de período
+    $('[data-periodo]').off('click').click(function() {
+        const nuevoPeriodo = $(this).data('periodo');
+        
+        // Actualizar botones activos
+        $('[data-periodo]').removeClass('active');
+        $(this).addClass('active');
+        
+        // Volver a crear la gráfica con el nuevo período
+        crearGraficaTendencias(datos, nuevoPeriodo);
+    });
+}
         
         // Función para crear gráfica comparativa semanal
         function crearGraficaComparativaSemanal(datos) {

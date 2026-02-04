@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/ReferenciadoModel.php';
+require_once __DIR__ . '/../models/LlamadaModel.php';  // NUEVO: Agregado para historial de llamadas
 require_once __DIR__ . '/../models/SistemaModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
@@ -14,6 +15,7 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Referencia
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
+$llamadaModel = new LlamadaModel($pdo);  // NUEVO: Instancia para historial de llamadas
 $sistemaModel = new SistemaModel($pdo);
 
 $id_usuario_logueado = $_SESSION['id_usuario'];
@@ -152,6 +154,52 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
             display: flex;
             align-items: center;
             gap: 4px;
+        }
+        
+        /* Estilos para el botón de historial de llamadas */
+        .btn-historial-llamadas {
+            position: relative;
+        }
+        
+        .btn-historial-llamadas .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 0.6em;
+            padding: 2px 5px;
+        }
+        
+        /* Estilos para el modal de historial */
+        .persona-info {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #0dcaf0;
+        }
+        
+        .info-item {
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-label {
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .summary-value {
+            font-weight: bold;
+            color: #333;
         }
     </style>
     <!-- Cargar Chart.js ANTES de que se use -->
@@ -422,166 +470,189 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
             </div>
             
             <!-- Tabla de Referenciados -->
-            <div class="referenciados-table">
-                <div class="table-header">
-                    <h3><i class="fas fa-list-alt"></i> Lista de Referenciados</h3>
-                    <div class="table-header-actions">
-                        <span>Fecha y hora actual: <?php echo $fecha_formateada; ?></span>
-                        <?php if ($total_referenciados > 0): ?>
-                        <button class="btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
+<div class="referenciados-table">
+    <div class="table-header">
+        <h3><i class="fas fa-list-alt"></i> Lista de Referenciados</h3>
+        <div class="table-header-actions">
+            <span>Fecha y hora actual: <?php echo $fecha_formateada; ?></span>
+            <?php if ($total_referenciados > 0): ?>
+            <button class="btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="fas fa-download"></i> Exportar
+            </button>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <?php if ($total_referenciados > 0): ?>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nombre Completo</th>
+                    <th>Cédula</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Afinidad</th>
+                    <th>Grupo Parlamentario</th>
+                    <th>Vota</th>
+                    <th>Puesto/Mesa</th>
+                    <th>Fecha Registro</th>
+                    <th>Estado</th>
+                    <th>Acciones</th> <!-- NUEVA COLUMNA VACÍA -->
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($referenciados as $referenciado): ?>
+                <?php 
+                $activo = $referenciado['activo'];
+                $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
+                $vota_fuera = $referenciado['vota_fuera'] === 'Si';
                 
-                <?php if ($total_referenciados > 0): ?>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nombre Completo</th>
-                                <th>Cédula</th>
-                                <th>Teléfono</th>
-                                <th>Email</th>
-                                <th>Afinidad</th>
-                                <th>Grupo Parlamentario</th>
-                                <th>Vota</th>
-                                <th>Puesto/Mesa</th>
-                                <th>Fecha Registro</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($referenciados as $referenciado): ?>
-                            <?php 
-                            $activo = $referenciado['activo'];
-                            $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
-                            $vota_fuera = $referenciado['vota_fuera'] === 'Si';
-                            ?>
-                            <tr>
-                                <!-- Nombre Completo -->
-                                <td>
-                                    <strong><?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?></strong>
-                                </td>
-                                
-                                <!-- Cédula -->
-                                <td>
-                                    <?php echo htmlspecialchars($referenciado['cedula']); ?>
-                                </td>
-                                
-                                <!-- Teléfono -->
-                                <td>
-                                    <?php echo htmlspecialchars($referenciado['telefono']); ?>
-                                </td>
-                                
-                                <!-- Email -->
-                                <td>
-                                    <?php echo htmlspecialchars($referenciado['email']); ?>
-                                </td>
-                                
-                                <!-- Afinidad -->
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="badge-afinidad">
-                                            <?php echo $referenciado['afinidad']; ?>/5
-                                        </span>
-                                        <span class="afinidad-stars">
-                                            <?php 
-                                            $afinidad = intval($referenciado['afinidad']);
-                                            echo str_repeat('<i class="fas fa-star"></i>', $afinidad) . 
-                                                 str_repeat('<i class="far fa-star"></i>', 5 - $afinidad);
-                                            ?>
-                                        </span>
-                                    </div>
-                                </td>
-                                <!-- NUEVA COLUMNA: Grupo Parlamentario -->
-                                <td>
-                                    <?php 
-                                    $grupo_nombre = !empty($referenciado['grupo_nombre']) 
-                                        ? htmlspecialchars($referenciado['grupo_nombre']) 
-                                        : 'Sin asignar';
-                                    
-                                    // Opcional: mostrar badge con color según el grupo
-                                    if ($grupo_nombre === 'Sin asignar') {
-                                        echo '<span class="badge bg-secondary">' . $grupo_nombre . '</span>';
-                                    } else {
-                                        echo '<span class="badge bg-primary">' . $grupo_nombre . '</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <!-- Vota -->
-                                <td>
-                                    <?php if ($vota_fuera): ?>
-                                        <span class="vota-badge vota-fuera">
-                                            <i class="fas fa-external-link-alt me-1"></i> Fuera
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="vota-badge vota-aqui">
-                                            <i class="fas fa-home me-1"></i> Aquí
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                
-                                <!-- Puesto/Mesa -->
-                                <td>
-                                    <?php if ($vota_fuera): ?>
-                                        <div>
-                                            <small class="text-muted">Puesto:</small><br>
-                                            <strong><?php echo htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? 'No especificado'); ?></strong>
-                                        </div>
-                                        <div class="mt-1">
-                                            <small class="text-muted">Mesa:</small><br>
-                                            <strong><?php echo htmlspecialchars($referenciado['mesa_fuera'] ?? 'No especificado'); ?></strong>
-                                        </div>
-                                    <?php else: ?>
-                                        <div>
-                                            <small class="text-muted">Puesto:</small><br>
-                                            <strong><?php echo htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? 'No especificado'); ?></strong>
-                                        </div>
-                                        <div class="mt-1">
-                                            <small class="text-muted">Mesa:</small><br>
-                                            <strong><?php echo htmlspecialchars($referenciado['mesa'] ?? 'No especificado'); ?></strong>
-                                        </div>
-                                    <?php endif; ?>
-                                </td>
-                                
-                                <!-- Fecha Registro -->
-                                <td>
-                                    <?php 
-                                    $fecha_registro = date('d/m/Y H:i', strtotime($referenciado['fecha_registro']));
-                                    echo htmlspecialchars($fecha_registro);
-                                    ?>
-                                </td>
-                                
-                                <!-- Estado -->
-                                <td>
-                                    <?php if ($esta_activo): ?>
-                                        <span class="badge-estado badge-activo">
-                                            <i class="fas fa-check-circle me-1"></i> Activo
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge-estado badge-inactivo">
-                                            <i class="fas fa-times-circle me-1"></i> Inactivo
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php else: ?>
-                <div class="empty-state">
-                    <i class="fas fa-users"></i>
-                    <h3>No hay referenciados registrados</h3>
-                    <p>No has registrado ninguna persona referenciada aún. Comienza agregando tu primer referenciado.</p>
-                    <a href="referenciador.php" class="btn-volver">
-                        <i class="fas fa-plus-circle"></i> Agregar Primer Referenciado
-                    </a>
-                </div>
-                <?php endif; ?>
-            </div>
+                // Obtener número de llamadas para este referenciado
+                $totalLlamadasReferenciado = $llamadaModel->contarLlamadasPorReferenciado($referenciado['id_referenciado']);
+                ?>
+                <tr>
+                    <!-- Nombre Completo -->
+                    <td>
+                        <strong><?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?></strong>
+                    </td>
+                    
+                    <!-- Cédula -->
+                    <td>
+                        <?php echo htmlspecialchars($referenciado['cedula']); ?>
+                    </td>
+                    
+                    <!-- Teléfono -->
+                    <td>
+                        <?php echo htmlspecialchars($referenciado['telefono']); ?>
+                    </td>
+                    
+                    <!-- Email -->
+                    <td>
+                        <?php echo htmlspecialchars($referenciado['email']); ?>
+                    </td>
+                    
+                    <!-- Afinidad -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge-afinidad">
+                                <?php echo $referenciado['afinidad']; ?>/5
+                            </span>
+                            <span class="afinidad-stars">
+                                <?php 
+                                $afinidad = intval($referenciado['afinidad']);
+                                echo str_repeat('<i class="fas fa-star"></i>', $afinidad) . 
+                                     str_repeat('<i class="far fa-star"></i>', 5 - $afinidad);
+                                ?>
+                            </span>
+                        </div>
+                    </td>
+                    
+                    <!-- Grupo Parlamentario -->
+                    <td>
+                        <?php 
+                        $grupo_nombre = !empty($referenciado['grupo_nombre']) 
+                            ? htmlspecialchars($referenciado['grupo_nombre']) 
+                            : 'Sin asignar';
+                        
+                        if ($grupo_nombre === 'Sin asignar') {
+                            echo '<span class="badge bg-secondary">' . $grupo_nombre . '</span>';
+                        } else {
+                            echo '<span class="badge bg-primary">' . $grupo_nombre . '</span>';
+                        }
+                        ?>
+                    </td>
+                    
+                    <!-- Vota -->
+                    <td>
+                        <?php if ($vota_fuera): ?>
+                            <span class="vota-badge vota-fuera">
+                                <i class="fas fa-external-link-alt me-1"></i> Fuera
+                            </span>
+                        <?php else: ?>
+                            <span class="vota-badge vota-aqui">
+                                <i class="fas fa-home me-1"></i> Aquí
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    
+                    <!-- Puesto/Mesa -->
+                    <td>
+                        <?php if ($vota_fuera): ?>
+                            <div>
+                                <small class="text-muted">Puesto:</small><br>
+                                <strong><?php echo htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? 'No especificado'); ?></strong>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-muted">Mesa:</small><br>
+                                <strong><?php echo htmlspecialchars($referenciado['mesa_fuera'] ?? 'No especificado'); ?></strong>
+                            </div>
+                        <?php else: ?>
+                            <div>
+                                <small class="text-muted">Puesto:</small><br>
+                                <strong><?php echo htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? 'No especificado'); ?></strong>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-muted">Mesa:</small><br>
+                                <strong><?php echo htmlspecialchars($referenciado['mesa'] ?? 'No especificado'); ?></strong>
+                            </div>
+                        <?php endif; ?>
+                    </td>
+                    
+                    <!-- Fecha Registro -->
+                    <td>
+                        <?php 
+                        $fecha_registro = date('d/m/Y H:i', strtotime($referenciado['fecha_registro']));
+                        echo htmlspecialchars($fecha_registro);
+                        ?>
+                    </td>
+                    
+                    <!-- Estado -->
+                    <td>
+                        <?php if ($esta_activo): ?>
+                            <span class="badge-estado badge-activo">
+                                <i class="fas fa-check-circle me-1"></i> Activo
+                            </span>
+                        <?php else: ?>
+                            <span class="badge-estado badge-inactivo">
+                                <i class="fas fa-times-circle me-1"></i> Inactivo
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    
+                    <!-- NUEVA COLUMNA: Acciones (con botón de historial de llamadas) -->
+                    <td>
+                        <button type="button" 
+                                class="btn btn-sm btn-outline-primary btn-historial-llamadas"
+                                onclick="mostrarHistorialLlamadas(
+                                    <?php echo $referenciado['id_referenciado']; ?>, 
+                                    '<?php echo addslashes($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?>',
+                                    '<?php echo addslashes($referenciado['telefono'] ?? ''); ?>',
+                                    '<?php echo addslashes($referenciado['email'] ?? ''); ?>'
+                                )"
+                                title="Ver historial de llamadas">
+                            <i class="fas fa-history"></i>
+                            <?php if ($totalLlamadasReferenciado > 0): ?>
+                                <span class="badge bg-danger ms-1"><?php echo $totalLlamadasReferenciado; ?></span>
+                            <?php endif; ?>
+                        </button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+    <div class="empty-state">
+        <i class="fas fa-users"></i>
+        <h3>No hay referenciados registrados</h3>
+        <p>No has registrado ninguna persona referenciada aún. Comienza agregando tu primer referenciado.</p>
+        <a href="referenciador.php" class="btn-volver">
+            <i class="fas fa-plus-circle"></i> Agregar Primer Referenciado
+        </a>
+    </div>
+    <?php endif; ?>
+</div>
         </div>
     </div>
 
@@ -602,6 +673,92 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
             </p>
         </div>
     </footer>
+
+    <!-- Modal de Historial de Llamadas -->
+    <div class="modal fade" id="modalHistorialLlamadas" tabindex="-1" aria-labelledby="modalHistorialLlamadasLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalHistorialLlamadasLabel">
+                        <i class="fas fa-history me-2"></i>Historial de Llamadas
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h4 id="nombreReferenciado"></h4>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <i class="fas fa-phone me-2"></i>
+                                    <strong>Teléfono:</strong> <span id="telefonoReferenciado"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    <strong>Email:</strong> <span id="emailReferenciado"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-phone-alt me-2"></i> Historial de Contacto</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="tablaHistorialLlamadas">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha y Hora</th>
+                                            <th>Resultado</th>
+                                            <th>Calificación</th>
+                                            <th>Observaciones</th>
+                                            <th>Usuario</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpoHistorialLlamadas">
+                                        <!-- Los datos se cargarán aquí -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resumen</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total de llamadas:</span>
+                                        <span class="summary-value" id="totalLlamadas">0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Promedio de calificación:</span>
+                                        <span class="summary-value" id="promedioRating">0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Última llamada:</span>
+                                        <span class="summary-value" id="ultimaLlamada">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <!-- Modal de Información del Sistema -->
 <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
@@ -1011,6 +1168,136 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
                 link.click();
                 document.body.removeChild(link);
             }, 300);
+        }
+        
+        // Función para mostrar historial de llamadas (MODIFICADA)
+        async function mostrarHistorialLlamadas(idReferenciado, nombre, telefono, email) {
+            try {
+                // Mostrar loading en el modal
+                const modal = document.getElementById('modalHistorialLlamadas');
+                const cuerpo = document.getElementById('cuerpoHistorialLlamadas');
+                cuerpo.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</td></tr>';
+                
+                // ¡¡¡IMPORTANTE!!! - ACTUALIZAR INFORMACIÓN PERSONAL CON LOS DATOS DE LA TABLA
+                document.getElementById('nombreReferenciado').textContent = nombre;
+                document.getElementById('telefonoReferenciado').textContent = telefono || 'No registrado';
+                document.getElementById('emailReferenciado').textContent = email || 'No registrado';
+                
+                // Actualizar título del modal
+                document.getElementById('modalHistorialLlamadasLabel').innerHTML = 
+                    `<i class="fas fa-history me-2"></i>Historial de Llamadas - ${nombre}`;
+                
+                // Mostrar modal
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+                
+                // Obtener datos del historial
+                const response = await fetch(`../ajax/obtener_historial_llamadas.php?id_referenciado=${idReferenciado}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Actualizar historial
+                    let historialHTML = '';
+                    let totalRating = 0;
+                    let conteoRating = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+                    
+                    if (data.historial && data.historial.length > 0) {
+                        data.historial.forEach(llamada => {
+                            // Formatear fecha
+                            const fecha = new Date(llamada.fecha_llamada);
+                            const fechaStr = fecha.toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            
+                            // Calcular rating
+                            if (llamada.rating) {
+                                totalRating += llamada.rating;
+                                conteoRating[llamada.rating]++;
+                            }
+                            
+                            // Generar estrellas para rating
+                            let estrellasHTML = '';
+                            if (llamada.rating) {
+                                for (let i = 1; i <= 5; i++) {
+                                    if (i <= llamada.rating) {
+                                        estrellasHTML += '<i class="fas fa-star text-warning"></i>';
+                                    } else {
+                                        estrellasHTML += '<i class="far fa-star text-muted"></i>';
+                                    }
+                                }
+                            } else {
+                                estrellasHTML = '<span class="text-muted">Sin calificar</span>';
+                            }
+                            
+                            // Obtener color del resultado
+                            const colorResultado = getColorResultado(llamada.id_resultado);
+                            
+                            historialHTML += `
+                                <tr>
+                                    <td>${fechaStr}</td>
+                                    <td><span class="badge ${colorResultado}">${llamada.resultado_nombre || 'Sin resultado'}</span></td>
+                                    <td>${estrellasHTML}</td>
+                                    <td>${llamada.observaciones || '<span class="text-muted">Sin observaciones</span>'}</td>
+                                    <td>${llamada.usuario_nombre || 'Sistema'}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        // Actualizar resumen
+                        document.getElementById('totalLlamadas').textContent = data.historial.length;
+                        
+                        if (totalRating > 0) {
+                            const totalConRating = data.historial.filter(l => l.rating).length;
+                            const promedio = (totalRating / totalConRating).toFixed(1);
+                            document.getElementById('promedioRating').textContent = promedio;
+                            document.getElementById('promedioRating').innerHTML += ` <i class="fas fa-star text-warning"></i>`;
+                        }
+                        
+                        // Última llamada
+                        const ultima = new Date(data.historial[0].fecha_llamada);
+                        document.getElementById('ultimaLlamada').textContent = ultima.toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                    } else {
+                        historialHTML = '<tr><td colspan="5" class="text-center text-muted">No hay historial de llamadas registradas</td></tr>';
+                        document.getElementById('totalLlamadas').textContent = '0';
+                        document.getElementById('promedioRating').textContent = 'N/A';
+                        document.getElementById('ultimaLlamada').textContent = 'Nunca';
+                    }
+                    
+                    cuerpo.innerHTML = historialHTML;
+                    
+                } else {
+                    showNotification('Error al cargar el historial: ' + (data.message || 'Error desconocido'), 'error');
+                    cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar el historial</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error de conexión: ' + error.message, 'error');
+                document.getElementById('cuerpoHistorialLlamadas').innerHTML = 
+                    '<tr><td colspan="5" class="text-center text-danger">Error de conexión</td></tr>';
+            }
+        }
+        
+        // Función auxiliar para obtener color según resultado
+        function getColorResultado(idResultado) {
+            const colors = {
+                1: 'bg-success',   // Exitoso
+                2: 'bg-warning',   // Pendiente
+                3: 'bg-danger',    // Fallido
+                4: 'bg-info',      // Información
+                5: 'bg-primary'    // Otro
+            };
+            return colors[idResultado] || 'bg-secondary';
         }
         
         // Manejar parámetros de éxito/error en la URL

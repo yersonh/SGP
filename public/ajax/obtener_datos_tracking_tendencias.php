@@ -24,8 +24,8 @@ if ($filtros['rango'] === 'personalizado' && isset($_POST['fecha_desde']) && iss
 }
 
 try {
-    // Obtener tendencias de los últimos 30 días
-    $tendencias = $llamadaModel->getTendenciasLlamadas(30, $filtros);
+    // Obtener tendencias de los últimos 90 días (máximo)
+    $tendencias = $llamadaModel->getTendenciasLlamadas(90, $filtros);
     
     // Obtener comparativa semanal
     $comparativaSemanal = $llamadaModel->getComparativaSemanal($filtros);

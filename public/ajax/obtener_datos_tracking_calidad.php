@@ -25,8 +25,31 @@ if ($filtros['rango'] === 'personalizado' && isset($_POST['fecha_desde']) && iss
 
 try {
     $datos = $llamadaModel->getAnalisisCalidad($filtros);
-    echo json_encode(['success' => true, 'data' => $datos]);
+    
+    // Verificar que se obtuvieron datos
+    if (empty($datos)) {
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'distribucion_rating' => [],
+                'calidad_por_resultado' => [],
+                'rating_por_hora' => [],
+                'porcentaje_con_observaciones' => 0,
+                'longitud_promedio_observaciones' => 0,
+                'ultimas_observaciones' => []
+            ]
+        ]);
+    } else {
+        echo json_encode([
+            'success' => true, 
+            'data' => $datos
+        ]);
+    }
+    
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Error al obtener datos de calidad'
+    ]);
 }
 ?>

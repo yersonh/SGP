@@ -707,7 +707,7 @@ public function getResumenTracking($filtros = []) {
 }
 
 /**
- * Obtener datos para análisis de calidad
+ * Obtener datos para análisis de calidad - VERSIÓN ESTABLE Y FUNCIONAL
  */
 public function getAnalisisCalidad($filtros = []) {
     // Construir WHERE común
@@ -715,24 +715,66 @@ public function getAnalisisCalidad($filtros = []) {
     $where = $whereInfo['where'];
     $params = $whereInfo['params'];
     
-    // Distribución por rating
-    $sqlRating = "SELECT 
-                    COALESCE(lt.rating, 0) as rating,
-                    COUNT(*) as cantidad,
-                    ROUND(COUNT(*) * 100.0 / (
-                        SELECT COUNT(*) FROM llamadas_tracking lt2 {$where}
-                    ), 2) as porcentaje
-                 FROM llamadas_tracking lt
-                 {$where}
-                 GROUP BY COALESCE(lt.rating, 0)
-                 ORDER BY rating DESC";
+    // Inicializar datos vacíos por si hay error
+    $datosDefault = [
+        'distribucion_rating' => [],
+        'calidad_por_resultado' => [],
+        'rating_por_hora' => [],
+        'porcentaje_con_observaciones' => 0,
+        'longitud_promedio_observaciones' => 0,
+        'ultimas_observaciones' => []
+    ];
     
-    $stmt = $this->pdo->prepare($sqlRating);
-    $stmt->execute($params);
-    $distribucionRating = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Calidad por resultado (porcentaje exitoso por tipo de resultado)
-    $sqlCalidadResultado = "SELECT 
+    try {
+        // 1. Primero verificar que hay datos
+        $sqlCheck = "SELECT COUNT(*) as total FROM llamadas_tracking lt {$where}";
+        $stmtCheck = $this->pdo->prepare($sqlCheck);
+        $stmtCheck->execute($params);
+        $totalLlamadas = $stmtCheck->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+        
+        if ($totalLlamadas == 0) {
+            return $datosDefault;
+        }
+        
+        // 2. Distribución por rating (FUNCIONAL)
+        $sqlRating = "SELECT 
+                        COALESCE(lt.rating::integer, 0) as rating,
+                        COUNT(*) as cantidad
+                     FROM llamadas_tracking lt
+                     {$where}
+                     GROUP BY COALESCE(lt.rating::integer, 0)
+                     ORDER BY rating DESC";
+        
+        $stmtRating = $this->pdo->prepare($sqlRating);
+        $stmtRating->execute($params);
+        $distribucionRatingRaw = $stmtRating->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Formatear distribución de rating
+        $distribucionRating = [];
+        foreach ($distribucionRatingRaw as $item) {
+            $rating = (int)$item['rating'];
+            $distribucionRating[$rating] = [
+                'rating' => $rating,
+                'cantidad' => $item['cantidad'],
+                'porcentaje' => $totalLlamadas > 0 ? round(($item['cantidad'] / $totalLlamadas) * 100, 2) : 0
+            ];
+        }
+        
+        // Asegurar que todos los ratings 0-5 estén presentes
+        for ($i = 0; $i <= 5; $i++) {
+            if (!isset($distribucionRating[$i])) {
+                $distribucionRating[$i] = [
+                    'rating' => $i,
+                    'cantidad' => 0,
+                    'porcentaje' => 0
+                ];
+            }
+        }
+        
+        // 3. Calidad por resultado (CON TABLA tipos_resultado_llamada)
+        $calidadPorResultado = [];
+        try {
+            $sqlCalidad = "SELECT 
                               tr.id_resultado,
                               tr.nombre as resultado,
                               COUNT(lt.id_llamada) as cantidad,
@@ -748,68 +790,116 @@ public function getAnalisisCalidad($filtros = []) {
                            FROM llamadas_tracking lt
                            LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
                            {$where}
+                           AND tr.activo = true
                            GROUP BY tr.id_resultado, tr.nombre
                            ORDER BY cantidad DESC";
-    
-    $stmt = $this->pdo->prepare($sqlCalidadResultado);
-    $stmt->execute($params);
-    $calidadPorResultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Rating promedio por hora
-    $sqlRatingHora = "SELECT 
-                         EXTRACT(HOUR FROM fecha_llamada) as hora,
-                         ROUND(AVG(lt.rating), 2) as rating_promedio
-                      FROM llamadas_tracking lt
-                      {$where}
-                      AND lt.rating IS NOT NULL
-                      GROUP BY EXTRACT(HOUR FROM fecha_llamada)
-                      ORDER BY hora";
-    
-    $stmt = $this->pdo->prepare($sqlRatingHora);
-    $stmt->execute($params);
-    $ratingPorHora = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Estadísticas de observaciones
-    $sqlObservaciones = "SELECT 
-                            ROUND(
-                                (COUNT(CASE WHEN lt.observaciones IS NOT NULL AND TRIM(lt.observaciones) != '' THEN 1 END) * 100.0 / 
-                                COUNT(*)), 2
-                            ) as porcentaje_con_observaciones,
-                            ROUND(
-                                AVG(LENGTH(lt.observaciones)), 0
-                            ) as longitud_promedio_observaciones
-                         FROM llamadas_tracking lt
-                         {$where}";
-    
-    $stmt = $this->pdo->prepare($sqlObservaciones);
-    $stmt->execute($params);
-    $estadisticasObservaciones = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    // Últimas observaciones
-    $sqlUltimasObs = "SELECT 
-                         lt.observaciones,
-                         lt.fecha_llamada,
-                         CONCAT(u.nombres, ' ', u.apellidos) as llamador
-                      FROM llamadas_tracking lt
-                      INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
-                      {$where}
-                      AND lt.observaciones IS NOT NULL
-                      AND TRIM(lt.observaciones) != ''
-                      ORDER BY lt.fecha_llamada DESC
-                      LIMIT 5";
-    
-    $stmt = $this->pdo->prepare($sqlUltimasObs);
-    $stmt->execute($params);
-    $ultimasObservaciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    return [
-        'distribucion_rating' => array_column($distribucionRating, null, 'rating'),
-        'calidad_por_resultado' => $calidadPorResultado,
-        'rating_por_hora' => $ratingPorHora,
-        'porcentaje_con_observaciones' => $estadisticasObservaciones['porcentaje_con_observaciones'] ?? 0,
-        'longitud_promedio_observaciones' => $estadisticasObservaciones['longitud_promedio_observaciones'] ?? 0,
-        'ultimas_observaciones' => $ultimasObservaciones
-    ];
+            
+            $stmtCalidad = $this->pdo->prepare($sqlCalidad);
+            $stmtCalidad->execute($params);
+            $calidadPorResultado = $stmtCalidad->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            // Si falla el JOIN, usar versión simple
+            error_log("Error en calidad por resultado (usando versión simple): " . $e->getMessage());
+            
+            $sqlCalidadSimple = "SELECT 
+                                   lt.id_resultado,
+                                   COUNT(lt.id_llamada) as cantidad,
+                                   ROUND(AVG(
+                                       CASE 
+                                           WHEN lt.rating >= 4 THEN 100
+                                           WHEN lt.rating = 3 THEN 75
+                                           WHEN lt.rating = 2 THEN 50
+                                           WHEN lt.rating = 1 THEN 25
+                                           ELSE 0
+                                       END
+                                   ), 2) as porcentaje_exitoso
+                                FROM llamadas_tracking lt
+                                {$where}
+                                GROUP BY lt.id_resultado
+                                ORDER BY cantidad DESC";
+            
+            $stmtCalidadSimple = $this->pdo->prepare($sqlCalidadSimple);
+            $stmtCalidadSimple->execute($params);
+            $resultadosSimple = $stmtCalidadSimple->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($resultadosSimple as $item) {
+                $calidadPorResultado[] = [
+                    'id_resultado' => $item['id_resultado'],
+                    'resultado' => 'Resultado #' . $item['id_resultado'],
+                    'cantidad' => $item['cantidad'],
+                    'porcentaje_exitoso' => $item['porcentaje_exitoso']
+                ];
+            }
+        }
+        
+        // 4. Rating promedio por hora (SOLO horas con datos)
+        $sqlRatingHora = "SELECT 
+                             EXTRACT(HOUR FROM fecha_llamada)::integer as hora,
+                             ROUND(AVG(lt.rating)::numeric, 2) as rating_promedio
+                          FROM llamadas_tracking lt
+                          {$where}
+                          AND lt.rating IS NOT NULL
+                          GROUP BY EXTRACT(HOUR FROM fecha_llamada)
+                          ORDER BY hora";
+        
+        $stmtRatingHora = $this->pdo->prepare($sqlRatingHora);
+        $stmtRatingHora->execute($params);
+        $ratingPorHora = $stmtRatingHora->fetchAll(PDO::FETCH_ASSOC);
+        
+        // 5. Estadísticas de observaciones
+        $sqlObservaciones = "SELECT 
+                                COUNT(CASE WHEN lt.observaciones IS NOT NULL AND TRIM(lt.observaciones) != '' THEN 1 END) as con_observaciones,
+                                COUNT(*) as total,
+                                COALESCE(AVG(LENGTH(lt.observaciones)), 0) as longitud_promedio
+                             FROM llamadas_tracking lt
+                             {$where}";
+        
+        $stmtObservaciones = $this->pdo->prepare($sqlObservaciones);
+        $stmtObservaciones->execute($params);
+        $obsData = $stmtObservaciones->fetch(PDO::FETCH_ASSOC);
+        
+        $porcentajeConObservaciones = 0;
+        $longitudPromedio = 0;
+        
+        if ($obsData && $obsData['total'] > 0) {
+            $porcentajeConObservaciones = round(($obsData['con_observaciones'] / $obsData['total']) * 100, 2);
+            $longitudPromedio = round($obsData['longitud_promedio'] ?? 0);
+        }
+        
+        // 6. Últimas observaciones
+        $sqlUltimasObs = "SELECT 
+                             lt.observaciones,
+                             lt.fecha_llamada,
+                             CONCAT(u.nombres, ' ', u.apellidos) as llamador
+                          FROM llamadas_tracking lt
+                          INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
+                          {$where}
+                          AND lt.observaciones IS NOT NULL
+                          AND TRIM(lt.observaciones) != ''
+                          ORDER BY lt.fecha_llamada DESC
+                          LIMIT 5";
+        
+        $stmtUltimasObs = $this->pdo->prepare($sqlUltimasObs);
+        $stmtUltimasObs->execute($params);
+        $ultimasObservaciones = $stmtUltimasObs->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'distribucion_rating' => $distribucionRating,
+            'calidad_por_resultado' => $calidadPorResultado,
+            'rating_por_hora' => $ratingPorHora,
+            'porcentaje_con_observaciones' => $porcentajeConObservaciones,
+            'longitud_promedio_observaciones' => $longitudPromedio,
+            'ultimas_observaciones' => $ultimasObservaciones
+        ];
+        
+    } catch (Exception $e) {
+        error_log("ERROR en getAnalisisCalidad: " . $e->getMessage());
+        error_log("TRACE: " . $e->getTraceAsString());
+        
+        // Retornar datos vacíos en caso de error
+        return $datosDefault;
+    }
 }
 
 /**
@@ -866,221 +956,230 @@ private function construirWhereFiltros($filtros) {
     return ['where' => $where, 'params' => $params];
 }
 /**
- * Obtener top llamadores con filtros
+ * Obtener top llamadores con filtros - VERSIÓN CORREGIDA Y UNIFICADA
  */
 public function getTopLlamadoresConFiltros($limite = 10, $filtros = []) {
-    $where = $this->construirWhereFiltros($filtros);
-    $params = $where['params'];
+    $whereInfo = $this->construirWhereFiltros($filtros);
+    $where = $whereInfo['where'];
+    $params = $whereInfo['params'];
     
+    // CORRECCIÓN: Usar LEFT JOIN y agregar condición para usuarios con llamadas
     $sql = "SELECT 
                 u.id_usuario,
                 CONCAT(u.nombres, ' ', u.apellidos) as nombre_completo,
                 u.cedula,
                 COUNT(lt.id_llamada) as total_llamadas,
-                COUNT(DISTINCT lt.id_referenciado) as referenciados_unicos,
-                ROUND(AVG(lt.rating), 2) as rating_promedio,
+                ROUND(COALESCE(AVG(lt.rating), 0)::numeric, 2) as rating_promedio,
                 COUNT(CASE WHEN lt.id_resultado = 1 THEN 1 END) as contactos_efectivos,
-                ROUND(
-                    AVG(
-                        CASE 
-                            WHEN lt.rating = 5 THEN 100
-                            WHEN lt.rating = 4 THEN 80
-                            WHEN lt.rating = 3 THEN 60
-                            WHEN lt.rating = 2 THEN 40
-                            WHEN lt.rating = 1 THEN 20
-                            ELSE 0
-                        END
-                    ), 2
-                ) as eficiencia
-            FROM llamadas_tracking lt
-            INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
-            {$where['where']}
+                CASE 
+                    WHEN COUNT(lt.id_llamada) > 0 THEN
+                        ROUND(
+                            (COUNT(CASE WHEN lt.id_resultado = 1 THEN 1 END)::float / 
+                             COUNT(lt.id_llamada) * 100)::numeric, 
+                            2
+                        )
+                    ELSE 0
+                END as eficiencia
+            FROM usuario u
+            LEFT JOIN llamadas_tracking lt ON u.id_usuario = lt.id_usuario
+            {$where}
             GROUP BY u.id_usuario, u.nombres, u.apellidos, u.cedula
+            HAVING COUNT(lt.id_llamada) > 0  -- Solo usuarios que hicieron llamadas
             ORDER BY total_llamadas DESC, eficiencia DESC
             LIMIT :limite";
     
+    // Agregar límite a los parámetros
+    $params[':limite'] = $limite;
+    
     $stmt = $this->pdo->prepare($sql);
-    
-    foreach ($params as $key => $value) {
-        $stmt->bindValue($key, $value);
-    }
-    
-    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute($params);  // UNIFICADO: Usar execute($params)
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 /**
- * Obtener distribución por llamador
+ * Obtener distribución por llamador - VERSIÓN CORREGIDA Y UNIFICADA
  */
 public function getDistribucionPorLlamador($filtros = []) {
-    $where = $this->construirWhereFiltros($filtros);
-    $params = $where['params'];
+    $whereInfo = $this->construirWhereFiltros($filtros);
+    $where = $whereInfo['where'];
+    $params = $whereInfo['params'];
     
+    // CORRECCIÓN: LEFT JOIN y condición HAVING
     $sql = "SELECT 
                 CONCAT(u.nombres, ' ', u.apellidos) as nombre,
                 COUNT(lt.id_llamada) as total_llamadas
-            FROM llamadas_tracking lt
-            INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
-            {$where['where']}
+            FROM usuario u
+            LEFT JOIN llamadas_tracking lt ON u.id_usuario = lt.id_usuario
+            {$where}
             GROUP BY u.id_usuario, u.nombres, u.apellidos
+            HAVING COUNT(lt.id_llamada) > 0  -- Solo usuarios con llamadas
             ORDER BY total_llamadas DESC
             LIMIT 7";
     
     $stmt = $this->pdo->prepare($sql);
-    $stmt->execute($params);
+    $stmt->execute($params);  // UNIFICADO: Usar execute($params)
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+
 /**
- * Obtener eficiencia por llamador
+ * Obtener eficiencia por llamador - VERSIÓN CORREGIDA Y UNIFICADA
  */
 public function getEficienciaPorLlamador($filtros = []) {
-    $where = $this->construirWhereFiltros($filtros);
-    $params = $where['params'];
+    $whereInfo = $this->construirWhereFiltros($filtros);
+    $where = $whereInfo['where'];
+    $params = $whereInfo['params'];
     
+    // CORRECCIÓN: Filtrar solo llamadas con rating
     $sql = "SELECT 
                 CONCAT(u.nombres, ' ', u.apellidos) as nombre,
                 ROUND(
-                    AVG(
-                        CASE 
-                            WHEN lt.rating = 5 THEN 100
-                            WHEN lt.rating = 4 THEN 80
-                            WHEN lt.rating = 3 THEN 60
-                            WHEN lt.rating = 2 THEN 40
-                            WHEN lt.rating = 1 THEN 20
-                            ELSE 0
-                        END
-                    ), 2
-                ) as eficiencia
-            FROM llamadas_tracking lt
-            INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
-            {$where['where']}
-            AND lt.rating IS NOT NULL
+                    COALESCE(
+                        AVG(
+                            CASE 
+                                WHEN lt.rating = 5 THEN 100
+                                WHEN lt.rating = 4 THEN 80
+                                WHEN lt.rating = 3 THEN 60
+                                WHEN lt.rating = 2 THEN 40
+                                WHEN lt.rating = 1 THEN 20
+                                ELSE 0
+                            END
+                        )::numeric, 
+                    0), 
+                2) as eficiencia
+            FROM usuario u
+            LEFT JOIN llamadas_tracking lt ON u.id_usuario = lt.id_usuario
+            {$where}
+            AND lt.rating IS NOT NULL  -- Solo llamadas con rating
             GROUP BY u.id_usuario, u.nombres, u.apellidos
-            HAVING COUNT(lt.id_llamada) >= 5
+            HAVING COUNT(lt.id_llamada) >= 3  -- Al menos 3 llamadas para calcular eficiencia
             ORDER BY eficiencia DESC
             LIMIT 7";
     
     $stmt = $this->pdo->prepare($sql);
-    $stmt->execute($params);
+    $stmt->execute($params);  // UNIFICADO: Usar execute($params)
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/**
- * Obtener tendencias de llamadas
- */
 public function getTendenciasLlamadas($dias = 30, $filtros = []) {
+    // Construir WHERE común excluyendo fecha
+    $whereInfo = $this->construirWhereFiltrosTendencias($filtros);
+    $where = $whereInfo['where'];
+    $params = $whereInfo['params'];
+    
     $sql = "SELECT 
                 DATE(lt.fecha_llamada) as fecha,
                 COUNT(*) as cantidad_llamadas,
                 COUNT(DISTINCT lt.id_usuario) as llamadores_activos,
-                ROUND(AVG(lt.rating), 2) as rating_promedio,
+                ROUND(AVG(lt.rating)::numeric, 2) as rating_promedio,
                 COUNT(CASE WHEN lt.id_resultado = 1 THEN 1 END) as contactos_efectivos
             FROM llamadas_tracking lt
             WHERE DATE(lt.fecha_llamada) >= CURRENT_DATE - INTERVAL '{$dias} days'
-            AND DATE(lt.fecha_llamada) <= CURRENT_DATE";
-    
-    $params = [];
-    
-    // Aplicar filtros adicionales
-    if (!empty($filtros['tipo_resultado']) && $filtros['tipo_resultado'] !== 'todos') {
-        $sql .= " AND lt.id_resultado = :tipo_resultado";
-        $params[':tipo_resultado'] = $filtros['tipo_resultado'];
-    }
-    
-    if (!empty($filtros['rating']) && $filtros['rating'] !== 'todos') {
-        if ($filtros['rating'] === '0') {
-            $sql .= " AND lt.rating IS NULL";
-        } else {
-            $sql .= " AND lt.rating = :rating";
-            $params[':rating'] = $filtros['rating'];
-        }
-    }
-    
-    $sql .= " GROUP BY DATE(lt.fecha_llamada)
-              ORDER BY fecha ASC";
+            AND DATE(lt.fecha_llamada) <= CURRENT_DATE
+            {$where}
+            GROUP BY DATE(lt.fecha_llamada)
+            ORDER BY fecha ASC";
     
     $stmt = $this->pdo->prepare($sql);
     $stmt->execute($params);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 /**
- * Obtener comparativa semanal
+ * WHERE para tendencias (sin filtro de fecha)
  */
-public function getComparativaSemanal($filtros = []) {
-    // Esta semana (lunes a domingo actual)
-    $sqlEstaSemana = "SELECT 
-                         EXTRACT(DOW FROM lt.fecha_llamada) as dia_semana,
-                         COUNT(*) as cantidad
-                     FROM llamadas_tracking lt
-                     WHERE DATE(lt.fecha_llamada) >= DATE_TRUNC('week', CURRENT_DATE)
-                     AND DATE(lt.fecha_llamada) <= CURRENT_DATE";
-    
-    $sqlSemanaPasada = "SELECT 
-                           EXTRACT(DOW FROM lt.fecha_llamada) as dia_semana,
-                           COUNT(*) as cantidad
-                       FROM llamadas_tracking lt
-                       WHERE DATE(lt.fecha_llamada) >= DATE_TRUNC('week', CURRENT_DATE - INTERVAL '7 days')
-                       AND DATE(lt.fecha_llamada) < DATE_TRUNC('week', CURRENT_DATE)";
-    
+private function construirWhereFiltrosTendencias($filtros) {
+    $where = "";
     $params = [];
     
-    // Aplicar filtros
     if (!empty($filtros['tipo_resultado']) && $filtros['tipo_resultado'] !== 'todos') {
-        $sqlEstaSemana .= " AND lt.id_resultado = :tipo_resultado";
-        $sqlSemanaPasada .= " AND lt.id_resultado = :tipo_resultado";
+        $where .= " AND lt.id_resultado = :tipo_resultado";
         $params[':tipo_resultado'] = $filtros['tipo_resultado'];
     }
     
     if (!empty($filtros['rating']) && $filtros['rating'] !== 'todos') {
         if ($filtros['rating'] === '0') {
-            $sqlEstaSemana .= " AND lt.rating IS NULL";
-            $sqlSemanaPasada .= " AND lt.rating IS NULL";
+            $where .= " AND lt.rating IS NULL";
         } else {
-            $sqlEstaSemana .= " AND lt.rating = :rating";
-            $sqlSemanaPasada .= " AND lt.rating = :rating";
+            $where .= " AND lt.rating = :rating";
             $params[':rating'] = $filtros['rating'];
         }
     }
     
-    $sqlEstaSemana .= " GROUP BY EXTRACT(DOW FROM lt.fecha_llamada)
-                        ORDER BY dia_semana";
+    return ['where' => $where, 'params' => $params];
+}
+/**
+ * Obtener comparativa semanal
+ */
+/**
+ * Obtener comparativa semanal
+ */
+public function getComparativaSemanal($filtros = []) {
+    // WHERE común
+    $whereInfo = $this->construirWhereFiltrosTendencias($filtros);
+    $where = $whereInfo['where'];
+    $params = $whereInfo['params'];
     
-    $sqlSemanaPasada .= " GROUP BY EXTRACT(DOW FROM lt.fecha_llamada)
-                          ORDER BY dia_semana";
+    // Esta semana
+    $sqlEstaSemana = "SELECT 
+                         EXTRACT(DOW FROM fecha_llamada) as dia_numero,
+                         COUNT(*) as cantidad
+                      FROM llamadas_tracking lt
+                      WHERE DATE(lt.fecha_llamada) >= DATE_TRUNC('week', CURRENT_DATE)
+                      AND DATE(lt.fecha_llamada) <= CURRENT_DATE
+                      {$where}
+                      GROUP BY EXTRACT(DOW FROM fecha_llamada)
+                      ORDER BY dia_numero";
     
     $stmtEstaSemana = $this->pdo->prepare($sqlEstaSemana);
-    $stmtSemanaPasada = $this->pdo->prepare($sqlSemanaPasada);
-    
     $stmtEstaSemana->execute($params);
-    $stmtSemanaPasada->execute($params);
-    
     $estaSemanaRaw = $stmtEstaSemana->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Semana pasada
+    $sqlSemanaPasada = "SELECT 
+                           EXTRACT(DOW FROM fecha_llamada) as dia_numero,
+                           COUNT(*) as cantidad
+                        FROM llamadas_tracking lt
+                        WHERE DATE(lt.fecha_llamada) >= DATE_TRUNC('week', CURRENT_DATE - INTERVAL '7 days')
+                        AND DATE(lt.fecha_llamada) < DATE_TRUNC('week', CURRENT_DATE)
+                        {$where}
+                        GROUP BY EXTRACT(DOW FROM fecha_llamada)
+                        ORDER BY dia_numero";
+    
+    $stmtSemanaPasada = $this->pdo->prepare($sqlSemanaPasada);
+    $stmtSemanaPasada->execute($params);
     $semanaPasadaRaw = $stmtSemanaPasada->fetchAll(PDO::FETCH_ASSOC);
     
-    // Convertir a arrays indexados por día (0=Domingo, 1=Lunes...)
+    // Convertir a arrays indexados (0=Domingo, 1=Lunes...)
     $estaSemana = array_fill(0, 7, 0);
     $semanaPasada = array_fill(0, 7, 0);
     
     foreach ($estaSemanaRaw as $item) {
-        $dia = (int)$item['dia_semana'];
+        $dia = (int)$item['dia_numero'];
         $estaSemana[$dia] = (int)$item['cantidad'];
     }
     
     foreach ($semanaPasadaRaw as $item) {
-        $dia = (int)$item['dia_semana'];
+        $dia = (int)$item['dia_numero'];
         $semanaPasada[$dia] = (int)$item['cantidad'];
     }
     
+    // Reordenar: Lunes (1) a Domingo (0)
+    $lunesADomingo = [1, 2, 3, 4, 5, 6, 0];
+    $estaSemanaOrdenada = array_map(function($dia) use ($estaSemana) {
+        return $estaSemana[$dia];
+    }, $lunesADomingo);
+    
+    $semanaPasadaOrdenada = array_map(function($dia) use ($semanaPasada) {
+        return $semanaPasada[$dia];
+    }, $lunesADomingo);
+    
     return [
-        'esta_semana' => $estaSemana,
-        'semana_pasada' => $semanaPasada
+        'esta_semana' => $estaSemanaOrdenada,
+        'semana_pasada' => $semanaPasadaOrdenada
     ];
 }
 
@@ -1178,6 +1277,39 @@ public function getProyeccionMensual($filtros = []) {
         'este_mes' => $esteMes,
         'dias_restantes_mes' => date('t') - date('j')
     ];
+}
+public function contarLlamadasPorReferenciado($id_referenciado) {
+    try {
+        $sql = "SELECT COUNT(*) as total_llamadas 
+                FROM llamadas_tracking 
+                WHERE id_referenciado = :id_referenciado";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindParam(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total_llamadas'] ?? 0;
+        
+    } catch (PDOException $e) {
+        // Registrar error en log si es necesario
+        error_log("Error en contarLlamadasPorReferenciado: " . $e->getMessage());
+        return 0;
+    }
+}
+/**
+ * Convertir array a diccionario (índice por clave)
+ */
+private function convertirArrayADiccionario($array, $clave) {
+    $resultado = [];
+    if (is_array($array)) {
+        foreach ($array as $item) {
+            if (isset($item[$clave])) {
+                $resultado[$item[$clave]] = $item;
+            }
+        }
+    }
+    return $resultado;
 }
 }
 ?>

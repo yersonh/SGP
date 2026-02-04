@@ -142,10 +142,45 @@ if ($porcentajeRestante > 50) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Referidos - Super Admin - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> <!-- FALTA ESTA LÍNEA -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="../styles/data_referidos.css">
+    <style>
+        /* Estilos para el botón de limpiar */
+        .btn-clear {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            margin: 0 5px;
+        }
+        
+        .btn-clear:hover {
+            background-color: #c82333;
+            transform: translateY(-1px);
+        }
+        
+        .btn-search {
+            margin: 0 5px;
+        }
+        
+        .btn-export {
+            margin: 0 5px;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -234,6 +269,9 @@ if ($porcentajeRestante > 50) {
                 <div class="table-actions">
                     <button class="btn-search">
                         <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <button class="btn-clear">
+                        <i class="fas fa-times"></i> Limpiar
                     </button>
                     <button class="btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
                         <i class="fas fa-download"></i> Exportar
@@ -327,14 +365,14 @@ if ($porcentajeRestante > 50) {
                                     <!-- BOTÓN DE VER DETALLE -->
                                     <button class="btn-action btn-view" 
                                             title="Ver detalle del referido"
-                                            onclick="window.location.href='ver_referenciado.php?id=<?php echo $referenciado['id_referenciado']; ?>'">
+                                            onclick="verDetalle(<?php echo $referenciado['id_referenciado']; ?>)">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <!-- BOTÓN DE EDITAR -->
                                     <button type="button" 
                                             class="btn-action btn-edit" 
                                             title="Editar referido"
-                                            onclick="location.href='editar_referenciador.php?id=<?php echo (int)$referenciado['id_referenciado']; ?>'">
+                                            onclick="editarReferenciado(<?php echo (int)$referenciado['id_referenciado']; ?>)">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <!-- BOTÓN DE ACTIVAR/DESACTIVAR -->
@@ -561,30 +599,90 @@ if ($porcentajeRestante > 50) {
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Inicializar DataTable
-            $('#referidosTable').DataTable({
+            // Generar un ID único para esta tabla
+            const pageId = 'referidosTable_' + window.location.pathname.replace(/\//g, '_');
+            
+            // Limpiar estado obsoleto (más de 7 días)
+            const now = new Date().getTime();
+            const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('DataTables_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data && data.time && data.time < oneWeekAgo) {
+                            localStorage.removeItem(key);
+                        }
+                    } catch(e) {
+                        // Ignorar errores
+                    }
+                }
+            }
+            
+            // Inicializar DataTable con stateSave activado
+            const table = $('#referidosTable').DataTable({
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 },
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-                order: [[18, 'desc']], // Ordenar por fecha de registro descendente por defecto
+                order: [[19, 'desc']],
                 responsive: true,
-                scrollX: true, // Permitir scroll horizontal
+                scrollX: true,
                 dom: '<"top"f>rt<"bottom"lip><"clear">',
+                
+                // CONFIGURACIÓN CRÍTICA PARA PERSISTIR ESTADO
+                stateSave: true, // Activar guardado de estado
+                stateDuration: 60 * 60 * 24 * 7, // Guardar por 7 días (en segundos)
+                stateSaveCallback: function(settings, data) {
+                    // Agregar timestamp
+                    data.time = new Date().getTime();
+                    // Guardar en localStorage con clave específica
+                    localStorage.setItem('DataTables_' + pageId, JSON.stringify(data));
+                },
+                stateLoadCallback: function(settings) {
+                    // Cargar desde localStorage
+                    const state = localStorage.getItem('DataTables_' + pageId);
+                    if (state) {
+                        try {
+                            const data = JSON.parse(state);
+                            // Verificar que el estado no sea demasiado viejo (máximo 1 día)
+                            if (data.time && (now - data.time) < (24 * 60 * 60 * 1000)) {
+                                return data;
+                            }
+                        } catch(e) {
+                            console.error('Error al cargar estado:', e);
+                        }
+                    }
+                    return null;
+                },
+                
                 initComplete: function() {
-                    // Ajustar columnas después de inicializar
                     this.api().columns.adjust();
+                    
+                    // Verificar si hay parámetros en la URL para limpiar
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('clearState')) {
+                        // Limpiar estado y recargar
+                        localStorage.removeItem('DataTables_' + pageId);
+                        table.state.clear();
+                        table.search('').draw();
+                        
+                        // Remover parámetro de la URL sin recargar
+                        const newUrl = window.location.pathname;
+                        window.history.replaceState({}, '', newUrl);
+                    }
                 },
                 columnDefs: [
                     {
-                        targets: -1, // Última columna (Acciones)
+                        targets: -1,
                         orderable: false,
                         searchable: false,
                         width: '130px'
                     },
                     {
-                        targets: 0, // Columna de Estado
+                        targets: 0,
                         width: '100px',
                         searchable: true
                     }
@@ -597,15 +695,24 @@ if ($porcentajeRestante > 50) {
                 $('#referidosTable_filter input').focus();
             });
             
-            // Botón de exportar - SOLO ABRE EL MODAL (no hacer nada más)
+            // Botón para limpiar filtros
+            $('.btn-clear').click(function() {
+                if (confirm('¿Está seguro de que desea limpiar todos los filtros y el estado guardado?')) {
+                    table.state.clear();
+                    table.search('').columns().search('').draw();
+                    localStorage.removeItem('DataTables_' + pageId);
+                    showNotification('Filtros y estado limpiados correctamente', 'info');
+                }
+            });
+            
+            // Botón de exportar
             $('.btn-export').click(function(e) {
                 // El modal se abre automáticamente por data-bs-toggle
-                // No hacer nada aquí para evitar conflicto
             });
             
             // Ajustar tabla en redimensionamiento
             $(window).resize(function() {
-                $('#referidosTable').DataTable().columns.adjust();
+                table.columns.adjust();
             });
 
             // Efecto hover en botones de acción
@@ -619,7 +726,28 @@ if ($porcentajeRestante > 50) {
                     $(this).css('box-shadow', 'none');
                 }
             );
+            
+            // Forzar recarga del estado cuando se navega hacia atrás
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    // La página viene de cache, recargar estado
+                    setTimeout(function() {
+                        table.draw();
+                    }, 100);
+                }
+            });
         });
+
+        // Función para navegar a ver detalle
+        function verDetalle(id) {
+            // Navegar directamente
+            window.location.href = 'ver_referenciado.php?id=' + id;
+        }
+
+        // Función para navegar a editar
+        function editarReferenciado(id) {
+            window.location.href = 'editar_referenciador.php?id=' + id;
+        }
 
         // Función para exportar referidos
         function exportarReferidos(formato) {
@@ -776,7 +904,7 @@ if ($porcentajeRestante > 50) {
                 showNotification('Error de conexión: ' + error.message, 'error');
                 button.innerHTML = originalIcon;
                 button.className = originalClass;
-                    button.disabled = false;
+                button.disabled = false;
             }
         }
 
@@ -798,28 +926,30 @@ if ($porcentajeRestante > 50) {
                 infoFooter.innerHTML = `<i class="fas fa-info-circle"></i> ${currentInactivos} referido(s) inactivo(s)`;
             }
         }
-function actualizarLogoSegunTema() {
-    const logo = document.getElementById('footer-logo');
-    if (!logo) return;
-    
-    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (isDarkMode) {
-        logo.src = logo.getAttribute('data-img-oscuro');
-    } else {
-        logo.src = logo.getAttribute('data-img-claro');
-    }
-}
+        
+        function actualizarLogoSegunTema() {
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
 
-// Ejecutar al cargar y cuando cambie el tema
-document.addEventListener('DOMContentLoaded', function() {
-    actualizarLogoSegunTema();
-});
+        // Ejecutar al cargar y cuando cambie el tema
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
 
-// Escuchar cambios en el tema del sistema
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-    actualizarLogoSegunTema();
-});
+        // Escuchar cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
+        
         // Función para mostrar notificaciones
         function showNotification(message, type = 'info') {
             // Eliminar notificación anterior si existe

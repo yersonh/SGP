@@ -1308,5 +1308,331 @@ public function countByLider($id_lider) {
         return 0;
     }
 }
+// Método optimizado con paginación CORREGIDO
+public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = []) {
+    $offset = ($page - 1) * $perPage;
+    
+    $sql = "SELECT r.*, 
+            d.nombre as departamento_nombre,
+            m.nombre as municipio_nombre,
+            b.nombre as barrio_nombre,
+            gp.nombre as grupo_poblacional_nombre,
+            oa.nombre as oferta_apoyo_nombre,
+            z.nombre as zona_nombre,
+            s.nombre as sector_nombre,
+            pv.nombre as puesto_votacion_nombre,
+            gr.nombre as grupo_nombre,
+            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre
+            FROM referenciados r
+            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario";
+    
+    $conditions = [];
+    $params = [];
+    $paramTypes = [];
+    
+    // Búsqueda global en múltiples campos
+    if (!empty($filters['search'])) {
+        $search = $filters['search'];
+        
+        // Verificar si la búsqueda es numérica (para mesa, cédula, etc.)
+        $isNumericSearch = is_numeric($search);
+        
+        if ($isNumericSearch) {
+            // Si es numérico, buscar en campos numéricos con comparación exacta
+            $conditions[] = "(r.cedula = ? OR r.telefono LIKE ?";
+            
+            // Solo agregar r.mesa si la tabla tiene ese campo
+            if (isset($filters['include_mesa'])) {
+                $conditions[] = " OR CAST(r.mesa AS TEXT) = ?";
+            }
+            
+            // Agregar búsqueda en campos de texto
+            $conditions[] = " OR r.nombre ILIKE ? OR r.apellido ILIKE ? 
+                             OR r.direccion ILIKE ? OR r.email ILIKE ?
+                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
+                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
+                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
+                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+            
+            $params[] = $search; // Para cedula exacta
+            $params[] = '%' . $search . '%'; // Para teléfono
+            if (isset($filters['include_mesa'])) {
+                $params[] = $search; // Para mesa
+            }
+            // Campos de texto
+            for ($i = 0; $i < 15; $i++) {
+                $params[] = '%' . $search . '%';
+            }
+            
+            $paramCount = 2 + (isset($filters['include_mesa']) ? 1 : 0) + 15;
+        } else {
+            // Si es texto, buscar normalmente
+            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula LIKE ? 
+                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono LIKE ?
+                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
+                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
+                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
+                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+            
+            for ($i = 0; $i < 17; $i++) {
+                $params[] = '%' . $search . '%';
+            }
+            $paramCount = 17;
+        }
+        
+        for ($i = 0; $i < $paramCount; $i++) {
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+    }
+    
+    // Filtro por estado activo/inactivo
+    if (isset($filters['activo']) && $filters['activo'] !== '') {
+        $conditions[] = "r.activo = ?";
+        
+        // Convertir a booleano PostgreSQL
+        if ($filters['activo'] === '1' || $filters['activo'] === true || $filters['activo'] === 't') {
+            $params[] = true;
+        } else {
+            $params[] = false;
+        }
+        $paramTypes[] = \PDO::PARAM_BOOL;
+    }
+    
+    // Filtros avanzados
+    if (!empty($filters['departamento'])) {
+        $conditions[] = "r.id_departamento = ?";
+        $params[] = $filters['departamento'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['municipio'])) {
+        $conditions[] = "r.id_municipio = ?";
+        $params[] = $filters['municipio'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['zona'])) {
+        $conditions[] = "r.id_zona = ?";
+        $params[] = $filters['zona'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['referenciador'])) {
+        $conditions[] = "r.id_referenciador = ?";
+        $params[] = $filters['referenciador'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['oferta_apoyo'])) {
+        $conditions[] = "r.id_oferta_apoyo = ?";
+        $params[] = $filters['oferta_apoyo'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['grupo_poblacional'])) {
+        $conditions[] = "r.id_grupo_poblacional = ?";
+        $params[] = $filters['grupo_poblacional'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['grupo_parlamentario'])) {
+        $conditions[] = "r.id_grupo = ?";
+        $params[] = $filters['grupo_parlamentario'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Construir WHERE
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(' AND ', $conditions);
+    }
+    
+    $sql .= " ORDER BY r.fecha_registro DESC LIMIT ? OFFSET ?";
+    
+    // Agregar LIMIT y OFFSET a los parámetros
+    $params[] = $perPage;
+    $params[] = $offset;
+    $paramTypes[] = \PDO::PARAM_INT;
+    $paramTypes[] = \PDO::PARAM_INT;
+    
+    try {
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Bind parameters con tipos
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+        }
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getReferenciadosPaginados: " . $e->getMessage());
+        error_log("SQL: " . $sql);
+        return [];
+    }
+}
+
+// Método para contar total (separado, más eficiente) CORREGIDO
+public function getTotalReferenciados($filters = []) {
+    $sql = "SELECT COUNT(*) as total FROM referenciados r";
+    
+    $conditions = [];
+    $params = [];
+    $paramTypes = [];
+    
+    // Solo necesitamos joins si hay búsqueda en campos relacionados
+    if (!empty($filters['search'])) {
+        $sql .= " LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+                  LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+                  LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+                  LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+                  LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+                  LEFT JOIN zona z ON r.id_zona = z.id_zona
+                  LEFT JOIN sector s ON r.id_sector = s.id_sector
+                  LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                  LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+                  LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario";
+    }
+    
+    // Búsqueda global
+    if (!empty($filters['search'])) {
+        $search = $filters['search'];
+        
+        // Verificar si la búsqueda es numérica (para mesa, cédula, etc.)
+        $isNumericSearch = is_numeric($search);
+        
+        if ($isNumericSearch) {
+            // Si es numérico, buscar en campos numéricos con comparación exacta
+            $conditions[] = "(r.cedula = ? OR r.telefono LIKE ?";
+            
+            // Solo agregar r.mesa si la tabla tiene ese campo
+            if (isset($filters['include_mesa'])) {
+                $conditions[] = " OR CAST(r.mesa AS TEXT) = ?";
+            }
+            
+            // Agregar búsqueda en campos de texto
+            $conditions[] = " OR r.nombre ILIKE ? OR r.apellido ILIKE ? 
+                             OR r.direccion ILIKE ? OR r.email ILIKE ?
+                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
+                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
+                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
+                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+            
+            $params[] = $search; // Para cedula exacta
+            $params[] = '%' . $search . '%'; // Para teléfono
+            if (isset($filters['include_mesa'])) {
+                $params[] = $search; // Para mesa
+            }
+            // Campos de texto
+            for ($i = 0; $i < 15; $i++) {
+                $params[] = '%' . $search . '%';
+            }
+            
+            $paramCount = 2 + (isset($filters['include_mesa']) ? 1 : 0) + 15;
+        } else {
+            // Si es texto, buscar normalmente
+            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula LIKE ? 
+                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono LIKE ?
+                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
+                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
+                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
+                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+            
+            for ($i = 0; $i < 17; $i++) {
+                $params[] = '%' . $search . '%';
+            }
+            $paramCount = 17;
+        }
+        
+        for ($i = 0; $i < $paramCount; $i++) {
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+    }
+    
+    // Filtro por estado
+    if (isset($filters['activo']) && $filters['activo'] !== '') {
+        $conditions[] = "r.activo = ?";
+        
+        if ($filters['activo'] === '1' || $filters['activo'] === true || $filters['activo'] === 't') {
+            $params[] = true;
+        } else {
+            $params[] = false;
+        }
+        $paramTypes[] = \PDO::PARAM_BOOL;
+    }
+    
+    // Filtros avanzados
+    if (!empty($filters['departamento'])) {
+        $conditions[] = "r.id_departamento = ?";
+        $params[] = $filters['departamento'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['municipio'])) {
+        $conditions[] = "r.id_municipio = ?";
+        $params[] = $filters['municipio'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['zona'])) {
+        $conditions[] = "r.id_zona = ?";
+        $params[] = $filters['zona'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['referenciador'])) {
+        $conditions[] = "r.id_referenciador = ?";
+        $params[] = $filters['referenciador'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['oferta_apoyo'])) {
+        $conditions[] = "r.id_oferta_apoyo = ?";
+        $params[] = $filters['oferta_apoyo'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['grupo_poblacional'])) {
+        $conditions[] = "r.id_grupo_poblacional = ?";
+        $params[] = $filters['grupo_poblacional'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['grupo_parlamentario'])) {
+        $conditions[] = "r.id_grupo = ?";
+        $params[] = $filters['grupo_parlamentario'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Construir WHERE
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(' AND ', $conditions);
+    }
+    
+    try {
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Bind parameters con tipos
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    } catch (PDOException $e) {
+        error_log("Error en getTotalReferenciados: " . $e->getMessage());
+        error_log("SQL: " . $sql);
+        return 0;
+    }
+}
 }
 ?>

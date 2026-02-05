@@ -3,22 +3,17 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/ReferenciadoModel.php';
-require_once __DIR__ . '/../../models/ZonaModel.php';
-require_once __DIR__ . '/../../models/SectorModel.php';
-require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
-require_once __DIR__ . '/../../models/DepartamentoModel.php';
-require_once __DIR__ . '/../../models/MunicipioModel.php';
-require_once __DIR__ . '/../../models/OfertaApoyoModel.php';
-require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
-require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/SistemaModel.php';
 require_once __DIR__ . '/../../helpers/navigation_helper.php';
+
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
     header('Location: ../index.php');
     exit();
 }
+
 NavigationHelper::pushUrl();
+
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
@@ -27,93 +22,15 @@ $sistemaModel = new SistemaModel($pdo);
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
-// Obtener todos los referenciados
-$referenciados = $referenciadoModel->getAllReferenciados();
+// Obtener estadísticas iniciales (solo contadores, sin cargar todos los datos)
+$totalReferidos = $referenciadoModel->getTotalReferenciados();
+$totalActivos = $referenciadoModel->getTotalReferenciados(['activo' => true]);
+$totalInactivos = $referenciadoModel->getTotalReferenciados(['activo' => false]);
 
-// Calcular estadísticas
-$totalReferidos = count($referenciados);
-$totalActivos = 0;
-$totalInactivos = 0;
-
-// Contar activos e inactivos
-foreach ($referenciados as $referenciado) {
-    $activo = $referenciado['activo'] ?? true;
-    $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
-    
-    if ($esta_activo) {
-        $totalActivos++;
-    } else {
-        $totalInactivos++;
-    }
-}
-
-// Inicializar modelos para obtener nombres de relaciones
-$zonaModel = new ZonaModel($pdo);
-$sectorModel = new SectorModel($pdo);
-$puestoModel = new PuestoVotacionModel($pdo);
-$departamentoModel = new DepartamentoModel($pdo);
-$municipioModel = new MunicipioModel($pdo);
-$ofertaModel = new OfertaApoyoModel($pdo);
-$grupoModel = new GrupoPoblacionalModel($pdo);
-$barrioModel = new BarrioModel($pdo);
-
-// Obtener todos los datos de relaciones
-$zonas = $zonaModel->getAll();
-$sectores = $sectorModel->getAll();
-$puestos = $puestoModel->getAll();
-$departamentos = $departamentoModel->getAll();
-$municipios = $municipioModel->getAll();
-$ofertas = $ofertaModel->getAll();
-$grupos = $grupoModel->getAll();
-$barrios = $barrioModel->getAll();
-
-// Crear arrays para búsqueda rápida
-$zonasMap = [];
-foreach ($zonas as $zona) {
-    $zonasMap[$zona['id_zona']] = $zona['nombre'];
-}
-
-$sectoresMap = [];
-foreach ($sectores as $sector) {
-    $sectoresMap[$sector['id_sector']] = $sector['nombre'];
-}
-
-$puestosMap = [];
-foreach ($puestos as $puesto) {
-    $puestosMap[$puesto['id_puesto']] = $puesto['nombre'];
-}
-
-$departamentosMap = [];
-foreach ($departamentos as $departamento) {
-    $departamentosMap[$departamento['id_departamento']] = $departamento['nombre'];
-}
-
-$municipiosMap = [];
-foreach ($municipios as $municipio) {
-    $municipiosMap[$municipio['id_municipio']] = $municipio['nombre'];
-}
-
-$ofertasMap = [];
-foreach ($ofertas as $oferta) {
-    $ofertasMap[$oferta['id_oferta']] = $oferta['nombre'];
-}
-
-$gruposMap = [];
-foreach ($grupos as $grupo) {
-    $gruposMap[$grupo['id_grupo']] = $grupo['nombre'];
-}
-
-$barriosMap = [];
-foreach ($barrios as $barrio) {
-    $barriosMap[$barrio['id_barrio']] = $barrio['nombre'];
-}
-// 6. Obtener información del sistema
+// Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
 
-// 7. Formatear fecha para mostrar
-$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
-
-// 8. Obtener información completa de la licencia (MODIFICADO)
+// Obtener información completa de la licencia
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
 
 // Extraer valores
@@ -122,10 +39,10 @@ $diasRestantes = $licenciaInfo['dias_restantes'];
 $validaHastaFormatted = $licenciaInfo['valida_hasta_formatted'];
 $fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
 
-// PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
+// Calcular porcentaje RESTANTE
 $porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
 
-// Color de la barra basado en lo que RESTA (ahora es más simple)
+// Color de la barra basado en lo que RESTA
 if ($porcentajeRestante > 50) {
     $barColor = 'bg-success';
 } elseif ($porcentajeRestante > 25) {
@@ -144,41 +61,104 @@ if ($porcentajeRestante > 50) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="../styles/data_referidos.css">
     <style>
-        /* Estilos para el botón de limpiar */
-        .btn-clear {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
+        /* Mejoras para el diseño compacto */
+        .input-group-sm {
+            height: 35px;
+        }
+
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .search-container .form-control-sm {
+            font-size: 0.875rem;
+        }
+
+        /* Asegurar que los select se vean bien */
+        .form-select-sm {
+            padding: 0.25rem 2.25rem 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        /* Para mejor alineación */
+        .table-header {
+            padding: 0.75rem 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.375rem 0.375rem 0 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        /* Notificaciones */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 15px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-            margin: 0 5px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid;
         }
-        
-        .btn-clear:hover {
-            background-color: #c82333;
-            transform: translateY(-1px);
+
+        .notification-success {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
         }
-        
-        .btn-search {
-            margin: 0 5px;
+
+        .notification-error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
         }
-        
-        .btn-export {
-            margin: 0 5px;
+
+        .notification-info {
+            border-left-color: #17a2b8;
+            background-color: #d1ecf1;
+            color: #0c5460;
         }
-        
-        .table-actions {
-            display: flex;
-            gap: 5px;
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .notification-close:hover {
+            opacity: 1;
+        }
+
+        /* Texto elipsis para celdas largas */
+        .text-ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
         }
     </style>
 </head>
@@ -211,7 +191,8 @@ if ($porcentajeRestante > 50) {
             </ol>
         </nav>
     </div>
-<!-- CONTADOR COMPACTO -->
+
+    <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">
             <div class="countdown-compact-title">
@@ -230,6 +211,7 @@ if ($porcentajeRestante > 50) {
             </div>
         </div>
     </div>
+
     <!-- Main Content -->
     <div class="main-container">
         <!-- Dashboard Header -->
@@ -267,15 +249,89 @@ if ($porcentajeRestante > 50) {
                     <?php endif; ?>
                 </div>
                 <div class="table-actions">
-                    <button class="btn-search">
-                        <i class="fas fa-search"></i> Buscar
-                    </button>
-                    <button class="btn-clear">
-                        <i class="fas fa-times"></i> Limpiar
-                    </button>
                     <button class="btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
                         <i class="fas fa-download"></i> Exportar
                     </button>
+                </div>
+            </div>
+            
+            <!-- BUSCADOR COMPACTO OPTIMIZADO -->
+            <div class="search-container mb-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-8">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-primary text-white py-2">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control form-control-sm" 
+                                   id="searchInput" 
+                                   placeholder="Buscar por nombre, cédula, teléfono, etc."
+                                   onkeyup="handleSearchInput(event)">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearSearch()" title="Limpiar búsqueda">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters" 
+                                    title="Filtros avanzados">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center h-100">
+                            <small class="text-muted me-2 d-none d-md-block">Estado:</small>
+                            <div class="btn-group btn-group-sm w-100">
+                                <button class="btn btn-primary btn-sm" onclick="filterByStatus('')">Todos</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="filterByStatus('1')">Activos</button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="filterByStatus('0')">Inactivos</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtros avanzados (colapsable) -->
+                <div class="advanced-filters mt-2">
+                    <div class="collapse" id="advancedFilters">
+                        <div class="card card-body py-2">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-auto">
+                                    <small class="text-muted">Filtros:</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select form-select-sm" id="filterDepartamento" onchange="applyAdvancedFilters()">
+                                        <option value="">Depto.</option>
+                                        <?php
+                                        // Necesitarías cargar los departamentos desde tu base de datos
+                                        // Ejemplo: $departamentos = $departamentoModel->getAll();
+                                        // foreach($departamentos as $dep) {
+                                        //     echo '<option value="'.$dep['id'].'">'.$dep['nombre'].'</option>';
+                                        // }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select form-select-sm" id="filterMunicipio" onchange="applyAdvancedFilters()">
+                                        <option value="">Municipio</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select form-select-sm" id="filterZona" onchange="applyAdvancedFilters()">
+                                        <option value="">Zona</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select form-select-sm" id="filterReferenciador" onchange="applyAdvancedFilters()">
+                                        <option value="">Referenciador</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <button class="btn btn-sm btn-outline-danger w-100" onclick="clearAdvancedFilters()" title="Limpiar filtros">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -306,107 +362,36 @@ if ($porcentajeRestante > 50) {
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php foreach ($referenciados as $referenciado): 
-                            $activo = $referenciado['activo'] ?? true;
-                            $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
-                        ?>
-                        <tr <?php echo !$esta_activo ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : ''; ?>>
-                            <td>
-                                <?php if ($esta_activo): ?>
-                                    <span style="color: #27ae60; font-size: 0.8rem;">
-                                        <i class="fas fa-check-circle"></i> Activo
-                                    </span>
-                                <?php else: ?>
-                                    <span style="color: #e74c3c; font-size: 0.8rem;">
-                                        <i class="fas fa-times-circle"></i> Inactivo
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            <td><?php echo htmlspecialchars($referenciado['nombre'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($referenciado['apellido'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($referenciado['cedula'] ?? ''); ?></td>
-                            <td class="text-ellipsis" title="<?php echo htmlspecialchars($referenciado['direccion'] ?? ''); ?>">
-                                <?php echo htmlspecialchars($referenciado['direccion'] ?? ''); ?>
-                            </td>
-                            <td><?php echo htmlspecialchars($referenciado['email'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?></td>
-                            <td>
-                                <div class="badge-affinidad badge-affinidad-<?php echo $referenciado['afinidad'] ?? '1'; ?>">
-                                    <?php echo $referenciado['afinidad'] ?? '0'; ?>
+                    <tbody id="tablaBody">
+                        <!-- Los datos se cargarán aquí por AJAX -->
+                        <tr id="loadingRow">
+                            <td colspan="21" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
                                 </div>
-                            </td>
-                            <td><?php echo isset($referenciado['id_zona']) && isset($zonasMap[$referenciado['id_zona']]) ? htmlspecialchars($zonasMap[$referenciado['id_zona']]) : 'N/A'; ?></td>
-                            <td><?php echo isset($referenciado['id_sector']) && isset($sectoresMap[$referenciado['id_sector']]) ? htmlspecialchars($sectoresMap[$referenciado['id_sector']]) : 'N/A'; ?></td>
-                            <td><?php echo isset($referenciado['id_puesto_votacion']) && isset($puestosMap[$referenciado['id_puesto_votacion']]) ? htmlspecialchars($puestosMap[$referenciado['id_puesto_votacion']]) : 'N/A'; ?></td>
-                            <td><?php echo htmlspecialchars($referenciado['mesa'] ?? ''); ?></td>
-                            <td><?php echo isset($referenciado['id_departamento']) && isset($departamentosMap[$referenciado['id_departamento']]) ? htmlspecialchars($departamentosMap[$referenciado['id_departamento']]) : 'N/A'; ?></td>
-                            <td><?php echo isset($referenciado['id_municipio']) && isset($municipiosMap[$referenciado['id_municipio']]) ? htmlspecialchars($municipiosMap[$referenciado['id_municipio']]) : 'N/A'; ?></td>
-                            <td><?php echo isset($referenciado['id_oferta_apoyo']) && isset($ofertasMap[$referenciado['id_oferta_apoyo']]) ? htmlspecialchars($ofertasMap[$referenciado['id_oferta_apoyo']]) : 'N/A'; ?></td>
-                            <td><?php echo isset($referenciado['id_grupo_poblacional']) && isset($gruposMap[$referenciado['id_grupo_poblacional']]) ? htmlspecialchars($gruposMap[$referenciado['id_grupo_poblacional']]) : 'N/A'; ?></td>
-                            
-                            <!-- NUEVA COLUMNA: Grupo Parlamentario -->
-                            <!-- Como ya viene en la consulta como 'grupo_nombre', podemos usarlo directamente -->
-                            <td>
-                                <?php 
-                                // Mostrar el grupo parlamentario desde la consulta
-                                $grupoParlamentario = !empty($referenciado['grupo_nombre']) 
-                                    ? htmlspecialchars($referenciado['grupo_nombre']) 
-                                    : 'N/A';
-                                echo $grupoParlamentario;
-                                ?>
-                            </td>
-                            
-                            <td><?php echo isset($referenciado['id_barrio']) && isset($barriosMap[$referenciado['id_barrio']]) ? htmlspecialchars($barriosMap[$referenciado['id_barrio']]) : 'N/A'; ?></td>
-                            <td><?php echo htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A'); ?></td>
-                            <td><?php echo isset($referenciado['fecha_registro']) ? date('d/m/Y H:i', strtotime($referenciado['fecha_registro'])) : ''; ?></td>
-                            <td>
-                                <div class="action-buttons">
-                                    <!-- BOTÓN DE VER DETALLE -->
-                                    <button class="btn-action btn-view" 
-                                            title="Ver detalle del referido"
-                                            onclick="verDetalle(<?php echo $referenciado['id_referenciado']; ?>)">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <!-- BOTÓN DE EDITAR -->
-                                    <button type="button" 
-                                            class="btn-action btn-edit" 
-                                            title="Editar referido"
-                                            onclick="editarReferenciado(<?php echo (int)$referenciado['id_referenciado']; ?>)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <!-- BOTÓN DE ACTIVAR/DESACTIVAR -->
-                                    <?php if ($esta_activo): ?>
-                                        <button class="btn-action btn-deactivate" 
-                                                title="Desactivar referido"
-                                                onclick="desactivarReferenciado(
-                                                    <?php echo $referenciado['id_referenciado']; ?>, 
-                                                    '<?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?>', 
-                                                    this)">
-                                            <i class="fas fa-user-slash"></i>
-                                        </button>
-                                    <?php else: ?>
-                                        <button class="btn-action btn-activate" 
-                                                title="Activar referido"
-                                                onclick="reactivarReferenciado(
-                                                    <?php echo $referenciado['id_referenciado']; ?>, 
-                                                    '<?php echo htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']); ?>', 
-                                                    this)">
-                                            <i class="fas fa-user-check"></i>
-                                        </button>
-                                    <?php endif; ?>
-                                </div>
+                                <p class="mt-2">Cargando referenciados...</p>
                             </td>
                         </tr>
-                        <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Controles de paginación -->
+            <div class="pagination-container mt-3">
+                <nav aria-label="Paginación de referenciados">
+                    <ul class="pagination justify-content-center" id="paginationControls">
+                        <!-- Los controles se generarán dinámicamente -->
+                    </ul>
+                </nav>
             </div>
         </div>
         
         <!-- Info Footer -->
-        <div style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 20px;">
-            <p><i class="fas fa-info-circle"></i> Mostrando <?php echo $totalReferidos; ?> referidos (<?php echo $totalActivos; ?> activos, <?php echo $totalInactivos; ?> inactivos)</p>
+        <div class="info-footer" id="infoFooter">
+            <p>
+                <i class="fas fa-info-circle"></i> 
+                Cargando datos...
+            </p>
         </div>
     </div>
 
@@ -430,136 +415,138 @@ if ($porcentajeRestante > 50) {
             </p>
         </div>
     </footer>
-<!-- Modal de Información del Sistema -->
-<div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalSistemaLabel">
-                    <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Logo centrado AGRANDADO -->
-                <div class="modal-logo-container">
-                    <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
-                <div class="licencia-info">
-                    <div class="licencia-header">
-                        <h6 class="licencia-title">Licencia Runtime</h6>
-                        <span class="licencia-dias">
-                            <?php echo $diasRestantes; ?> días restantes
-                        </span>
+                <div class="modal-body">
+                    <!-- Logo centrado AGRANDADO -->
+                    <div class="modal-logo-container">
+                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                     </div>
                     
-                    <div class="licencia-progress">
-                        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-                        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                            style="width: <?php echo $porcentajeRestante; ?>%"
-                            role="progressbar" 
-                            aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                            aria-valuemin="0" 
-                            aria-valuemax="100">
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
+                    <div class="licencia-info">
+                        <div class="licencia-header">
+                            <h6 class="licencia-title">Licencia Runtime</h6>
+                            <span class="licencia-dias">
+                                <?php echo $diasRestantes; ?> días restantes
+                            </span>
                         </div>
-                    </div>
-                    
-                    <div class="licencia-fecha">
-                        <i class="fas fa-calendar-alt me-1"></i>
-                        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-                        Válida hasta: <?php echo $validaHastaFormatted; ?>
-                    </div>
-                </div>
-                <div class="feature-image-container">
-                    <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
-                    <div class="profile-info mt-3">
-                        <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
                         
-                        <small class="profile-description">
-                            Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
-                            Magister en Administración Pública.<br>
-                            <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
-                        </small>
+                        <div class="licencia-progress">
+                            <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
+                            <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                style="width: <?php echo $porcentajeRestante; ?>%"
+                                role="progressbar" 
+                                aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                            </div>
+                        </div>
+                        
+                        <div class="licencia-fecha">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                            Válida hasta: <?php echo $validaHastaFormatted; ?>
+                        </div>
+                    </div>
+                    <div class="feature-image-container">
+                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Sección de Características -->
-                <div class="row g-4 mb-4">
-                    <!-- Efectividad de la Herramienta -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-primary mb-3">
-                                <i class="fas fa-bolt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Efectividad de la Herramienta</h5>
-                            <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
-                            <p class="feature-text">
-                                Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
-                            </p>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
+                    <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
+                       target="_blank" 
+                       class="btn btn-primary"
+                       onclick="cerrarModalSistema();">
+                        <i class="fas fa-external-link-alt me-1"></i> Uso SGP
+                    </a>
                     
-                    <!-- Integridad de Datos -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-success mb-3">
-                                <i class="fas fa-database fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Integridad de Datos</h5>
-                            <h6 class="text-muted mb-2">Validación Inteligente</h6>
-                            <p class="feature-text">
-                                Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Monitoreo de Metas -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-warning mb-3">
-                                <i class="fas fa-chart-line fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Monitoreo de Metas</h5>
-                            <h6 class="text-muted mb-2">Seguimiento Visual</h6>
-                            <p class="feature-text">
-                                Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Seguridad Avanzada -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-danger mb-3">
-                                <i class="fas fa-shield-alt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Seguridad Avanzada</h5>
-                            <h6 class="text-muted mb-2">Control Total</h6>
-                            <p class="feature-text">
-                                Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
-                            </p>
-                        </div>
-                    </div>
+                    <!-- Botón Cerrar - Solo cierra el modal -->
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
-                <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
-                   target="_blank" 
-                   class="btn btn-primary"
-                   onclick="cerrarModalSistema();">
-                    <i class="fas fa-external-link-alt me-1"></i> Uso SGP
-                </a>
-                
-                <!-- Botón Cerrar - Solo cierra el modal -->
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i> Cerrar
-                </button>
             </div>
         </div>
     </div>
-</div>
+
     <!-- Modal de Exportación -->
     <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -595,396 +582,781 @@ if ($porcentajeRestante > 50) {
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    
     <script>
-        $(document).ready(function() {
-            // Generar un ID único para esta tabla
-            const pageId = 'referidosTable_' + window.location.pathname.replace(/\//g, '_');
-            
-            // Limpiar estado obsoleto (más de 7 días)
-            const now = new Date().getTime();
-            const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
-            
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.startsWith('DataTables_')) {
-                    try {
-                        const data = JSON.parse(localStorage.getItem(key));
-                        if (data && data.time && data.time < oneWeekAgo) {
-                            localStorage.removeItem(key);
-                        }
-                    } catch(e) {
-                        // Ignorar errores
-                    }
-                }
-            }
-            
-            // Inicializar DataTable con stateSave activado
-            const table = $('#referidosTable').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                },
-                pageLength: 25,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-                order: [[19, 'desc']],
-                responsive: true,
-                scrollX: true,
-                dom: '<"top"f>rt<"bottom"lip><"clear">',
-                
-                // CONFIGURACIÓN CRÍTICA PARA PERSISTIR ESTADO
-                stateSave: true, // Activar guardado de estado
-                stateDuration: 60 * 60 * 24 * 7, // Guardar por 7 días (en segundos)
-                stateSaveCallback: function(settings, data) {
-                    // Agregar timestamp
-                    data.time = new Date().getTime();
-                    // Guardar en localStorage con clave específica
-                    localStorage.setItem('DataTables_' + pageId, JSON.stringify(data));
-                },
-                stateLoadCallback: function(settings) {
-                    // Cargar desde localStorage
-                    const state = localStorage.getItem('DataTables_' + pageId);
-                    if (state) {
-                        try {
-                            const data = JSON.parse(state);
-                            // Verificar que el estado no sea demasiado viejo (máximo 1 día)
-                            if (data.time && (now - data.time) < (24 * 60 * 60 * 1000)) {
-                                return data;
-                            }
-                        } catch(e) {
-                            console.error('Error al cargar estado:', e);
-                        }
-                    }
-                    return null;
-                },
-                
-                initComplete: function() {
-                    this.api().columns.adjust();
-                    
-                    // Verificar si hay parámetros en la URL para limpiar
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.has('clearState')) {
-                        // Limpiar estado y recargar
-                        localStorage.removeItem('DataTables_' + pageId);
-                        table.state.clear();
-                        table.search('').draw();
-                        
-                        // Remover parámetro de la URL sin recargar
-                        const newUrl = window.location.pathname;
-                        window.history.replaceState({}, '', newUrl);
-                    }
-                },
-                columnDefs: [
-                    {
-                        targets: -1,
-                        orderable: false,
-                        searchable: false,
-                        width: '130px'
-                    },
-                    {
-                        targets: 0,
-                        width: '100px',
-                        searchable: true
-                    }
-                ]
-            });
-            
-            // Botón de búsqueda
-            $('.btn-search').click(function() {
-                $('#referidosTable').DataTable().search('').draw();
-                $('#referidosTable_filter input').focus();
-            });
-            
-            // Botón para limpiar filtros
-            $('.btn-clear').click(function() {
-                if (confirm('¿Está seguro de que desea limpiar todos los filtros y el estado guardado?')) {
-                    table.state.clear();
-                    table.search('').columns().search('').draw();
-                    localStorage.removeItem('DataTables_' + pageId);
-                    showNotification('Filtros y estado limpiados correctamente', 'info');
-                }
-            });
-            
-            // Botón de exportar
-            $('.btn-export').click(function(e) {
-                // El modal se abre automáticamente por data-bs-toggle
-            });
-            
-            // Ajustar tabla en redimensionamiento
-            $(window).resize(function() {
-                table.columns.adjust();
-            });
-
-            // Efecto hover en botones de acción
-            $('.btn-action').hover(
-                function() {
-                    $(this).css('transform', 'translateY(-2px)');
-                    $(this).css('box-shadow', '0 3px 6px rgba(0,0,0,0.1)');
-                },
-                function() {
-                    $(this).css('transform', 'translateY(0)');
-                    $(this).css('box-shadow', 'none');
-                }
-            );
-            
-            // Forzar recarga del estado cuando se navega hacia atrás
-            window.addEventListener('pageshow', function(event) {
-                if (event.persisted) {
-                    // La página viene de cache, recargar estado
-                    setTimeout(function() {
-                        table.draw();
-                    }, 100);
-                }
-            });
-        });
-
-        // Función para navegar a ver detalle
-        function verDetalle(id) {
-            // Navegar directamente
-            window.location.href = 'ver_referenciado.php?id=' + id;
-        }
-
-        // Función para navegar a editar
-        function editarReferenciado(id) {
-            window.location.href = 'editar_referenciador.php?id=' + id;
-        }
-
-        // Función para exportar referidos
-        function exportarReferidos(formato) {
-            const soloActivos = document.getElementById('exportSoloActivos').checked;
-            
-            let url = '';
-            
-            // Asignar URL según formato
-            switch(formato) {
-                case 'excel':
-                    url = 'exportar_referidos_excel.php';
-                    break;
-                case 'pdf':
-                    url = 'exportar_referidos_pdf.php';
-                    break;
-                default:
-                    url = 'exportar_referidos_excel.php';
-                    break;
-            }
-            
-            // Agregar parámetro si es necesario
-            if (soloActivos) {
-                url += '?solo_activos=1';
-            }
-            
-            // Cerrar modal
-            const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
-            if (exportModal) {
-                exportModal.hide();
-            }
-            
-            // Mostrar mensaje de procesamiento
-            showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
-            
-            // Descargar archivo después de un pequeño delay
-            setTimeout(() => {
-                // Crear un link temporal para la descarga
-                const link = document.createElement('a');
-                link.href = url;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }, 300);
-        }
-
-        // Función para desactivar un referenciado
-        async function desactivarReferenciado(idReferenciado, nombreReferenciado, button) {
-            if (!confirm(`¿Está seguro de DESACTIVAR al referenciado "${nombreReferenciado}"?\n\nEl referenciado será marcado como inactivo, pero se mantendrá en el sistema.`)) {
-                return;
-            }
-            
-            const originalIcon = button.innerHTML;
-            const originalClass = button.className;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            button.disabled = true;
-            
+    $(document).ready(function() {
+        let currentPage = 1;
+        const perPage = 50;
+        let currentFilters = {};
+        let searchTimeout = null;
+        
+        // Clave para sessionStorage
+        const STORAGE_KEY = 'referidos_filters';
+        
+        // ============================================
+        // FUNCIONES DE SESSIONSTORAGE
+        // ============================================
+        
+        // Guardar filtros en sessionStorage
+        function saveFilters() {
             try {
-                const response = await fetch('../ajax/referenciados.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `accion=desactivar&id_referenciado=${idReferenciado}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Cambiar el botón a verde con icono de reactivar
-                    button.className = 'btn-action btn-activate';
-                    button.title = 'Activar referido';
-                    button.innerHTML = '<i class="fas fa-user-check"></i>';
-                    button.disabled = false;
-                    
-                    // Cambiar event listener para reactivar
-                    button.setAttribute('onclick', `reactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
-                    
-                    // Actualizar estado visual en la tabla
-                    const row = button.closest('tr');
-                    row.style.backgroundColor = '#f8f9fa';
-                    row.style.opacity = '0.8';
-                    row.cells[0].innerHTML = '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>';
-                    
-                    // Mostrar notificación
-                    showNotification('Referenciado desactivado correctamente', 'success');
-                    
-                    // Actualizar contador
-                    updateStats(-1, 1); // Disminuir activos, aumentar inactivos
-                } else {
-                    showNotification('Error: ' + (data.message || 'No se pudo desactivar el referenciado'), 'error');
-                    button.innerHTML = originalIcon;
-                    button.className = originalClass;
-                    button.disabled = false;
-                }
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-                button.innerHTML = originalIcon;
-                button.className = originalClass;
-                button.disabled = false;
-            }
-        }
-
-        // Función para reactivar un referenciado
-        async function reactivarReferenciado(idReferenciado, nombreReferenciado, button) {
-            if (!confirm(`¿Desea REACTIVAR al referenciado "${nombreReferenciado}"?`)) {
-                return;
-            }
-            
-            const originalIcon = button.innerHTML;
-            const originalClass = button.className;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            button.disabled = true;
-            
-            try {
-                const response = await fetch('../ajax/referenciados.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `accion=reactivar&id_referenciado=${idReferenciado}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Cambiar el botón a amarillo con icono de desactivar
-                    button.className = 'btn-action btn-deactivate';
-                    button.title = 'Desactivar referido';
-                    button.innerHTML = '<i class="fas fa-user-slash"></i>';
-                    button.disabled = false;
-                    
-                    // Cambiar event listener para desactivar
-                    button.setAttribute('onclick', `desactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
-                    
-                    // Actualizar estado visual en la tabla
-                    const row = button.closest('tr');
-                    row.style.backgroundColor = '';
-                    row.style.opacity = '';
-                    row.cells[0].innerHTML = '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
-                    
-                    // Mostrar notificación
-                    showNotification('Referenciado reactivado correctamente', 'success');
-                    
-                    // Actualizar contador
-                    updateStats(1, -1); // Aumentar activos, disminuir inactivos
-                } else {
-                    showNotification('Error: ' + data.message, 'error');
-                    button.innerHTML = originalIcon;
-                    button.className = originalClass;
-                    button.disabled = false;
-                }
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-                button.innerHTML = originalIcon;
-                button.className = originalClass;
-                button.disabled = false;
-            }
-        }
-
-        // Función para actualizar estadísticas en tiempo real
-        function updateStats(activosChange, inactivosChange) {
-            // Actualizar los números en las estadísticas
-            const totalElement = document.querySelector('.stat-total .stat-number');
-            const activosElement = document.querySelector('.stat-activos .stat-number');
-            
-            if (activosElement) {
-                let currentActivos = parseInt(activosElement.textContent);
-                activosElement.textContent = currentActivos + activosChange;
-            }
-            
-            // También podríamos actualizar el texto del pie de página
-            const infoFooter = document.querySelector('.table-title small');
-            if (infoFooter) {
-                const currentInactivos = <?php echo $totalInactivos; ?> + inactivosChange;
-                infoFooter.innerHTML = `<i class="fas fa-info-circle"></i> ${currentInactivos} referido(s) inactivo(s)`;
+                const filtersToSave = {
+                    search: currentFilters.search || '',
+                    activo: currentFilters.activo || '',
+                    departamento: currentFilters.departamento || '',
+                    municipio: currentFilters.municipio || '',
+                    zona: currentFilters.zona || '',
+                    referenciador: currentFilters.referenciador || '',
+                    currentPage: currentPage || 1
+                };
+                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
+            } catch (e) {
+                console.error('Error al guardar filtros:', e);
             }
         }
         
-        function actualizarLogoSegunTema() {
-            const logo = document.getElementById('footer-logo');
-            if (!logo) return;
+        // Cargar filtros desde sessionStorage
+        function loadFilters() {
+            try {
+                const saved = sessionStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    
+                    // Aplicar filtros al UI
+                    if (parsed.search) {
+                        $('#searchInput').val(parsed.search);
+                        currentFilters.search = parsed.search;
+                    }
+                    
+                    if (parsed.activo !== undefined && parsed.activo !== '') {
+                        currentFilters.activo = parsed.activo;
+                        updateFilterButtons();
+                    }
+                    
+                    if (parsed.departamento) {
+                        currentFilters.departamento = parsed.departamento;
+                        $('#filterDepartamento').val(parsed.departamento);
+                    }
+                    
+                    if (parsed.municipio) {
+                        currentFilters.municipio = parsed.municipio;
+                        $('#filterMunicipio').val(parsed.municipio);
+                    }
+                    
+                    if (parsed.zona) {
+                        currentFilters.zona = parsed.zona;
+                        $('#filterZona').val(parsed.zona);
+                    }
+                    
+                    if (parsed.referenciador) {
+                        currentFilters.referenciador = parsed.referenciador;
+                        $('#filterReferenciador').val(parsed.referenciador);
+                    }
+                    
+                    if (parsed.currentPage) {
+                        currentPage = parsed.currentPage;
+                    }
+                    
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error al cargar filtros:', e);
+                // Limpiar sessionStorage si hay error
+                sessionStorage.removeItem(STORAGE_KEY);
+            }
+            return false;
+        }
+        
+        // Limpiar todos los filtros y sessionStorage
+        function clearAllFiltersAndStorage() {
+            currentFilters = {};
+            sessionStorage.removeItem(STORAGE_KEY);
             
-            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            // Limpiar UI
+            $('#searchInput').val('');
+            $('#filterDepartamento').val('');
+            $('#filterMunicipio').val('');
+            $('#filterZona').val('');
+            $('#filterReferenciador').val('');
             
-            if (isDarkMode) {
-                logo.src = logo.getAttribute('data-img-oscuro');
+            updateFilterButtons();
+        }
+        
+        // ============================================
+        // FUNCIONES PRINCIPALES
+        // ============================================
+        
+        // Función para cargar datos por AJAX
+        function loadReferenciados(page = 1, useSavedPage = false) {
+            if (useSavedPage) {
+                page = currentPage;
             } else {
-                logo.src = logo.getAttribute('data-img-claro');
+                currentPage = page;
             }
+            
+            // Guardar página actual
+            saveFilters();
+            
+            // Mostrar loading
+            $('#tablaBody').html(`
+                <tr id="loadingRow">
+                    <td colspan="21" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando referenciados...</p>
+                    </td>
+                </tr>
+            `);
+            
+            // Construir URL con parámetros
+            let url = `../ajax/get_referenciados.php?page=${page}&per_page=${perPage}`;
+            
+            if (currentFilters.search) {
+                url += `&search=${encodeURIComponent(currentFilters.search)}`;
+            }
+            if (currentFilters.activo !== undefined && currentFilters.activo !== '') {
+                url += `&activo=${currentFilters.activo}`;
+            }
+            
+            // Agregar filtros avanzados si existen
+            if (currentFilters.departamento) {
+                url += `&departamento=${currentFilters.departamento}`;
+            }
+            if (currentFilters.municipio) {
+                url += `&municipio=${currentFilters.municipio}`;
+            }
+            if (currentFilters.zona) {
+                url += `&zona=${currentFilters.zona}`;
+            }
+            if (currentFilters.referenciador) {
+                url += `&referenciador=${currentFilters.referenciador}`;
+            }
+            
+            $.ajax({
+                url: url,
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        renderTable(response.data);
+                        renderPagination(response.pagination);
+                        updateStats(response.stats);
+                        updateTotalInfo(response.stats, response.pagination);
+                        
+                        // Guardar filtros después de carga exitosa
+                        saveFilters();
+                    } else {
+                        showNotification('Error al cargar datos: ' + (response.error || 'Error desconocido'), 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error AJAX:', error);
+                    showNotification('Error de conexión al servidor', 'error');
+                }
+            });
         }
-
-        // Ejecutar al cargar y cuando cambie el tema
-        document.addEventListener('DOMContentLoaded', function() {
-            actualizarLogoSegunTema();
-        });
-
-        // Escuchar cambios en el tema del sistema
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            actualizarLogoSegunTema();
-        });
         
-        // Función para mostrar notificaciones
-        function showNotification(message, type = 'info') {
-            // Eliminar notificación anterior si existe
-            const oldNotification = document.querySelector('.notification');
-            if (oldNotification) {
-                oldNotification.remove();
+        // Función para renderizar la tabla
+        function renderTable(data) {
+            if (data.length === 0) {
+                $('#tablaBody').html(`
+                    <tr>
+                        <td colspan="21" class="text-center">
+                            <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                            <p>No se encontraron referenciados</p>
+                            ${currentFilters.search || currentFilters.activo !== undefined ? 
+                                '<button class="btn btn-sm btn-primary mt-2" onclick="clearAllFilters()">Limpiar filtros</button>' : 
+                                ''}
+                        </td>
+                    </tr>
+                `);
+                return;
             }
             
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-                <button class="notification-close">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
+            let html = '';
             
-            document.body.appendChild(notification);
-            
-            // Botón para cerrar
-            notification.querySelector('.notification-close').addEventListener('click', () => {
-                notification.remove();
+            data.forEach(function(referenciado) {
+                const estaActivo = (referenciado.activo === true || referenciado.activo === 't' || referenciado.activo == 1);
+                const rowStyle = !estaActivo ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : '';
+                const nombreCompleto = escapeHtml(referenciado.nombre || '') + ' ' + escapeHtml(referenciado.apellido || '');
+                
+                // Resaltar texto de búsqueda si existe
+                const searchTerm = currentFilters.search ? currentFilters.search.toLowerCase() : '';
+                const highlight = (text) => {
+                    if (!searchTerm || !text) return escapeHtml(text || '');
+                    const escapedText = escapeHtml(text || '');
+                    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    return escapedText.replace(regex, '<mark class="bg-warning">$1</mark>');
+                };
+                
+                html += `
+                <tr ${rowStyle}>
+                    <td>
+                        ${estaActivo ? 
+                            '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>' : 
+                            '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>'}
+                    </td>
+                    <td>${highlight(referenciado.nombre)}</td>
+                    <td>${highlight(referenciado.apellido)}</td>
+                    <td>${highlight(referenciado.cedula)}</td>
+                    <td class="text-ellipsis" title="${escapeHtml(referenciado.direccion || '')}">
+                        ${highlight(referenciado.direccion)}
+                    </td>
+                    <td>${highlight(referenciado.email)}</td>
+                    <td>${highlight(referenciado.telefono)}</td>
+                    <td>
+                        <div class="badge-affinidad badge-affinidad-${referenciado.afinidad || '1'}">
+                            ${referenciado.afinidad || '0'}
+                        </div>
+                    </td>
+                    <td>${highlight(referenciado.zona_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.sector_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.puesto_votacion_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.mesa || '')}</td>
+                    <td>${highlight(referenciado.departamento_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.municipio_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.oferta_apoyo_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.grupo_poblacional_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.grupo_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.barrio_nombre || 'N/A')}</td>
+                    <td>${highlight(referenciado.referenciador_nombre || 'N/A')}</td>
+                    <td>${formatDate(referenciado.fecha_registro)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action btn-view" 
+                                    title="Ver detalle del referido"
+                                    onclick="verDetalleConFiltros(${referenciado.id_referenciado})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-action btn-edit" 
+                                    title="Editar referido"
+                                    onclick="editarReferenciadoConFiltros(${referenciado.id_referenciado})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${estaActivo ? 
+                                `<button class="btn-action btn-deactivate" 
+                                        title="Desactivar referido"
+                                        onclick="desactivarReferenciado(${referenciado.id_referenciado}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>` :
+                                `<button class="btn-action btn-activate" 
+                                        title="Activar referido"
+                                        onclick="reactivarReferenciado(${referenciado.id_referenciado}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
+                                    <i class="fas fa-user-check"></i>
+                                </button>`}
+                        </div>
+                    </td>
+                </tr>`;
             });
             
-            // Auto-eliminar después de 5 segundos
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
+            $('#tablaBody').html(html);
         }
+        
+        // Función para renderizar controles de paginación
+        function renderPagination(pagination) {
+            const totalPages = pagination.total_pages;
+            const currentPage = pagination.current_page;
+            
+            if (totalPages <= 1) {
+                $('#paginationControls').html('');
+                return;
+            }
+            
+            let html = '';
+            
+            // Botón anterior
+            if (currentPage > 1) {
+                html += `<li class="page-item">
+                            <a class="page-link" href="#" onclick="return changePage(${currentPage - 1})">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </a>
+                         </li>`;
+            } else {
+                html += `<li class="page-item disabled">
+                            <span class="page-link">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </span>
+                         </li>`;
+            }
+            
+            // Números de página
+            const maxPagesToShow = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+            
+            if (endPage - startPage + 1 < maxPagesToShow) {
+                startPage = Math.max(1, endPage - maxPagesToShow + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    html += `<li class="page-item active">
+                                <span class="page-link">${i}</span>
+                             </li>`;
+                } else {
+                    html += `<li class="page-item">
+                                <a class="page-link" href="#" onclick="return changePage(${i})">${i}</a>
+                             </li>`;
+                }
+            }
+            
+            // Botón siguiente
+            if (currentPage < totalPages) {
+                html += `<li class="page-item">
+                            <a class="page-link" href="#" onclick="return changePage(${currentPage + 1})">
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </a>
+                         </li>`;
+            } else {
+                html += `<li class="page-item disabled">
+                            <span class="page-link">
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </span>
+                         </li>`;
+            }
+            
+            // Información de página
+            html += `<li class="page-item disabled">
+                        <span class="page-link">
+                            Página ${currentPage} de ${totalPages}
+                        </span>
+                     </li>`;
+            
+            $('#paginationControls').html(html);
+        }
+        
+        // Función para cambiar de página (global)
+        window.changePage = function(page) {
+            loadReferenciados(page);
+            return false;
+        };
+        
+        // Función para actualizar estadísticas
+        function updateStats(stats) {
+            $('.stat-total .stat-number').text(stats.total);
+            $('.stat-activos .stat-number').text(stats.activos);
+        }
+        
+        // Función para actualizar información total
+        function updateTotalInfo(stats, pagination) {
+            const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+            const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+            
+            let filterInfo = '';
+            if (currentFilters.search) {
+                filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
+            }
+            if (currentFilters.activo === '1') {
+                filterInfo += ' | Solo activos';
+            } else if (currentFilters.activo === '0') {
+                filterInfo += ' | Solo inactivos';
+            }
+            
+            $('#infoFooter p').html(`
+                <i class="fas fa-info-circle"></i> 
+                Mostrando ${from} a ${to} de ${pagination.total} referidos 
+                (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
+            `);
+        }
+        
+        // Funciones helper
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // ============================================
+        // MANEJO DE FILTROS CON SESSIONSTORAGE
+        // ============================================
+        
+        // Manejo del buscador en tiempo real
+        window.handleSearchInput = function(event) {
+            const searchTerm = event.target.value.trim();
+            
+            // Clear previous timeout
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // Set new timeout (debounce de 500ms)
+            searchTimeout = setTimeout(() => {
+                currentFilters.search = searchTerm;
+                saveFilters();
+                loadReferenciados(1);
+            }, 500);
+            
+            // Si presiona Enter, buscar inmediatamente
+            if (event.key === 'Enter') {
+                if (searchTimeout) clearTimeout(searchTimeout);
+                currentFilters.search = searchTerm;
+                saveFilters();
+                loadReferenciados(1);
+            }
+        };
+        
+        // Limpiar búsqueda
+        window.clearSearch = function() {
+            $('#searchInput').val('');
+            delete currentFilters.search;
+            saveFilters();
+            loadReferenciados(1);
+            showNotification('Búsqueda limpiada', 'info');
+        };
+        
+        // Limpiar todos los filtros
+        window.clearAllFilters = function() {
+            clearAllFiltersAndStorage();
+            loadReferenciados(1);
+            showNotification('Todos los filtros limpiados', 'info');
+        };
+        
+        // Función para limpiar filtros avanzados
+        window.clearAdvancedFilters = function() {
+            $('#filterDepartamento').val('');
+            $('#filterMunicipio').val('');
+            $('#filterZona').val('');
+            $('#filterReferenciador').val('');
+            
+            // Actualizar currentFilters
+            delete currentFilters.departamento;
+            delete currentFilters.municipio;
+            delete currentFilters.zona;
+            delete currentFilters.referenciador;
+            
+            saveFilters();
+            loadReferenciados(1);
+            
+            showNotification('Filtros avanzados limpiados', 'info');
+        };
+        
+        // Filtro por estado - actualizar botones activos
+        function updateFilterButtons() {
+            const activeStatus = currentFilters.activo !== undefined ? currentFilters.activo : '';
+            
+            $('.filter-status .btn').each(function() {
+                const btn = $(this);
+                const onclickAttr = btn.attr('onclick') || '';
+                const match = onclickAttr.match(/filterByStatus\('([01]?)'\)/);
+                
+                if (match) {
+                    const status = match[1];
+                    
+                    btn.removeClass('btn-primary btn-success btn-warning')
+                       .removeClass('btn-outline-primary btn-outline-success btn-outline-warning');
+                    
+                    if (status === activeStatus) {
+                        if (status === '1') {
+                            btn.addClass('btn-success');
+                        } else if (status === '0') {
+                            btn.addClass('btn-warning');
+                        } else {
+                            btn.addClass('btn-primary');
+                        }
+                    } else {
+                        if (status === '1') {
+                            btn.addClass('btn-outline-success');
+                        } else if (status === '0') {
+                            btn.addClass('btn-outline-warning');
+                        } else {
+                            btn.addClass('btn-outline-primary');
+                        }
+                    }
+                }
+            });
+        }
+        
+        window.filterByStatus = function(status) {
+            currentFilters.activo = status;
+            updateFilterButtons();
+            saveFilters();
+            loadReferenciados(1);
+            return false;
+        };
+        
+        // Filtros avanzados
+        window.applyAdvancedFilters = function() {
+            currentFilters.departamento = $('#filterDepartamento').val();
+            currentFilters.municipio = $('#filterMunicipio').val();
+            currentFilters.zona = $('#filterZona').val();
+            currentFilters.referenciador = $('#filterReferenciador').val();
+            
+            saveFilters();
+            loadReferenciados(1);
+        };
+        
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        
+        // Cargar filtros guardados
+        const hasSavedFilters = loadFilters();
+        
+        // Inicializar botones de filtro
+        updateFilterButtons();
+        
+        // Cargar primera página (con filtros guardados si existen)
+        if (hasSavedFilters) {
+            loadReferenciados(currentPage, true);
+        } else {
+            loadReferenciados(1);
+        }
+        
+        // Enfocar el input de búsqueda al cargar
+        $('#searchInput').focus();
+        
+        // Guardar filtros antes de salir de la página
+        $(window).on('beforeunload', function() {
+            saveFilters();
+        });
+    });
+    
+    // ============================================
+    // FUNCIONES GLOBALES MODIFICADAS
+    // ============================================
+    
+    // Función para ver detalle manteniendo filtros
+    function verDetalleConFiltros(id) {
+        // Guardar filtros antes de navegar
+        if (typeof saveFilters === 'function') {
+            saveFilters();
+        }
+        window.location.href = 'ver_referenciado.php?id=' + id;
+    }
+    
+    // Función para editar manteniendo filtros
+    function editarReferenciadoConFiltros(id) {
+        // Guardar filtros antes de navegar
+        if (typeof saveFilters === 'function') {
+            saveFilters();
+        }
+        window.location.href = 'editar_referenciador.php?id=' + id;
+    }
+    
+    // Mantener compatibilidad con funciones anteriores
+    window.verDetalle = verDetalleConFiltros;
+    window.editarReferenciado = editarReferenciadoConFiltros;
+
+    // Función para exportar referidos
+    function exportarReferidos(formato) {
+        const soloActivos = document.getElementById('exportSoloActivos').checked;
+        
+        let url = '';
+        
+        switch(formato) {
+            case 'excel':
+                url = 'exportar_referidos_excel.php';
+                break;
+            case 'pdf':
+                url = 'exportar_referidos_pdf.php';
+                break;
+            default:
+                url = 'exportar_referidos_excel.php';
+                break;
+        }
+        
+        if (soloActivos) {
+            url += '?solo_activos=1';
+        }
+        
+        const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+        if (exportModal) {
+            exportModal.hide();
+        }
+        
+        showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
+        
+        setTimeout(() => {
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }, 300);
+    }
+
+    // Función para desactivar un referenciado
+    async function desactivarReferenciado(idReferenciado, nombreReferenciado, button) {
+        if (!confirm(`¿Está seguro de DESACTIVAR al referenciado "${nombreReferenciado}"?\n\nEl referenciado será marcado como inactivo, pero se mantendrá en el sistema.`)) {
+            return;
+        }
+        
+        const originalIcon = button.innerHTML;
+        const originalClass = button.className;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        try {
+            const response = await fetch('../ajax/referenciados.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `accion=desactivar&id_referenciado=${idReferenciado}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                button.className = 'btn-action btn-activate';
+                button.title = 'Activar referido';
+                button.innerHTML = '<i class="fas fa-user-check"></i>';
+                button.disabled = false;
+                
+                button.setAttribute('onclick', `reactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
+                
+                const row = button.closest('tr');
+                row.style.backgroundColor = '#f8f9fa';
+                row.style.opacity = '0.8';
+                row.cells[0].innerHTML = '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>';
+                
+                showNotification('Referenciado desactivado correctamente', 'success');
+                
+                setTimeout(() => {
+                    if (typeof loadReferenciados === 'function') {
+                        loadReferenciados(currentPage || 1);
+                    }
+                }, 100);
+            } else {
+                showNotification('Error: ' + (data.message || 'No se pudo desactivar el referenciado'), 'error');
+                button.innerHTML = originalIcon;
+                button.className = originalClass;
+                button.disabled = false;
+            }
+        } catch (error) {
+            showNotification('Error de conexión: ' + error.message, 'error');
+            button.innerHTML = originalIcon;
+            button.className = originalClass;
+            button.disabled = false;
+        }
+    }
+
+    // Función para reactivar un referenciado
+    async function reactivarReferenciado(idReferenciado, nombreReferenciado, button) {
+        if (!confirm(`¿Desea REACTIVAR al referenciado "${nombreReferenciado}"?`)) {
+            return;
+        }
+        
+        const originalIcon = button.innerHTML;
+        const originalClass = button.className;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        try {
+            const response = await fetch('../ajax/referenciados.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `accion=reactivar&id_referenciado=${idReferenciado}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                button.className = 'btn-action btn-deactivate';
+                button.title = 'Desactivar referido';
+                button.innerHTML = '<i class="fas fa-user-slash"></i>';
+                button.disabled = false;
+                
+                button.setAttribute('onclick', `desactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
+                
+                const row = button.closest('tr');
+                row.style.backgroundColor = '';
+                row.style.opacity = '';
+                row.cells[0].innerHTML = '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
+                
+                showNotification('Referenciado reactivado correctamente', 'success');
+                
+                setTimeout(() => {
+                    if (typeof loadReferenciados === 'function') {
+                        loadReferenciados(currentPage || 1);
+                    }
+                }, 100);
+            } else {
+                showNotification('Error: ' + data.message, 'error');
+                button.innerHTML = originalIcon;
+                button.className = originalClass;
+                button.disabled = false;
+            }
+        } catch (error) {
+            showNotification('Error de conexión: ' + error.message, 'error');
+            button.innerHTML = originalIcon;
+            button.className = originalClass;
+            button.disabled = false;
+        }
+    }
+    
+    function actualizarLogoSegunTema() {
+        const logo = document.getElementById('footer-logo');
+        if (!logo) return;
+        
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (isDarkMode) {
+            logo.src = logo.getAttribute('data-img-oscuro');
+        } else {
+            logo.src = logo.getAttribute('data-img-claro');
+        }
+    }
+
+    // Función para mostrar notificaciones
+    function showNotification(message, type = 'info') {
+        const oldNotification = document.querySelector('.notification');
+        if (oldNotification) {
+            oldNotification.remove();
+        }
+        
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.remove();
+        });
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Ejecutar al cargar y cuando cambie el tema
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarLogoSegunTema();
+    });
+
+    // Escuchar cambios en el tema del sistema
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        actualizarLogoSegunTema();
+    });
     </script>
+    
     <script src="../js/modal-sistema.js"></script>
     <script src="../js/contador.js"></script>
 </body>

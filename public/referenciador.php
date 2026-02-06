@@ -310,6 +310,11 @@ if ($porcentajeRestante > 50) {
             font-size: 0.85rem;
             color: #6c757d;
         }
+        /* Estilo para el asterisco de campo obligatorio */
+.text-danger {
+    color: #dc3545;
+    margin-left: 2px;
+}
     </style>
 </head>
 <body>
@@ -726,28 +731,35 @@ if ($porcentajeRestante > 50) {
                     </div>
                     
                     <!-- Lider (Combo box) - MOSTRAR SOLO LÍDERES ASIGNADOS -->
-                    <div class="form-group">
-                        <label class="form-label" for="lider">
-                            <i class="fas fa-user-tie"></i> Lider
-                        </label>
-                        <select id="lider" name="id_lider" class="form-select" data-progress="3">
-                            <option value="">Seleccione un líder</option>
-                            <?php if (!empty($lideres)): ?>
-                                <?php foreach ($lideres as $lider): ?>
-                                <option value="<?php echo $lider['id_lider']; ?>">
-                                    <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>
-                                </option>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <option value="" disabled>No tiene líderes asignados</option>
-                            <?php endif; ?>
-                        </select>
-                        <?php if (empty($lideres)): ?>
-                            <div class="no-lideres-message">
-                                <i class="fas fa-info-circle"></i> No hay líderes asignados a su cuenta. Contacte al administrador si necesita asignación de líderes.
-                            </div>
-                        <?php endif; ?>
-                    </div>
+<div class="form-group">
+    <label class="form-label" for="lider">
+        <i class="fas fa-user-tie"></i> Lider
+        <?php if (!empty($lideres)): ?>
+            <span class="text-danger">*</span>
+        <?php endif; ?>
+    </label>
+    <select id="lider" 
+            name="id_lider" 
+            class="form-select" 
+            data-progress="3"
+            <?php echo !empty($lideres) ? 'required' : ''; ?>>
+        <option value="">Seleccione un líder</option>
+        <?php if (!empty($lideres)): ?>
+            <?php foreach ($lideres as $lider): ?>
+            <option value="<?php echo $lider['id_lider']; ?>">
+                <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>
+            </option>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <option value="" disabled>No tiene líderes asignados</option>
+        <?php endif; ?>
+    </select>
+    <?php if (empty($lideres)): ?>
+        <div class="no-lideres-message">
+            <i class="fas fa-info-circle"></i> No hay líderes asignados a su cuenta. Contacte al administrador si necesita asignación de líderes.
+        </div>
+    <?php endif; ?>
+</div>
                     
                     <!-- Switch para mostrar/ocultar compromiso -->
                     <div class="form-group">

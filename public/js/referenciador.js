@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar asteriscos dinámicos (NUEVO)
     setupAsteriscosDinamicos();
     
+    // Configurar campo Líder dinámicamente (NUEVO)
+    configurarCampoLiderDinamico();
+    
     // Inicializar progreso del formulario
     updateProgress();
     
@@ -393,19 +396,19 @@ function validarNumeroMesa(input) {
             
             // Agregar solo un mensaje de error
             const errorSpan = document.createElement('span');
-            errorSpan.className = 'error-message';
-            errorSpan.style.color = '#e74c3c';
-            errorSpan.textContent = ` (Máximo permitido: ${maxMesasPuestoActual})`;
-            mesaInfo.appendChild(errorSpan);
-        }
-    } else {
-        // Si el valor es válido, eliminar mensajes de error
-        if (mesaInfo) {
-            const existingErrors = mesaInfo.querySelectorAll('.error-message');
-            existingErrors.forEach(error => error.remove());
+                errorSpan.className = 'error-message';
+                errorSpan.style.color = '#e74c3c';
+                errorSpan.textContent = ` (Máximo permitido: ${maxMesasPuestoActual})`;
+                mesaInfo.appendChild(errorSpan);
+            }
+        } else {
+            // Si el valor es válido, eliminar mensajes de error
+            if (mesaInfo) {
+                const existingErrors = mesaInfo.querySelectorAll('.error-message');
+                existingErrors.forEach(error => error.remove());
+            }
         }
     }
-}
 
 // Validar número de mesa fuera (máximo 60)
 function validarNumeroMesaFuera(input) {
@@ -845,6 +848,48 @@ function toggleCamposVotacion(votaFueraEstado) {
     }
 }
 
+// ==================== CONFIGURAR CAMPO LÍDER DINÁMICAMENTE ====================
+function configurarCampoLiderDinamico() {
+    const liderSelect = document.getElementById('lider');
+    const liderLabel = document.querySelector('label[for="lider"]');
+    
+    if (!liderSelect || !liderLabel) {
+        console.log('Elementos del campo Líder no encontrados');
+        return;
+    }
+    
+    // Verificar si hay opciones de líderes (excluyendo la opción por defecto y las deshabilitadas)
+    // CORRECCIÓN: Usar selector válido
+    const tieneOpcionesLideres = liderSelect.querySelectorAll('option:not([value=""]):not([disabled])').length > 0;
+    
+    if (tieneOpcionesLideres) {
+        // Si hay líderes disponibles, marcar como requerido visualmente
+        liderSelect.required = true;
+        
+        // Asegurar que el asterisco esté visible (PHP ya lo agregó, pero por si acaso)
+        let asterisk = liderLabel.querySelector('.text-danger');
+        if (!asterisk) {
+            asterisk = document.createElement('span');
+            asterisk.className = 'text-danger';
+            asterisk.textContent = ' *';
+            liderLabel.appendChild(asterisk);
+        }
+        
+        console.log('Campo Líder configurado como OBLIGATORIO - Hay líderes asignados');
+    } else {
+        // Si no hay líderes disponibles, no es requerido
+        liderSelect.required = false;
+        
+        // Remover asterisco rojo si existe
+        const asterisk = liderLabel.querySelector('.text-danger');
+        if (asterisk) {
+            asterisk.remove();
+        }
+        
+        console.log('Campo Líder configurado como OPCIONAL - No hay líderes asignados');
+    }
+}
+
 // ==================== EVENTOS DEL FORMULARIO ====================
 function setupFormEvents() {
     // Escuchar cambios en todos los campos para actualizar progreso
@@ -908,6 +953,28 @@ function setupFormEvents() {
                 }
             }
         });
+        
+        // =========== VALIDACIÓN CONDICIONAL DEL LÍDER ===========
+        const liderSelect = document.getElementById('lider');
+        if (liderSelect) {
+            // Verificar si el select tiene opciones de líderes válidas (excluyendo opción vacía y deshabilitadas)
+            const tieneOpcionesLideres = liderSelect.querySelectorAll('option:not([value=""]):not([disabled])').length > 0;
+            
+            if (tieneOpcionesLideres) {
+                // Si hay líderes disponibles, el campo es obligatorio
+                if (!liderSelect.value) {
+                    isValid = false;
+                    errorMessage = 'Por favor seleccione un líder';
+                    if (!firstErrorField) {
+                        firstErrorField = liderSelect;
+                    }
+                }
+            } else {
+                // Si no hay líderes disponibles, el campo NO es obligatorio
+                console.log('ℹ️ Campo Líder no es obligatorio: No hay líderes asignados');
+            }
+        }
+        // =========== FIN VALIDACIÓN LÍDER ===========
         
         // Validar fecha de nacimiento - AHORA ES OPCIONAL
         const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
@@ -1383,6 +1450,15 @@ function resetForm() {
         insumosCheckboxes[0].dispatchEvent(new Event('change'));
     }
     
+    // Resetear campo Líder (solo si hay opciones disponibles)
+    const liderSelect = document.getElementById('lider');
+    if (liderSelect) {
+        liderSelect.selectedIndex = 0;
+    }
+    
+    // Reconfigurar dinámicamente el campo Líder
+    configurarCampoLiderDinamico();
+    
     // Resetear progreso
     updateProgress();
 }
@@ -1456,95 +1532,94 @@ function setupCedulaValidation() {
     });
     
     // Función para verificar cédula en la base de datos
-    // Función para verificar cédula en la base de datos
-function checkCedulaInDatabase(cedula) {
-    if (isChecking || !cedula) return;
-    
-    isChecking = true;
-    lastValidatedCedula = cedula;
-    
-    // Mostrar estado de carga
-    showValidationMessage('Validando cédula...', 'loading');
-    
-    // Hacer petición AJAX al servidor
-    fetch('ajax/verificar_cedula.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `cedula=${encodeURIComponent(cedula)}`
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error en la conexión');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            if (data.exists) {
-                // Cédula ya existe
-                cedulaInput.classList.add('error');
-                cedulaInput.classList.remove('success');
-                
-                // Construir mensaje con información adicional
-                let mensaje = 'Esta cédula ya está registrada en el sistema';
-                if (data.fecha_registro && data.referenciador) {
-                    mensaje += `<br><small style="font-size: 0.85em; color: #666; display: block; margin-top: 3px;">
-                        Fue ingresado el día ${data.fecha_registro} por el referenciador ${data.referenciador}
-                    </small>`;
-                }
-                
-                showValidationMessage(mensaje, 'error');
-                
-            } else {
-                // Cédula disponible
-                cedulaInput.classList.remove('error');
-                cedulaInput.classList.add('success');
-                showValidationMessage('Cédula disponible', 'success');
+    function checkCedulaInDatabase(cedula) {
+        if (isChecking || !cedula) return;
+        
+        isChecking = true;
+        lastValidatedCedula = cedula;
+        
+        // Mostrar estado de carga
+        showValidationMessage('Validando cédula...', 'loading');
+        
+        // Hacer petición AJAX al servidor
+        fetch('ajax/verificar_cedula.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `cedula=${encodeURIComponent(cedula)}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la conexión');
             }
-        } else {
-            // Error en la validación
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (data.exists) {
+                    // Cédula ya existe
+                    cedulaInput.classList.add('error');
+                    cedulaInput.classList.remove('success');
+                    
+                    // Construir mensaje con información adicional
+                    let mensaje = 'Esta cédula ya está registrada en el sistema';
+                    if (data.fecha_registro && data.referenciador) {
+                        mensaje += `<br><small style="font-size: 0.85em; color: #666; display: block; margin-top: 3px;">
+                            Fue ingresado el día ${data.fecha_registro} por el referenciador ${data.referenciador}
+                        </small>`;
+                    }
+                    
+                    showValidationMessage(mensaje, 'error');
+                    
+                } else {
+                    // Cédula disponible
+                    cedulaInput.classList.remove('error');
+                    cedulaInput.classList.add('success');
+                    showValidationMessage('Cédula disponible', 'success');
+                }
+            } else {
+                // Error en la validación
+                cedulaInput.classList.remove('error', 'success');
+                showValidationMessage('❌ Error al validar la cédula', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
             cedulaInput.classList.remove('error', 'success');
-            showValidationMessage('❌ Error al validar la cédula', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        cedulaInput.classList.remove('error', 'success');
-        showValidationMessage('❌ Error de conexión al validar', 'error');
-    })
-    .finally(() => {
-        isChecking = false;
-    });
-}
-    
-   function showValidationMessage(message, type) {
-    if (!validationMessage) return;
-    
-    validationMessage.innerHTML = '';
-    
-    let icon = '';
-    if (type === 'error') {
-        icon = '<i class="fas fa-exclamation-circle"></i>';
-        validationMessage.className = 'validation-message error';
-    } else if (type === 'success') {
-        icon = '<i class="fas fa-check-circle"></i>';
-        validationMessage.className = 'validation-message success';
-    } else if (type === 'loading') {
-        icon = '<div class="spinner-small" style="border-top-color: #666;"></div>';
-        validationMessage.className = 'validation-message loading';
+            showValidationMessage('❌ Error de conexión al validar', 'error');
+        })
+        .finally(() => {
+            isChecking = false;
+        });
     }
     
-    // IMPORTANTE: Usar innerHTML en lugar de texto para permitir HTML en el mensaje
-    validationMessage.innerHTML = `
-        ${icon}
-        <div style="flex: 1;">
-            <span>${message}</span>
-        </div>
-    `;
-    validationMessage.style.display = 'flex';
-}
+    function showValidationMessage(message, type) {
+        if (!validationMessage) return;
+        
+        validationMessage.innerHTML = '';
+        
+        let icon = '';
+        if (type === 'error') {
+            icon = '<i class="fas fa-exclamation-circle"></i>';
+            validationMessage.className = 'validation-message error';
+        } else if (type === 'success') {
+            icon = '<i class="fas fa-check-circle"></i>';
+            validationMessage.className = 'validation-message success';
+        } else if (type === 'loading') {
+            icon = '<div class="spinner-small" style="border-top-color: #666;"></div>';
+            validationMessage.className = 'validation-message loading';
+        }
+        
+        // IMPORTANTE: Usar innerHTML en lugar de texto para permitir HTML en el mensaje
+        validationMessage.innerHTML = `
+            ${icon}
+            <div style="flex: 1;">
+                <span>${message}</span>
+            </div>
+        `;
+        validationMessage.style.display = 'flex';
+    }
     
     // Función para ocultar mensaje de validación
     function hideValidationMessage() {
@@ -1559,4 +1634,5 @@ function checkCedulaInDatabase(cedula) {
 // Prueba: Test directo de la función (opcional)
 setTimeout(() => {
     console.log('🧪 Prueba: La función enviarCorreoConfirmacion está definida:', typeof enviarCorreoConfirmacion === 'function');
+    console.log('🧪 Prueba: La función configurarCampoLiderDinamico está definida:', typeof configurarCampoLiderDinamico === 'function');
 }, 1000);

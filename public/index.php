@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         header('Location: superadmin_dashboard.php');
                         break;
                     case 'Administrador':
-                        header('Location: gestion_usuarios.php');
+                        header('Location: dashboard.php');
                         break;
                     case 'Referenciador':
                         header('Location: referenciador.php');

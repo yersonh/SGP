@@ -1348,36 +1348,58 @@ public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = [
         
         if ($isNumericSearch) {
             // Si es numérico, buscar en campos numéricos con comparación exacta
-            $conditions[] = "(r.cedula = ? OR r.telefono LIKE ?";
+            $conditionParts = [];
+            
+            // Campos exactos
+            $conditionParts[] = "r.cedula = ?";
+            $conditionParts[] = "r.telefono ILIKE ?";
             
             // Solo agregar r.mesa si la tabla tiene ese campo
             if (isset($filters['include_mesa'])) {
-                $conditions[] = " OR CAST(r.mesa AS TEXT) = ?";
+                $conditionParts[] = "CAST(r.mesa AS TEXT) = ?";
             }
             
-            // Agregar búsqueda en campos de texto
-            $conditions[] = " OR r.nombre ILIKE ? OR r.apellido ILIKE ? 
-                             OR r.direccion ILIKE ? OR r.email ILIKE ?
-                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
-                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
-                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
-                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+            // Campos de texto con ILIKE
+            $conditionParts[] = "r.nombre ILIKE ?";
+            $conditionParts[] = "r.apellido ILIKE ?";
+            $conditionParts[] = "r.direccion ILIKE ?";
+            $conditionParts[] = "r.email ILIKE ?";
+            $conditionParts[] = "d.nombre ILIKE ?";
+            $conditionParts[] = "m.nombre ILIKE ?";
+            $conditionParts[] = "b.nombre ILIKE ?";
+            $conditionParts[] = "gp.nombre ILIKE ?";
+            $conditionParts[] = "oa.nombre ILIKE ?";
+            $conditionParts[] = "z.nombre ILIKE ?";
+            $conditionParts[] = "s.nombre ILIKE ?";
+            $conditionParts[] = "pv.nombre ILIKE ?";
+            $conditionParts[] = "gr.nombre ILIKE ?";
+            $conditionParts[] = "u.nombres ILIKE ?";
+            $conditionParts[] = "u.apellidos ILIKE ?";
             
+            $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
+            
+            // Parámetros para campos exactos
             $params[] = $search; // Para cedula exacta
-            $params[] = '%' . $search . '%'; // Para teléfono
+            $params[] = '%' . $search . '%'; // Para teléfono (con ILIKE)
+            $paramTypes[] = \PDO::PARAM_STR;
+            $paramTypes[] = \PDO::PARAM_STR;
+            
+            // Parámetro para mesa si existe
             if (isset($filters['include_mesa'])) {
                 $params[] = $search; // Para mesa
-            }
-            // Campos de texto
-            for ($i = 0; $i < 15; $i++) {
-                $params[] = '%' . $search . '%';
+                $paramTypes[] = \PDO::PARAM_STR;
             }
             
-            $paramCount = 2 + (isset($filters['include_mesa']) ? 1 : 0) + 15;
+            // Parámetros para campos de texto (15 campos)
+            for ($i = 0; $i < 15; $i++) {
+                $params[] = '%' . $search . '%';
+                $paramTypes[] = \PDO::PARAM_STR;
+            }
+            
         } else {
             // Si es texto, buscar normalmente
-            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula LIKE ? 
-                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono LIKE ?
+            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula ILIKE ? 
+                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono ILIKE ?
                              OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
                              OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
                              OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
@@ -1385,12 +1407,8 @@ public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = [
             
             for ($i = 0; $i < 17; $i++) {
                 $params[] = '%' . $search . '%';
+                $paramTypes[] = \PDO::PARAM_STR;
             }
-            $paramCount = 17;
-        }
-        
-        for ($i = 0; $i < $paramCount; $i++) {
-            $paramTypes[] = \PDO::PARAM_STR;
         }
     }
     
@@ -1476,6 +1494,7 @@ public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = [
     } catch (PDOException $e) {
         error_log("Error en getReferenciadosPaginados: " . $e->getMessage());
         error_log("SQL: " . $sql);
+        error_log("Params: " . print_r($params, true));
         return [];
     }
 }
@@ -1511,36 +1530,58 @@ public function getTotalReferenciados($filters = []) {
         
         if ($isNumericSearch) {
             // Si es numérico, buscar en campos numéricos con comparación exacta
-            $conditions[] = "(r.cedula = ? OR r.telefono LIKE ?";
+            $conditionParts = [];
+            
+            // Campos exactos
+            $conditionParts[] = "r.cedula = ?";
+            $conditionParts[] = "r.telefono ILIKE ?";
             
             // Solo agregar r.mesa si la tabla tiene ese campo
             if (isset($filters['include_mesa'])) {
-                $conditions[] = " OR CAST(r.mesa AS TEXT) = ?";
+                $conditionParts[] = "CAST(r.mesa AS TEXT) = ?";
             }
             
-            // Agregar búsqueda en campos de texto
-            $conditions[] = " OR r.nombre ILIKE ? OR r.apellido ILIKE ? 
-                             OR r.direccion ILIKE ? OR r.email ILIKE ?
-                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
-                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
-                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
-                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+            // Campos de texto con ILIKE
+            $conditionParts[] = "r.nombre ILIKE ?";
+            $conditionParts[] = "r.apellido ILIKE ?";
+            $conditionParts[] = "r.direccion ILIKE ?";
+            $conditionParts[] = "r.email ILIKE ?";
+            $conditionParts[] = "d.nombre ILIKE ?";
+            $conditionParts[] = "m.nombre ILIKE ?";
+            $conditionParts[] = "b.nombre ILIKE ?";
+            $conditionParts[] = "gp.nombre ILIKE ?";
+            $conditionParts[] = "oa.nombre ILIKE ?";
+            $conditionParts[] = "z.nombre ILIKE ?";
+            $conditionParts[] = "s.nombre ILIKE ?";
+            $conditionParts[] = "pv.nombre ILIKE ?";
+            $conditionParts[] = "gr.nombre ILIKE ?";
+            $conditionParts[] = "u.nombres ILIKE ?";
+            $conditionParts[] = "u.apellidos ILIKE ?";
             
+            $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
+            
+            // Parámetros para campos exactos
             $params[] = $search; // Para cedula exacta
-            $params[] = '%' . $search . '%'; // Para teléfono
+            $params[] = '%' . $search . '%'; // Para teléfono (con ILIKE)
+            $paramTypes[] = \PDO::PARAM_STR;
+            $paramTypes[] = \PDO::PARAM_STR;
+            
+            // Parámetro para mesa si existe
             if (isset($filters['include_mesa'])) {
                 $params[] = $search; // Para mesa
-            }
-            // Campos de texto
-            for ($i = 0; $i < 15; $i++) {
-                $params[] = '%' . $search . '%';
+                $paramTypes[] = \PDO::PARAM_STR;
             }
             
-            $paramCount = 2 + (isset($filters['include_mesa']) ? 1 : 0) + 15;
+            // Parámetros para campos de texto (15 campos)
+            for ($i = 0; $i < 15; $i++) {
+                $params[] = '%' . $search . '%';
+                $paramTypes[] = \PDO::PARAM_STR;
+            }
+            
         } else {
             // Si es texto, buscar normalmente
-            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula LIKE ? 
-                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono LIKE ?
+            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula ILIKE ? 
+                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono ILIKE ?
                              OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
                              OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
                              OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
@@ -1548,12 +1589,8 @@ public function getTotalReferenciados($filters = []) {
             
             for ($i = 0; $i < 17; $i++) {
                 $params[] = '%' . $search . '%';
+                $paramTypes[] = \PDO::PARAM_STR;
             }
-            $paramCount = 17;
-        }
-        
-        for ($i = 0; $i < $paramCount; $i++) {
-            $paramTypes[] = \PDO::PARAM_STR;
         }
     }
     
@@ -1631,6 +1668,7 @@ public function getTotalReferenciados($filters = []) {
     } catch (PDOException $e) {
         error_log("Error en getTotalReferenciados: " . $e->getMessage());
         error_log("SQL: " . $sql);
+        error_log("Params: " . print_r($params, true));
         return 0;
     }
 }

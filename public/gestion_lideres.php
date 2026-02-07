@@ -302,14 +302,14 @@ if ($porcentajeRestante > 50) {
                                 <div class="action-buttons">
                                     <!-- BOTÓN DE VER DETALLE -->
                                     <button class="btn-action btn-view" 
-                                            onclick="window.location.href='ver_lider.php?id=<?php echo $lider['id_lider']; ?>'"
+                                            onclick="window.location.href='administrador/ver_lider.php?id=<?php echo $lider['id_lider']; ?>'"
                                             title="Ver detalle del líder">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     
                                     <!-- BOTÓN DE EDITAR -->
                                     <button class="btn-action btn-edit" 
-                                            onclick="window.location.href='editar_lider.php?id=<?php echo $lider['id_lider']; ?>'"
+                                            onclick="window.location.href='administrador/editar_lider.php?id=<?php echo $lider['id_lider']; ?>'"
                                             title="Editar líder">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -327,13 +327,6 @@ if ($porcentajeRestante > 50) {
                                             <i class="fas fa-user-check"></i>
                                         </button>
                                     <?php endif; ?>
-                                    
-                                    <!-- BOTÓN DE ELIMINAR (opcional, depende de tus necesidades) -->
-                                    <button class="btn-action btn-delete" 
-                                            title="Eliminar líder permanentemente"
-                                            onclick="eliminarLider(<?php echo $lider['id_lider']; ?>, '<?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>', this)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -346,7 +339,7 @@ if ($porcentajeRestante > 50) {
                 <i class="fas fa-user-tie"></i>
                 <h4 class="mt-3 mb-2">No hay líderes registrados</h4>
                 <p class="text-muted">El sistema no tiene líderes registrados actualmente.</p>
-                <a href="agregar_lider.php" class="btn-add-user mt-3">
+                <a href="administrador/anadir_lider.php" class="btn-add-user mt-3">
                     <i class="fas fa-user-plus"></i> Agregar Primer Líder
                 </a>
             </div>
@@ -512,42 +505,44 @@ if ($porcentajeRestante > 50) {
     
     <script>
         // Inicializar DataTable
-        $(document).ready(function() {
-            window.table = $('#lideres-table').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                },
-                pageLength: 25,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-                order: [[0, 'asc']],
-                responsive: true,
-                dom: '<"top"f>rt<"bottom"lip><"clear">',
-                columnDefs: [
-                    {
-                        targets: 9, // Columna de Acciones
-                        orderable: false,
-                        searchable: false,
-                        width: '160px'
-                    },
-                    {
-                        targets: 0, // Columna N°
-                        width: '60px',
-                        searchable: false
-                    },
-                    {
-                        targets: [3, 4, 8], // Cédula, Teléfono, Fecha Registro
-                        width: '120px'
-                    }
-                ]
-            });
-            
-            // Inicializar hover en filas
-            $('#lideres-table tbody').on('mouseenter', 'tr', function() {
-                $(this).css('backgroundColor', '#f8fafc');
-            }).on('mouseleave', 'tr', function() {
-                $(this).css('backgroundColor', '');
-            });
-        });
+        // Inicializar DataTable
+$(document).ready(function() {
+    window.table = $('#lideres-table').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        },
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+        order: [[0, 'asc']],
+        responsive: true,
+        // MODIFICADO: Eliminar "f" (campo de búsqueda) del dom
+        dom: '<"top">rt<"bottom"lip><"clear">',
+        columnDefs: [
+            {
+                targets: 9, // Columna de Acciones
+                orderable: false,
+                searchable: false,
+                width: '160px'
+            },
+            {
+                targets: 0, // Columna N°
+                width: '60px',
+                searchable: false
+            },
+            {
+                targets: [3, 4, 8], // Cédula, Teléfono, Fecha Registro
+                width: '120px'
+            }
+        ]
+    });
+    
+    // Inicializar hover en filas
+    $('#lideres-table tbody').on('mouseenter', 'tr', function() {
+        $(this).css('backgroundColor', '#f8fafc');
+    }).on('mouseleave', 'tr', function() {
+        $(this).css('backgroundColor', '');
+    });
+});
         
         // Función para mostrar el modal del sistema
         function mostrarModalSistema() {
@@ -555,50 +550,105 @@ if ($porcentajeRestante > 50) {
             modal.show();
         }
         
-        // Función para filtrar líderes
-        function filtrarLideres() {
-            const estado = $('#filter-estado').val();
-            const referenciador = $('#filter-referenciador').val();
-            const searchTerm = $('#search-input').val();
+      // Función para filtrar líderes
+function filtrarLideres() {
+    const estado = $('#filter-estado').val();
+    const referenciador = $('#filter-referenciador').val();
+    const searchTerm = $('#search-input').val();
+    
+    // Aplicar filtros combinados usando la API de DataTables
+    $.fn.dataTable.ext.search.push(
+        function(settings, data, dataIndex) {
+            // Obtener datos de la fila
+            const rowData = table.row(dataIndex).data();
+            if (!rowData) return true;
             
-            // Construir filtro combinado para DataTables
-            let filter = '';
-            if (searchTerm) filter += searchTerm + ' ';
+            let estadoMatch = true;
+            let referenciadorMatch = true;
+            let searchMatch = true;
+            
+            // Filtrar por estado (columna 7)
             if (estado !== '') {
                 const estadoText = estado === '1' ? 'Activo' : 'Inactivo';
-                filter += estadoText + ' ';
+                const estadoCelda = $(rowData[7]).text().trim();
+                estadoMatch = estadoCelda.includes(estadoText);
             }
             
-            // Aplicar búsqueda general
-            table.search(filter).draw();
-            
-            // Actualizar mensaje de resultados
-            const resultsElement = document.getElementById('search-results');
-            const filteredCount = table.rows({ search: 'applied' }).count();
-            const totalCount = table.rows().count();
-            
-            if (filter.trim() === '') {
-                resultsElement.textContent = `Mostrando ${totalCount} líderes`;
-            } else {
-                let filtrosText = [];
-                if (searchTerm) filtrosText.push(`"${searchTerm}"`);
-                if (estado !== '') {
-                    filtrosText.push(estado === '1' ? 'Activo' : 'Inactivo');
+            // Filtrar por referenciador (columna 6)
+            if (referenciador !== '') {
+                const selectedOption = $('#filter-referenciador option:selected').text();
+                let referenciadorNombre = selectedOption;
+                
+                // Si hay paréntesis, tomar solo la parte antes del paréntesis
+                if (referenciadorNombre.includes('(')) {
+                    referenciadorNombre = referenciadorNombre.split('(')[0].trim();
                 }
                 
-                resultsElement.textContent = `Mostrando ${filteredCount} de ${totalCount} líderes (${filtrosText.join(', ')})`;
+                const referenciadorCelda = $(rowData[6]).text().trim();
+                referenciadorMatch = referenciadorCelda.includes(referenciadorNombre);
             }
+            
+            // Filtrar por búsqueda global
+            if (searchTerm) {
+                // Concatenar todos los textos de las celdas (excepto acciones)
+                let rowText = '';
+                for (let i = 0; i < rowData.length - 1; i++) { // Excluir columna de acciones
+                    rowText += $(rowData[i]).text().trim() + ' ';
+                }
+                
+                searchMatch = rowText.toLowerCase().includes(searchTerm.toLowerCase());
+            }
+            
+            return estadoMatch && referenciadorMatch && searchMatch;
+        }
+    );
+    
+    // Redibujar la tabla
+    table.draw();
+    
+    // Remover la función de filtro después de usarla
+    $.fn.dataTable.ext.search.pop();
+    
+    // Actualizar mensaje de resultados
+    const resultsElement = document.getElementById('search-results');
+    const filteredCount = table.rows({ search: 'applied' }).count();
+    const totalCount = table.rows().count();
+    
+    if (!estado && !referenciador && !searchTerm) {
+        resultsElement.textContent = `Mostrando ${totalCount} líderes`;
+    } else {
+        let filtrosText = [];
+        if (searchTerm) filtrosText.push(`"${searchTerm}"`);
+        if (estado !== '') {
+            filtrosText.push(estado === '1' ? 'Activo' : 'Inactivo');
+        }
+        if (referenciador !== '') {
+            const selectedOption = $('#filter-referenciador option:selected').text();
+            let refText = selectedOption;
+            if (refText.length > 30) {
+                refText = refText.substring(0, 27) + '...';
+            }
+            filtrosText.push(refText);
         }
         
-        // Función para limpiar filtros
-        function limpiarFiltros() {
-            $('#filter-estado').val('');
-            $('#filter-referenciador').val('');
-            $('#search-input').val('');
-            table.search('').draw();
-            $('#search-input').focus();
-            document.getElementById('search-results').textContent = `Mostrando ${table.rows().count()} líderes`;
-        }
+        resultsElement.textContent = `Mostrando ${filteredCount} de ${totalCount} líderes (${filtrosText.join(', ')})`;
+    }
+}
+        
+       // Función para limpiar filtros
+function limpiarFiltros() {
+    $('#filter-estado').val('');
+    $('#filter-referenciador').val('');
+    $('#search-input').val('');
+    
+    // Limpiar todos los filtros de DataTable
+    table.search('');
+    table.columns().search('');
+    table.draw();
+    
+    $('#search-input').focus();
+    document.getElementById('search-results').textContent = `Mostrando ${table.rows().count()} líderes`;
+}
         
         // Actualizar hora en tiempo real
         function updateCurrentTime() {
@@ -653,198 +703,181 @@ if ($porcentajeRestante > 50) {
             }, 5000);
         }
         
-        // Función para dar de baja un líder
         async function darDeBajaLider(idLider, nombre, button) {
-            if (!confirm(`¿Está seguro de dar de BAJA al líder "${nombre}"?\n\nEl líder será marcado como inactivo, pero se mantendrán sus registros.`)) {
-                return;
-            }
-            
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-            button.disabled = true;
-            
-            try {
-                const response = await fetch('ajax/lider.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `accion=desactivar&id_lider=${idLider}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const row = button.closest('tr');
-                    const statusBadge = row.querySelector('.user-status');
-                    if (statusBadge) {
-                        statusBadge.className = 'user-status status-inactive';
-                        statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Inactivo';
-                    }
-                    
-                    const newButton = document.createElement('button');
-                    newButton.className = 'btn-action btn-activate';
-                    newButton.title = 'Reactivar líder';
-                    newButton.innerHTML = '<i class="fas fa-user-check"></i>';
-                    newButton.addEventListener('click', function() {
-                        reactivarLider(idLider, nombre, newButton);
-                    });
-                    
-                    const buttonContainer = button.parentNode;
-                    buttonContainer.removeChild(button);
-                    buttonContainer.appendChild(newButton);
-                    
-                    // Actualizar estadísticas
-                    updateStatsLideres(-1, 0);
-                    
-                    showNotification('Líder dado de baja correctamente', 'success');
-                } else {
-                    showNotification('Error: ' + (data.message || 'No se pudo dar de baja el líder'), 'error');
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }
+    if (!confirm(`¿Está seguro de dar de BAJA al líder "${nombre}"?\n\nEl líder será marcado como inactivo, pero se mantendrán sus registros.`)) {
+        return;
+    }
+    
+    const originalHTML = button.innerHTML;
+    const originalTitle = button.title;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    button.title = 'Procesando...';
+    
+    try {
+        const response = await fetch('ajax/lider.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `accion=desactivar&id_lider=${idLider}`
+        });
+        
+        // Verificar si la respuesta es OK
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
+        
+        // Verificar que la respuesta sea JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('La respuesta no es JSON válido');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const row = button.closest('tr');
+            const statusBadge = row.querySelector('.user-status');
+            if (statusBadge) {
+                statusBadge.className = 'user-status status-inactive';
+                statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Inactivo';
+            }
+            
+            // Cambiar el botón de desactivar por el de reactivar
+            const newButton = document.createElement('button');
+            newButton.className = 'btn-action btn-activate';
+            newButton.title = 'Reactivar líder';
+            newButton.innerHTML = '<i class="fas fa-user-check"></i>';
+            newButton.addEventListener('click', function() {
+                reactivarLider(idLider, nombre, newButton);
+            });
+            
+            const buttonContainer = button.parentNode;
+            buttonContainer.replaceChild(newButton, button);
+            
+            // Actualizar estadísticas
+            updateStatsLideres(-1, 0);
+            
+            showNotification('Líder dado de baja correctamente', 'success');
+        } else {
+            showNotification('Error: ' + (data.message || 'No se pudo dar de baja el líder'), 'error');
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+            button.title = originalTitle;
+        }
+    } catch (error) {
+        console.error('Error en darDeBajaLider:', error);
+        showNotification('Error de conexión: ' + error.message, 'error');
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        button.title = originalTitle;
+    }
+}
         
         // Función para reactivar un líder
         async function reactivarLider(idLider, nombre, button) {
-            if (!confirm(`¿Desea REACTIVAR al líder "${nombre}"?`)) {
-                return;
-            }
-            
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-            button.disabled = true;
-            
-            try {
-                const response = await fetch('ajax/lider.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `accion=reactivar&id_lider=${idLider}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const row = button.closest('tr');
-                    const statusBadge = row.querySelector('.user-status');
-                    if (statusBadge) {
-                        statusBadge.className = 'user-status status-active';
-                        statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Activo';
-                    }
-                    
-                    const newButton = document.createElement('button');
-                    newButton.className = 'btn-action btn-deactivate';
-                    newButton.title = 'Dar de baja al líder';
-                    newButton.innerHTML = '<i class="fas fa-user-slash"></i>';
-                    newButton.addEventListener('click', function() {
-                        darDeBajaLider(idLider, nombre, newButton);
-                    });
-                    
-                    const buttonContainer = button.parentNode;
-                    buttonContainer.removeChild(button);
-                    buttonContainer.appendChild(newButton);
-                    
-                    // Actualizar estadísticas
-                    updateStatsLideres(1, 0);
-                    
-                    showNotification('Líder reactivado correctamente', 'success');
-                } else {
-                    showNotification('Error: ' + data.message, 'error');
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-                button.disabled = false;
-            }
+    if (!confirm(`¿Desea REACTIVAR al líder "${nombre}"?`)) {
+        return;
+    }
+    
+    const originalHTML = button.innerHTML;
+    const originalTitle = button.title;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    button.title = 'Procesando...';
+    
+    try {
+        const response = await fetch('ajax/lider.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `accion=reactivar&id_lider=${idLider}`
+        });
+        
+        // Verificar si la respuesta es OK
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
         
-        // Función para eliminar un líder permanentemente
-        async function eliminarLider(idLider, nombre, button) {
-            if (!confirm(`¿Está SEGURO de ELIMINAR PERMANENTEMENTE al líder "${nombre}"?\n\nEsta acción NO se puede deshacer y eliminará todos los datos asociados.`)) {
-                return;
-            }
-            
-            if (!confirm(`CONFIRMACIÓN FINAL:\n¿Realmente desea eliminar definitivamente al líder "${nombre}"?`)) {
-                return;
-            }
-            
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
-            button.disabled = true;
-            
-            try {
-                const response = await fetch('ajax/lider.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `accion=eliminar&id_lider=${idLider}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Eliminar la fila de la tabla
-                    const row = button.closest('tr');
-                    row.remove();
-                    
-                    // Actualizar DataTable
-                    table.draw();
-                    
-                    // Actualizar estadísticas
-                    updateStatsLideres(0, -1);
-                    
-                    showNotification('Líder eliminado permanentemente', 'success');
-                } else {
-                    showNotification('Error: ' + data.message, 'error');
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }
+        // Verificar que la respuesta sea JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('La respuesta no es JSON válido');
         }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const row = button.closest('tr');
+            const statusBadge = row.querySelector('.user-status');
+            if (statusBadge) {
+                statusBadge.className = 'user-status status-active';
+                statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Activo';
+            }
+            
+            // Cambiar el botón de reactivar por el de desactivar
+            const newButton = document.createElement('button');
+            newButton.className = 'btn-action btn-deactivate';
+            newButton.title = 'Dar de baja al líder';
+            newButton.innerHTML = '<i class="fas fa-user-slash"></i>';
+            newButton.addEventListener('click', function() {
+                darDeBajaLider(idLider, nombre, newButton);
+            });
+            
+            const buttonContainer = button.parentNode;
+            buttonContainer.replaceChild(newButton, button);
+            
+            // Actualizar estadísticas
+            updateStatsLideres(1, 0);
+            
+            showNotification('Líder reactivado correctamente', 'success');
+        } else {
+            showNotification('Error: ' + data.message, 'error');
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+            button.title = originalTitle;
+        }
+    } catch (error) {
+        console.error('Error en reactivarLider:', error);
+        showNotification('Error de conexión: ' + error.message, 'error');
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        button.title = originalTitle;
+    }
+}
         
         // Función para actualizar estadísticas de líderes
         function updateStatsLideres(changeActivos, changeTotal) {
-            const statCards = document.querySelectorAll('.stat-card');
-            if (statCards.length >= 4) {
-                const totalElement = statCards[0].querySelector('.stat-number');
-                const activosElement = statCards[1].querySelector('.stat-number');
-                const inactivosElement = statCards[2].querySelector('.stat-number');
-                
-                if (totalElement && changeTotal !== 0) {
-                    const current = parseInt(totalElement.textContent);
-                    totalElement.textContent = current + changeTotal;
-                }
-                
-                if (activosElement && changeActivos !== 0) {
-                    const current = parseInt(activosElement.textContent);
-                    activosElement.textContent = current + changeActivos;
-                    
-                    // Actualizar contador en el header
-                    const userCountElement = document.querySelector('.user-count');
-                    if (userCountElement) {
-                        userCountElement.textContent = (current + changeActivos) + ' líderes activos';
-                    }
-                }
-                
-                if (inactivosElement && changeActivos !== 0) {
-                    const current = parseInt(inactivosElement.textContent);
-                    inactivosElement.textContent = current - changeActivos;
-                }
+    const statCards = document.querySelectorAll('.stat-card');
+    if (statCards.length >= 4) {
+        const totalElement = statCards[0].querySelector('.stat-number');
+        const activosElement = statCards[1].querySelector('.stat-number');
+        const inactivosElement = statCards[2].querySelector('.stat-number');
+        
+        if (totalElement && changeTotal !== 0) {
+            const current = parseInt(totalElement.textContent);
+            totalElement.textContent = current + changeTotal;
+        }
+        
+        if (activosElement && changeActivos !== 0) {
+            const current = parseInt(activosElement.textContent);
+            activosElement.textContent = current + changeActivos;
+            
+            // Actualizar contador en el header
+            const userCountElement = document.querySelector('.user-count');
+            if (userCountElement) {
+                userCountElement.textContent = (current + changeActivos) + ' líderes activos';
             }
         }
+        
+        if (inactivosElement && changeActivos !== 0) {
+            const current = parseInt(inactivosElement.textContent);
+            inactivosElement.textContent = current - changeActivos;
+        }
+    }
+}
         
         // Manejar parámetros de éxito/error en la URL
         document.addEventListener('DOMContentLoaded', function() {

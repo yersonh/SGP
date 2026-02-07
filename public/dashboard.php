@@ -976,7 +976,7 @@ body {
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="gestion_lideres.php" class="nav-link">
                         <i class="fas fa-people-carry"></i> Gestión de Líderes
                         <div class="badge"><?php echo $lideres; ?></div>
                     </a>

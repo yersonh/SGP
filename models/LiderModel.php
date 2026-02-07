@@ -228,23 +228,31 @@ class LiderModel {
         }
     }
     
-    /**
-     * Cambiar estado del líder
-     */
-    public function changeStatus($id_lider, $estado) {
+  /**
+ * Cambiar estado del líder - VERSIÓN DEFINITIVA
+ */
+public function changeStatus($id_lider, $estado) {
     try {
-        // Asegurar que estado sea booleano
-        $estado_bool = (bool)$estado;
+        // Convertir a booleano
+        if (is_string($estado)) {
+            $estado_bool = filter_var($estado, FILTER_VALIDATE_BOOLEAN);
+        } else {
+            $estado_bool = (bool)$estado;
+        }
+        
+        error_log("changeStatus: id_lider=$id_lider, estado=" . var_export($estado, true) . ", estado_bool=" . var_export($estado_bool, true));
         
         $query = "UPDATE public.lideres 
                   SET estado = :estado, fecha_actualizacion = NOW() 
                   WHERE id_lider = :id_lider";
         
         $stmt = $this->pdo->prepare($query);
-        $stmt->execute([
-            ':id_lider' => $id_lider,
-            ':estado' => $estado_bool
-        ]);
+        
+        // Especificar explícitamente el tipo como booleano usando bindParam
+        $stmt->bindParam(':id_lider', $id_lider, PDO::PARAM_INT);
+        $stmt->bindParam(':estado', $estado_bool, PDO::PARAM_BOOL);
+        
+        $stmt->execute();
         
         return [
             'success' => true,
@@ -254,6 +262,7 @@ class LiderModel {
         
     } catch (PDOException $e) {
         error_log("Error en changeStatus LiderModel: " . $e->getMessage());
+        error_log("Query: UPDATE lideres SET estado = " . var_export($estado, true) . " WHERE id_lider = $id_lider");
         return [
             'success' => false,
             'message' => 'Error al cambiar estado del líder: ' . $e->getMessage()

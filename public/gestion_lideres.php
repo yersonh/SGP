@@ -195,10 +195,10 @@ if ($porcentajeRestante > 50) {
 
         <!-- Top Bar con botón y estadísticas -->
         <div class="top-bar">
-            <a href="agregar_lider.php" class="btn-add-user">
+            <a href="administrador/anadir_lider.php" class="btn-add-user">
                 <i class="fas fa-user-plus"></i> AGREGAR LÍDER
             </a>
-            <a href="../administrador.php" class="btn-add-user">
+            <a href="dashboard.php" class="btn-add-user">
                 <i class="fas fa-arrow-left"></i> VOLVER A USUARIOS
             </a>
             <div class="stats-container">

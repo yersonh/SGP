@@ -289,50 +289,60 @@ if ($porcentajeRestante > 50) {
                     </div>
                 </div>
                 
-                <!-- Filtros avanzados (colapsable) -->
-                <div class="advanced-filters mt-2">
-                    <div class="collapse" id="advancedFilters">
-                        <div class="card card-body py-2">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-auto">
-                                    <small class="text-muted">Filtros:</small>
-                                </div>
-                                <div class="col-md-2">
-                                    <select class="form-select form-select-sm" id="filterDepartamento" onchange="applyAdvancedFilters()">
-                                        <option value="">Depto.</option>
-                                        <?php
-                                        // Necesitarías cargar los departamentos desde tu base de datos
-                                        // Ejemplo: $departamentos = $departamentoModel->getAll();
-                                        // foreach($departamentos as $dep) {
-                                        //     echo '<option value="'.$dep['id'].'">'.$dep['nombre'].'</option>';
-                                        // }
-                                        ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <select class="form-select form-select-sm" id="filterMunicipio" onchange="applyAdvancedFilters()">
-                                        <option value="">Municipio</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <select class="form-select form-select-sm" id="filterZona" onchange="applyAdvancedFilters()">
-                                        <option value="">Zona</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <select class="form-select form-select-sm" id="filterReferenciador" onchange="applyAdvancedFilters()">
-                                        <option value="">Referenciador</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-1">
-                                    <button class="btn btn-sm btn-outline-danger w-100" onclick="clearAdvancedFilters()" title="Limpiar filtros">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!-- Filtros avanzados (en collapse) -->
+<div class="collapse mb-3" id="advancedFilters">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Filtros Avanzados</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Departamento -->
+                <div class="col-md-3">
+                    <label for="filterDepartamento" class="form-label">Departamento</label>
+                    <select class="form-select" id="filterDepartamento" name="departamento">
+                        <option value="">Todos los departamentos</option>
+                    </select>
                 </div>
+                
+                <!-- Municipio -->
+                <div class="col-md-3">
+                    <label for="filterMunicipio" class="form-label">Municipio</label>
+                    <select class="form-select" id="filterMunicipio" name="municipio" disabled>
+                        <option value="">Todos los municipios</option>
+                    </select>
+                </div>
+                
+                <!-- Zona -->
+                <div class="col-md-3">
+                    <label for="filterZona" class="form-label">Zona</label>
+                    <select class="form-select" id="filterZona" name="zona">
+                        <option value="">Todas las zonas</option>
+                    </select>
+                </div>
+                
+                <!-- Referenciador -->
+                <div class="col-md-3">
+                    <label for="filterReferenciador" class="form-label">Referenciador</label>
+                    <select class="form-select" id="filterReferenciador" name="referenciador">
+                        <option value="">Todos los referenciadores</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-secondary" onclick="clearAdvancedFilters()">
+                        <i class="fas fa-times"></i> Limpiar filtros
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="applyAdvancedFilters()">
+                        <i class="fas fa-filter"></i> Aplicar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
             
             <div class="table-responsive">
@@ -596,7 +606,175 @@ if ($porcentajeRestante > 50) {
         // ============================================
         // FUNCIONES DE SESSIONSTORAGE
         // ============================================
+        // ============================================
+// FUNCIONES PARA FILTROS AVANZADOS
+// ============================================
+
+// Cargar opciones de filtros avanzados al iniciar
+function cargarOpcionesFiltrosAvanzados() {
+    $.ajax({
+        url: '../ajax/get_referenciados.php',
+        type: 'GET',
+        data: { get_options: 'true' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Llenar departamentos
+                var departamentoSelect = $('#filterDepartamento');
+                departamentoSelect.html('<option value="">Todos los departamentos</option>');
+                $.each(response.departamentos, function(index, departamento) {
+                    departamentoSelect.append('<option value="' + departamento.id_departamento + '">' + departamento.nombre + '</option>');
+                });
+                
+                // Llenar zonas
+                var zonaSelect = $('#filterZona');
+                zonaSelect.html('<option value="">Todas las zonas</option>');
+                $.each(response.zonas, function(index, zona) {
+                    zonaSelect.append('<option value="' + zona.id_zona + '">' + zona.nombre + '</option>');
+                });
+                
+                // Llenar referenciadores
+                var referenciadorSelect = $('#filterReferenciador');
+                referenciadorSelect.html('<option value="">Todos los referenciadores</option>');
+                $.each(response.referenciadores, function(index, referenciador) {
+                    var nombreCompleto = referenciador.nombres + ' ' + referenciador.apellidos + ' - ' + (referenciador.cedula || '');
+                    referenciadorSelect.append('<option value="' + referenciador.id_usuario + '">' + nombreCompleto + '</option>');
+                });
+                
+                // Aplicar filtros guardados después de cargar las opciones
+                aplicarFiltrosAvanzadosGuardados();
+            } else {
+                showNotification('Error al cargar opciones de filtros: ' + (response.error || 'Error desconocido'), 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            showNotification('Error al cargar opciones de filtros: ' + error, 'error');
+        }
+    });
+}
+
+// Función para cargar municipios según departamento
+function cargarMunicipios(idDepartamento) {
+    if (!idDepartamento) {
+        $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+        $('#filterMunicipio').prop('disabled', true);
+        return;
+    }
+    
+    $.ajax({
+        url: '../ajax/get_referenciados.php',
+        type: 'GET',
+        data: { get_municipios: 'true', departamento: idDepartamento },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                var municipioSelect = $('#filterMunicipio');
+                municipioSelect.html('<option value="">Todos los municipios</option>');
+                $.each(response.municipios, function(index, municipio) {
+                    municipioSelect.append('<option value="' + municipio.id_municipio + '">' + municipio.nombre + '</option>');
+                });
+                municipioSelect.prop('disabled', false);
+                
+                // Si hay municipio guardado en los filtros, seleccionarlo
+                if (currentFilters.municipio) {
+                    municipioSelect.val(currentFilters.municipio);
+                }
+            } else {
+                showNotification('Error al cargar municipios: ' + (response.error || 'Error desconocido'), 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            showNotification('Error al cargar municipios: ' + error, 'error');
+        }
+    });
+}
+
+// Aplicar filtros avanzados guardados al UI
+function aplicarFiltrosAvanzadosGuardados() {
+    // Aplicar departamento si existe
+    if (currentFilters.departamento) {
+        $('#filterDepartamento').val(currentFilters.departamento);
         
+        // Si hay departamento, cargar municipios
+        if (currentFilters.municipio) {
+            setTimeout(() => {
+                cargarMunicipios(currentFilters.departamento);
+                // Establecer el municipio después de cargar
+                setTimeout(() => {
+                    $('#filterMunicipio').val(currentFilters.municipio);
+                }, 500);
+            }, 300);
+        } else {
+            // Solo cargar municipios sin seleccionar
+            cargarMunicipios(currentFilters.departamento);
+        }
+    }
+    
+    // Aplicar zona si existe
+    if (currentFilters.zona) {
+        $('#filterZona').val(currentFilters.zona);
+    }
+    
+    // Aplicar referenciador si existe
+    if (currentFilters.referenciador) {
+        $('#filterReferenciador').val(currentFilters.referenciador);
+    }
+}
+
+// Evento para cambio de departamento
+$('#filterDepartamento').on('change', function() {
+    var idDepartamento = $(this).val();
+    cargarMunicipios(idDepartamento);
+});
+
+// ============================================
+// FUNCIONES GLOBALES PARA FILTROS AVANZADOS
+// ============================================
+
+// Función para aplicar filtros avanzados
+window.applyAdvancedFilters = function() {
+    currentFilters.departamento = $('#filterDepartamento').val() || '';
+    currentFilters.municipio = $('#filterMunicipio').val() || '';
+    currentFilters.zona = $('#filterZona').val() || '';
+    currentFilters.referenciador = $('#filterReferenciador').val() || '';
+    
+    // Guardar filtros
+    saveFilters();
+    
+    // Cargar datos con los nuevos filtros
+    loadReferenciados(1);
+    
+    // Cerrar el collapse de filtros avanzados
+    var advancedFilters = bootstrap.Collapse.getInstance(document.getElementById('advancedFilters'));
+    if (advancedFilters) {
+        advancedFilters.hide();
+    }
+    
+    showNotification('Filtros avanzados aplicados', 'success');
+};
+
+// Función para limpiar filtros avanzados
+window.clearAdvancedFilters = function() {
+    $('#filterDepartamento').val('');
+    $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+    $('#filterMunicipio').prop('disabled', true);
+    $('#filterZona').val('');
+    $('#filterReferenciador').val('');
+    
+    // Actualizar currentFilters
+    delete currentFilters.departamento;
+    delete currentFilters.municipio;
+    delete currentFilters.zona;
+    delete currentFilters.referenciador;
+    
+    // Guardar filtros
+    saveFilters();
+    
+    // Cargar datos sin filtros avanzados
+    loadReferenciados(1);
+    
+    showNotification('Filtros avanzados limpiados', 'info');
+};
         // Guardar filtros en sessionStorage
         function saveFilters() {
             try {
@@ -668,19 +846,20 @@ if ($porcentajeRestante > 50) {
         }
         
         // Limpiar todos los filtros y sessionStorage
-        function clearAllFiltersAndStorage() {
-            currentFilters = {};
-            sessionStorage.removeItem(STORAGE_KEY);
-            
-            // Limpiar UI
-            $('#searchInput').val('');
-            $('#filterDepartamento').val('');
-            $('#filterMunicipio').val('');
-            $('#filterZona').val('');
-            $('#filterReferenciador').val('');
-            
-            updateFilterButtons();
-        }
+function clearAllFiltersAndStorage() {
+    currentFilters = {};
+    sessionStorage.removeItem(STORAGE_KEY);
+    
+    // Limpiar UI
+    $('#searchInput').val('');
+    $('#filterDepartamento').val('');
+    $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+    $('#filterMunicipio').prop('disabled', true);
+    $('#filterZona').val('');
+    $('#filterReferenciador').val('');
+    
+    updateFilterButtons();
+}
         
         // ============================================
         // FUNCIONES PRINCIPALES
@@ -938,27 +1117,45 @@ if ($porcentajeRestante > 50) {
             $('.stat-activos .stat-number').text(stats.activos);
         }
         
-        // Función para actualizar información total
-        function updateTotalInfo(stats, pagination) {
-            const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
-            const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
-            
-            let filterInfo = '';
-            if (currentFilters.search) {
-                filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
-            }
-            if (currentFilters.activo === '1') {
-                filterInfo += ' | Solo activos';
-            } else if (currentFilters.activo === '0') {
-                filterInfo += ' | Solo inactivos';
-            }
-            
-            $('#infoFooter p').html(`
-                <i class="fas fa-info-circle"></i> 
-                Mostrando ${from} a ${to} de ${pagination.total} referidos 
-                (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
-            `);
-        }
+        // Función para actualizar información total (mejorada)
+function updateTotalInfo(stats, pagination) {
+    const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+    const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+    
+    let filterInfo = '';
+    if (currentFilters.search) {
+        filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
+    }
+    if (currentFilters.activo === '1') {
+        filterInfo += ' | Solo activos';
+    } else if (currentFilters.activo === '0') {
+        filterInfo += ' | Solo inactivos';
+    }
+    
+    // Agregar información de filtros avanzados
+    if (currentFilters.departamento) {
+        const deptoName = $('#filterDepartamento option:selected').text();
+        filterInfo += ` | Departamento: ${deptoName}`;
+    }
+    if (currentFilters.municipio) {
+        const muniName = $('#filterMunicipio option:selected').text();
+        filterInfo += ` | Municipio: ${muniName}`;
+    }
+    if (currentFilters.zona) {
+        const zonaName = $('#filterZona option:selected').text();
+        filterInfo += ` | Zona: ${zonaName}`;
+    }
+    if (currentFilters.referenciador) {
+        const refName = $('#filterReferenciador option:selected').text();
+        filterInfo += ` | Referenciador: ${refName}`;
+    }
+    
+    $('#infoFooter p').html(`
+        <i class="fas fa-info-circle"></i> 
+        Mostrando ${from} a ${to} de ${pagination.total} referidos 
+        (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
+    `);
+}
         
         // Funciones helper
         function escapeHtml(text) {
@@ -1099,21 +1296,24 @@ if ($porcentajeRestante > 50) {
         };
         
         // ============================================
-        // INICIALIZACIÓN
-        // ============================================
-        
-        // Cargar filtros guardados
-        const hasSavedFilters = loadFilters();
-        
-        // Inicializar botones de filtro
-        updateFilterButtons();
-        
-        // Cargar primera página (con filtros guardados si existen)
-        if (hasSavedFilters) {
-            loadReferenciados(currentPage, true);
-        } else {
-            loadReferenciados(1);
-        }
+// INICIALIZACIÓN
+// ============================================
+
+// Cargar filtros guardados
+const hasSavedFilters = loadFilters();
+
+// Inicializar botones de filtro
+updateFilterButtons();
+
+// Cargar opciones de filtros avanzados
+cargarOpcionesFiltrosAvanzados();
+
+// Cargar primera página (con filtros guardados si existen)
+if (hasSavedFilters) {
+    loadReferenciados(currentPage, true);
+} else {
+    loadReferenciados(1);
+}
         
         // Enfocar el input de búsqueda al cargar
         $('#searchInput').focus();

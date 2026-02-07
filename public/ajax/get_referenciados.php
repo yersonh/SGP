@@ -18,7 +18,58 @@ if (!isset($_SESSION['id_usuario']) || !in_array($_SESSION['tipo_usuario'], ['Su
 $pdo = Database::getConnection();
 $referenciadoModel = new ReferenciadoModel($pdo);
 
-// Obtener parámetros
+// Verificar si es una solicitud para obtener opciones de filtros
+$getOptions = isset($_GET['get_options']) ? $_GET['get_options'] : false;
+
+if ($getOptions === 'true') {
+    // Devolver opciones para filtros
+    $departamentoModel = new DepartamentoModel($pdo);
+    $zonaModel = new ZonaModel($pdo);
+    $usuarioModel = new UsuarioModel($pdo);
+    
+    try {
+        $departamentos = $departamentoModel->getAll();
+        $zonas = $zonaModel->getAll();
+        $referenciadores = $usuarioModel->getReferenciadoresParaCombo(); // Método específico sin foto_url
+        
+        echo json_encode([
+            'success' => true,
+            'departamentos' => $departamentos,
+            'zonas' => $zonas,
+            'referenciadores' => $referenciadores
+        ]);
+    } catch (Exception $e) {
+        error_log('Error al obtener opciones de filtros: ' . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'error' => 'Error al cargar opciones de filtros'
+        ]);
+    }
+    exit();
+}
+
+// Si se solicita municipios por departamento
+if (isset($_GET['get_municipios']) && isset($_GET['departamento'])) {
+    $municipioModel = new MunicipioModel($pdo);
+    $id_departamento = (int)$_GET['departamento'];
+    
+    try {
+        $municipios = $municipioModel->getByDepartamento($id_departamento);
+        echo json_encode([
+            'success' => true,
+            'municipios' => $municipios
+        ]);
+    } catch (Exception $e) {
+        error_log('Error al obtener municipios: ' . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'error' => 'Error al cargar municipios'
+        ]);
+    }
+    exit();
+}
+
+// Si no es solicitud de opciones, continuar con la consulta normal de referenciados
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['per_page']) ? max(1, (int)$_GET['per_page']) : 50;
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -79,6 +130,6 @@ try {
     echo json_encode([
         'success' => false,
         'error' => 'Error del servidor: ' . $e->getMessage(),
-        'debug' => ['filters' => $filters] // Solo para depuración
+        'debug' => ['filters' => $filters]
     ]);
 }

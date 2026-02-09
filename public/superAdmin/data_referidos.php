@@ -266,7 +266,7 @@ if ($porcentajeRestante > 50) {
                             <input type="text" 
                                    class="form-control form-control-sm" 
                                    id="searchInput" 
-                                   placeholder="Buscar por nombre, cédula, teléfono, etc."
+                                   placeholder="Buscar por nombre, cédula, teléfono, líder, etc."
                                    onkeyup="handleSearchInput(event)">
                             <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearSearch()" title="Limpiar búsqueda">
                                 <i class="fas fa-times"></i>
@@ -289,60 +289,68 @@ if ($porcentajeRestante > 50) {
                     </div>
                 </div>
                 
-<!-- Filtros avanzados (en collapse) -->
-<div class="collapse mb-3" id="advancedFilters">
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Filtros Avanzados</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <!-- Departamento -->
-                <div class="col-md-3">
-                    <label for="filterDepartamento" class="form-label">Departamento</label>
-                    <select class="form-select" id="filterDepartamento" name="departamento">
-                        <option value="">Todos los departamentos</option>
-                    </select>
+                <!-- Filtros avanzados (en collapse) -->
+                <div class="collapse mb-3" id="advancedFilters">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Filtros Avanzados</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Departamento -->
+                                <div class="col-md-3">
+                                    <label for="filterDepartamento" class="form-label">Departamento</label>
+                                    <select class="form-select" id="filterDepartamento" name="departamento">
+                                        <option value="">Todos los departamentos</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Municipio -->
+                                <div class="col-md-3">
+                                    <label for="filterMunicipio" class="form-label">Municipio</label>
+                                    <select class="form-select" id="filterMunicipio" name="municipio" disabled>
+                                        <option value="">Todos los municipios</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Zona -->
+                                <div class="col-md-3">
+                                    <label for="filterZona" class="form-label">Zona</label>
+                                    <select class="form-select" id="filterZona" name="zona">
+                                        <option value="">Todas las zonas</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Referenciador -->
+                                <div class="col-md-3">
+                                    <label for="filterReferenciador" class="form-label">Referenciador</label>
+                                    <select class="form-select" id="filterReferenciador" name="referenciador">
+                                        <option value="">Todos los referenciadores</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Líder (NUEVO) -->
+                                <div class="col-md-3">
+                                    <label for="filterLider" class="form-label">Líder</label>
+                                    <select class="form-select" id="filterLider" name="lider">
+                                        <option value="">Todos los líderes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-12 text-end">
+                                    <button type="button" class="btn btn-secondary" onclick="clearAdvancedFilters()">
+                                        <i class="fas fa-times"></i> Limpiar filtros
+                                    </button>
+                                    <button type="button" class="btn btn-primary" onclick="applyAdvancedFilters()">
+                                        <i class="fas fa-filter"></i> Aplicar filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Municipio -->
-                <div class="col-md-3">
-                    <label for="filterMunicipio" class="form-label">Municipio</label>
-                    <select class="form-select" id="filterMunicipio" name="municipio" disabled>
-                        <option value="">Todos los municipios</option>
-                    </select>
-                </div>
-                
-                <!-- Zona -->
-                <div class="col-md-3">
-                    <label for="filterZona" class="form-label">Zona</label>
-                    <select class="form-select" id="filterZona" name="zona">
-                        <option value="">Todas las zonas</option>
-                    </select>
-                </div>
-                
-                <!-- Referenciador -->
-                <div class="col-md-3">
-                    <label for="filterReferenciador" class="form-label">Referenciador</label>
-                    <select class="form-select" id="filterReferenciador" name="referenciador">
-                        <option value="">Todos los referenciadores</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="row mt-3">
-                <div class="col-md-12 text-end">
-                    <button type="button" class="btn btn-secondary" onclick="clearAdvancedFilters()">
-                        <i class="fas fa-times"></i> Limpiar filtros
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="applyAdvancedFilters()">
-                        <i class="fas fa-filter"></i> Aplicar filtros
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
             </div>
             
             <div class="table-responsive">
@@ -368,6 +376,7 @@ if ($porcentajeRestante > 50) {
                             <th>Grupo Parlamentario</th>
                             <th>Barrio</th>
                             <th>Referenciador</th>
+                            <th>Líder</th>
                             <th>Fecha Registro</th>
                             <th>Acciones</th>
                         </tr>
@@ -375,7 +384,7 @@ if ($porcentajeRestante > 50) {
                     <tbody id="tablaBody">
                         <!-- Los datos se cargarán aquí por AJAX -->
                         <tr id="loadingRow">
-                            <td colspan="21" class="text-center">
+                            <td colspan="22" class="text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -594,967 +603,978 @@ if ($porcentajeRestante > 50) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <script>
-    $(document).ready(function() {
-        let currentPage = 1;
-        const perPage = 50;
-        let currentFilters = {};
-        let searchTimeout = null;
-        
-        // Clave para sessionStorage
-        const STORAGE_KEY = 'referidos_filters';
-        
-        // ============================================
-        // FUNCIONES DE SESSIONSTORAGE
-        // ============================================
-        // ============================================
-// FUNCIONES PARA FILTROS AVANZADOS
-// ============================================
+$(document).ready(function() {
+    let currentPage = 1;
+    const perPage = 50;
+    let currentFilters = {};
+    let searchTimeout = null;
+    
+    // Clave para sessionStorage
+    const STORAGE_KEY = 'referidos_filters';
+    
+    // ============================================
+    // FUNCIONES PARA FILTROS AVANZADOS
+    // ============================================
 
-// Cargar opciones de filtros avanzados al iniciar
-function cargarOpcionesFiltrosAvanzados() {
-    $.ajax({
-        url: '../ajax/get_referenciados.php',
-        type: 'GET',
-        data: { get_options: 'true' },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                // Llenar departamentos
-                var departamentoSelect = $('#filterDepartamento');
-                departamentoSelect.html('<option value="">Todos los departamentos</option>');
-                $.each(response.departamentos, function(index, departamento) {
-                    departamentoSelect.append('<option value="' + departamento.id_departamento + '">' + departamento.nombre + '</option>');
-                });
-                
-                // Llenar zonas
-                var zonaSelect = $('#filterZona');
-                zonaSelect.html('<option value="">Todas las zonas</option>');
-                $.each(response.zonas, function(index, zona) {
-                    zonaSelect.append('<option value="' + zona.id_zona + '">' + zona.nombre + '</option>');
-                });
-                
-                // Llenar referenciadores
-                var referenciadorSelect = $('#filterReferenciador');
-                referenciadorSelect.html('<option value="">Todos los referenciadores</option>');
-                $.each(response.referenciadores, function(index, referenciador) {
-                    var nombreCompleto = referenciador.nombres + ' ' + referenciador.apellidos + ' - ' + (referenciador.cedula || '');
-                    referenciadorSelect.append('<option value="' + referenciador.id_usuario + '">' + nombreCompleto + '</option>');
-                });
-                
-                // Aplicar filtros guardados después de cargar las opciones
-                aplicarFiltrosAvanzadosGuardados();
-            } else {
-                showNotification('Error al cargar opciones de filtros: ' + (response.error || 'Error desconocido'), 'error');
+    // Cargar opciones de filtros avanzados al iniciar
+    function cargarOpcionesFiltrosAvanzados() {
+        $.ajax({
+            url: '../ajax/get_referenciados.php',
+            type: 'GET',
+            data: { get_options: 'true' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Llenar departamentos
+                    var departamentoSelect = $('#filterDepartamento');
+                    departamentoSelect.html('<option value="">Todos los departamentos</option>');
+                    $.each(response.departamentos, function(index, departamento) {
+                        departamentoSelect.append('<option value="' + departamento.id_departamento + '">' + departamento.nombre + '</option>');
+                    });
+                    
+                    // Llenar zonas
+                    var zonaSelect = $('#filterZona');
+                    zonaSelect.html('<option value="">Todas las zonas</option>');
+                    $.each(response.zonas, function(index, zona) {
+                        zonaSelect.append('<option value="' + zona.id_zona + '">' + zona.nombre + '</option>');
+                    });
+                    
+                    // Llenar referenciadores
+                    var referenciadorSelect = $('#filterReferenciador');
+                    referenciadorSelect.html('<option value="">Todos los referenciadores</option>');
+                    $.each(response.referenciadores, function(index, referenciador) {
+                        var nombreCompleto = referenciador.nombres + ' ' + referenciador.apellidos + ' - ' + (referenciador.cedula || '');
+                        referenciadorSelect.append('<option value="' + referenciador.id_usuario + '">' + nombreCompleto + '</option>');
+                    });
+                    
+                    // Llenar líderes - CORREGIDO: usar id_lider
+                    var liderSelect = $('#filterLider');
+                    liderSelect.html('<option value="">Todos los líderes</option>');
+                    if (response.lideres && response.lideres.length > 0) {
+                        $.each(response.lideres, function(index, lider) {
+                            // Los líderes vienen con campos: id_lider, nombres, apellidos, cc, etc.
+                            var nombreCompleto = lider.nombres + ' ' + lider.apellidos;
+                            // Opcional: agregar cédula si está disponible
+                            if (lider.cc) {
+                                nombreCompleto += ' - ' + lider.cc;
+                            }
+                            // CORRECCIÓN IMPORTANTE: usar id_lider no id_usuario
+                            liderSelect.append('<option value="' + lider.id_lider + '">' + nombreCompleto + '</option>');
+                        });
+                    }
+                    
+                    // Aplicar filtros guardados después de cargar las opciones
+                    aplicarFiltrosAvanzadosGuardados();
+                } else {
+                    showNotification('Error al cargar opciones de filtros: ' + (response.error || 'Error desconocido'), 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                showNotification('Error al cargar opciones de filtros: ' + error, 'error');
             }
-        },
-        error: function(xhr, status, error) {
-            showNotification('Error al cargar opciones de filtros: ' + error, 'error');
-        }
-    });
-}
+        });
+    }
 
-// Función para cargar municipios según departamento
-function cargarMunicipios(idDepartamento) {
-    if (!idDepartamento) {
+    // Función para cargar municipios según departamento
+    function cargarMunicipios(idDepartamento) {
+        if (!idDepartamento) {
+            $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+            $('#filterMunicipio').prop('disabled', true);
+            return;
+        }
+        
+        $.ajax({
+            url: '../ajax/get_referenciados.php',
+            type: 'GET',
+            data: { get_municipios: 'true', departamento: idDepartamento },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    var municipioSelect = $('#filterMunicipio');
+                    municipioSelect.html('<option value="">Todos los municipios</option>');
+                    $.each(response.municipios, function(index, municipio) {
+                        municipioSelect.append('<option value="' + municipio.id_municipio + '">' + municipio.nombre + '</option>');
+                    });
+                    municipioSelect.prop('disabled', false);
+                    
+                    // Si hay municipio guardado en los filtros, seleccionarlo
+                    if (currentFilters.municipio) {
+                        municipioSelect.val(currentFilters.municipio);
+                    }
+                } else {
+                    showNotification('Error al cargar municipios: ' + (response.error || 'Error desconocido'), 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                showNotification('Error al cargar municipios: ' + error, 'error');
+            }
+        });
+    }
+
+    // Aplicar filtros avanzados guardados al UI
+    function aplicarFiltrosAvanzadosGuardados() {
+        // Aplicar departamento si existe
+        if (currentFilters.departamento) {
+            $('#filterDepartamento').val(currentFilters.departamento);
+            
+            // Si hay departamento, cargar municipios
+            if (currentFilters.municipio) {
+                setTimeout(() => {
+                    cargarMunicipios(currentFilters.departamento);
+                    // Establecer el municipio después de cargar
+                    setTimeout(() => {
+                        $('#filterMunicipio').val(currentFilters.municipio);
+                    }, 500);
+                }, 300);
+            } else {
+                // Solo cargar municipios sin seleccionar
+                cargarMunicipios(currentFilters.departamento);
+            }
+        }
+        
+        // Aplicar zona si existe
+        if (currentFilters.zona) {
+            $('#filterZona').val(currentFilters.zona);
+        }
+        
+        // Aplicar referenciador si existe
+        if (currentFilters.referenciador) {
+            $('#filterReferenciador').val(currentFilters.referenciador);
+        }
+        
+        // Aplicar líder si existe
+        if (currentFilters.lider) {
+            $('#filterLider').val(currentFilters.lider);
+        }
+    }
+
+    // Evento para cambio de departamento
+    $('#filterDepartamento').on('change', function() {
+        var idDepartamento = $(this).val();
+        cargarMunicipios(idDepartamento);
+    });
+
+    // ============================================
+    // FUNCIONES GLOBALES PARA FILTROS AVANZADOS
+    // ============================================
+
+    // Función para aplicar filtros avanzados
+    window.applyAdvancedFilters = function() {
+        currentFilters.departamento = $('#filterDepartamento').val() || '';
+        currentFilters.municipio = $('#filterMunicipio').val() || '';
+        currentFilters.zona = $('#filterZona').val() || '';
+        currentFilters.referenciador = $('#filterReferenciador').val() || '';
+        currentFilters.lider = $('#filterLider').val() || '';
+        
+        // Guardar filtros
+        saveFilters();
+        
+        // Cargar datos con los nuevos filtros
+        loadReferenciados(1);
+        
+        // Cerrar el collapse de filtros avanzados
+        var advancedFilters = bootstrap.Collapse.getInstance(document.getElementById('advancedFilters'));
+        if (advancedFilters) {
+            advancedFilters.hide();
+        }
+        
+        showNotification('Filtros avanzados aplicados', 'success');
+    };
+
+    // Función para limpiar filtros avanzados
+    window.clearAdvancedFilters = function() {
+        $('#filterDepartamento').val('');
         $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
         $('#filterMunicipio').prop('disabled', true);
-        return;
+        $('#filterZona').val('');
+        $('#filterReferenciador').val('');
+        $('#filterLider').val('');
+        
+        // Actualizar currentFilters
+        delete currentFilters.departamento;
+        delete currentFilters.municipio;
+        delete currentFilters.zona;
+        delete currentFilters.referenciador;
+        delete currentFilters.lider;
+        
+        // Guardar filtros
+        saveFilters();
+        
+        // Cargar datos sin filtros avanzados
+        loadReferenciados(1);
+        
+        showNotification('Filtros avanzados limpiados', 'info');
+    };
+
+    // ============================================
+    // FUNCIONES DE SESSIONSTORAGE
+    // ============================================
+    
+    // Guardar filtros en sessionStorage
+    function saveFilters() {
+        try {
+            const filtersToSave = {
+                search: currentFilters.search || '',
+                activo: currentFilters.activo || '',
+                departamento: currentFilters.departamento || '',
+                municipio: currentFilters.municipio || '',
+                zona: currentFilters.zona || '',
+                referenciador: currentFilters.referenciador || '',
+                lider: currentFilters.lider || '',
+                currentPage: currentPage || 1
+            };
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
+        } catch (e) {
+            console.error('Error al guardar filtros:', e);
+        }
     }
     
-    $.ajax({
-        url: '../ajax/get_referenciados.php',
-        type: 'GET',
-        data: { get_municipios: 'true', departamento: idDepartamento },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                var municipioSelect = $('#filterMunicipio');
-                municipioSelect.html('<option value="">Todos los municipios</option>');
-                $.each(response.municipios, function(index, municipio) {
-                    municipioSelect.append('<option value="' + municipio.id_municipio + '">' + municipio.nombre + '</option>');
-                });
-                municipioSelect.prop('disabled', false);
+    // Cargar filtros desde sessionStorage
+    function loadFilters() {
+        try {
+            const saved = sessionStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
                 
-                // Si hay municipio guardado en los filtros, seleccionarlo
-                if (currentFilters.municipio) {
-                    municipioSelect.val(currentFilters.municipio);
+                // Aplicar filtros al UI
+                if (parsed.search) {
+                    $('#searchInput').val(parsed.search);
+                    currentFilters.search = parsed.search;
                 }
-            } else {
-                showNotification('Error al cargar municipios: ' + (response.error || 'Error desconocido'), 'error');
+                
+                if (parsed.activo !== undefined && parsed.activo !== '') {
+                    currentFilters.activo = parsed.activo;
+                    updateFilterButtons();
+                }
+                
+                if (parsed.departamento) {
+                    currentFilters.departamento = parsed.departamento;
+                    $('#filterDepartamento').val(parsed.departamento);
+                }
+                
+                if (parsed.municipio) {
+                    currentFilters.municipio = parsed.municipio;
+                    $('#filterMunicipio').val(parsed.municipio);
+                }
+                
+                if (parsed.zona) {
+                    currentFilters.zona = parsed.zona;
+                    $('#filterZona').val(parsed.zona);
+                }
+                
+                if (parsed.referenciador) {
+                    currentFilters.referenciador = parsed.referenciador;
+                    $('#filterReferenciador').val(parsed.referenciador);
+                }
+                
+                if (parsed.lider) {
+                    currentFilters.lider = parsed.lider;
+                    $('#filterLider').val(parsed.lider);
+                }
+                
+                if (parsed.currentPage) {
+                    currentPage = parsed.currentPage;
+                }
+                
+                return true;
             }
-        },
-        error: function(xhr, status, error) {
-            showNotification('Error al cargar municipios: ' + error, 'error');
+        } catch (e) {
+            console.error('Error al cargar filtros:', e);
+            // Limpiar sessionStorage si hay error
+            sessionStorage.removeItem(STORAGE_KEY);
         }
-    });
-}
-
-// Aplicar filtros avanzados guardados al UI
-function aplicarFiltrosAvanzadosGuardados() {
-    // Aplicar departamento si existe
-    if (currentFilters.departamento) {
-        $('#filterDepartamento').val(currentFilters.departamento);
+        return false;
+    }
+    
+    // Limpiar todos los filtros y sessionStorage
+    function clearAllFiltersAndStorage() {
+        currentFilters = {};
+        sessionStorage.removeItem(STORAGE_KEY);
         
-        // Si hay departamento, cargar municipios
-        if (currentFilters.municipio) {
-            setTimeout(() => {
-                cargarMunicipios(currentFilters.departamento);
-                // Establecer el municipio después de cargar
-                setTimeout(() => {
-                    $('#filterMunicipio').val(currentFilters.municipio);
-                }, 500);
-            }, 300);
+        // Limpiar UI
+        $('#searchInput').val('');
+        $('#filterDepartamento').val('');
+        $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+        $('#filterMunicipio').prop('disabled', true);
+        $('#filterZona').val('');
+        $('#filterReferenciador').val('');
+        $('#filterLider').val('');
+        
+        updateFilterButtons();
+    }
+    
+    // ============================================
+    // FUNCIONES PRINCIPALES
+    // ============================================
+    
+    // Función para cargar datos por AJAX
+    function loadReferenciados(page = 1, useSavedPage = false) {
+        if (useSavedPage) {
+            page = currentPage;
         } else {
-            // Solo cargar municipios sin seleccionar
-            cargarMunicipios(currentFilters.departamento);
-        }
-    }
-    
-    // Aplicar zona si existe
-    if (currentFilters.zona) {
-        $('#filterZona').val(currentFilters.zona);
-    }
-    
-    // Aplicar referenciador si existe
-    if (currentFilters.referenciador) {
-        $('#filterReferenciador').val(currentFilters.referenciador);
-    }
-}
-
-// Evento para cambio de departamento
-$('#filterDepartamento').on('change', function() {
-    var idDepartamento = $(this).val();
-    cargarMunicipios(idDepartamento);
-});
-
-// ============================================
-// FUNCIONES GLOBALES PARA FILTROS AVANZADOS
-// ============================================
-
-// Función para aplicar filtros avanzados
-window.applyAdvancedFilters = function() {
-    currentFilters.departamento = $('#filterDepartamento').val() || '';
-    currentFilters.municipio = $('#filterMunicipio').val() || '';
-    currentFilters.zona = $('#filterZona').val() || '';
-    currentFilters.referenciador = $('#filterReferenciador').val() || '';
-    
-    // Guardar filtros
-    saveFilters();
-    
-    // Cargar datos con los nuevos filtros
-    loadReferenciados(1);
-    
-    // Cerrar el collapse de filtros avanzados
-    var advancedFilters = bootstrap.Collapse.getInstance(document.getElementById('advancedFilters'));
-    if (advancedFilters) {
-        advancedFilters.hide();
-    }
-    
-    showNotification('Filtros avanzados aplicados', 'success');
-};
-
-// Función para limpiar filtros avanzados
-window.clearAdvancedFilters = function() {
-    $('#filterDepartamento').val('');
-    $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
-    $('#filterMunicipio').prop('disabled', true);
-    $('#filterZona').val('');
-    $('#filterReferenciador').val('');
-    
-    // Actualizar currentFilters
-    delete currentFilters.departamento;
-    delete currentFilters.municipio;
-    delete currentFilters.zona;
-    delete currentFilters.referenciador;
-    
-    // Guardar filtros
-    saveFilters();
-    
-    // Cargar datos sin filtros avanzados
-    loadReferenciados(1);
-    
-    showNotification('Filtros avanzados limpiados', 'info');
-};
-        // Guardar filtros en sessionStorage
-        function saveFilters() {
-            try {
-                const filtersToSave = {
-                    search: currentFilters.search || '',
-                    activo: currentFilters.activo || '',
-                    departamento: currentFilters.departamento || '',
-                    municipio: currentFilters.municipio || '',
-                    zona: currentFilters.zona || '',
-                    referenciador: currentFilters.referenciador || '',
-                    currentPage: currentPage || 1
-                };
-                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
-            } catch (e) {
-                console.error('Error al guardar filtros:', e);
-            }
+            currentPage = page;
         }
         
-        // Cargar filtros desde sessionStorage
-        function loadFilters() {
-            try {
-                const saved = sessionStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
+        // Guardar página actual
+        saveFilters();
+        
+        // Mostrar loading
+        $('#tablaBody').html(`
+            <tr id="loadingRow">
+                <td colspan="22" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando referenciados...</p>
+                </td>
+            </tr>
+        `);
+        
+        // Construir URL con parámetros
+        let url = `../ajax/get_referenciados.php?page=${page}&per_page=${perPage}`;
+        
+        if (currentFilters.search) {
+            url += `&search=${encodeURIComponent(currentFilters.search)}`;
+        }
+        if (currentFilters.activo !== undefined && currentFilters.activo !== '') {
+            url += `&activo=${currentFilters.activo}`;
+        }
+        
+        // Agregar filtros avanzados si existen
+        if (currentFilters.departamento) {
+            url += `&departamento=${currentFilters.departamento}`;
+        }
+        if (currentFilters.municipio) {
+            url += `&municipio=${currentFilters.municipio}`;
+        }
+        if (currentFilters.zona) {
+            url += `&zona=${currentFilters.zona}`;
+        }
+        if (currentFilters.referenciador) {
+            url += `&referenciador=${currentFilters.referenciador}`;
+        }
+        if (currentFilters.lider) {
+            url += `&lider=${currentFilters.lider}`;
+        }
+        
+        $.ajax({
+            url: url,
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    renderTable(response.data);
+                    renderPagination(response.pagination);
+                    updateStats(response.stats);
+                    updateTotalInfo(response.stats, response.pagination);
                     
-                    // Aplicar filtros al UI
-                    if (parsed.search) {
-                        $('#searchInput').val(parsed.search);
-                        currentFilters.search = parsed.search;
-                    }
-                    
-                    if (parsed.activo !== undefined && parsed.activo !== '') {
-                        currentFilters.activo = parsed.activo;
-                        updateFilterButtons();
-                    }
-                    
-                    if (parsed.departamento) {
-                        currentFilters.departamento = parsed.departamento;
-                        $('#filterDepartamento').val(parsed.departamento);
-                    }
-                    
-                    if (parsed.municipio) {
-                        currentFilters.municipio = parsed.municipio;
-                        $('#filterMunicipio').val(parsed.municipio);
-                    }
-                    
-                    if (parsed.zona) {
-                        currentFilters.zona = parsed.zona;
-                        $('#filterZona').val(parsed.zona);
-                    }
-                    
-                    if (parsed.referenciador) {
-                        currentFilters.referenciador = parsed.referenciador;
-                        $('#filterReferenciador').val(parsed.referenciador);
-                    }
-                    
-                    if (parsed.currentPage) {
-                        currentPage = parsed.currentPage;
-                    }
-                    
-                    return true;
+                    // Guardar filtros después de carga exitosa
+                    saveFilters();
+                } else {
+                    showNotification('Error al cargar datos: ' + (response.error || 'Error desconocido'), 'error');
                 }
-            } catch (e) {
-                console.error('Error al cargar filtros:', e);
-                // Limpiar sessionStorage si hay error
-                sessionStorage.removeItem(STORAGE_KEY);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error AJAX:', error);
+                showNotification('Error de conexión al servidor', 'error');
             }
-            return false;
-        }
-        
-        // Limpiar todos los filtros y sessionStorage
-function clearAllFiltersAndStorage() {
-    currentFilters = {};
-    sessionStorage.removeItem(STORAGE_KEY);
+        });
+    }
     
-    // Limpiar UI
-    $('#searchInput').val('');
-    $('#filterDepartamento').val('');
-    $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
-    $('#filterMunicipio').prop('disabled', true);
-    $('#filterZona').val('');
-    $('#filterReferenciador').val('');
-    
-    updateFilterButtons();
-}
-        
-        // ============================================
-        // FUNCIONES PRINCIPALES
-        // ============================================
-        
-        // Función para cargar datos por AJAX
-        function loadReferenciados(page = 1, useSavedPage = false) {
-            if (useSavedPage) {
-                page = currentPage;
-            } else {
-                currentPage = page;
-            }
-            
-            // Guardar página actual
-            saveFilters();
-            
-            // Mostrar loading
+    // Función para renderizar la tabla
+    function renderTable(data) {
+        if (data.length === 0) {
             $('#tablaBody').html(`
-                <tr id="loadingRow">
-                    <td colspan="21" class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Cargando...</span>
-                        </div>
-                        <p class="mt-2">Cargando referenciados...</p>
+                <tr>
+                    <td colspan="22" class="text-center">
+                        <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                        <p>No se encontraron referenciados</p>
+                        ${currentFilters.search || currentFilters.activo !== undefined ? 
+                            '<button class="btn btn-sm btn-primary mt-2" onclick="clearAllFilters()">Limpiar filtros</button>' : 
+                            ''}
                     </td>
                 </tr>
             `);
-            
-            // Construir URL con parámetros
-            let url = `../ajax/get_referenciados.php?page=${page}&per_page=${perPage}`;
-            
-            if (currentFilters.search) {
-                url += `&search=${encodeURIComponent(currentFilters.search)}`;
-            }
-            if (currentFilters.activo !== undefined && currentFilters.activo !== '') {
-                url += `&activo=${currentFilters.activo}`;
-            }
-            
-            // Agregar filtros avanzados si existen
-            if (currentFilters.departamento) {
-                url += `&departamento=${currentFilters.departamento}`;
-            }
-            if (currentFilters.municipio) {
-                url += `&municipio=${currentFilters.municipio}`;
-            }
-            if (currentFilters.zona) {
-                url += `&zona=${currentFilters.zona}`;
-            }
-            if (currentFilters.referenciador) {
-                url += `&referenciador=${currentFilters.referenciador}`;
-            }
-            
-            $.ajax({
-                url: url,
-                method: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        renderTable(response.data);
-                        renderPagination(response.pagination);
-                        updateStats(response.stats);
-                        updateTotalInfo(response.stats, response.pagination);
-                        
-                        // Guardar filtros después de carga exitosa
-                        saveFilters();
-                    } else {
-                        showNotification('Error al cargar datos: ' + (response.error || 'Error desconocido'), 'error');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error AJAX:', error);
-                    showNotification('Error de conexión al servidor', 'error');
-                }
-            });
+            return;
         }
         
-        // Función para renderizar la tabla
-        function renderTable(data) {
-            if (data.length === 0) {
-                $('#tablaBody').html(`
-                    <tr>
-                        <td colspan="21" class="text-center">
-                            <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
-                            <p>No se encontraron referenciados</p>
-                            ${currentFilters.search || currentFilters.activo !== undefined ? 
-                                '<button class="btn btn-sm btn-primary mt-2" onclick="clearAllFilters()">Limpiar filtros</button>' : 
-                                ''}
-                        </td>
-                    </tr>
-                `);
-                return;
-            }
+        let html = '';
+        
+        data.forEach(function(referenciado) {
+            const estaActivo = (referenciado.activo === true || referenciado.activo === 't' || referenciado.activo == 1);
+            const rowStyle = !estaActivo ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : '';
+            const nombreCompleto = escapeHtml(referenciado.nombre || '') + ' ' + escapeHtml(referenciado.apellido || '');
             
-            let html = '';
+            // Resaltar texto de búsqueda si existe
+            const searchTerm = currentFilters.search ? currentFilters.search.toLowerCase() : '';
+            const highlight = (text) => {
+                if (!searchTerm || !text) return escapeHtml(text || '');
+                const escapedText = escapeHtml(text || '');
+                const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                return escapedText.replace(regex, '<mark class="bg-warning">$1</mark>');
+            };
             
-            data.forEach(function(referenciado) {
-                const estaActivo = (referenciado.activo === true || referenciado.activo === 't' || referenciado.activo == 1);
-                const rowStyle = !estaActivo ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : '';
-                const nombreCompleto = escapeHtml(referenciado.nombre || '') + ' ' + escapeHtml(referenciado.apellido || '');
-                
-                // Resaltar texto de búsqueda si existe
-                const searchTerm = currentFilters.search ? currentFilters.search.toLowerCase() : '';
-                const highlight = (text) => {
-                    if (!searchTerm || !text) return escapeHtml(text || '');
-                    const escapedText = escapeHtml(text || '');
-                    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                    return escapedText.replace(regex, '<mark class="bg-warning">$1</mark>');
-                };
-                
-                html += `
-                <tr ${rowStyle}>
-                    <td>
+            html += `
+            <tr ${rowStyle}>
+                <td>
+                    ${estaActivo ? 
+                        '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>' : 
+                        '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>'}
+                </td>
+                <td>${highlight(referenciado.nombre)}</td>
+                <td>${highlight(referenciado.apellido)}</td>
+                <td>${highlight(referenciado.cedula)}</td>
+                <td class="text-ellipsis" title="${escapeHtml(referenciado.direccion || '')}">
+                    ${highlight(referenciado.direccion)}
+                </td>
+                <td>${highlight(referenciado.email)}</td>
+                <td>${highlight(referenciado.telefono)}</td>
+                <td>
+                    <div class="badge-affinidad badge-affinidad-${referenciado.afinidad || '1'}">
+                        ${referenciado.afinidad || '0'}
+                    </div>
+                </td>
+                <td>${highlight(referenciado.zona_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.sector_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.puesto_votacion_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.mesa || '')}</td>
+                <td>${highlight(referenciado.departamento_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.municipio_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.oferta_apoyo_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.grupo_poblacional_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.grupo_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.barrio_nombre || 'N/A')}</td>
+                <td>${highlight(referenciado.referenciador_nombre || 'N/A')}</td>
+                <td>${referenciado.lider_nombre ? `<span class="badge bg-info text-dark" title="Líder asignado">${escapeHtml(referenciado.lider_nombre)}</span>` : '<span class="badge bg-secondary">Sin líder</span>'}</td>
+                <td>${formatDate(referenciado.fecha_registro)}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-action btn-view" 
+                                title="Ver detalle del referido"
+                                onclick="verDetalleConFiltros(${referenciado.id_referenciado})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn-action btn-edit" 
+                                title="Editar referido"
+                                onclick="editarReferenciadoConFiltros(${referenciado.id_referenciado})">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         ${estaActivo ? 
-                            '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>' : 
-                            '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>'}
-                    </td>
-                    <td>${highlight(referenciado.nombre)}</td>
-                    <td>${highlight(referenciado.apellido)}</td>
-                    <td>${highlight(referenciado.cedula)}</td>
-                    <td class="text-ellipsis" title="${escapeHtml(referenciado.direccion || '')}">
-                        ${highlight(referenciado.direccion)}
-                    </td>
-                    <td>${highlight(referenciado.email)}</td>
-                    <td>${highlight(referenciado.telefono)}</td>
-                    <td>
-                        <div class="badge-affinidad badge-affinidad-${referenciado.afinidad || '1'}">
-                            ${referenciado.afinidad || '0'}
-                        </div>
-                    </td>
-                    <td>${highlight(referenciado.zona_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.sector_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.puesto_votacion_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.mesa || '')}</td>
-                    <td>${highlight(referenciado.departamento_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.municipio_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.oferta_apoyo_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.grupo_poblacional_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.grupo_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.barrio_nombre || 'N/A')}</td>
-                    <td>${highlight(referenciado.referenciador_nombre || 'N/A')}</td>
-                    <td>${formatDate(referenciado.fecha_registro)}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-action btn-view" 
-                                    title="Ver detalle del referido"
-                                    onclick="verDetalleConFiltros(${referenciado.id_referenciado})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-action btn-edit" 
-                                    title="Editar referido"
-                                    onclick="editarReferenciadoConFiltros(${referenciado.id_referenciado})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            ${estaActivo ? 
-                                `<button class="btn-action btn-deactivate" 
-                                        title="Desactivar referido"
-                                        onclick="desactivarReferenciado(${referenciado.id_referenciado}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
-                                    <i class="fas fa-user-slash"></i>
-                                </button>` :
-                                `<button class="btn-action btn-activate" 
-                                        title="Activar referido"
-                                        onclick="reactivarReferenciado(${referenciado.id_referenciado}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
-                                    <i class="fas fa-user-check"></i>
-                                </button>`}
-                        </div>
-                    </td>
-                </tr>`;
-            });
-            
-            $('#tablaBody').html(html);
+                            `<button class="btn-action btn-deactivate" 
+                                    title="Desactivar referido"
+                                    onclick="desactivarReferenciado(${referenciado.id_referenciado}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
+                                <i class="fas fa-user-slash"></i>
+                            </button>` :
+                            `<button class="btn-action btn-activate" 
+                                    title="Activar referido"
+                                    onclick="reactivarReferenciado(${referenciado.id_referenciado}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
+                                <i class="fas fa-user-check"></i>
+                            </button>`}
+                    </div>
+                </td>
+            </tr>`;
+        });
+        
+        $('#tablaBody').html(html);
+    }
+    
+    // Función para renderizar controles de paginación
+    function renderPagination(pagination) {
+        const totalPages = pagination.total_pages;
+        const currentPage = pagination.current_page;
+        
+        if (totalPages <= 1) {
+            $('#paginationControls').html('');
+            return;
         }
         
-        // Función para renderizar controles de paginación
-        function renderPagination(pagination) {
-            const totalPages = pagination.total_pages;
-            const currentPage = pagination.current_page;
-            
-            if (totalPages <= 1) {
-                $('#paginationControls').html('');
-                return;
-            }
-            
-            let html = '';
-            
-            // Botón anterior
-            if (currentPage > 1) {
-                html += `<li class="page-item">
-                            <a class="page-link" href="#" onclick="return changePage(${currentPage - 1})">
-                                <i class="fas fa-chevron-left"></i> Anterior
-                            </a>
-                         </li>`;
-            } else {
-                html += `<li class="page-item disabled">
-                            <span class="page-link">
-                                <i class="fas fa-chevron-left"></i> Anterior
-                            </span>
-                         </li>`;
-            }
-            
-            // Números de página
-            const maxPagesToShow = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-            
-            if (endPage - startPage + 1 < maxPagesToShow) {
-                startPage = Math.max(1, endPage - maxPagesToShow + 1);
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                if (i === currentPage) {
-                    html += `<li class="page-item active">
-                                <span class="page-link">${i}</span>
-                             </li>`;
-                } else {
-                    html += `<li class="page-item">
-                                <a class="page-link" href="#" onclick="return changePage(${i})">${i}</a>
-                             </li>`;
-                }
-            }
-            
-            // Botón siguiente
-            if (currentPage < totalPages) {
-                html += `<li class="page-item">
-                            <a class="page-link" href="#" onclick="return changePage(${currentPage + 1})">
-                                Siguiente <i class="fas fa-chevron-right"></i>
-                            </a>
-                         </li>`;
-            } else {
-                html += `<li class="page-item disabled">
-                            <span class="page-link">
-                                Siguiente <i class="fas fa-chevron-right"></i>
-                            </span>
-                         </li>`;
-            }
-            
-            // Información de página
+        let html = '';
+        
+        // Botón anterior
+        if (currentPage > 1) {
+            html += `<li class="page-item">
+                        <a class="page-link" href="#" onclick="return changePage(${currentPage - 1})">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </a>
+                     </li>`;
+        } else {
             html += `<li class="page-item disabled">
                         <span class="page-link">
-                            Página ${currentPage} de ${totalPages}
+                            <i class="fas fa-chevron-left"></i> Anterior
                         </span>
                      </li>`;
-            
-            $('#paginationControls').html(html);
         }
         
-        // Función para cambiar de página (global)
-        window.changePage = function(page) {
-            loadReferenciados(page);
-            return false;
-        };
+        // Números de página
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
         
-        // Función para actualizar estadísticas
-        function updateStats(stats) {
-            $('.stat-total .stat-number').text(stats.total);
-            $('.stat-activos .stat-number').text(stats.activos);
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
         }
         
-        // Función para actualizar información total (mejorada)
-function updateTotalInfo(stats, pagination) {
-    const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
-    const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
-    
-    let filterInfo = '';
-    if (currentFilters.search) {
-        filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
-    }
-    if (currentFilters.activo === '1') {
-        filterInfo += ' | Solo activos';
-    } else if (currentFilters.activo === '0') {
-        filterInfo += ' | Solo inactivos';
-    }
-    
-    // Agregar información de filtros avanzados
-    if (currentFilters.departamento) {
-        const deptoName = $('#filterDepartamento option:selected').text();
-        filterInfo += ` | Departamento: ${deptoName}`;
-    }
-    if (currentFilters.municipio) {
-        const muniName = $('#filterMunicipio option:selected').text();
-        filterInfo += ` | Municipio: ${muniName}`;
-    }
-    if (currentFilters.zona) {
-        const zonaName = $('#filterZona option:selected').text();
-        filterInfo += ` | Zona: ${zonaName}`;
-    }
-    if (currentFilters.referenciador) {
-        const refName = $('#filterReferenciador option:selected').text();
-        filterInfo += ` | Referenciador: ${refName}`;
-    }
-    
-    $('#infoFooter p').html(`
-        <i class="fas fa-info-circle"></i> 
-        Mostrando ${from} a ${to} de ${pagination.total} referidos 
-        (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
-    `);
-}
-        
-        // Funciones helper
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-        
-        // ============================================
-        // MANEJO DE FILTROS CON SESSIONSTORAGE
-        // ============================================
-        
-        // Manejo del buscador en tiempo real
-        window.handleSearchInput = function(event) {
-            const searchTerm = event.target.value.trim();
-            
-            // Clear previous timeout
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                html += `<li class="page-item active">
+                            <span class="page-link">${i}</span>
+                         </li>`;
+            } else {
+                html += `<li class="page-item">
+                            <a class="page-link" href="#" onclick="return changePage(${i})">${i}</a>
+                         </li>`;
             }
-            
-            // Set new timeout (debounce de 500ms)
-            searchTimeout = setTimeout(() => {
-                currentFilters.search = searchTerm;
-                saveFilters();
-                loadReferenciados(1);
-            }, 500);
-            
-            // Si presiona Enter, buscar inmediatamente
-            if (event.key === 'Enter') {
-                if (searchTimeout) clearTimeout(searchTimeout);
-                currentFilters.search = searchTerm;
-                saveFilters();
-                loadReferenciados(1);
-            }
-        };
+        }
         
-        // Limpiar búsqueda
-        window.clearSearch = function() {
-            $('#searchInput').val('');
-            delete currentFilters.search;
+        // Botón siguiente
+        if (currentPage < totalPages) {
+            html += `<li class="page-item">
+                        <a class="page-link" href="#" onclick="return changePage(${currentPage + 1})">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                     </li>`;
+        } else {
+            html += `<li class="page-item disabled">
+                        <span class="page-link">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </span>
+                     </li>`;
+        }
+        
+        // Información de página
+        html += `<li class="page-item disabled">
+                    <span class="page-link">
+                        Página ${currentPage} de ${totalPages}
+                    </span>
+                 </li>`;
+        
+        $('#paginationControls').html(html);
+    }
+    
+    // Función para cambiar de página (global)
+    window.changePage = function(page) {
+        loadReferenciados(page);
+        return false;
+    };
+    
+    // Función para actualizar estadísticas
+    function updateStats(stats) {
+        $('.stat-total .stat-number').text(stats.total);
+        $('.stat-activos .stat-number').text(stats.activos);
+    }
+    
+    // Función para actualizar información total (mejorada)
+    function updateTotalInfo(stats, pagination) {
+        const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+        const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+        
+        let filterInfo = '';
+        if (currentFilters.search) {
+            filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
+        }
+        if (currentFilters.activo === '1') {
+            filterInfo += ' | Solo activos';
+        } else if (currentFilters.activo === '0') {
+            filterInfo += ' | Solo inactivos';
+        }
+        
+        // Agregar información de filtros avanzados
+        if (currentFilters.departamento) {
+            const deptoName = $('#filterDepartamento option:selected').text();
+            filterInfo += ` | Departamento: ${deptoName}`;
+        }
+        if (currentFilters.municipio) {
+            const muniName = $('#filterMunicipio option:selected').text();
+            filterInfo += ` | Municipio: ${muniName}`;
+        }
+        if (currentFilters.zona) {
+            const zonaName = $('#filterZona option:selected').text();
+            filterInfo += ` | Zona: ${zonaName}`;
+        }
+        if (currentFilters.referenciador) {
+            const refName = $('#filterReferenciador option:selected').text();
+            filterInfo += ` | Referenciador: ${refName}`;
+        }
+        if (currentFilters.lider) {
+            const liderName = $('#filterLider option:selected').text();
+            filterInfo += ` | Líder: ${liderName}`;
+        }
+        
+        $('#infoFooter p').html(`
+            <i class="fas fa-info-circle"></i> 
+            Mostrando ${from} a ${to} de ${pagination.total} referidos 
+            (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
+        `);
+    }
+    
+    // Funciones helper
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // ============================================
+    // MANEJO DE FILTROS CON SESSIONSTORAGE
+    // ============================================
+    
+    // Manejo del buscador en tiempo real
+    window.handleSearchInput = function(event) {
+        const searchTerm = event.target.value.trim();
+        
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Set new timeout (debounce de 500ms)
+        searchTimeout = setTimeout(() => {
+            currentFilters.search = searchTerm;
             saveFilters();
             loadReferenciados(1);
-            showNotification('Búsqueda limpiada', 'info');
-        };
+        }, 500);
         
-        // Limpiar todos los filtros
-        window.clearAllFilters = function() {
-            clearAllFiltersAndStorage();
-            loadReferenciados(1);
-            showNotification('Todos los filtros limpiados', 'info');
-        };
-        
-        // Función para limpiar filtros avanzados
-        window.clearAdvancedFilters = function() {
-            $('#filterDepartamento').val('');
-            $('#filterMunicipio').val('');
-            $('#filterZona').val('');
-            $('#filterReferenciador').val('');
-            
-            // Actualizar currentFilters
-            delete currentFilters.departamento;
-            delete currentFilters.municipio;
-            delete currentFilters.zona;
-            delete currentFilters.referenciador;
-            
+        // Si presiona Enter, buscar inmediatamente
+        if (event.key === 'Enter') {
+            if (searchTimeout) clearTimeout(searchTimeout);
+            currentFilters.search = searchTerm;
             saveFilters();
             loadReferenciados(1);
-            
-            showNotification('Filtros avanzados limpiados', 'info');
-        };
+        }
+    };
+    
+    // Limpiar búsqueda
+    window.clearSearch = function() {
+        $('#searchInput').val('');
+        delete currentFilters.search;
+        saveFilters();
+        loadReferenciados(1);
+        showNotification('Búsqueda limpiada', 'info');
+    };
+    
+    // Limpiar todos los filtros
+    window.clearAllFilters = function() {
+        clearAllFiltersAndStorage();
+        loadReferenciados(1);
+        showNotification('Todos los filtros limpiados', 'info');
+    };
+    
+    // Filtro por estado - actualizar botones activos
+    function updateFilterButtons() {
+        const activeStatus = currentFilters.activo !== undefined ? currentFilters.activo : '';
         
-        // Filtro por estado - actualizar botones activos
-        function updateFilterButtons() {
-            const activeStatus = currentFilters.activo !== undefined ? currentFilters.activo : '';
+        $('.filter-status .btn').each(function() {
+            const btn = $(this);
+            const onclickAttr = btn.attr('onclick') || '';
+            const match = onclickAttr.match(/filterByStatus\('([01]?)'\)/);
             
-            $('.filter-status .btn').each(function() {
-                const btn = $(this);
-                const onclickAttr = btn.attr('onclick') || '';
-                const match = onclickAttr.match(/filterByStatus\('([01]?)'\)/);
+            if (match) {
+                const status = match[1];
                 
-                if (match) {
-                    const status = match[1];
-                    
-                    btn.removeClass('btn-primary btn-success btn-warning')
-                       .removeClass('btn-outline-primary btn-outline-success btn-outline-warning');
-                    
-                    if (status === activeStatus) {
-                        if (status === '1') {
-                            btn.addClass('btn-success');
-                        } else if (status === '0') {
-                            btn.addClass('btn-warning');
-                        } else {
-                            btn.addClass('btn-primary');
-                        }
+                btn.removeClass('btn-primary btn-success btn-warning')
+                   .removeClass('btn-outline-primary btn-outline-success btn-outline-warning');
+                
+                if (status === activeStatus) {
+                    if (status === '1') {
+                        btn.addClass('btn-success');
+                    } else if (status === '0') {
+                        btn.addClass('btn-warning');
                     } else {
-                        if (status === '1') {
-                            btn.addClass('btn-outline-success');
-                        } else if (status === '0') {
-                            btn.addClass('btn-outline-warning');
-                        } else {
-                            btn.addClass('btn-outline-primary');
-                        }
+                        btn.addClass('btn-primary');
+                    }
+                } else {
+                    if (status === '1') {
+                        btn.addClass('btn-outline-success');
+                    } else if (status === '0') {
+                        btn.addClass('btn-outline-warning');
+                    } else {
+                        btn.addClass('btn-outline-primary');
                     }
                 }
-            });
-        }
-        
-        window.filterByStatus = function(status) {
-            currentFilters.activo = status;
-            updateFilterButtons();
-            saveFilters();
-            loadReferenciados(1);
-            return false;
-        };
-        
-        // Filtros avanzados
-        window.applyAdvancedFilters = function() {
-            currentFilters.departamento = $('#filterDepartamento').val();
-            currentFilters.municipio = $('#filterMunicipio').val();
-            currentFilters.zona = $('#filterZona').val();
-            currentFilters.referenciador = $('#filterReferenciador').val();
-            
-            saveFilters();
-            loadReferenciados(1);
-        };
-        
-        // ============================================
-// INICIALIZACIÓN
+            }
+        });
+    }
+    
+    window.filterByStatus = function(status) {
+        currentFilters.activo = status;
+        updateFilterButtons();
+        saveFilters();
+        loadReferenciados(1);
+        return false;
+    };
+    
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+
+    // Cargar filtros guardados
+    const hasSavedFilters = loadFilters();
+
+    // Inicializar botones de filtro
+    updateFilterButtons();
+
+    // Cargar opciones de filtros avanzados
+    cargarOpcionesFiltrosAvanzados();
+
+    // Cargar primera página (con filtros guardados si existen)
+    if (hasSavedFilters) {
+        loadReferenciados(currentPage, true);
+    } else {
+        loadReferenciados(1);
+    }
+    
+    // Enfocar el input de búsqueda al cargar
+    $('#searchInput').focus();
+    
+    // Guardar filtros antes de salir de la página
+    $(window).on('beforeunload', function() {
+        saveFilters();
+    });
+});
+
+// ============================================
+// FUNCIONES GLOBALES MODIFICADAS
 // ============================================
 
-// Cargar filtros guardados
-const hasSavedFilters = loadFilters();
-
-// Inicializar botones de filtro
-updateFilterButtons();
-
-// Cargar opciones de filtros avanzados
-cargarOpcionesFiltrosAvanzados();
-
-// Cargar primera página (con filtros guardados si existen)
-if (hasSavedFilters) {
-    loadReferenciados(currentPage, true);
-} else {
-    loadReferenciados(1);
+// Función para ver detalle manteniendo filtros
+function verDetalleConFiltros(id) {
+    // Guardar filtros antes de navegar
+    if (typeof saveFilters === 'function') {
+        saveFilters();
+    }
+    window.location.href = 'ver_referenciado.php?id=' + id;
 }
-        
-        // Enfocar el input de búsqueda al cargar
-        $('#searchInput').focus();
-        
-        // Guardar filtros antes de salir de la página
-        $(window).on('beforeunload', function() {
-            saveFilters();
+
+// Función para editar manteniendo filtros
+function editarReferenciadoConFiltros(id) {
+    // Guardar filtros antes de navegar
+    if (typeof saveFilters === 'function') {
+        saveFilters();
+    }
+    window.location.href = 'editar_referenciador.php?id=' + id;
+}
+
+// Mantener compatibilidad con funciones anteriores
+window.verDetalle = verDetalleConFiltros;
+window.editarReferenciado = editarReferenciadoConFiltros;
+
+// Función para exportar referidos
+function exportarReferidos(formato) {
+    const soloActivos = document.getElementById('exportSoloActivos').checked;
+    
+    let url = '';
+    
+    switch(formato) {
+        case 'excel':
+            url = 'exportar_referidos_excel.php';
+            break;
+        case 'pdf':
+            url = 'exportar_referidos_pdf.php';
+            break;
+        default:
+            url = 'exportar_referidos_excel.php';
+            break;
+    }
+    
+    if (soloActivos) {
+        url += '?solo_activos=1';
+    }
+    
+    const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+    if (exportModal) {
+        exportModal.hide();
+    }
+    
+    showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
+    
+    setTimeout(() => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }, 300);
+}
+
+// Función para desactivar un referenciado
+async function desactivarReferenciado(idReferenciado, nombreReferenciado, button) {
+    if (!confirm(`¿Está seguro de DESACTIVAR al referenciado "${nombreReferenciado}"?\n\nEl referenciado será marcado como inactivo, pero se mantendrá en el sistema.`)) {
+        return;
+    }
+    
+    const originalIcon = button.innerHTML;
+    const originalClass = button.className;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch('../ajax/referenciados.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `accion=desactivar&id_referenciado=${idReferenciado}`
         });
-    });
-    
-    // ============================================
-    // FUNCIONES GLOBALES MODIFICADAS
-    // ============================================
-    
-    // Función para ver detalle manteniendo filtros
-    function verDetalleConFiltros(id) {
-        // Guardar filtros antes de navegar
-        if (typeof saveFilters === 'function') {
-            saveFilters();
-        }
-        window.location.href = 'ver_referenciado.php?id=' + id;
-    }
-    
-    // Función para editar manteniendo filtros
-    function editarReferenciadoConFiltros(id) {
-        // Guardar filtros antes de navegar
-        if (typeof saveFilters === 'function') {
-            saveFilters();
-        }
-        window.location.href = 'editar_referenciador.php?id=' + id;
-    }
-    
-    // Mantener compatibilidad con funciones anteriores
-    window.verDetalle = verDetalleConFiltros;
-    window.editarReferenciado = editarReferenciadoConFiltros;
-
-    // Función para exportar referidos
-    function exportarReferidos(formato) {
-        const soloActivos = document.getElementById('exportSoloActivos').checked;
         
-        let url = '';
+        const data = await response.json();
         
-        switch(formato) {
-            case 'excel':
-                url = 'exportar_referidos_excel.php';
-                break;
-            case 'pdf':
-                url = 'exportar_referidos_pdf.php';
-                break;
-            default:
-                url = 'exportar_referidos_excel.php';
-                break;
-        }
-        
-        if (soloActivos) {
-            url += '?solo_activos=1';
-        }
-        
-        const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
-        if (exportModal) {
-            exportModal.hide();
-        }
-        
-        showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
-        
-        setTimeout(() => {
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }, 300);
-    }
-
-    // Función para desactivar un referenciado
-    async function desactivarReferenciado(idReferenciado, nombreReferenciado, button) {
-        if (!confirm(`¿Está seguro de DESACTIVAR al referenciado "${nombreReferenciado}"?\n\nEl referenciado será marcado como inactivo, pero se mantendrá en el sistema.`)) {
-            return;
-        }
-        
-        const originalIcon = button.innerHTML;
-        const originalClass = button.className;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        button.disabled = true;
-        
-        try {
-            const response = await fetch('../ajax/referenciados.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `accion=desactivar&id_referenciado=${idReferenciado}`
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                button.className = 'btn-action btn-activate';
-                button.title = 'Activar referido';
-                button.innerHTML = '<i class="fas fa-user-check"></i>';
-                button.disabled = false;
-                
-                button.setAttribute('onclick', `reactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
-                
-                const row = button.closest('tr');
-                row.style.backgroundColor = '#f8f9fa';
-                row.style.opacity = '0.8';
-                row.cells[0].innerHTML = '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>';
-                
-                showNotification('Referenciado desactivado correctamente', 'success');
-                
-                setTimeout(() => {
-                    if (typeof loadReferenciados === 'function') {
-                        loadReferenciados(currentPage || 1);
-                    }
-                }, 100);
-            } else {
-                showNotification('Error: ' + (data.message || 'No se pudo desactivar el referenciado'), 'error');
-                button.innerHTML = originalIcon;
-                button.className = originalClass;
-                button.disabled = false;
-            }
-        } catch (error) {
-            showNotification('Error de conexión: ' + error.message, 'error');
-            button.innerHTML = originalIcon;
-            button.className = originalClass;
+        if (data.success) {
+            button.className = 'btn-action btn-activate';
+            button.title = 'Activar referido';
+            button.innerHTML = '<i class="fas fa-user-check"></i>';
             button.disabled = false;
-        }
-    }
-
-    // Función para reactivar un referenciado
-    async function reactivarReferenciado(idReferenciado, nombreReferenciado, button) {
-        if (!confirm(`¿Desea REACTIVAR al referenciado "${nombreReferenciado}"?`)) {
-            return;
-        }
-        
-        const originalIcon = button.innerHTML;
-        const originalClass = button.className;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        button.disabled = true;
-        
-        try {
-            const response = await fetch('../ajax/referenciados.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `accion=reactivar&id_referenciado=${idReferenciado}`
-            });
             
-            const data = await response.json();
+            button.setAttribute('onclick', `reactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
             
-            if (data.success) {
-                button.className = 'btn-action btn-deactivate';
-                button.title = 'Desactivar referido';
-                button.innerHTML = '<i class="fas fa-user-slash"></i>';
-                button.disabled = false;
-                
-                button.setAttribute('onclick', `desactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
-                
-                const row = button.closest('tr');
-                row.style.backgroundColor = '';
-                row.style.opacity = '';
-                row.cells[0].innerHTML = '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
-                
-                showNotification('Referenciado reactivado correctamente', 'success');
-                
-                setTimeout(() => {
-                    if (typeof loadReferenciados === 'function') {
-                        loadReferenciados(currentPage || 1);
-                    }
-                }, 100);
-            } else {
-                showNotification('Error: ' + data.message, 'error');
-                button.innerHTML = originalIcon;
-                button.className = originalClass;
-                button.disabled = false;
-            }
-        } catch (error) {
-            showNotification('Error de conexión: ' + error.message, 'error');
-            button.innerHTML = originalIcon;
-            button.className = originalClass;
-            button.disabled = false;
-        }
-    }
-    
-    function actualizarLogoSegunTema() {
-        const logo = document.getElementById('footer-logo');
-        if (!logo) return;
-        
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        if (isDarkMode) {
-            logo.src = logo.getAttribute('data-img-oscuro');
+            const row = button.closest('tr');
+            row.style.backgroundColor = '#f8f9fa';
+            row.style.opacity = '0.8';
+            row.cells[0].innerHTML = '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>';
+            
+            showNotification('Referenciado desactivado correctamente', 'success');
+            
+            setTimeout(() => {
+                if (typeof loadReferenciados === 'function') {
+                    loadReferenciados(currentPage || 1);
+                }
+            }, 100);
         } else {
-            logo.src = logo.getAttribute('data-img-claro');
+            showNotification('Error: ' + (data.message || 'No se pudo desactivar el referenciado'), 'error');
+            button.innerHTML = originalIcon;
+            button.className = originalClass;
+            button.disabled = false;
         }
+    } catch (error) {
+        showNotification('Error de conexión: ' + error.message, 'error');
+        button.innerHTML = originalIcon;
+        button.className = originalClass;
+        button.disabled = false;
     }
+}
 
-    // Función para mostrar notificaciones
-    function showNotification(message, type = 'info') {
-        const oldNotification = document.querySelector('.notification');
-        if (oldNotification) {
-            oldNotification.remove();
-        }
-        
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                <span>${message}</span>
-            </div>
-            <button class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        notification.querySelector('.notification-close').addEventListener('click', () => {
-            notification.remove();
+// Función para reactivar un referenciado
+async function reactivarReferenciado(idReferenciado, nombreReferenciado, button) {
+    if (!confirm(`¿Desea REACTIVAR al referenciado "${nombreReferenciado}"?`)) {
+        return;
+    }
+    
+    const originalIcon = button.innerHTML;
+    const originalClass = button.className;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch('../ajax/referenciados.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `accion=reactivar&id_referenciado=${idReferenciado}`
         });
         
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
+        const data = await response.json();
+        
+        if (data.success) {
+            button.className = 'btn-action btn-deactivate';
+            button.title = 'Desactivar referido';
+            button.innerHTML = '<i class="fas fa-user-slash"></i>';
+            button.disabled = false;
+            
+            button.setAttribute('onclick', `desactivarReferenciado(${idReferenciado}, '${nombreReferenciado.replace(/'/g, "\\'")}', this)`);
+            
+            const row = button.closest('tr');
+            row.style.backgroundColor = '';
+            row.style.opacity = '';
+            row.cells[0].innerHTML = '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
+            
+            showNotification('Referenciado reactivado correctamente', 'success');
+            
+            setTimeout(() => {
+                if (typeof loadReferenciados === 'function') {
+                    loadReferenciados(currentPage || 1);
+                }
+            }, 100);
+        } else {
+            showNotification('Error: ' + data.message, 'error');
+            button.innerHTML = originalIcon;
+            button.className = originalClass;
+            button.disabled = false;
+        }
+    } catch (error) {
+        showNotification('Error de conexión: ' + error.message, 'error');
+        button.innerHTML = originalIcon;
+        button.className = originalClass;
+        button.disabled = false;
     }
+}
 
-    // Ejecutar al cargar y cuando cambie el tema
-    document.addEventListener('DOMContentLoaded', function() {
-        actualizarLogoSegunTema();
-    });
+function actualizarLogoSegunTema() {
+    const logo = document.getElementById('footer-logo');
+    if (!logo) return;
+    
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (isDarkMode) {
+        logo.src = logo.getAttribute('data-img-oscuro');
+    } else {
+        logo.src = logo.getAttribute('data-img-claro');
+    }
+}
 
-    // Escuchar cambios en el tema del sistema
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-        actualizarLogoSegunTema();
+// Función para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    const oldNotification = document.querySelector('.notification');
+    if (oldNotification) {
+        oldNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.remove();
     });
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Ejecutar al cargar y cuando cambie el tema
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarLogoSegunTema();
+});
+
+// Escuchar cambios en el tema del sistema
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    actualizarLogoSegunTema();
+});
     </script>
     
     <script src="../js/modal-sistema.js"></script>

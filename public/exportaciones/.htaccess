@@ -1,0 +1,5 @@
+# /app/public/exportaciones/.htaccess
+<FilesMatch "\.(csv|xlsx|xls)$">
+    ForceType application/octet-stream
+    Header set Content-Disposition attachment
+</FilesMatch>

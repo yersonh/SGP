@@ -417,4 +417,513 @@ public function countLideres() {
     $result = $stmt->fetch();
     return $result['lider'];
 }
+/**
+ * Contar total de líderes con filtros
+ */
+public function countAll($filters = []) {
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        // Filtros opcionales básicos
+        if (!empty($filters['estado'])) {
+            $whereConditions[] = "estado = :estado";
+            $params[':estado'] = $filters['estado'];
+        }
+        
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(nombres ILIKE :search OR apellidos ILIKE :search OR cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // **MODIFICACIÓN PARA CÉDULA**
+        if (!empty($filters['cc'])) {
+            $cc_clean = preg_replace('/[^0-9]/', '', $filters['cc']);
+            
+            if (is_numeric($cc_clean)) {
+                $whereConditions[] = "REPLACE(cc, '.', '') LIKE :cc_exact";
+                $params[':cc_exact'] = $cc_clean . '%';
+            } else {
+                $whereConditions[] = "cc ILIKE :cc";
+                $params[':cc'] = '%' . $filters['cc'] . '%';
+            }
+        }
+        
+        // Si hay filtro de mínimo de referidos, necesitamos una consulta más compleja
+        if (!empty($filters['min_referidos']) && is_numeric($filters['min_referidos'])) {
+            $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+            
+            $query = "SELECT COUNT(*) as total FROM (
+                SELECT l.id_lider
+                FROM public.lideres l
+                LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+                $whereClause
+                GROUP BY l.id_lider
+                HAVING COUNT(r.id_referenciado) >= :min_referidos
+            ) as subquery";
+            
+            $params[':min_referidos'] = (int)$filters['min_referidos'];
+        } else {
+            // Consulta normal
+            $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+            
+            $query = "SELECT COUNT(*) as total 
+                      FROM public.lideres 
+                      $whereClause";
+        }
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['total'];
+        
+    } catch (PDOException $e) {
+        error_log("Error en countAll LiderModel: " . $e->getMessage());
+        return 0;
+    }
+}
+/**
+ * Obtener líderes paginados con estadísticas (VERSIÓN CORREGIDA)
+ */
+public function getPaginatedWithStats($filters = [], $page = 1, $perPage = 10, $orderBy = 'cantidad_referidos', $orderDir = 'DESC') {
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        // Filtros opcionales
+        if (isset($filters['estado'])) {
+            $whereConditions[] = "l.estado = :estado";
+            $params[':estado'] = $filters['estado'];
+        }
+        
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "l.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(l.nombres ILIKE :search OR l.apellidos ILIKE :search OR l.cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // **MODIFICACIÓN IMPORTANTE: Búsqueda por cédula específica**
+        if (!empty($filters['cc'])) {
+            // Si el usuario busca por cédula, usar búsqueda exacta o casi exacta
+            // Eliminar espacios y caracteres especiales para búsqueda más precisa
+            $cc_clean = preg_replace('/[^0-9]/', '', $filters['cc']);
+            
+            if (is_numeric($cc_clean)) {
+                // Si es un número, buscar coincidencia exacta o que comience con
+                $whereConditions[] = "REPLACE(l.cc, '.', '') LIKE :cc_exact";
+                $params[':cc_exact'] = $cc_clean . '%';
+            } else {
+                // Si no es numérico, usar búsqueda normal
+                $whereConditions[] = "l.cc ILIKE :cc";
+                $params[':cc'] = '%' . $filters['cc'] . '%';
+            }
+        }
+        
+        $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        // Calcular offset
+        $offset = ($page - 1) * $perPage;
+        
+        // SUBCONSULTA principal con todos los filtros básicos
+        $query = "SELECT * FROM (
+            SELECT 
+                l.*,
+                u.id_usuario as referenciador_id,
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                COUNT(r.id_referenciado) as cantidad_referidos
+            FROM public.lideres l
+            LEFT JOIN public.usuario u ON l.id_usuario = u.id_usuario
+            LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+            $whereClause
+            GROUP BY l.id_lider, u.id_usuario, u.nombres, u.apellidos
+        ) as lideres_con_referidos";
+        
+        // Aplicar filtro de mínimo de referidos en la subconsulta principal
+        if (!empty($filters['min_referidos']) && is_numeric($filters['min_referidos'])) {
+            $query .= " WHERE cantidad_referidos >= :min_referidos";
+            $params[':min_referidos'] = (int)$filters['min_referidos'];
+        }
+        
+        // Ordenamiento
+        if ($orderBy === 'cantidad_referidos') {
+            $query .= " ORDER BY cantidad_referidos $orderDir";
+        } else {
+            $query .= " ORDER BY $orderBy $orderDir";
+        }
+        
+        // Paginación (último paso)
+        $query .= " LIMIT :limit OFFSET :offset";
+        
+        $stmt = $this->pdo->prepare($query);
+        
+        // Bind de parámetros
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Obtener total de líderes para paginación (con TODOS los filtros)
+        $totalLideres = $this->countAll($filters);
+        $totalPaginas = ceil($totalLideres / $perPage);
+        
+        // **CRÍTICO: Si estamos buscando por cédula y encontramos pocos resultados,
+        // asegurarnos de que no haya páginas vacías**
+        if ($totalPaginas > 0 && $page > $totalPaginas) {
+            $page = $totalPaginas;
+            // Recalcular con la página ajustada
+            return $this->getPaginatedWithStats($filters, $page, $perPage, $orderBy, $orderDir);
+        }
+        
+        return [
+            'success' => true,
+            'data' => $resultados,
+            'pagination' => [
+                'total' => $totalLideres,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'total_pages' => $totalPaginas,
+                'has_more' => $page < $totalPaginas
+            ]
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error en getPaginatedWithStats LiderModel: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Error al obtener líderes paginados: ' . $e->getMessage(),
+            'data' => [],
+            'pagination' => []
+        ];
+    }
+}
+/**
+ * Contar líderes activos con filtros
+ */
+public function countActivos($filters = []) {
+    try {
+        $whereConditions = ["l.estado = true"];
+        $params = [];
+        
+        // Filtros opcionales
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "l.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(l.nombres ILIKE :search OR l.apellidos ILIKE :search OR l.cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        $whereClause = 'WHERE ' . implode(' AND ', $whereConditions);
+        
+        $query = "SELECT COUNT(*) as total 
+                  FROM public.lideres l
+                  $whereClause";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['total'];
+        
+    } catch (PDOException $e) {
+        error_log("Error en countActivos LiderModel: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Obtener total de referidos por líderes (con filtros)
+ */
+public function getTotalReferidosPorLideres($filters = []) {
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        // Filtros opcionales (para líderes)
+        if (isset($filters['estado'])) {
+            $whereConditions[] = "l.estado = :estado";
+            $params[':estado'] = $filters['estado'];
+        }
+        
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "l.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(l.nombres ILIKE :search OR l.apellidos ILIKE :search OR l.cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        $query = "SELECT COUNT(r.id_referenciado) as total_referidos
+                  FROM public.lideres l
+                  LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+                  $whereClause";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['total_referidos'];
+        
+    } catch (PDOException $e) {
+        error_log("Error en getTotalReferidosPorLideres LiderModel: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Obtener promedio de referidos por líder (con filtros)
+ */
+public function getPromedioReferidosPorLider($filters = []) {
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        // Filtros opcionales
+        if (isset($filters['estado'])) {
+            $whereConditions[] = "l.estado = :estado";
+            $params[':estado'] = $filters['estado'];
+        }
+        
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "l.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(l.nombres ILIKE :search OR l.apellidos ILIKE :search OR l.cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        $query = "SELECT 
+                    COUNT(l.id_lider) as total_lideres,
+                    COUNT(r.id_referenciado) as total_referidos
+                  FROM public.lideres l
+                  LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+                  $whereClause";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $totalLideres = (int)$result['total_lideres'];
+        $totalReferidos = (int)$result['total_referidos'];
+        
+        return $totalLideres > 0 ? round($totalReferidos / $totalLideres, 2) : 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getPromedioReferidosPorLider LiderModel: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Obtener top líder (con filtros)
+ */
+public function getTopLider($filters = []) {
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        // Filtros opcionales
+        if (isset($filters['estado'])) {
+            $whereConditions[] = "l.estado = :estado";
+            $params[':estado'] = $filters['estado'];
+        }
+        
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "l.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(l.nombres ILIKE :search OR l.apellidos ILIKE :search OR l.cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        $query = "SELECT 
+                    l.nombres,
+                    l.apellidos,
+                    COUNT(r.id_referenciado) as cantidad_referidos
+                  FROM public.lideres l
+                  LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+                  $whereClause
+                  GROUP BY l.id_lider
+                  ORDER BY COUNT(r.id_referenciado) DESC
+                  LIMIT 1";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            return [
+                'nombre' => $result['nombres'] . ' ' . $result['apellidos'],
+                'referidos' => (int)$result['cantidad_referidos']
+            ];
+        }
+        
+        return null;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getTopLider LiderModel: " . $e->getMessage());
+        return null;
+    }
+}
+// ==============================================
+// ESTADÍSTICAS COMPLETAMENTE GLOBALES
+// ==============================================
+
+// Métodos que necesitamos agregar al LiderModel para estadísticas globales:
+/**
+ * Obtener total de referidos por TODOS los líderes (global, sin filtros)
+ */
+public function getTotalReferidosGlobal() {
+    try {
+        $query = "SELECT COUNT(r.id_referenciado) as total_referidos
+                  FROM public.lideres l
+                  LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true";
+        
+        $stmt = $this->pdo->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['total_referidos'];
+        
+    } catch (PDOException $e) {
+        error_log("Error en getTotalReferidosGlobal LiderModel: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Obtener promedio de referidos por líder (global, sin filtros)
+ */
+public function getPromedioReferidosGlobal() {
+    try {
+        $query = "SELECT 
+                    COUNT(l.id_lider) as total_lideres,
+                    COUNT(r.id_referenciado) as total_referidos
+                  FROM public.lideres l
+                  LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true";
+        
+        $stmt = $this->pdo->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $totalLideres = (int)$result['total_lideres'];
+        $totalReferidos = (int)$result['total_referidos'];
+        
+        return $totalLideres > 0 ? round($totalReferidos / $totalLideres, 2) : 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getPromedioReferidosGlobal LiderModel: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Obtener top líder global (sin filtros)
+ */
+public function getTopLiderGlobal() {
+    try {
+        $query = "SELECT 
+                    l.nombres,
+                    l.apellidos,
+                    COUNT(r.id_referenciado) as cantidad_referidos
+                  FROM public.lideres l
+                  LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+                  GROUP BY l.id_lider
+                  ORDER BY COUNT(r.id_referenciado) DESC
+                  LIMIT 1";
+        
+        $stmt = $this->pdo->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            return [
+                'nombre' => $result['nombres'] . ' ' . $result['apellidos'],
+                'referidos' => (int)$result['cantidad_referidos']
+            ];
+        }
+        
+        return null;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getTopLiderGlobal LiderModel: " . $e->getMessage());
+        return null;
+    }
+}
+/**
+ * Obtener todos los líderes con estadísticas (para exportación)
+ */
+public function getAllLideresConEstadisticas($filters = []) {
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        // Filtros opcionales
+        if (isset($filters['estado'])) {
+            $whereConditions[] = "l.estado = :estado";
+            $params[':estado'] = $filters['estado'];
+        }
+        
+        if (!empty($filters['id_usuario'])) {
+            $whereConditions[] = "l.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $filters['id_usuario'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(l.nombres ILIKE :search OR l.apellidos ILIKE :search OR l.cc ILIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        $whereClause = $whereConditions ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        // Consulta para obtener todos sin límite
+        $query = "SELECT 
+            l.*,
+            u.id_usuario as referenciador_id,
+            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+            COUNT(r.id_referenciado) as cantidad_referidos
+          FROM public.lideres l
+          LEFT JOIN public.usuario u ON l.id_usuario = u.id_usuario
+          LEFT JOIN public.referenciados r ON l.id_lider = r.id_lider AND r.activo = true
+          $whereClause
+          GROUP BY l.id_lider, u.id_usuario, u.nombres, u.apellidos
+          ORDER BY COUNT(r.id_referenciado) DESC";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return $resultados;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getAllLideresConEstadisticas LiderModel: " . $e->getMessage());
+        return [];
+    }
+}
 }

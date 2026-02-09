@@ -1322,7 +1322,10 @@ public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = [
             s.nombre as sector_nombre,
             pv.nombre as puesto_votacion_nombre,
             gr.nombre as grupo_nombre,
-            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre
+            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+            l.nombres as lider_nombres,
+            l.apellidos as lider_apellidos,
+            CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre
             FROM referenciados r
             LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
             LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
@@ -1333,7 +1336,8 @@ public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = [
             LEFT JOIN sector s ON r.id_sector = s.id_sector
             LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
             LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
-            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario";
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN usuario l ON r.id_lider = l.id_usuario";
     
     $conditions = [];
     $params = [];
@@ -1467,7 +1471,11 @@ public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = [
         $params[] = $filters['grupo_parlamentario'];
         $paramTypes[] = \PDO::PARAM_INT;
     }
-    
+    if (!empty($filters['lider'])) {
+        $conditions[] = "r.id_lider = ?";
+        $params[] = $filters['lider'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
     // Construir WHERE
     if (!empty($conditions)) {
         $sql .= " WHERE " . implode(' AND ', $conditions);
@@ -1518,7 +1526,8 @@ public function getTotalReferenciados($filters = []) {
                   LEFT JOIN sector s ON r.id_sector = s.id_sector
                   LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
                   LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
-                  LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario";
+                  LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                  LEFT JOIN usuario l ON r.id_lider = l.id_usuario";
     }
     
     // Búsqueda global
@@ -1557,6 +1566,8 @@ public function getTotalReferenciados($filters = []) {
             $conditionParts[] = "gr.nombre ILIKE ?";
             $conditionParts[] = "u.nombres ILIKE ?";
             $conditionParts[] = "u.apellidos ILIKE ?";
+            $conditionParts[] = "l.nombres ILIKE ?";
+            $conditionParts[] = "l.apellidos ILIKE ?";
             
             $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
             
@@ -1573,7 +1584,8 @@ public function getTotalReferenciados($filters = []) {
             }
             
             // Parámetros para campos de texto (15 campos)
-            for ($i = 0; $i < 15; $i++) {
+            $camposTexto = isset($filters['include_mesa']) ? 17 : 17; // 15 originales + 2 de líder
+            for ($i = 0; $i < $camposTexto; $i++) {
                 $params[] = '%' . $search . '%';
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -1585,9 +1597,11 @@ public function getTotalReferenciados($filters = []) {
                              OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
                              OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
                              OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
-                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
+                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?
+                             OR l.nombres ILIKE ? OR l.apellidos ILIKE ?)";
+                             
             
-            for ($i = 0; $i < 17; $i++) {
+            for ($i = 0; $i < 19; $i++) {
                 $params[] = '%' . $search . '%';
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -1648,7 +1662,11 @@ public function getTotalReferenciados($filters = []) {
         $params[] = $filters['grupo_parlamentario'];
         $paramTypes[] = \PDO::PARAM_INT;
     }
-    
+        if (!empty($filters['lider'])) {
+        $conditions[] = "r.id_lider = ?";
+        $params[] = $filters['lider'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
     // Construir WHERE
     if (!empty($conditions)) {
         $sql .= " WHERE " . implode(' AND ', $conditions);

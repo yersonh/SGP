@@ -2,14 +2,6 @@
 session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/ReferenciadoModel.php';
-require_once __DIR__ . '/../../models/ZonaModel.php';
-require_once __DIR__ . '/../../models/SectorModel.php';
-require_once __DIR__ . '/../../models/PuestoVotacionModel.php';
-require_once __DIR__ . '/../../models/DepartamentoModel.php';
-require_once __DIR__ . '/../../models/MunicipioModel.php';
-require_once __DIR__ . '/../../models/OfertaApoyoModel.php';
-require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
-require_once __DIR__ . '/../../models/BarrioModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -35,67 +27,6 @@ if ($soloActivos) {
         $activo = $referenciado['activo'] ?? true;
         return ($activo === true || $activo === 't' || $activo == 1);
     });
-}
-
-// Inicializar modelos para obtener nombres de relaciones
-$zonaModel = new ZonaModel($pdo);
-$sectorModel = new SectorModel($pdo);
-$puestoModel = new PuestoVotacionModel($pdo);
-$departamentoModel = new DepartamentoModel($pdo);
-$municipioModel = new MunicipioModel($pdo);
-$ofertaModel = new OfertaApoyoModel($pdo);
-$grupoModel = new GrupoPoblacionalModel($pdo);
-$barrioModel = new BarrioModel($pdo);
-
-// Obtener todos los datos de relaciones
-$zonas = $zonaModel->getAll();
-$sectores = $sectorModel->getAll();
-$puestos = $puestoModel->getAll();
-$departamentos = $departamentoModel->getAll();
-$municipios = $municipioModel->getAll();
-$ofertas = $ofertaModel->getAll();
-$grupos = $grupoModel->getAll();
-$barrios = $barrioModel->getAll();
-
-// Crear arrays para búsqueda rápida
-$zonasMap = [];
-foreach ($zonas as $zona) {
-    $zonasMap[$zona['id_zona']] = $zona['nombre'];
-}
-
-$sectoresMap = [];
-foreach ($sectores as $sector) {
-    $sectoresMap[$sector['id_sector']] = $sector['nombre'];
-}
-
-$puestosMap = [];
-foreach ($puestos as $puesto) {
-    $puestosMap[$puesto['id_puesto']] = $puesto['nombre'];
-}
-
-$departamentosMap = [];
-foreach ($departamentos as $departamento) {
-    $departamentosMap[$departamento['id_departamento']] = $departamento['nombre'];
-}
-
-$municipiosMap = [];
-foreach ($municipios as $municipio) {
-    $municipiosMap[$municipio['id_municipio']] = $municipio['nombre'];
-}
-
-$ofertasMap = [];
-foreach ($ofertas as $oferta) {
-    $ofertasMap[$oferta['id_oferta']] = $oferta['nombre'];
-}
-
-$gruposMap = [];
-foreach ($grupos as $grupo) {
-    $gruposMap[$grupo['id_grupo']] = $grupo['nombre'];
-}
-
-$barriosMap = [];
-foreach ($barrios as $barrio) {
-    $barriosMap[$barrio['id_barrio']] = $barrio['nombre'];
 }
 
 // Contar estadísticas
@@ -180,15 +111,15 @@ $pdf->MultiCell(0, 5, $infoText, 0, 'L');
 $pdf->Ln(5);
 
 // ============================================
-// TABLA DE REFERIDOS
+// TABLA DE REFERIDOS (CON COLUMNA DE LÍDER)
 // ============================================
 $pdf->SetFont('helvetica', 'B', 8);
 
-// Encabezados de la tabla (columnas reducidas para formato horizontal)
-$header = array('ID', 'Estado', 'Nombre', 'Apellido', 'Cédula', 'Teléfono', 'Afinidad', 'Zona', 'Sector', 'Referenciador', 'Fecha Reg.');
+// Encabezados de la tabla - AGREGADA COLUMNA "LÍDER"
+$header = array('ID', 'Estado', 'Nombre', 'Apellido', 'Cédula', 'Teléfono', 'Afinidad', 'Zona', 'Sector', 'Referenciador', 'Líder', 'Fecha Reg.');
 
-// Anchos de columna (ajustados para formato horizontal A4 landscape)
-$widths = array(10, 15, 30, 30, 25, 25, 15, 25, 25, 40, 20);
+// Anchos de columna (ajustados para incluir Líder)
+$widths = array(10, 15, 25, 25, 25, 25, 15, 20, 20, 35, 35, 20);
 
 // Dibujar encabezados
 $pdf->SetFillColor(64, 115, 223); // Color azul (#4073df)
@@ -201,7 +132,7 @@ for ($i = 0; $i < count($header); $i++) {
 }
 $pdf->Ln();
 
-// Contenido de la tabla - TODAS LAS FILAS EN BLANCO
+// Contenido de la tabla
 $pdf->SetFont('helvetica', '', 7);
 $pdf->SetTextColor(0);
 $pdf->SetFillColor(255); // FONDO BLANCO FIJO
@@ -250,15 +181,15 @@ foreach ($referenciados as $referenciado) {
     
     // Nombre (acortado si es muy largo)
     $nombre = $referenciado['nombre'] ?? '';
-    if (strlen($nombre) > 15) {
-        $nombre = substr($nombre, 0, 15) . '...';
+    if (strlen($nombre) > 12) {
+        $nombre = substr($nombre, 0, 12) . '...';
     }
     $pdf->Cell($widths[2], 6, $nombre, 'LR', 0, 'L', true);
     
     // Apellido (acortado si es muy largo)
     $apellido = $referenciado['apellido'] ?? '';
-    if (strlen($apellido) > 15) {
-        $apellido = substr($apellido, 0, 15) . '...';
+    if (strlen($apellido) > 12) {
+        $apellido = substr($apellido, 0, 12) . '...';
     }
     $pdf->Cell($widths[3], 6, $apellido, 'LR', 0, 'L', true);
     
@@ -267,29 +198,36 @@ foreach ($referenciados as $referenciado) {
     $pdf->Cell($widths[6], 6, $referenciado['afinidad'] ?? '0', 'LR', 0, 'C', true);
     
     // Zona (acortada)
-    $zona = isset($referenciado['id_zona']) && isset($zonasMap[$referenciado['id_zona']]) ? $zonasMap[$referenciado['id_zona']] : 'N/A';
-    if (strlen($zona) > 12) {
-        $zona = substr($zona, 0, 12) . '...';
+    $zona = $referenciado['zona_nombre'] ?? 'N/A';
+    if (strlen($zona) > 10) {
+        $zona = substr($zona, 0, 10) . '...';
     }
     $pdf->Cell($widths[7], 6, $zona, 'LR', 0, 'L', true);
     
     // Sector (acortado)
-    $sector = isset($referenciado['id_sector']) && isset($sectoresMap[$referenciado['id_sector']]) ? $sectoresMap[$referenciado['id_sector']] : 'N/A';
-    if (strlen($sector) > 12) {
-        $sector = substr($sector, 0, 12) . '...';
+    $sector = $referenciado['sector_nombre'] ?? 'N/A';
+    if (strlen($sector) > 10) {
+        $sector = substr($sector, 0, 10) . '...';
     }
     $pdf->Cell($widths[8], 6, $sector, 'LR', 0, 'L', true);
     
     // Referenciador (acortado)
     $referenciador = $referenciado['referenciador_nombre'] ?? 'N/A';
-    if (strlen($referenciador) > 20) {
-        $referenciador = substr($referenciador, 0, 20) . '...';
+    if (strlen($referenciador) > 15) {
+        $referenciador = substr($referenciador, 0, 15) . '...';
     }
     $pdf->Cell($widths[9], 6, $referenciador, 'LR', 0, 'L', true);
     
+    // LÍDER (NUEVA COLUMNA) - acortado
+    $lider = $referenciado['lider_nombre_completo'] ?? 'SIN LÍDER';
+    if (strlen($lider) > 15) {
+        $lider = substr($lider, 0, 15) . '...';
+    }
+    $pdf->Cell($widths[10], 6, $lider, 'LR', 0, 'L', true);
+    
     // Fecha (solo fecha, sin hora)
     $fecha = isset($referenciado['fecha_registro']) ? date('d/m/Y', strtotime($referenciado['fecha_registro'])) : '';
-    $pdf->Cell($widths[10], 6, $fecha, 'LR', 0, 'C', true);
+    $pdf->Cell($widths[11], 6, $fecha, 'LR', 0, 'C', true);
     
     $pdf->Ln();
     
@@ -302,7 +240,7 @@ $pdf->Cell(array_sum($widths), 0, '', 'T');
 $pdf->Ln(8);
 
 // ============================================
-// RESUMEN ESTADÍSTICO
+// RESUMEN ESTADÍSTICO (INCLUYENDO LÍDERES)
 // ============================================
 $pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(0, 6, 'RESUMEN ESTADÍSTICO', 0, 1, 'C');
@@ -311,6 +249,26 @@ $pdf->Ln(2);
 // Calcular porcentajes
 $porcentajeActivos = $totalReferidos > 0 ? ($totalActivos / $totalReferidos) * 100 : 0;
 $porcentajeInactivos = $totalReferidos > 0 ? ($totalInactivos / $totalReferidos) * 100 : 0;
+
+// Contar líderes
+$lideresCount = [];
+$referidosSinLider = 0;
+
+foreach ($referenciados as $referenciado) {
+    $liderNombre = $referenciado['lider_nombre_completo'] ?? '';
+    if (!empty($liderNombre)) {
+        if (!isset($lideresCount[$liderNombre])) {
+            $lideresCount[$liderNombre] = 0;
+        }
+        $lideresCount[$liderNombre]++;
+    } else {
+        $referidosSinLider++;
+    }
+}
+
+$totalConLider = $totalReferidos - $referidosSinLider;
+$porcentajeConLider = $totalReferidos > 0 ? ($totalConLider / $totalReferidos) * 100 : 0;
+$porcentajeSinLider = $totalReferidos > 0 ? ($referidosSinLider / $totalReferidos) * 100 : 0;
 
 // Crear tabla de resumen
 $summaryWidths = array(70, 30, 30);
@@ -330,7 +288,9 @@ $pdf->SetFillColor(255, 255, 255);
 $summaryData = array(
     array('Total Referidos', number_format($totalReferidos, 0, ',', '.'), '100%'),
     array('Referidos Activos', number_format($totalActivos, 0, ',', '.'), round($porcentajeActivos, 2) . '%'),
-    array('Referidos Inactivos', number_format($totalInactivos, 0, ',', '.'), round($porcentajeInactivos, 2) . '%')
+    array('Referidos Inactivos', number_format($totalInactivos, 0, ',', '.'), round($porcentajeInactivos, 2) . '%'),
+    array('Con Líder Asignado', number_format($totalConLider, 0, ',', '.'), round($porcentajeConLider, 2) . '%'),
+    array('Sin Líder Asignado', number_format($referidosSinLider, 0, ',', '.'), round($porcentajeSinLider, 2) . '%')
 );
 
 foreach ($summaryData as $row) {
@@ -342,6 +302,33 @@ foreach ($summaryData as $row) {
 
 // Cerrar tabla resumen
 $pdf->Cell(array_sum($summaryWidths), 0, '', 'T');
+$pdf->Ln(5);
+
+// Mostrar los 5 líderes con más referidos si hay datos
+if (!empty($lideresCount)) {
+    $pdf->Ln(3);
+    $pdf->SetFont('helvetica', 'B', 9);
+    $pdf->Cell(0, 6, 'TOP 5 LÍDERES CON MÁS REFERIDOS:', 0, 1, 'L');
+    
+    arsort($lideresCount); // Ordenar de mayor a menor
+    $topLideres = array_slice($lideresCount, 0, 5, true);
+    
+    $pdf->SetFont('helvetica', '', 8);
+    $pdf->SetFillColor(245, 245, 245);
+    
+    $counter = 1;
+    foreach ($topLideres as $liderNombre => $count) {
+        // Acortar nombre si es muy largo
+        $liderDisplay = strlen($liderNombre) > 30 ? substr($liderNombre, 0, 30) . '...' : $liderNombre;
+        
+        $pdf->Cell(10, 6, $counter . '.', 1, 0, 'C', true);
+        $pdf->Cell(170, 6, $liderDisplay, 1, 0, 'L', true);
+        $pdf->Cell(30, 6, number_format($count, 0, ',', '.') . ' ref.', 1, 0, 'C', true);
+        $pdf->Ln();
+        $counter++;
+    }
+}
+
 $pdf->Ln(10);
 
 // ============================================

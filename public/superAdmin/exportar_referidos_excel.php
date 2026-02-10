@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../models/MunicipioModel.php';
 require_once __DIR__ . '/../../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../../models/GrupoPoblacionalModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
+require_once __DIR__ . '/../../models/LiderModel.php'; // IMPORTANTE: Agregar modelo de Líder
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -32,6 +33,7 @@ $municipioModel = new MunicipioModel($pdo);
 $ofertaModel = new OfertaApoyoModel($pdo);
 $grupoModel = new GrupoPoblacionalModel($pdo);
 $barrioModel = new BarrioModel($pdo);
+$liderModel = new LiderModel($pdo); // Nuevo modelo para líderes
 
 // Obtener todos los datos de relaciones
 $zonas = $zonaModel->getAll();
@@ -42,6 +44,7 @@ $municipios = $municipioModel->getAll();
 $ofertas = $ofertaModel->getAll();
 $grupos = $grupoModel->getAll();
 $barrios = $barrioModel->getAll();
+$lideres = $liderModel->getAll(); // Obtener todos los líderes
 
 // Crear arrays para búsqueda rápida
 $zonasMap = [];
@@ -84,6 +87,16 @@ foreach ($barrios as $barrio) {
     $barriosMap[$barrio['id_barrio']] = $barrio['nombre'];
 }
 
+// Mapa para líderes - CORREGIDO: usar id_lider como clave
+$lideresMap = [];
+foreach ($lideres as $lider) {
+    $nombreCompleto = $lider['nombres'] . ' ' . $lider['apellidos'];
+    if (!empty($lider['cc'])) {
+        $nombreCompleto .= ' (' . $lider['cc'] . ')';
+    }
+    $lideresMap[$lider['id_lider']] = $nombreCompleto;
+}
+
 // Configurar headers para archivo Excel
 header('Content-Type: application/vnd.ms-excel');
 header('Content-Disposition: attachment; filename="referidos_' . date('Y-m-d_H-i-s') . '.xls"');
@@ -109,13 +122,15 @@ echo '</xml>';
 echo '<![endif]-->';
 echo '<style>';
 echo 'td { mso-number-format:\@; }'; // Forzar formato de texto para cédulas y teléfonos
+echo '.header { background-color: #4e73df; color: white; font-weight: bold; }';
+echo '.summary { background-color: #f8f9fa; }';
 echo '</style>';
 echo '</head>';
 echo '<body>';
 
 // Crear tabla
 echo '<table border="1">';
-echo '<tr style="background-color: #4e73df; color: white; font-weight: bold;">';
+echo '<tr class="header">';
 echo '<th>ID</th>';
 echo '<th>Estado</th>';
 echo '<th>Nombre</th>';
@@ -133,10 +148,10 @@ echo '<th>Departamento</th>';
 echo '<th>Municipio</th>';
 echo '<th>Oferta Apoyo</th>';
 echo '<th>Grupo Poblacional</th>';
-// NUEVA COLUMNA AQUÍ
 echo '<th>Grupo Parlamentario</th>';
 echo '<th>Barrio</th>';
 echo '<th>Referenciador</th>';
+echo '<th>Líder</th>'; // NUEVA COLUMNA AÑADIDA AQUÍ
 echo '<th>Fecha Registro</th>';
 echo '</tr>';
 
@@ -145,6 +160,15 @@ foreach ($referenciados as $referenciado) {
     $activo = $referenciado['activo'] ?? true;
     $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
     $estado = $esta_activo ? 'ACTIVO' : 'INACTIVO';
+    
+    // Obtener nombre del líder - CORREGIDO: usar id_lider_referenciado
+    $nombreLider = 'SIN LÍDER';
+    if (!empty($referenciado['id_lider']) && isset($lideresMap[$referenciado['id_lider']])) {
+        $nombreLider = $lideresMap[$referenciado['id_lider']];
+    } elseif (!empty($referenciado['lider_nombre'])) {
+        // Si viene el nombre del líder directamente desde la consulta
+        $nombreLider = $referenciado['lider_nombre'];
+    }
     
     echo '<tr>';
     echo '<td>' . ($referenciado['id_referenciado'] ?? '') . '</td>';
@@ -164,25 +188,27 @@ foreach ($referenciados as $referenciado) {
     echo '<td>' . (isset($referenciado['id_municipio']) && isset($municipiosMap[$referenciado['id_municipio']]) ? htmlspecialchars($municipiosMap[$referenciado['id_municipio']]) : 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['id_oferta_apoyo']) && isset($ofertasMap[$referenciado['id_oferta_apoyo']]) ? htmlspecialchars($ofertasMap[$referenciado['id_oferta_apoyo']]) : 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['id_grupo_poblacional']) && isset($gruposMap[$referenciado['id_grupo_poblacional']]) ? htmlspecialchars($gruposMap[$referenciado['id_grupo_poblacional']]) : 'N/A') . '</td>';
-    // NUEVA COLUMNA DE DATOS AQUÍ
     echo '<td>' . (!empty($referenciado['grupo_nombre']) ? htmlspecialchars($referenciado['grupo_nombre']) : 'N/A') . '</td>';
     echo '<td>' . (isset($referenciado['id_barrio']) && isset($barriosMap[$referenciado['id_barrio']]) ? htmlspecialchars($barriosMap[$referenciado['id_barrio']]) : 'N/A') . '</td>';
     echo '<td>' . htmlspecialchars($referenciado['referenciador_nombre'] ?? 'N/A') . '</td>';
+    echo '<td>' . htmlspecialchars($nombreLider) . '</td>'; // NUEVA COLUMNA DE DATOS
     echo '<td>' . (isset($referenciado['fecha_registro']) ? date('d/m/Y H:i', strtotime($referenciado['fecha_registro'])) : '') . '</td>';
     echo '</tr>';
 }
 
 echo '</table>';
 
-// Agregar resumen al final
+// Agregar resumen al final con estadísticas de líderes
 echo '<br><br>';
-echo '<table border="1" style="background-color: #f8f9fa;">';
-echo '<tr><th colspan="2" style="background-color: #4e73df; color: white;">RESUMEN DE REFERIDOS</th></tr>';
+echo '<table border="1" class="summary">';
+echo '<tr><th colspan="2" class="header">RESUMEN DE REFERIDOS</th></tr>';
 echo '<tr><td><strong>Total Referidos:</strong></td><td>' . count($referenciados) . '</td></tr>';
 
 // Contar activos e inactivos
 $totalActivos = 0;
 $totalInactivos = 0;
+$lideresCount = [];
+
 foreach ($referenciados as $referenciado) {
     $activo = $referenciado['activo'] ?? true;
     $esta_activo = ($activo === true || $activo === 't' || $activo == 1);
@@ -191,10 +217,30 @@ foreach ($referenciados as $referenciado) {
     } else {
         $totalInactivos++;
     }
+    
+    // Contar por líder
+    $liderId = $referenciado['id_lider'] ?? null;
+    if ($liderId && isset($lideresMap[$liderId])) {
+        $liderNombre = $lideresMap[$liderId];
+        if (!isset($lideresCount[$liderNombre])) {
+            $lideresCount[$liderNombre] = 0;
+        }
+        $lideresCount[$liderNombre]++;
+    }
 }
 
 echo '<tr><td><strong>Activos:</strong></td><td>' . $totalActivos . '</td></tr>';
 echo '<tr><td><strong>Inactivos:</strong></td><td>' . $totalInactivos . '</td></tr>';
+
+// Agregar estadísticas de líderes si hay datos
+if (!empty($lideresCount)) {
+    echo '<tr><td colspan="2" style="background-color: #e9ecef; font-weight: bold; text-align: center;">Distribución por Líder</td></tr>';
+    arsort($lideresCount); // Ordenar de mayor a menor
+    foreach ($lideresCount as $liderNombre => $count) {
+        echo '<tr><td>' . htmlspecialchars($liderNombre) . ':</td><td>' . $count . ' referidos</td></tr>';
+    }
+}
+
 echo '<tr><td><strong>Fecha de Exportación:</strong></td><td>' . date('d/m/Y H:i:s') . '</td></tr>';
 echo '<tr><td><strong>Exportado por:</strong></td><td>' . htmlspecialchars($_SESSION['nombres'] ?? 'Usuario') . ' ' . htmlspecialchars($_SESSION['apellidos'] ?? '') . '</td></tr>';
 echo '</table>';

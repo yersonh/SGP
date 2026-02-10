@@ -1166,7 +1166,7 @@ body {
                         <i class="fas fa-chart-pie"></i>
                     </div>
                 </div>
-                <div class="option-title">APORTE DE LÍDERES</div>
+                <div class="option-title">REVISIÓN PARA BONO</div>
                 <div class="option-description">
                     Análisis del rendimiento y contribución de líderes 
                     en el proceso de referidos, métricas de efectividad

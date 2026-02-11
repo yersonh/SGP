@@ -12,22 +12,51 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
 $pdo = Database::getConnection();
 $referenciadoModel = new ReferenciadoModel($pdo);
 
-// Filtrar por activos si se solicita
-$soloActivos = isset($_GET['solo_activos']) && $_GET['solo_activos'] == 1;
-$referenciados = $referenciadoModel->getAllReferenciados();
+// ✅ CAPTURAR TODOS LOS FILTROS DE LA URL
+$filtros = [];
 
-// ============================================
+// Filtro de búsqueda general
+if (isset($_GET['search']) && !empty($_GET['search'])) {
+    $filtros['search'] = $_GET['search'];
+}
+
+// Filtro por estado (activo/inactivo)
+if (isset($_GET['solo_activos']) && $_GET['solo_activos'] == '1') {
+    $filtros['activo'] = true;
+} elseif (isset($_GET['activo']) && $_GET['activo'] !== '') {
+    $filtros['activo'] = ($_GET['activo'] == '1');
+}
+
+// Filtros avanzados
+if (isset($_GET['departamento']) && !empty($_GET['departamento'])) {
+    $filtros['departamento'] = $_GET['departamento'];
+}
+if (isset($_GET['municipio']) && !empty($_GET['municipio'])) {
+    $filtros['municipio'] = $_GET['municipio'];
+}
+if (isset($_GET['zona']) && !empty($_GET['zona'])) {
+    $filtros['zona'] = $_GET['zona'];
+}
+if (isset($_GET['referenciador']) && !empty($_GET['referenciador'])) {
+    $filtros['referenciador'] = $_GET['referenciador'];
+}
+if (isset($_GET['lider']) && !empty($_GET['lider'])) {
+    $filtros['lider'] = $_GET['lider'];
+}
+
+// ✅ OBTENER REFERENCIADOS CON LOS FILTROS APLICADOS
+if (empty($filtros)) {
+    // Si NO hay filtros, usar getAllReferenciados() que YA FUNCIONA
+    $referenciados = $referenciadoModel->getAllReferenciados();
+} else {
+    // Si HAY filtros, usar el método con filtros
+    $referenciados = $referenciadoModel->getReferenciadosFiltrados($filtros);
+}
+
+// Ordenar por ID descendente
 usort($referenciados, function($a, $b) {
     return ($b['id_referenciado'] ?? 0) <=> ($a['id_referenciado'] ?? 0);
 });
-
-// Si solo activos, filtrar
-if ($soloActivos) {
-    $referenciados = array_filter($referenciados, function($referenciado) {
-        $activo = $referenciado['activo'] ?? true;
-        return ($activo === true || $activo === 't' || $activo == 1);
-    });
-}
 
 // Contar estadísticas
 $totalReferidos = count($referenciados);
@@ -94,7 +123,7 @@ $pdf->Line(10, $pdf->GetY(), 290, $pdf->GetY());
 $pdf->Ln(5);
 
 // ============================================
-// INFORMACIÓN DEL REPORTE
+// INFORMACIÓN DEL REPORTE Y FILTROS APLICADOS
 // ============================================
 $pdf->SetFont('helvetica', '', 9);
 $infoText = "Fecha de exportación: " . date('d/m/Y H:i:s') . "\n";
@@ -102,9 +131,48 @@ $infoText .= "Exportado por: " . ($_SESSION['nombres'] ?? 'Usuario') . ' ' . ($_
 $infoText .= "Total referidos: " . number_format($totalReferidos, 0, ',', '.') . 
              " (Activos: " . number_format($totalActivos, 0, ',', '.') . 
              ", Inactivos: " . number_format($totalInactivos, 0, ',', '.') . ")";
-             
-if ($soloActivos) {
-    $infoText .= "\nFiltro aplicado: Solo referidos activos";
+
+// ✅ AGREGAR FILTROS APLICADOS AL TEXTO INFORMATIVO
+if (!empty($filtros)) {
+    $infoText .= "\n\nFILTROS APLICADOS:";
+    
+    if (isset($filtros['search'])) {
+        $infoText .= "\n• Búsqueda: " . $filtros['search'];
+    }
+    if (isset($filtros['activo'])) {
+        $infoText .= "\n• Estado: " . ($filtros['activo'] ? 'Activos' : 'Inactivos');
+    }
+    if (isset($filtros['departamento'])) {
+        // Obtener nombre del departamento
+        $stmt = $pdo->prepare("SELECT nombre FROM departamento WHERE id_departamento = ?");
+        $stmt->execute([$filtros['departamento']]);
+        $depto = $stmt->fetchColumn();
+        $infoText .= "\n• Departamento: " . $depto;
+    }
+    if (isset($filtros['municipio'])) {
+        $stmt = $pdo->prepare("SELECT nombre FROM municipio WHERE id_municipio = ?");
+        $stmt->execute([$filtros['municipio']]);
+        $muni = $stmt->fetchColumn();
+        $infoText .= "\n• Municipio: " . $muni;
+    }
+    if (isset($filtros['zona'])) {
+        $stmt = $pdo->prepare("SELECT nombre FROM zona WHERE id_zona = ?");
+        $stmt->execute([$filtros['zona']]);
+        $zona = $stmt->fetchColumn();
+        $infoText .= "\n• Zona: " . $zona;
+    }
+    if (isset($filtros['referenciador'])) {
+        $stmt = $pdo->prepare("SELECT nombres, apellidos FROM usuario WHERE id_usuario = ?");
+        $stmt->execute([$filtros['referenciador']]);
+        $ref = $stmt->fetch(PDO::FETCH_ASSOC);
+        $infoText .= "\n• Referenciador: " . $ref['nombres'] . ' ' . $ref['apellidos'];
+    }
+    if (isset($filtros['lider'])) {
+        $stmt = $pdo->prepare("SELECT nombres, apellidos FROM lideres WHERE id_lider = ?");
+        $stmt->execute([$filtros['lider']]);
+        $lider = $stmt->fetch(PDO::FETCH_ASSOC);
+        $infoText .= "\n• Líder: " . $lider['nombres'] . ' ' . $lider['apellidos'];
+    }
 }
 
 $pdf->MultiCell(0, 5, $infoText, 0, 'L');
@@ -115,14 +183,14 @@ $pdf->Ln(5);
 // ============================================
 $pdf->SetFont('helvetica', 'B', 8);
 
-// Encabezados de la tabla - AGREGADA COLUMNA "LÍDER"
+// Encabezados de la tabla
 $header = array('ID', 'Estado', 'Nombre', 'Apellido', 'Cédula', 'Teléfono', 'Afinidad', 'Zona', 'Sector', 'Referenciador', 'Líder', 'Fecha Reg.');
 
-// Anchos de columna (ajustados para incluir Líder)
+// Anchos de columna
 $widths = array(10, 15, 25, 25, 25, 25, 15, 20, 20, 35, 35, 20);
 
 // Dibujar encabezados
-$pdf->SetFillColor(64, 115, 223); // Color azul (#4073df)
+$pdf->SetFillColor(64, 115, 223);
 $pdf->SetTextColor(255);
 $pdf->SetDrawColor(64, 115, 223);
 $pdf->SetLineWidth(0.3);
@@ -135,19 +203,13 @@ $pdf->Ln();
 // Contenido de la tabla
 $pdf->SetFont('helvetica', '', 7);
 $pdf->SetTextColor(0);
-$pdf->SetFillColor(255); // FONDO BLANCO FIJO
+$pdf->SetFillColor(255);
 $pdf->SetDrawColor(200);
-
-$rowNum = 0;
-$rowsInCurrentPage = 0;
 
 foreach ($referenciados as $referenciado) {
     // Verificar si necesitamos nueva página
     if ($pdf->GetY() > 180) {
         $pdf->AddPage();
-        
-        // REINICIAR CONTADOR DE FILAS PARA NUEVA PÁGINA
-        $rowsInCurrentPage = 0;
         
         // Redibujar encabezados
         $pdf->SetFont('helvetica', 'B', 8);
@@ -159,7 +221,7 @@ foreach ($referenciados as $referenciado) {
         $pdf->Ln();
         $pdf->SetFont('helvetica', '', 7);
         $pdf->SetTextColor(0);
-        $pdf->SetFillColor(255); // FONDO BLANCO FIJO
+        $pdf->SetFillColor(255);
     }
     
     $activo = $referenciado['activo'] ?? true;
@@ -168,25 +230,25 @@ foreach ($referenciados as $referenciado) {
     
     // Color para estado
     if ($esta_activo) {
-        $pdf->SetTextColor(39, 174, 96); // Verde
+        $pdf->SetTextColor(39, 174, 96);
     } else {
-        $pdf->SetTextColor(231, 76, 60); // Rojo
+        $pdf->SetTextColor(231, 76, 60);
     }
     
-    $pdf->Cell($widths[0], 6, $referenciado['id_referenciado'] ?? '', 'LR', 0, 'C', true); // true = fondo blanco
+    $pdf->Cell($widths[0], 6, $referenciado['id_referenciado'] ?? '', 'LR', 0, 'C', true);
     $pdf->Cell($widths[1], 6, $estado, 'LR', 0, 'C', true);
     
     // Restaurar color negro
     $pdf->SetTextColor(0);
     
-    // Nombre (acortado si es muy largo)
+    // Nombre
     $nombre = $referenciado['nombre'] ?? '';
     if (strlen($nombre) > 12) {
         $nombre = substr($nombre, 0, 12) . '...';
     }
     $pdf->Cell($widths[2], 6, $nombre, 'LR', 0, 'L', true);
     
-    // Apellido (acortado si es muy largo)
+    // Apellido
     $apellido = $referenciado['apellido'] ?? '';
     if (strlen($apellido) > 12) {
         $apellido = substr($apellido, 0, 12) . '...';
@@ -197,42 +259,39 @@ foreach ($referenciados as $referenciado) {
     $pdf->Cell($widths[5], 6, $referenciado['telefono'] ?? '', 'LR', 0, 'C', true);
     $pdf->Cell($widths[6], 6, $referenciado['afinidad'] ?? '0', 'LR', 0, 'C', true);
     
-    // Zona (acortada)
+    // Zona
     $zona = $referenciado['zona_nombre'] ?? 'N/A';
     if (strlen($zona) > 10) {
         $zona = substr($zona, 0, 10) . '...';
     }
     $pdf->Cell($widths[7], 6, $zona, 'LR', 0, 'L', true);
     
-    // Sector (acortado)
+    // Sector
     $sector = $referenciado['sector_nombre'] ?? 'N/A';
     if (strlen($sector) > 10) {
         $sector = substr($sector, 0, 10) . '...';
     }
     $pdf->Cell($widths[8], 6, $sector, 'LR', 0, 'L', true);
     
-    // Referenciador (acortado)
+    // Referenciador
     $referenciador = $referenciado['referenciador_nombre'] ?? 'N/A';
     if (strlen($referenciador) > 15) {
         $referenciador = substr($referenciador, 0, 15) . '...';
     }
     $pdf->Cell($widths[9], 6, $referenciador, 'LR', 0, 'L', true);
     
-    // LÍDER (NUEVA COLUMNA) - acortado
+    // LÍDER
     $lider = $referenciado['lider_nombre_completo'] ?? 'SIN LÍDER';
     if (strlen($lider) > 15) {
         $lider = substr($lider, 0, 15) . '...';
     }
     $pdf->Cell($widths[10], 6, $lider, 'LR', 0, 'L', true);
     
-    // Fecha (solo fecha, sin hora)
+    // Fecha
     $fecha = isset($referenciado['fecha_registro']) ? date('d/m/Y', strtotime($referenciado['fecha_registro'])) : '';
     $pdf->Cell($widths[11], 6, $fecha, 'LR', 0, 'C', true);
     
     $pdf->Ln();
-    
-    $rowNum++;
-    $rowsInCurrentPage++;
 }
 
 // Cerrar la tabla
@@ -240,7 +299,7 @@ $pdf->Cell(array_sum($widths), 0, '', 'T');
 $pdf->Ln(8);
 
 // ============================================
-// RESUMEN ESTADÍSTICO (INCLUYENDO LÍDERES)
+// RESUMEN ESTADÍSTICO
 // ============================================
 $pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(0, 6, 'RESUMEN ESTADÍSTICO', 0, 1, 'C');
@@ -310,7 +369,7 @@ if (!empty($lideresCount)) {
     $pdf->SetFont('helvetica', 'B', 9);
     $pdf->Cell(0, 6, 'TOP 5 LÍDERES CON MÁS REFERIDOS:', 0, 1, 'L');
     
-    arsort($lideresCount); // Ordenar de mayor a menor
+    arsort($lideresCount);
     $topLideres = array_slice($lideresCount, 0, 5, true);
     
     $pdf->SetFont('helvetica', '', 8);
@@ -318,7 +377,6 @@ if (!empty($lideresCount)) {
     
     $counter = 1;
     foreach ($topLideres as $liderNombre => $count) {
-        // Acortar nombre si es muy largo
         $liderDisplay = strlen($liderNombre) > 30 ? substr($liderNombre, 0, 30) . '...' : $liderNombre;
         
         $pdf->Cell(10, 6, $counter . '.', 1, 0, 'C', true);
@@ -338,7 +396,6 @@ $pdf->SetY(-20);
 $pdf->SetFont('helvetica', 'I', 8);
 $pdf->SetTextColor(100);
 
-// Información del sistema
 $footerText = "Sistema de Gestión Política - SISGONTech | ";
 $footerText .= "Email: sisgonnet@gmail.com | Contacto: +57 3106310227 | ";
 $footerText .= "Página " . $pdf->getAliasNumPage() . " de " . $pdf->getAliasNbPages();

@@ -1701,5 +1701,247 @@ public function getTotalReferenciados($filters = []) {
         return 0;
     }
 }
+/**
+ * Obtener referenciados con filtros aplicados (basado en getAllReferenciados)
+ * @param array $filtros Filtros a aplicar
+ * @return array Lista de referenciados filtrados
+ */
+public function getReferenciadosFiltrados($filtros = []) {
+    try {
+        // Asegurar conexión
+        if ($this->pdo === null) {
+            require_once __DIR__ . '/../config/database.php';
+            $this->pdo = Database::getConnection();
+        }
+        
+        // Consulta base (la misma de getAllReferenciados)
+        $sql = "SELECT r.*, 
+                d.nombre as departamento_nombre,
+                m.nombre as municipio_nombre,
+                b.nombre as barrio_nombre,
+                gp.nombre as grupo_poblacional_nombre,
+                oa.nombre as oferta_apoyo_nombre,
+                z.nombre as zona_nombre,
+                s.nombre as sector_nombre,
+                pv.nombre as puesto_votacion_nombre,
+                gr.nombre as grupo_nombre,
+                -- INFORMACIÓN DEL LÍDER
+                l.nombres as lider_nombres,
+                l.apellidos as lider_apellidos,
+                l.cc as lider_cedula,
+                l.telefono as lider_telefono,
+                CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre_completo,
+                -- Información del referenciador
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                -- Campos calculados
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
+                    ELSE pv.nombre
+                END as puesto_votacion_display,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' THEN r.mesa_fuera
+                    ELSE r.mesa
+                END as mesa_display
+                FROM referenciados r
+                LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+                LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+                LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+                LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+                LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+                LEFT JOIN zona z ON r.id_zona = z.id_zona
+                LEFT JOIN sector s ON r.id_sector = s.id_sector
+                LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+                LEFT JOIN lideres l ON r.id_lider = l.id_lider
+                LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                WHERE 1=1";
+        
+        $params = [];
+        
+        // FILTRO DE BÚSQUEDA GENERAL
+        if (!empty($filtros['search'])) {
+            $sql .= " AND (r.nombre ILIKE ? 
+                        OR r.apellido ILIKE ? 
+                        OR r.cedula ILIKE ? 
+                        OR r.telefono ILIKE ? 
+                        OR r.email ILIKE ?
+                        OR CONCAT(r.nombre, ' ', r.apellido) ILIKE ?)";
+            $searchTerm = '%' . $filtros['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        // FILTRO POR ESTADO (activo/inactivo)
+        if (isset($filtros['activo']) && $filtros['activo'] !== '') {
+            $sql .= " AND r.activo = ?";
+            // Convertir a boolean
+            $params[] = ($filtros['activo'] === '1' || $filtros['activo'] === 1 || $filtros['activo'] === true) ? true : false;
+        }
+        
+        // FILTRO POR DEPARTAMENTO
+        if (!empty($filtros['departamento'])) {
+            $sql .= " AND r.id_departamento = ?";
+            $params[] = $filtros['departamento'];
+        }
+        
+        // FILTRO POR MUNICIPIO
+        if (!empty($filtros['municipio'])) {
+            $sql .= " AND r.id_municipio = ?";
+            $params[] = $filtros['municipio'];
+        }
+        
+        // FILTRO POR ZONA
+        if (!empty($filtros['zona'])) {
+            $sql .= " AND r.id_zona = ?";
+            $params[] = $filtros['zona'];
+        }
+        
+        // FILTRO POR REFERENCIADOR
+        if (!empty($filtros['referenciador'])) {
+            $sql .= " AND r.id_referenciador = ?";
+            $params[] = $filtros['referenciador'];
+        }
+        
+        // FILTRO POR LÍDER
+        if (!empty($filtros['lider'])) {
+            $sql .= " AND r.id_lider = ?";
+            $params[] = $filtros['lider'];
+        }
+        
+        // ORDENAR
+        $sql .= " ORDER BY r.fecha_registro DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error en getReferenciadosFiltrados: " . $e->getMessage());
+        return [];
+    }
+}
+/**
+ * Construye la consulta base para obtener referenciados con todas las relaciones
+ * @return string SQL base
+ */
+private function buildConsultaBase() {
+    return "SELECT 
+                r.id_referenciado,
+                r.nombre,
+                r.apellido,
+                r.cedula,
+                r.direccion,
+                r.email,
+                r.telefono,
+                r.afinidad,
+                r.sexo,
+                r.fecha_nacimiento,
+                r.compromiso,
+                r.fecha_cumplimiento,
+                r.mesa,
+                r.vota_fuera,
+                r.puesto_votacion_fuera,
+                r.mesa_fuera,
+                r.activo,
+                r.fecha_registro,
+                r.fecha_actualizacion,
+                
+                -- Zona
+                z.id_zona,
+                z.nombre as zona_nombre,
+                
+                -- Sector
+                s.id_sector,
+                s.nombre as sector_nombre,
+                
+                -- Puesto de votación
+                pv.id_puesto,
+                pv.nombre as puesto_votacion_nombre,
+                
+                -- Departamento
+                d.id_departamento,
+                d.nombre as departamento_nombre,
+                
+                -- Municipio
+                m.id_municipio,
+                m.nombre as municipio_nombre,
+                
+                -- Barrio
+                b.id_barrio,
+                b.nombre as barrio_nombre,
+                
+                -- Oferta de apoyo
+                oa.id_oferta,
+                oa.nombre as oferta_apoyo_nombre,
+                
+                -- Grupo poblacional
+                gp.id_grupo,
+                gp.nombre as grupo_poblacional_nombre,
+                
+                -- Grupo parlamentario
+                g.id_grupo,
+                g.nombre as grupo_nombre,
+                
+                -- Referenciador (usuario)
+                ru.id_usuario as id_referenciador,
+                CONCAT(ru.nombres, ' ', ru.apellidos) as referenciador_nombre,
+                
+                -- Líder (tabla lideres)
+                l.id_lider,
+                CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre,
+                l.cc as lider_cedula,
+                l.telefono as lider_telefono,
+                CONCAT(l.nombres, ' ', l.apellidos, ' - ', l.cc) as lider_nombre_completo,
+                
+                -- Campos calculados para mostrar
+                CASE 
+                    WHEN r.vota_fuera = 'Si' OR r.vota_fuera = true OR r.vota_fuera = 'true' THEN r.puesto_votacion_fuera
+                    ELSE pv.nombre
+                END as puesto_votacion_display,
+                CASE 
+                    WHEN r.vota_fuera = 'Si' OR r.vota_fuera = true OR r.vota_fuera = 'true' THEN r.mesa_fuera
+                    ELSE r.mesa
+                END as mesa_display
+                
+            FROM public.referenciados r
+            
+            -- Zona (LEFT JOIN porque puede ser null)
+            LEFT JOIN public.zona z ON r.id_zona = z.id_zona
+            
+            -- Sector (LEFT JOIN)
+            LEFT JOIN public.sector s ON r.id_sector = s.id_sector
+            
+            -- Puesto de votación (LEFT JOIN)
+            LEFT JOIN public.puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            
+            -- Municipio (LEFT JOIN)
+            LEFT JOIN public.municipio m ON r.id_municipio = m.id_municipio
+            
+            -- Departamento (LEFT JOIN)
+            LEFT JOIN public.departamento d ON m.id_departamento = d.id_departamento
+            
+            -- Barrio (LEFT JOIN)
+            LEFT JOIN public.barrio b ON r.id_barrio = b.id_barrio
+            
+            -- Oferta de apoyo (LEFT JOIN)
+            LEFT JOIN public.oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            
+            -- Grupo poblacional (LEFT JOIN)
+            LEFT JOIN public.grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            
+            -- Grupo parlamentario (LEFT JOIN)
+            LEFT JOIN public.grupos_parlamentarios g ON r.id_grupo = g.id_grupo
+            
+            -- Referenciador (LEFT JOIN con usuario)
+            LEFT JOIN public.usuario ru ON r.id_referenciador = ru.id_usuario
+            
+            -- Líder (LEFT JOIN con tabla lideres)
+            LEFT JOIN public.lideres l ON r.id_lider = l.id_lider";
+}
 }
 ?>

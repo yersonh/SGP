@@ -603,15 +603,16 @@ if ($porcentajeRestante > 50) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <script>
+// ============================================
+// VARIABLES GLOBALES - DECLARADAS FUERA DE document.ready
+// ============================================
+let currentPage = 1;
+const perPage = 50;
+let currentFilters = {}; // ✅ AHORA ES GLOBAL
+let searchTimeout = null;
+const STORAGE_KEY = 'referidos_filters';
+
 $(document).ready(function() {
-    let currentPage = 1;
-    const perPage = 50;
-    let currentFilters = {};
-    let searchTimeout = null;
-    
-    // Clave para sessionStorage
-    const STORAGE_KEY = 'referidos_filters';
-    
     // ============================================
     // FUNCIONES PARA FILTROS AVANZADOS
     // ============================================
@@ -647,18 +648,15 @@ $(document).ready(function() {
                         referenciadorSelect.append('<option value="' + referenciador.id_usuario + '">' + nombreCompleto + '</option>');
                     });
                     
-                    // Llenar líderes - CORREGIDO: usar id_lider
+                    // Llenar líderes
                     var liderSelect = $('#filterLider');
                     liderSelect.html('<option value="">Todos los líderes</option>');
                     if (response.lideres && response.lideres.length > 0) {
                         $.each(response.lideres, function(index, lider) {
-                            // Los líderes vienen con campos: id_lider, nombres, apellidos, cc, etc.
                             var nombreCompleto = lider.nombres + ' ' + lider.apellidos;
-                            // Opcional: agregar cédula si está disponible
                             if (lider.cc) {
                                 nombreCompleto += ' - ' + lider.cc;
                             }
-                            // CORRECCIÓN IMPORTANTE: usar id_lider no id_usuario
                             liderSelect.append('<option value="' + lider.id_lider + '">' + nombreCompleto + '</option>');
                         });
                     }
@@ -880,7 +878,6 @@ $(document).ready(function() {
             }
         } catch (e) {
             console.error('Error al cargar filtros:', e);
-            // Limpiar sessionStorage si hay error
             sessionStorage.removeItem(STORAGE_KEY);
         }
         return false;
@@ -1345,7 +1342,7 @@ $(document).ready(function() {
 });
 
 // ============================================
-// FUNCIONES GLOBALES MODIFICADAS
+// FUNCIONES GLOBALES - DECLARADAS FUERA DE document.ready
 // ============================================
 
 // Función para ver detalle manteniendo filtros
@@ -1370,35 +1367,80 @@ function editarReferenciadoConFiltros(id) {
 window.verDetalle = verDetalleConFiltros;
 window.editarReferenciado = editarReferenciadoConFiltros;
 
-// Función para exportar referidos
+// ✅ FUNCIÓN DE EXPORTACIÓN CORREGIDA - AHORA USA currentFilters GLOBAL
 function exportarReferidos(formato) {
-    const soloActivos = document.getElementById('exportSoloActivos').checked;
+    const soloActivos = document.getElementById('exportSoloActivos')?.checked || false;
     
+    // ✅ AHORA currentFilters ES ACCESIBLE (VARIABLE GLOBAL)
+    console.log('Exportando con filtros:', currentFilters);
+    
+    // Construir URL con TODOS los filtros actuales
+    let params = new URLSearchParams();
+    
+    // Filtro de búsqueda
+    const searchTerm = document.getElementById('searchInput')?.value.trim();
+    if (searchTerm) {
+        params.append('search', searchTerm);
+    }
+    
+    // Filtro por estado (si no está usando el checkbox de solo activos)
+    if (!soloActivos) {
+        const estadoFiltro = currentFilters.activo;
+        if (estadoFiltro !== undefined && estadoFiltro !== '') {
+            params.append('activo', estadoFiltro);
+        }
+    }
+    
+    // Checkbox de solo activos (tiene prioridad)
+    if (soloActivos) {
+        params.append('solo_activos', '1');
+    }
+    
+    // Agregar TODOS los filtros avanzados
+    if (currentFilters.departamento) {
+        params.append('departamento', currentFilters.departamento);
+    }
+    if (currentFilters.municipio) {
+        params.append('municipio', currentFilters.municipio);
+    }
+    if (currentFilters.zona) {
+        params.append('zona', currentFilters.zona);
+    }
+    if (currentFilters.referenciador) {
+        params.append('referenciador', currentFilters.referenciador);
+    }
+    if (currentFilters.lider) {
+        params.append('lider', currentFilters.lider);
+    }
+    
+    // Determinar URL según formato
     let url = '';
-    
     switch(formato) {
         case 'excel':
-            url = 'exportar_referidos_excel.php';
+            url = 'exportar_referidos_excel.php?' + params.toString();
             break;
         case 'pdf':
-            url = 'exportar_referidos_pdf.php';
+            url = 'exportar_referidos_pdf.php?' + params.toString();
             break;
         default:
-            url = 'exportar_referidos_excel.php';
+            url = 'exportar_referidos_excel.php?' + params.toString();
             break;
     }
     
-    if (soloActivos) {
-        url += '?solo_activos=1';
-    }
-    
+    // Cerrar modal
     const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
     if (exportModal) {
         exportModal.hide();
     }
     
-    showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
+    // Mostrar mensaje con los filtros aplicados
+    let mensaje = 'Generando archivo ' + formato.toUpperCase();
+    if (params.toString()) {
+        mensaje += ' con los filtros aplicados';
+    }
+    showNotification(mensaje + '...', 'info');
     
+    // Descargar archivo
     setTimeout(() => {
         const link = document.createElement('a');
         link.href = url;
@@ -1406,6 +1448,8 @@ function exportarReferidos(formato) {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        showNotification('Archivo ' + formato.toUpperCase() + ' generado correctamente', 'success');
     }, 300);
 }
 

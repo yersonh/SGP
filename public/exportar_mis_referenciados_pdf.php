@@ -117,15 +117,15 @@ $pdf->MultiCell(0, 5, $infoText, 0, 'L');
 $pdf->Ln(5);
 
 // ============================================
-// TABLA DE REFERENCIADOS
+// TABLA DE REFERENCIADOS (CON COLUMNA DE LÍDER)
 // ============================================
 $pdf->SetFont('helvetica', 'B', 8);
 
-// Encabezados de la tabla
-$header = array('ID', 'Estado', 'Nombre', 'Apellido', 'Cédula', 'Teléfono', 'Afinidad', 'Vota', 'Puesto', 'Mesa', 'Fecha Reg.');
+// Encabezados de la tabla - AGREGADA COLUMNA "LÍDER"
+$header = array('ID', 'Estado', 'Nombre', 'Apellido', 'Cédula', 'Teléfono', 'Afinidad', 'Vota', 'Puesto', 'Mesa', 'Líder', 'Fecha Reg.');
 
-// Anchos de columna
-$widths = array(10, 15, 30, 25, 25, 25, 15, 15, 30, 15, 25);
+// Anchos de columna - AJUSTADOS PARA INCLUIR LÍDER
+$widths = array(10, 15, 25, 20, 20, 20, 15, 15, 25, 15, 30, 20);
 
 // Dibujar encabezados
 $pdf->SetFillColor(64, 115, 223);
@@ -188,15 +188,15 @@ foreach ($referenciados as $referenciado) {
     
     // Nombre
     $nombre = $referenciado['nombre'] ?? '';
-    if (strlen($nombre) > 15) {
-        $nombre = substr($nombre, 0, 15) . '...';
+    if (strlen($nombre) > 12) {
+        $nombre = substr($nombre, 0, 12) . '...';
     }
     $pdf->Cell($widths[2], 6, $nombre, 'LR', 0, 'L', true);
     
     // Apellido
     $apellido = $referenciado['apellido'] ?? '';
-    if (strlen($apellido) > 12) {
-        $apellido = substr($apellido, 0, 12) . '...';
+    if (strlen($apellido) > 10) {
+        $apellido = substr($apellido, 0, 10) . '...';
     }
     $pdf->Cell($widths[3], 6, $apellido, 'LR', 0, 'L', true);
     
@@ -211,8 +211,8 @@ foreach ($referenciados as $referenciado) {
     } else {
         $puesto = $referenciado['puesto_votacion_nombre'] ?? 'N/A';
     }
-    if (strlen($puesto) > 15) {
-        $puesto = substr($puesto, 0, 15) . '...';
+    if (strlen($puesto) > 12) {
+        $puesto = substr($puesto, 0, 12) . '...';
     }
     $pdf->Cell($widths[8], 6, $puesto, 'LR', 0, 'L', true);
     
@@ -224,9 +224,16 @@ foreach ($referenciados as $referenciado) {
     }
     $pdf->Cell($widths[9], 6, $mesa, 'LR', 0, 'C', true);
     
+    // LÍDER (NUEVA COLUMNA) - acortado
+    $lider = $referenciado['lider_nombre_completo'] ?? 'SIN LÍDER';
+    if (strlen($lider) > 15) {
+        $lider = substr($lider, 0, 15) . '...';
+    }
+    $pdf->Cell($widths[10], 6, $lider, 'LR', 0, 'L', true);
+    
     // Fecha
     $fecha = isset($referenciado['fecha_registro']) ? date('d/m/Y', strtotime($referenciado['fecha_registro'])) : '';
-    $pdf->Cell($widths[10], 6, $fecha, 'LR', 0, 'C', true);
+    $pdf->Cell($widths[11], 6, $fecha, 'LR', 0, 'C', true);
     
     $pdf->Ln();
     
@@ -239,14 +246,34 @@ $pdf->Cell(array_sum($widths), 0, '', 'T');
 $pdf->Ln(8);
 
 // ============================================
-// RESUMEN ESTADÍSTICO
+// RESUMEN ESTADÍSTICO (INCLUYENDO LÍDERES)
 // ============================================
 $pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(0, 6, 'RESUMEN ESTADÍSTICO', 0, 1, 'C');
 $pdf->Ln(2);
 
-// Crear tabla de resumen
-$summaryWidths = array(70, 30);
+// Contar estadísticas de líderes para el referenciador
+$lideresCount = [];
+$referidosSinLider = 0;
+
+foreach ($referenciados as $referenciado) {
+    $liderNombre = $referenciado['lider_nombre_completo'] ?? '';
+    if (!empty($liderNombre)) {
+        if (!isset($lideresCount[$liderNombre])) {
+            $lideresCount[$liderNombre] = 0;
+        }
+        $lideresCount[$liderNombre]++;
+    } else {
+        $referidosSinLider++;
+    }
+}
+
+$totalConLider = $totalReferidos - $referidosSinLider;
+$porcentajeConLider = $totalReferidos > 0 ? round(($totalConLider / $totalReferidos) * 100, 1) : 0;
+$porcentajeSinLider = $totalReferidos > 0 ? round(($referidosSinLider / $totalReferidos) * 100, 1) : 0;
+
+// Crear tabla de resumen (con 2 columnas)
+$summaryWidths = array(80, 30);
 $pdf->SetFont('helvetica', '', 9);
 $pdf->SetFillColor(240, 240, 240);
 $pdf->SetDrawColor(200);
@@ -263,6 +290,8 @@ $summaryData = array(
     array('Total Referenciados', number_format($totalReferidos, 0, ',', '.')),
     array('Referenciados Activos', number_format($totalActivos, 0, ',', '.')),
     array('Referenciados Inactivos', number_format($totalInactivos, 0, ',', '.')),
+    array('Con Líder Asignado', number_format($totalConLider, 0, ',', '.') . ' (' . $porcentajeConLider . '%)'),
+    array('Sin Líder Asignado', number_format($referidosSinLider, 0, ',', '.') . ' (' . $porcentajeSinLider . '%)'),
     array('Tope Completado', ($usuario['total_referenciados'] ?? 0) . '/' . ($usuario['tope'] ?? 0)),
     array('Porcentaje Completado', ($usuario['porcentaje_tope'] ?? 0) . '%')
 );
@@ -275,6 +304,33 @@ foreach ($summaryData as $row) {
 
 // Cerrar tabla resumen
 $pdf->Cell(array_sum($summaryWidths), 0, '', 'T');
+$pdf->Ln(5);
+
+// Mostrar los líderes con más referidos (solo top 3 para referenciador)
+if (!empty($lideresCount)) {
+    $pdf->Ln(3);
+    $pdf->SetFont('helvetica', 'B', 9);
+    $pdf->Cell(0, 6, 'MIS LÍDERES CON MÁS REFERIDOS:', 0, 1, 'L');
+    
+    arsort($lideresCount); // Ordenar de mayor a menor
+    $topLideres = array_slice($lideresCount, 0, 3, true);
+    
+    $pdf->SetFont('helvetica', '', 8);
+    $pdf->SetFillColor(245, 245, 245);
+    
+    $counter = 1;
+    foreach ($topLideres as $liderNombre => $count) {
+        // Acortar nombre si es muy largo
+        $liderDisplay = strlen($liderNombre) > 30 ? substr($liderNombre, 0, 30) . '...' : $liderNombre;
+        
+        $pdf->Cell(10, 6, $counter . '.', 1, 0, 'C', true);
+        $pdf->Cell(160, 6, $liderDisplay, 1, 0, 'L', true);
+        $pdf->Cell(30, 6, number_format($count, 0, ',', '.') . ' ref.', 1, 0, 'C', true);
+        $pdf->Ln();
+        $counter++;
+    }
+}
+
 $pdf->Ln(10);
 
 // ============================================

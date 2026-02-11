@@ -39,6 +39,7 @@ usort($referenciados, function($a, $b) {
 $totalReferidos = count($referenciados);
 $totalActivos = 0;
 $totalInactivos = 0;
+$referidosSinLider = 0;
 
 foreach ($referenciados as $referenciado) {
     $activo = $referenciado['activo'] ?? true;
@@ -47,6 +48,11 @@ foreach ($referenciados as $referenciado) {
         $totalActivos++;
     } else {
         $totalInactivos++;
+    }
+    
+    // Contar referidos sin líder
+    if (empty($referenciado['lider_nombre_completo'])) {
+        $referidosSinLider++;
     }
 }
 
@@ -75,13 +81,15 @@ echo '</xml>';
 echo '<![endif]-->';
 echo '<style>';
 echo 'td { mso-number-format:\@; }';
+echo '.header { background-color: #4e73df; color: white; font-weight: bold; }';
+echo '.summary { background-color: #f8f9fa; }';
 echo '</style>';
 echo '</head>';
 echo '<body>';
 
 // Crear tabla
 echo '<table border="1">';
-echo '<tr style="background-color: #4e73df; color: white; font-weight: bold;">';
+echo '<tr class="header">';
 echo '<th>ID</th>';
 echo '<th>Estado</th>';
 echo '<th>Nombre</th>';
@@ -90,8 +98,8 @@ echo '<th>Cédula</th>';
 echo '<th>Teléfono</th>';
 echo '<th>Email</th>';
 echo '<th>Afinidad</th>';
-// NUEVA COLUMNA AQUÍ
 echo '<th>Grupo Parlamentario</th>';
+echo '<th>Líder</th>'; // NUEVA COLUMNA
 echo '<th>Vota Aquí/Fuera</th>';
 echo '<th>Puesto Votación</th>';
 echo '<th>Mesa</th>';
@@ -105,6 +113,10 @@ foreach ($referenciados as $referenciado) {
     $estado = $esta_activo ? 'ACTIVO' : 'INACTIVO';
     $vota_fuera = $referenciado['vota_fuera'] === 'Si';
     
+    // Obtener nombre del líder
+    $liderNombre = !empty($referenciado['lider_nombre_completo']) ? 
+                   $referenciado['lider_nombre_completo'] : 'SIN LÍDER';
+    
     echo '<tr>';
     echo '<td>' . ($referenciado['id_referenciado'] ?? '') . '</td>';
     echo '<td>' . $estado . '</td>';
@@ -114,8 +126,9 @@ foreach ($referenciados as $referenciado) {
     echo '<td>' . htmlspecialchars($referenciado['telefono'] ?? '') . '</td>';
     echo '<td>' . htmlspecialchars($referenciado['email'] ?? '') . '</td>';
     echo '<td>' . ($referenciado['afinidad'] ?? '0') . '/5</td>';
-    // NUEVA COLUMNA DE DATOS AQUÍ
     echo '<td>' . (!empty($referenciado['grupo_nombre']) ? htmlspecialchars($referenciado['grupo_nombre']) : 'Sin asignar') . '</td>';
+    echo '<td>' . htmlspecialchars($liderNombre) . '</td>'; // NUEVA COLUMNA DE DATOS
+    
     echo '<td>' . ($vota_fuera ? 'FUERA' : 'AQUÍ') . '</td>';
     
     if ($vota_fuera) {
@@ -132,14 +145,35 @@ foreach ($referenciados as $referenciado) {
 
 echo '</table>';
 
-// Agregar resumen al final
+// Agregar resumen al final (con estadísticas de líderes)
 echo '<br><br>';
-echo '<table border="1" style="background-color: #f8f9fa;">';
-echo '<tr><th colspan="2" style="background-color: #4e73df; color: white;">RESUMEN DE MIS REFERENCIADOS</th></tr>';
+echo '<table border="1" class="summary">';
+echo '<tr><th colspan="2" class="header">RESUMEN DE MIS REFERENCIADOS</th></tr>';
 echo '<tr><td><strong>Total Referidos:</strong></td><td>' . $totalReferidos . '</td></tr>';
 echo '<tr><td><strong>Activos:</strong></td><td>' . $totalActivos . '</td></tr>';
 echo '<tr><td><strong>Inactivos:</strong></td><td>' . $totalInactivos . '</td></tr>';
-// También puedes agregar estadísticas de grupos parlamentarios
+echo '<tr><td><strong>Sin Líder Asignado:</strong></td><td>' . $referidosSinLider . '</td></tr>';
+
+// Contar distribución por líder (solo para los referidos de este referenciador)
+$lideresCount = [];
+foreach ($referenciados as $referenciado) {
+    $liderNombre = $referenciado['lider_nombre_completo'] ?? '';
+    if (!empty($liderNombre)) {
+        if (!isset($lideresCount[$liderNombre])) {
+            $lideresCount[$liderNombre] = 0;
+        }
+        $lideresCount[$liderNombre]++;
+    }
+}
+
+if (!empty($lideresCount)) {
+    echo '<tr><td colspan="2" style="background-color: #e9ecef; font-weight: bold; text-align: center;">Distribución por Líder</td></tr>';
+    arsort($lideresCount);
+    foreach ($lideresCount as $liderNombre => $count) {
+        echo '<tr><td>' . htmlspecialchars($liderNombre) . ':</td><td>' . $count . ' referidos</td></tr>';
+    }
+}
+
 echo '<tr><td><strong>Fecha de Exportación:</strong></td><td>' . date('d/m/Y H:i:s') . '</td></tr>';
 echo '<tr><td><strong>Exportado por:</strong></td><td>' . htmlspecialchars($usuario['nombres'] ?? '') . ' ' . htmlspecialchars($usuario['apellidos'] ?? '') . '</td></tr>';
 echo '<tr><td><strong>Tope del Referenciador:</strong></td><td>' . ($usuario['total_referenciados'] ?? 0) . '/' . ($usuario['tope'] ?? 0) . '</td></tr>';

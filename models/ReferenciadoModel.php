@@ -176,9 +176,11 @@ class ReferenciadoModel {
             s.nombre as sector_nombre,
             pv.nombre as puesto_votacion_nombre,
             gr.nombre as grupo_nombre,
-            l.nombres as lider_nombres,  -- NUEVO
-            l.apellidos as lider_apellidos,  -- NUEVO
-            l.cc as lider_cc,  -- NUEVO
+            l.nombres as lider_nombres,
+            l.apellidos as lider_apellidos,
+            l.cc as lider_cc,
+            -- AGREGAR ESTA LÍNEA: nombre completo del líder
+            CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre_completo,
             CASE 
                 WHEN r.vota_fuera = 'Si' THEN r.puesto_votacion_fuera
                 ELSE pv.nombre
@@ -197,7 +199,7 @@ class ReferenciadoModel {
             LEFT JOIN sector s ON r.id_sector = s.id_sector
             LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
             LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
-            LEFT JOIN lideres l ON r.id_lider = l.id_lider  -- NUEVO: LEFT JOIN con líderes
+            LEFT JOIN lideres l ON r.id_lider = l.id_lider
             WHERE r.id_referenciador = :id_referenciador
             ORDER BY r.fecha_registro DESC";
     

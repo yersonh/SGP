@@ -494,6 +494,7 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
                     <th>Email</th>
                     <th>Afinidad</th>
                     <th>Grupo Parlamentario</th>
+                    <th>Líder</th> 
                     <th>Vota</th>
                     <th>Puesto/Mesa</th>
                     <th>Fecha Registro</th>
@@ -559,6 +560,25 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
                             echo '<span class="badge bg-secondary">' . $grupo_nombre . '</span>';
                         } else {
                             echo '<span class="badge bg-primary">' . $grupo_nombre . '</span>';
+                        }
+                        ?>
+                    </td>
+                    <!-- NUEVA COLUMNA: Líder -->
+                    <td>
+                        <?php 
+                        if (!empty($referenciado['lider_nombres']) || !empty($referenciado['lider_apellidos'])) {
+                            $lider_completo = trim(
+                                ($referenciado['lider_nombres'] ?? '') . ' ' . 
+                                ($referenciado['lider_apellidos'] ?? '')
+                            );
+                            echo '<span class="badge bg-info">' . htmlspecialchars($lider_completo) . '</span>';
+                            
+                            // Opcional: mostrar también la cédula del líder
+                            if (!empty($referenciado['lider_cc'])) {
+                                echo '<br><small class="text-muted">CC: ' . htmlspecialchars($referenciado['lider_cc']) . '</small>';
+                            }
+                        } else {
+                            echo '<span class="badge bg-secondary">Sin líder</span>';
                         }
                         ?>
                     </td>

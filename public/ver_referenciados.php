@@ -468,7 +468,194 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
                     </div>
                 </div>
             </div>
+            <!-- FILTRO POR LÍDER - VERSIÓN COMPLETA -->
+<div class="filtro-lider-container mb-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary bg-gradient text-white py-3">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>
+                Filtrar por Líder
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+               <!-- Selector de líder -->
+<div class="col-md-7">
+    <label for="filtroLider" class="form-label fw-bold">
+        <i class="fas fa-user-tie me-1"></i> Seleccionar Líder:
+    </label>
+    <div class="input-group">
+        <span class="input-group-text bg-light border-end-0">
+            <i class="fas fa-search text-muted"></i>
+        </span>
+        <select class="form-select border-start-0 ps-0" id="filtroLider" onchange="filtrarPorLider()">
+            <option value="todos" selected>Todos los líderes</option>
+            <option value="sin_lider">Sin líder asignado</option>
+            <?php
+            // Obtener lista única de líderes de los referenciados
+            $lideres_unicos = [];
+            foreach ($referenciados as $ref) {
+                if (!empty($ref['lider_nombres']) || !empty($ref['lider_apellidos'])) {
+                    $lider_completo = trim(
+                        ($ref['lider_nombres'] ?? '') . ' ' . 
+                        ($ref['lider_apellidos'] ?? '')
+                    );
+                    $lider_cc = $ref['lider_cc'] ?? '';
+                    $lider_id = $ref['lider_id'] ?? '';
+                    
+                    // Evitar duplicados
+                    $key = $lider_completo . $lider_cc;
+                    if (!isset($lideres_unicos[$key])) {
+                        $lideres_unicos[$key] = [
+                            'nombre' => $lider_completo,
+                            'cc' => $lider_cc,
+                            'id' => $lider_id,
+                            'cantidad' => 0
+                        ];
+                    }
+                    $lideres_unicos[$key]['cantidad']++;
+                }
+            }
             
+            // Ordenar alfabéticamente
+            usort($lideres_unicos, function($a, $b) {
+                return strcmp($a['nombre'], $b['nombre']);
+            });
+            
+            // Mostrar opciones con contador (SIN EMOJIS)
+            foreach ($lideres_unicos as $lider):
+            ?>
+            <option value="<?php echo htmlspecialchars($lider['nombre']); ?>" 
+                    data-cc="<?php echo htmlspecialchars($lider['cc']); ?>"
+                    data-id="<?php echo htmlspecialchars($lider['id']); ?>">
+                <?php echo htmlspecialchars($lider['nombre']); ?> 
+                <?php if (!empty($lider['cc'])): ?>
+                    (CC: <?php echo htmlspecialchars($lider['cc']); ?>)
+                <?php endif; ?>
+                - [<?php echo $lider['cantidad']; ?> ref.]
+            </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+</div>
+                
+                <!-- Botones de acción -->
+                <div class="col-md-5">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary flex-grow-1" onclick="filtrarPorLider()">
+                            <i class="fas fa-filter me-2"></i>Aplicar Filtro
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="limpiarFiltroLider()" 
+                                title="Limpiar filtro" data-bs-toggle="tooltip">
+                            <i class="fas fa-eraser me-1"></i>Limpiar
+                        </button>
+                        <button class="btn btn-outline-info" onclick="toggleFiltroRapido()" 
+                                title="Búsqueda rápida" data-bs-toggle="tooltip">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Búsqueda rápida (oculta por defecto) -->
+            <div id="busquedaRapidaContainer" style="display: none;" class="mt-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="fas fa-keyboard"></i>
+                    </span>
+                    <input type="text" 
+                           class="form-control" 
+                           id="busquedaRapidaLider" 
+                           placeholder="Escribe para buscar líder rápidamente..."
+                           onkeyup="buscarLiderRapido(this.value)">
+                    <button class="btn btn-outline-secondary" type="button" onclick="cerrarBusquedaRapida()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="form-text text-muted mt-1">
+                    <i class="fas fa-info-circle"></i> Busca por nombre o cédula del líder
+                </div>
+            </div>
+            
+            <!-- Resumen del filtro actual -->
+            <div id="resumenFiltroActual" class="mt-3 p-2 bg-light rounded d-none">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-filter text-primary me-2"></i>
+                    <span id="textoFiltroActual" class="fw-bold">Filtrando por: </span>
+                    <button class="btn btn-sm btn-link text-danger ms-2" onclick="limpiarFiltroLider()">
+                        <i class="fas fa-times-circle"></i> Quitar filtro
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Contador de resultados con diseño mejorado -->
+            <div class="mt-3 d-flex justify-content-between align-items-center">
+                <div id="resultadoFiltro" class="text-muted">
+                    <i class="fas fa-users me-1"></i>
+                    <span id="textoResultados">
+                        Mostrando <strong id="totalMostrados"><?php echo count($referenciados); ?></strong> 
+                        de <strong id="totalReferenciados"><?php echo count($referenciados); ?></strong> referenciados
+                    </span>
+                </div>
+                
+                <!-- Badge de filtro activo -->
+                <div id="badgeFiltroActivo" class="d-none">
+                    <span class="badge bg-info">
+                        <i class="fas fa-user-tie"></i> 
+                        <span id="nombreLiderFiltro"></span>
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                aria-label="Close" onclick="limpiarFiltroLider()" style="font-size: 0.5em;"></button>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Indicador de progreso (para filtros lentos) -->
+            <div id="filtroLoading" class="text-center py-2 d-none">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <span class="ms-2 text-muted">Aplicando filtro...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONTADOR DE LÍDERES EN TABLA RESUMEN (Opcional) -->
+<?php if (!empty($lideres_unicos)): ?>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-bold text-muted me-2">
+                        <i class="fas fa-user-tie"></i> Líderes activos:
+                    </span>
+                    <?php 
+                    $contador_lideres = 0;
+                    foreach ($lideres_unicos as $lider): 
+                        if ($contador_lideres >= 5) break; // Mostrar solo 5
+                        $contador_lideres++;
+                    ?>
+                        <span class="badge bg-light text-dark p-2 border">
+                            <i class="fas fa-user-circle text-primary me-1"></i>
+                            <?php echo htmlspecialchars($lider['nombre']); ?>
+                            <span class="badge bg-primary ms-1"><?php echo $lider['cantidad']; ?></span>
+                        </span>
+                    <?php endforeach; ?>
+                    <?php if (count($lideres_unicos) > 5): ?>
+                        <span class="badge bg-secondary">
+                            +<?php echo count($lideres_unicos) - 5; ?> más
+                        </span>
+                    <?php endif; ?>
+                    <button class="btn btn-sm btn-link ms-auto" onclick="document.getElementById('filtroLider').focus()">
+                        Ver todos <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
             <!-- Tabla de Referenciados -->
 <div class="referenciados-table">
     <div class="table-header">
@@ -1096,7 +1283,457 @@ $porc_ambos = ($total_activos > 0) ? round(($pacha * 100) / $total_activos, 1) :
         let chartModal2 = null;
         let chartTypeModal1 = 'doughnut';
         let chartTypeModal2 = 'doughnut';
+        // ============================================
+// FILTRO POR LÍDER - FUNCIONALIDAD COMPLETA
+// ============================================
+
+// Variable para almacenar el filtro actual
+let filtroActual = {
+    lider: 'todos',
+    nombreLider: ''
+};
+
+/**
+ * Función principal para filtrar la tabla por líder
+ */
+function filtrarPorLider() {
+    const select = document.getElementById('filtroLider');
+    if (!select) return;
+    
+    const liderSeleccionado = select.value;
+    const optionSeleccionada = select.options[select.selectedIndex];
+    const nombreLider = optionSeleccionada.text.split('-')[0].replace(/[🔥⭐👤📋🚫]/g, '').trim();
+    
+    // Actualizar variable de filtro actual
+    filtroActual = {
+        lider: liderSeleccionado,
+        nombreLider: liderSeleccionado === 'todos' ? 'Todos' : 
+                     liderSeleccionado === 'sin_lider' ? 'Sin líder' : nombreLider
+    };
+    
+    // Mostrar indicador de carga
+    document.getElementById('filtroLoading')?.classList.remove('d-none');
+    
+    // Pequeño timeout para mostrar el loading y permitir que la UI se actualice
+    setTimeout(() => {
+        const filas = document.querySelectorAll('.table tbody tr');
+        let contador = 0;
         
+        filas.forEach(fila => {
+            // IMPORTANTE: Ajusta el índice si es necesario
+            // La columna Líder es la número 7 (índice 6 porque empieza en 0)
+            const celdaLider = fila.querySelector('td:nth-child(7)');
+            
+            if (!celdaLider) return;
+            
+            let textoLider = celdaLider.textContent.trim();
+            
+            // Extraer solo el nombre del líder (sin "CC:", "Sin líder", etc.)
+            textoLider = textoLider.replace(/CC:\s*\d+/g, '').trim();
+            textoLider = textoLider.replace('Sin líder', 'Sin líder asignado').trim();
+            textoLider = textoLider.replace(/^\s+|\s+$/g, '');
+            
+            let mostrar = false;
+            
+            if (liderSeleccionado === 'todos') {
+                mostrar = true;
+            } else if (liderSeleccionado === 'sin_lider') {
+                mostrar = textoLider === 'Sin líder asignado' || textoLider === '';
+            } else {
+                // Comparación flexible
+                mostrar = textoLider.includes(liderSeleccionado) || 
+                         liderSeleccionado.includes(textoLider) ||
+                         textoLider.toLowerCase().includes(liderSeleccionado.toLowerCase());
+            }
+            
+            // Aplicar o quitar clase para animación
+            if (mostrar) {
+                fila.style.display = '';
+                fila.classList.add('fila-visible');
+                fila.classList.remove('fila-oculta');
+                contador++;
+            } else {
+                fila.style.display = 'none';
+                fila.classList.add('fila-oculta');
+                fila.classList.remove('fila-visible');
+            }
+        });
+        
+        // Actualizar contadores
+        actualizarContadores(contador);
+        
+        // Actualizar resumen del filtro
+        actualizarResumenFiltro();
+        
+        // Mostrar mensaje si no hay resultados
+        mostrarMensajeSinResultados(contador);
+        
+        // Ocultar indicador de carga
+        document.getElementById('filtroLoading')?.classList.add('d-none');
+        
+        // Guardar filtro en localStorage (opcional)
+        guardarFiltroEnLocalStorage();
+        
+    }, 100); // Pequeño delay para mostrar el loading
+}/**
+ * Actualizar los contadores en la UI
+ */
+function actualizarContadores(contador) {
+    const totalMostrados = document.getElementById('totalMostrados');
+    const totalReferenciados = document.getElementById('totalReferenciados');
+    const textoResultados = document.getElementById('textoResultados');
+    
+    if (totalMostrados) {
+        totalMostrados.textContent = contador;
+    }
+    
+    if (totalReferenciados) {
+        // Obtener total real de la tabla (sin filtrar)
+        const filasTotales = document.querySelectorAll('.table tbody tr:not(#mensajeSinResultados)').length;
+        totalReferenciados.textContent = filasTotales;
+    }
+    
+    if (textoResultados) {
+        const total = document.querySelectorAll('.table tbody tr:not(#mensajeSinResultados)').length;
+        textoResultados.innerHTML = `Mostrando <strong>${contador}</strong> de <strong>${total}</strong> referenciados`;
+    }
+}
+
+/**
+ * Actualizar el resumen del filtro actual
+ */
+function actualizarResumenFiltro() {
+    const resumenFiltro = document.getElementById('resumenFiltroActual');
+    const badgeFiltroActivo = document.getElementById('badgeFiltroActivo');
+    const nombreLiderFiltro = document.getElementById('nombreLiderFiltro');
+    const textoFiltroActual = document.getElementById('textoFiltroActual');
+    
+    if (filtroActual.lider !== 'todos') {
+        // Mostrar resumen
+        if (resumenFiltro) {
+            resumenFiltro.classList.remove('d-none');
+            if (textoFiltroActual) {
+                textoFiltroActual.innerHTML = `Filtrando por: <strong>${filtroActual.nombreLider}</strong>`;
+            }
+        }
+        
+        // Mostrar badge
+        if (badgeFiltroActivo) {
+            badgeFiltroActivo.classList.remove('d-none');
+            if (nombreLiderFiltro) {
+                nombreLiderFiltro.textContent = filtroActual.nombreLider;
+            }
+        }
+    } else {
+        // Ocultar resumen
+        if (resumenFiltro) {
+            resumenFiltro.classList.add('d-none');
+        }
+        if (badgeFiltroActivo) {
+            badgeFiltroActivo.classList.add('d-none');
+        }
+    }
+}
+
+/**
+ * Limpiar el filtro y mostrar todos los referenciados
+ */
+function limpiarFiltroLider() {
+    const select = document.getElementById('filtroLider');
+    if (select) {
+        select.value = 'todos';
+    }
+    
+    // Resetear filtro actual
+    filtroActual = {
+        lider: 'todos',
+        nombreLider: 'Todos'
+    };
+    
+    // Ocultar resumen
+    document.getElementById('resumenFiltroActual')?.classList.add('d-none');
+    document.getElementById('badgeFiltroActivo')?.classList.add('d-none');
+    
+    // Ocultar búsqueda rápida
+    cerrarBusquedaRapida();
+    
+    // Mostrar todas las filas
+    const filas = document.querySelectorAll('.table tbody tr');
+    filas.forEach(fila => {
+        if (fila.id !== 'mensajeSinResultados') {
+            fila.style.display = '';
+            fila.classList.add('fila-visible');
+            fila.classList.remove('fila-oculta');
+        }
+    });
+    
+    // Actualizar contadores
+    actualizarContadores(filas.length - (document.getElementById('mensajeSinResultados') ? 1 : 0));
+    
+    // Eliminar mensaje de sin resultados si existe
+    const mensajeExistente = document.getElementById('mensajeSinResultados');
+    if (mensajeExistente) {
+        mensajeExistente.remove();
+    }
+    
+    // Limpiar localStorage
+    localStorage.removeItem('filtroLider');
+    
+    // Mostrar notificación
+    mostrarNotificacion('Filtro eliminado', 'success');
+}
+
+/**
+ * Mostrar mensaje cuando no hay resultados
+ */
+function mostrarMensajeSinResultados(contador) {
+    const tabla = document.querySelector('.table tbody');
+    if (!tabla) return;
+    
+    const mensajeExistente = document.getElementById('mensajeSinResultados');
+    
+    if (mensajeExistente) {
+        mensajeExistente.remove();
+    }
+    
+    if (contador === 0) {
+        const filaMensaje = document.createElement('tr');
+        filaMensaje.id = 'mensajeSinResultados';
+        filaMensaje.innerHTML = `
+            <td colspan="12" class="text-center py-5">
+                <div class="empty-state-filtro">
+                    <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay referenciados con el líder seleccionado</h5>
+                    <p class="text-muted mb-3">Intenta con otro filtro o limpia la búsqueda</p>
+                    <button class="btn btn-primary" onclick="limpiarFiltroLider()">
+                        <i class="fas fa-eraser me-2"></i>Limpiar filtro
+                    </button>
+                </div>
+            </td>
+        `;
+        tabla.appendChild(filaMensaje);
+    }
+}
+
+/**
+ * Toggle del buscador rápido
+ */
+function toggleFiltroRapido() {
+    const container = document.getElementById('busquedaRapidaContainer');
+    if (container) {
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            document.getElementById('busquedaRapidaLider')?.focus();
+        } else {
+            container.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Cerrar buscador rápido
+ */
+function cerrarBusquedaRapida() {
+    const container = document.getElementById('busquedaRapidaContainer');
+    const input = document.getElementById('busquedaRapidaLider');
+    if (container) {
+        container.style.display = 'none';
+    }
+    if (input) {
+        input.value = '';
+    }
+}
+
+/**
+ * Búsqueda rápida de líderes
+ */
+function buscarLiderRapido(termino) {
+    const select = document.getElementById('filtroLider');
+    if (!select) return;
+    
+    termino = termino.toLowerCase().trim();
+    
+    if (termino.length < 2) {
+        // Restaurar todas las opciones
+        for (let i = 0; i < select.options.length; i++) {
+            select.options[i].style.display = '';
+        }
+        return;
+    }
+    
+    let hayCoincidencias = false;
+    
+    for (let i = 0; i < select.options.length; i++) {
+        const option = select.options[i];
+        const texto = option.text.toLowerCase();
+        const cc = option.dataset.cc ? option.dataset.cc.toLowerCase() : '';
+        
+        if (texto.includes(termino) || cc.includes(termino)) {
+            option.style.display = '';
+            hayCoincidencias = true;
+            
+            // Auto-seleccionar si hay coincidencia exacta
+            if (texto.includes(termino) && termino.length > 3) {
+                select.value = option.value;
+            }
+        } else {
+            option.style.display = 'none';
+        }
+    }
+    
+    // Mostrar mensaje si no hay coincidencias
+    if (!hayCoincidencias) {
+        mostrarNotificacion('No se encontraron líderes con ese término', 'warning');
+    }
+}
+
+/**
+ * Inicializar tooltips
+ */
+function inicializarTooltips() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+/**
+ * Guardar filtro en localStorage (opcional)
+ */
+function guardarFiltroEnLocalStorage() {
+    try {
+        localStorage.setItem('filtroLider', JSON.stringify(filtroActual));
+    } catch (e) {
+        console.warn('No se pudo guardar el filtro en localStorage');
+    }
+}
+
+/**
+ * Cargar filtro desde localStorage (opcional)
+ */
+function cargarFiltroDesdeLocalStorage() {
+    try {
+        const filtroGuardado = localStorage.getItem('filtroLider');
+        if (filtroGuardado) {
+            const filtro = JSON.parse(filtroGuardado);
+            if (filtro && filtro.lider && filtro.lider !== 'todos') {
+                const select = document.getElementById('filtroLider');
+                if (select) {
+                    select.value = filtro.lider;
+                    filtrarPorLider();
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('No se pudo cargar el filtro desde localStorage');
+    }
+}
+
+/**
+ * Mostrar notificación personalizada
+ */
+function mostrarNotificacion(mensaje, tipo = 'info') {
+    // Usar tu función showNotification existente
+    if (typeof showNotification === 'function') {
+        showNotification(mensaje, tipo);
+    } else {
+        // Fallback si no existe la función
+        console.log(`${tipo}: ${mensaje}`);
+    }
+}
+
+/**
+ * Contar referenciados por líder (estadísticas)
+ */
+function contarPorLider() {
+    const filas = document.querySelectorAll('.table tbody tr:not(#mensajeSinResultados)');
+    const estadisticas = {};
+    
+    filas.forEach(fila => {
+        const celdaLider = fila.querySelector('td:nth-child(7)');
+        if (celdaLider) {
+            let textoLider = celdaLider.textContent.trim();
+            textoLider = textoLider.replace(/CC:\s*\d+/g, '').trim();
+            
+            if (textoLider === 'Sin líder' || textoLider === '') {
+                textoLider = 'Sin asignar';
+            }
+            
+            estadisticas[textoLider] = (estadisticas[textoLider] || 0) + 1;
+        }
+    });
+    
+    console.log('Estadísticas por líder:', estadisticas);
+    return estadisticas;
+}
+
+/**
+ * Agregar filtro en el encabezado de la tabla
+ */
+function agregarFiltroEnCabecera() {
+    const encabezados = document.querySelectorAll('.table thead th');
+    if (encabezados.length >= 7) {
+        const thLider = encabezados[6]; // Columna Líder (índice 6)
+        
+        // Agregar icono de filtro
+        thLider.innerHTML = `
+            Líder 
+            <button class="btn btn-sm btn-link p-0 ms-1" onclick="document.getElementById('filtroLider').focus()" 
+                    title="Filtrar por líder" style="text-decoration: none;">
+                <i class="fas fa-filter text-primary"></i>
+            </button>
+            <span id="indicadorFiltroLider" class="d-none ms-1">
+                <i class="fas fa-check-circle text-success" style="font-size: 0.8em;"></i>
+            </span>
+        `;
+    }
+}
+
+/**
+ * Inicializar todo cuando el DOM esté listo
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando filtro por líder...');
+    
+    // Agregar filtro en cabecera
+    setTimeout(() => {
+        agregarFiltroEnCabecera();
+    }, 100);
+    
+    // Inicializar tooltips
+    inicializarTooltips();
+    
+    // Agregar event listeners
+    const select = document.getElementById('filtroLider');
+    if (select) {
+        select.addEventListener('change', filtrarPorLider);
+    }
+    
+    // Agregar listener para búsqueda rápida con Enter
+    const busquedaRapida = document.getElementById('busquedaRapidaLider');
+    if (busquedaRapida) {
+        busquedaRapida.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarLiderRapido(this.value);
+            }
+        });
+    }
+    
+    // Cargar filtro guardado (opcional - comentar si no se quiere)
+    // cargarFiltroDesdeLocalStorage();
+    
+    // Inicializar contadores
+    const filasVisibles = document.querySelectorAll('.table tbody tr:not(#mensajeSinResultados)').length;
+    actualizarContadores(filasVisibles);
+    
+    console.log('Filtro por líder inicializado correctamente');
+});
+
+// Reinicializar cuando se actualice la tabla dinámicamente (si es necesario)
+document.addEventListener('tableUpdated', function() {
+    const filasVisibles = document.querySelectorAll('.table tbody tr:not(#mensajeSinResultados)').length;
+    actualizarContadores(filasVisibles);
+});
         // Función para actualizar la hora en tiempo real
         function updateCurrentTime() {
             const now = new Date();

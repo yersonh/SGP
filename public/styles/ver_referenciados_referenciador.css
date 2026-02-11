@@ -1949,3 +1949,366 @@ canvas {
         .feature-img-header:hover {
             transform: scale(1.05);
         }
+        /* ============================================
+   FILTRO POR LÍDER - ESTILOS COMPLETOS
+   ============================================ */
+
+/* Contenedor principal del filtro */
+.filtro-lider-container .card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.filtro-lider-container .card:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+}
+
+.filtro-lider-container .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.filtro-lider-container .card-header h5 {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Estilos para el select */
+.filtro-lider-container .input-group-text {
+    border-radius: 10px 0 0 10px;
+    border: 1px solid #ced4da;
+    border-right: none;
+    background-color: #f8f9fa;
+}
+
+.filtro-lider-container .form-select {
+    border-radius: 0 10px 10px 0;
+    border: 1px solid #ced4da;
+    border-left: none;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    background-color: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filtro-lider-container .form-select:hover {
+    border-color: #86b7fe;
+    background-color: #f8f9fa;
+}
+
+.filtro-lider-container .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.1);
+}
+
+/* Estilos para las opciones del select */
+.filtro-lider-container .form-select option {
+    padding: 10px;
+    font-size: 0.95rem;
+}
+
+.filtro-lider-container .form-select option:hover {
+    background-color: #667eea;
+    color: white;
+}
+
+/* Botones de acción */
+.filtro-lider-container .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.filtro-lider-container .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.filtro-lider-container .btn-outline-secondary {
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #ced4da;
+    transition: all 0.2s ease;
+}
+
+.filtro-lider-container .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.filtro-lider-container .btn-outline-info {
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #17a2b8;
+    color: #17a2b8;
+}
+
+.filtro-lider-container .btn-outline-info:hover {
+    background-color: #17a2b8;
+    color: white;
+}
+
+/* Búsqueda rápida */
+#busquedaRapidaContainer {
+    animation: slideDown 0.3s ease;
+}
+
+#busquedaRapidaContainer .input-group-text {
+    background-color: #e9ecef;
+}
+
+#busquedaRapidaContainer .form-control {
+    border-radius: 0 10px 10px 0;
+    padding: 0.6rem 1rem;
+    border: 1px solid #ced4da;
+    border-left: none;
+}
+
+#busquedaRapidaContainer .form-control:focus {
+    border-color: #667eea;
+    box-shadow: none;
+    border-left: none;
+}
+
+#busquedaRapidaContainer .btn-outline-secondary {
+    border-radius: 0 10px 10px 0;
+    border-left: none;
+}
+
+/* Resumen del filtro actual */
+#resumenFiltroActual {
+    border-left: 4px solid #667eea;
+    animation: fadeIn 0.3s ease;
+}
+
+#textoFiltroActual {
+    color: #2c3e50;
+}
+
+#textoFiltroActual strong {
+    color: #667eea;
+}
+
+/* Badge de filtro activo */
+#badgeFiltroActivo .badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: normal;
+    display: inline-flex;
+    align-items: center;
+    animation: slideIn 0.3s ease;
+}
+
+#badgeFiltroActivo .btn-close {
+    font-size: 0.7rem;
+    filter: brightness(0) invert(1);
+}
+
+/* Contador de resultados */
+#resultadoFiltro {
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+    border-radius: 8px;
+}
+
+#resultadoFiltro strong {
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+/* Indicador de carga */
+#filtroLoading {
+    background-color: rgba(255,255,255,0.9);
+    border-radius: 8px;
+}
+
+/* Animaciones para filas de la tabla */
+.table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.fila-visible {
+    animation: fadeInRow 0.4s ease;
+}
+
+.fila-oculta {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+/* Estado vacío para filtro sin resultados */
+.empty-state-filtro {
+    padding: 2rem;
+    text-align: center;
+}
+
+.empty-state-filtro i {
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+}
+
+.empty-state-filtro h5 {
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-filtro p {
+    color: #718096;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state-filtro .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 0.5rem 2rem;
+    border-radius: 50px;
+}
+
+/* Badges de líderes en el resumen */
+.badge.bg-light {
+    background: white !important;
+    border: 1px solid #e2e8f0;
+    color: #2d3748;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.badge.bg-light:hover {
+    background: #667eea !important;
+    color: white !important;
+    border-color: #667eea;
+}
+
+.badge.bg-light .badge.bg-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50px;
+}
+
+/* Animaciones */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filtro-lider-container .col-md-7,
+    .filtro-lider-container .col-md-5 {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filtro-lider-container .d-flex {
+        flex-direction: column;
+    }
+    
+    .filtro-lider-container .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+    
+    #badgeFiltroActivo .badge {
+        max-width: 100%;
+        white-space: normal;
+        word-break: break-word;
+    }
+}
+
+/* Estilo para el tooltip personalizado */
+.tooltip-inner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+/* Scroll personalizado para el select con muchas opciones */
+.filtro-lider-container .form-select {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Mejora visual para opciones seleccionadas */
+.filtro-lider-container .form-select option:checked {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* Efecto hover en filas de la tabla cuando están filtradas */
+.table tbody tr:not([style*="display: none"]):hover {
+    background-color: rgba(102, 126, 234, 0.05);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Contador en el badge de líderes */
+.badge .badge.bg-primary {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Estilo para el filtro activo en la cabecera */
+.table thead th button .fa-filter {
+    transition: all 0.2s ease;
+}
+
+.table thead th button:hover .fa-filter {
+    transform: scale(1.2);
+    color: #667eea;
+}
+
+#indicadorFiltroLider {
+    animation: fadeIn 0.3s ease;
+}

@@ -360,7 +360,7 @@ if ($porcentajeRestante > 50) {
                 <p>
                     <strong>© 2026 Sistema de Gestión Política SGP.</strong> Puerto Gaitán - Meta<br>
                     Módulo de SGA Sistema de Gestión Administrativa 2026 SGA Solución de Gestión Administrativa Enterprise Premium 1.0™ desarrollado por <strong>SISGONTech Technology®</strong>, Condominio Madeira Casa 19, Villavicencio, Colombia - Asesores e-Governance Solutions para Entidades Públicas 2026® SISGONTech<br>
-                    <strong>Propietario software:</strong> Ing. Rubén Darío González García - ☎️ (+57) 310 631 02 27 - Email: sisgonnet@gmail.com
+                    <strong>Propietario software:</strong> Ing. Rubén Darío González García - ☎️ (+57) 310 631 02 27 - Email: sisgonnet@gmail.com © Reservados todos los derechos de autor.
                 </p>
             </div>
         </footer>

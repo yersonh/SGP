@@ -516,12 +516,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <div class="system-info">
             <p>
-                © Derechos de autor Reservados • Equipo de soporte • <strong>SISGONTech</strong> <br>
-                Email: soportesgp@gmail.com • Contacto: +57 3138486960 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
+                <strong>© 2026 Sistema de Gestión Política SGP</strong> • Puerto Gaitán - Meta <br>
+                Módulo de SGA Sistema de Gestión Administrativa 2026 <br>
+                SGA Solución de Gestión Administrativa Enterprise Premium 1.0™ <br>
+                Desarrollado por SISGONTech Technology® • Conjunto Residencial Portal del Llano, Casa 104, Villavicencio, Meta. <br>
+                Asesores e-Governance Solutions para Entidades Públicas 2026® <br>
+                Propietario software: Ing. Yerson Solano Alfonso<br>
+                ☎️ (+57) 313 333 62 27 • Email: soportesgp@gmail.com • © Reservado por derechos de autor.
             </p>
         </div>
     </div>
-
     <script>
         // Mostrar/ocultar contraseña
         document.addEventListener('DOMContentLoaded', function() {

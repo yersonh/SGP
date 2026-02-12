@@ -104,6 +104,12 @@ body {
     display: flex;
     flex-direction: column;
 }
+/* Solo AGREGAR esto al final de tu CSS, sin modificar nada del footer existente */
+.dashboard-container + .system-footer,
+body > .system-footer {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+}
 
 /* Header Styles - CORREGIDO */
 .main-header {
@@ -870,7 +876,11 @@ body {
         margin-bottom: 20px;
         padding: 15px 0; /* Ajustado */
     }
-    
+    .dashboard-container + .system-footer,
+    body > .system-footer {
+        margin-left: 0;
+        width: 100%;
+    }
     .main-content {
         margin-left: 0;
         margin-top: 0; /* Quitado */
@@ -1148,8 +1158,12 @@ body {
     </div>
 
     <!-- Footer -->
-    <footer class="system-footer">
-        <div class="container text-center mb-3">
+        </main>
+</div> <!-- Cierra dashboard-container AQUÍ -->
+
+<!-- Footer - AHORA FUERA del dashboard-container -->
+<footer class="system-footer">
+    <div class="container text-center mb-3">
         <img id="footer-logo" 
             src="imagenes/Logo-artguru.png" 
             alt="Logo ARTGURU" 
@@ -1158,15 +1172,16 @@ body {
             title="Haz clic para ver información del sistema"
             data-img-claro="imagenes/Logo-artguru.png"
             data-img-oscuro="imagenes/image_no_bg.png">
-        </div>
+    </div>
 
-        <div class="container text-center">
-            <p>
-                © Derechos de autor Reservados • <strong>Ing. Rubén Darío González García</strong> • Equipo de soporte • SISGONTech<br>
-                Email: sisgonnet@gmail.com • Contacto: +57 3106310227 • Puerto Gaitán, Colombia • <?php echo date('Y'); ?>
-            </p>
-        </div>
-    </footer>
+    <div class="container text-center">
+        <p>
+            <strong>© 2026 Sistema de Gestión Política SGP.</strong> Puerto Gaitán - Meta<br>
+            Módulo de SGA Sistema de Gestión Administrativa 2026 SGA Solución de Gestión Administrativa Enterprise Premium 1.0™ desarrollado por <strong>SISGONTech Technology®</strong>, Condominio Madeira Casa 19, Villavicencio, Colombia - Asesores e-Governance Solutions para Entidades Públicas 2026® SISGONTech<br>
+            <strong>Propietario software:</strong> Ing. Rubén Darío González García - ☎️ (+57) 310 631 02 27 - Email: sisgonnet@gmail.com
+        </p>
+    </div>
+</footer>
 
     <!-- Modal de Información del Sistema -->
 <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">

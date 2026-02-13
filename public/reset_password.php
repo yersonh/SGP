@@ -36,7 +36,7 @@ if (empty($token)) {
     }
 }
 
-// Procesar cambio de contraseña
+// Procesar cambio de contraseña - GUARDAR COMO TEXTO PLANO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valido) {
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
@@ -46,10 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valido) {
     } elseif ($password !== $confirm_password) {
         $error = 'Las contraseñas no coinciden';
     } else {
-        // Hashear la nueva contraseña
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Actualizar contraseña y limpiar token
+        // ACTUALIZACIÓN: Guardar como texto plano (SIN HASH)
         $stmt = $pdo->prepare("
             UPDATE usuario 
             SET password = ?, 
@@ -60,7 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valido) {
             WHERE id_usuario = ?
         ");
         
-        if ($stmt->execute([$hashed_password, $usuario_id])) {
+        // Guardamos la contraseña en texto plano directamente
+        if ($stmt->execute([$password, $usuario_id])) {
             $success = '✅ Contraseña cambiada exitosamente';
             
             // Redirigir después de 3 segundos

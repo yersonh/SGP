@@ -58,99 +58,6 @@ if ($porcentajeRestante > 50) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../styles/superadmin_reporte_votos.css">
-    <style>
-        /* Estilos específicos para tracking */
-        .rating-stars {
-            color: #FFD700;
-            font-size: 14px;
-        }
-        
-        .rating-badge {
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-            color: #333;
-            font-weight: bold;
-        }
-        
-        .resultado-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .resultado-contactado {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .resultado-no-contesta {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .resultado-rechazado {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .resultado-otro {
-            background-color: #e2e3e5;
-            color: #383d41;
-        }
-        
-        .progress-quality {
-            height: 20px;
-            border-radius: 10px;
-        }
-        
-        .quality-excellent { background: linear-gradient(90deg, #28a745 0%, #20c997 100%); }
-        .quality-good { background: linear-gradient(90deg, #20c997 0%, #17a2b8 100%); }
-        .quality-average { background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%); }
-        .quality-poor { background: linear-gradient(90deg, #dc3545 0%, #e83e8c 100%); }
-        
-        /* Centrar tabs */
-        .tabs-header {
-            display: flex !important;
-            justify-content: center !important;
-            width: 100% !important;
-        }
-        
-        .tabs-header > .d-flex {
-            width: 100% !important;
-            justify-content: center !important;
-        }
-        
-        .tab-btn {
-            margin: 0 5px;
-            min-width: 120px;
-        }
-        
-        /* Centrar KPIs */
-        .kpis-container {
-            display: flex !important;
-            justify-content: center !important;
-            flex-wrap: wrap !important;
-            gap: 20px !important;
-            width: 100% !important;
-        }
-        
-        .kpi-card {
-            flex: 0 1 auto !important;
-            min-width: 250px !important;
-            max-width: 300px !important;
-        }
-        
-        .kpi-content {
-            text-align: center !important;
-        }
-        
-        .kpi-icon {
-            margin: 0 auto 15px auto !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -702,12 +609,12 @@ if ($porcentajeRestante > 50) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Logo centrado -->
+                    <!-- Logo centrado AGRANDADO -->
                     <div class="modal-logo-container">
                         <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                     </div>
                     
-                    <!-- Info de licencia -->
+                    <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
                     <div class="licencia-info">
                         <div class="licencia-header">
                             <h6 class="licencia-title">Licencia Runtime</h6>
@@ -717,6 +624,7 @@ if ($porcentajeRestante > 50) {
                         </div>
                         
                         <div class="licencia-progress">
+                            <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
                             <div class="licencia-progress-bar <?php echo $barColor; ?>" 
                                 style="width: <?php echo $porcentajeRestante; ?>%"
                                 role="progressbar" 
@@ -732,12 +640,11 @@ if ($porcentajeRestante > 50) {
                             Válida hasta: <?php echo $validaHastaFormatted; ?>
                         </div>
                     </div>
-                    
-                    <!-- Perfil del desarrollador -->
                     <div class="feature-image-container">
                         <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
                         <div class="profile-info mt-3">
                             <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            
                             <small class="profile-description">
                                 Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
                                 Magister en Administración Pública.<br>
@@ -745,13 +652,75 @@ if ($porcentajeRestante > 50) {
                             </small>
                         </div>
                     </div>
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <!-- Efectividad de la Herramienta -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Integridad de Datos -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitoreo de Metas -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Seguridad Avanzada -->
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
+                    <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
                     <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
-                       target="_blank" 
-                       class="btn btn-primary">
+                    target="_blank" 
+                    class="btn btn-primary"
+                    onclick="cerrarModalSistema();">
                         <i class="fas fa-external-link-alt me-1"></i> Uso SGP
                     </a>
+                    
+                    <!-- Botón Cerrar - Solo cierra el modal -->
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i> Cerrar
                     </button>
@@ -999,7 +968,25 @@ if ($porcentajeRestante > 50) {
                 $(this).addClass('active');
             });
         }
-        
+        function actualizarLogoSegunTema() {
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
+                document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
         // Función para crear gráfica de distribución por resultado
         function crearGraficaDistribucionResultado(datos) {
             const ctx = document.getElementById('graficaDistribucionResultado').getContext('2d');
@@ -2242,5 +2229,6 @@ function crearGraficaTendencias(datos, periodo = 7) {
             }, 1000);
         }
     </script>
+    <script src="../js/modal-sistema.js"></script>
 </body>
 </html>

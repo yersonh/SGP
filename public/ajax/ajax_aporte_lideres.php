@@ -45,7 +45,7 @@ function getReferidosLider($pdo, $usuarioModel) {
     }
     
     try {
-        // Consulta directa para obtener referidos del líder
+        // ✅ CONSULTA CORRECTA: Buscar DIRECTAMENTE por id_lider en referenciados
         $sql = "SELECT r.*, 
                        CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre
                 FROM referenciados r
@@ -58,26 +58,26 @@ function getReferidosLider($pdo, $usuarioModel) {
         $stmt->execute([':id_lider' => $id_lider]);
         $referidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        if (empty($referidos)) {
-            echo json_encode(['success' => true, 'referidos' => []]);
-            return;
-        }
+        // DEBUG: Para ver qué está pasando
+        error_log("=== BUSCANDO REFERIDOS PARA LÍDER ID: $id_lider ===");
+        error_log("SQL: " . $sql);
+        error_log("Referidos encontrados: " . count($referidos));
         
-        // Formatear datos
-        $referidosEnriquecidos = [];
-        foreach ($referidos as $referido) {
-            // Formatear fecha
+        // Formatear fechas
+        foreach ($referidos as &$referido) {
             if (!empty($referido['fecha_registro'])) {
                 $fecha = new DateTime($referido['fecha_registro']);
                 $referido['fecha_registro'] = $fecha->format('d/m/Y H:i');
             }
-            
-            $referidosEnriquecidos[] = $referido;
         }
         
         echo json_encode([
             'success' => true,
-            'referidos' => $referidosEnriquecidos
+            'referidos' => $referidos,
+            'debug' => [ // Temporal para diagnóstico
+                'id_lider_buscado' => $id_lider,
+                'total_encontrados' => count($referidos)
+            ]
         ]);
         
     } catch (Exception $e) {

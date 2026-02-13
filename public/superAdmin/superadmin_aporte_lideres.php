@@ -1402,64 +1402,73 @@ function cambiarPaginaTiempoReal(pagina = null) {
             return div.innerHTML;
         }
 
-        // Función para ver referidos del líder (mantener la existente)
-        function verReferidos(idLider, nombreLider) {
-            $('#modalReferidosLabel').html('Referidos del Líder: ' + nombreLider);
-            $('#loadingReferidos').show();
-            $('#contenidoReferidos').hide();
-            $('#sinReferidos').hide();
+// Función para ver referidos del líder (CORREGIDA - DataTable)
+function verReferidos(idLider, nombreLider) {
+    $('#modalReferidosLabel').html('Referidos del Líder: ' + nombreLider);
+    $('#loadingReferidos').show();
+    $('#contenidoReferidos').hide();
+    $('#sinReferidos').hide();
+    if ($.fn.DataTable.isDataTable('#tablaReferidos')) {
+        $('#tablaReferidos').DataTable().destroy();
+    }
+    $('#bodyReferidos').empty();
+    
+    $('#modalReferidos').modal('show');
+    
+    $.ajax({
+        url: '../ajax/ajax_aporte_lideres.php',
+        type: 'POST',
+        data: {
+            action: 'get_referidos_lider',
+            id_lider: idLider
+        },
+        dataType: 'json',
+        success: function(response) {
+            $('#loadingReferidos').hide();
             
-            $('#modalReferidos').modal('show');
-            
-            $.ajax({
-                url: '../ajax/ajax_aporte_lideres.php',
-                type: 'POST',
-                data: {
-                    action: 'get_referidos_lider',
-                    id_lider: idLider
-                },
-                dataType: 'json',
-                success: function(response) {
-                    $('#loadingReferidos').hide();
-                    
-                    if (response.success && response.referidos && response.referidos.length > 0) {
-                        var html = '';
-                        response.referidos.forEach(function(referido) {
-                            html += '<tr>';
-                            html += '<td>' + referido.nombre + ' ' + referido.apellido + '</td>';
-                            html += '<td>' + referido.cedula + '</td>';
-                            html += '<td>' + (referido.telefono || 'N/A') + '</td>';
-                            html += '<td>' + referido.fecha_registro + '</td>';
-                            html += '<td>' + referido.referenciador_nombre + '</td>';
-                            html += '</tr>';
-                        });
-                        
-                        $('#bodyReferidos').html(html);
-                        $('#contenidoReferidos').show();
-                        
-                        // Inicializar DataTable en la tabla de referidos
-                        $('#tablaReferidos').DataTable({
-                            language: {
-                                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                            },
-                            pageLength: 10,
-                            responsive: true,
-                            destroy: true // Para reinicializar si ya existe
-                        });
-                    } else {
-                        $('#sinReferidos').show();
-                    }
-                },
-                error: function() {
-                    $('#loadingReferidos').hide();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudieron cargar los referidos'
+            if (response.success && response.referidos && response.referidos.length > 0) {
+                var html = '';
+                response.referidos.forEach(function(referido) {
+                    html += '<tr>';
+                    html += '<td>' + (referido.nombre || '') + ' ' + (referido.apellido || '') + '</td>';
+                    html += '<td>' + (referido.cedula || 'N/A') + '</td>';
+                    html += '<td>' + (referido.telefono || 'N/A') + '</td>';
+                    html += '<td>' + (referido.fecha_registro || 'N/A') + '</td>';
+                    html += '<td>' + (referido.referenciador_nombre || 'No asignado') + '</td>';
+                    html += '</tr>';
+                });
+                
+                $('#bodyReferidos').html(html);
+                $('#contenidoReferidos').show();
+                setTimeout(function() {
+                    $('#tablaReferidos').DataTable({
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                        },
+                        pageLength: 10,
+                        responsive: true,
+                        retrieve: false,
+                        destroy: true,
+                        searching: true,
+                        ordering: true
                     });
-                }
+                }, 100);
+                
+            } else {
+                $('#sinReferidos').show();
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#loadingReferidos').hide();
+            console.error('Error AJAX:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar los referidos'
             });
         }
+    });
+}
 
         // Función para ver detalles del líder (mantener la existente)
         function verDetalleLider(idLider) {

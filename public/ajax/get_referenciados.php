@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../models/DepartamentoModel.php';
 require_once __DIR__ . '/../../models/MunicipioModel.php';
 require_once __DIR__ . '/../../models/ZonaModel.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
-require_once __DIR__ . '/../../models/LiderModel.php'; // AGREGAR ESTA LÍNEA
+require_once __DIR__ . '/../../models/LiderModel.php';
 
 header('Content-Type: application/json');
 
@@ -19,7 +19,7 @@ if (!isset($_SESSION['id_usuario']) || !in_array($_SESSION['tipo_usuario'], ['Su
 $pdo = Database::getConnection();
 $referenciadoModel = new ReferenciadoModel($pdo);
 $usuarioModel = new UsuarioModel($pdo);
-$liderModel = new LiderModel($pdo); // CREAR INSTANCIA DE LiderModel
+$liderModel = new LiderModel($pdo);
 
 // Verificar si es una solicitud para obtener opciones de filtros
 $getOptions = isset($_GET['get_options']) ? $_GET['get_options'] : false;
@@ -32,17 +32,17 @@ if ($getOptions === 'true') {
     try {
         $departamentos = $departamentoModel->getAll();
         $zonas = $zonaModel->getAll();
-        $referenciadores = $usuarioModel->getReferenciadoresParaCombo(); // Método específico sin foto_url
+        $referenciadores = $usuarioModel->getReferenciadoresParaCombo();
         
-        // OBTENER LÍDERES DESDE EL MODELO DE LÍDERES
-        $lideres = $liderModel->getActivos(); // Usar el método getActivos() que ya existe
+        /* ✅ CORREGIDO: Obtener líderes desde LiderModel (tabla lideres) */
+        $lideres = $liderModel->getActivos(); // Esto trae SOLO líderes de la tabla lideres
         
         echo json_encode([
             'success' => true,
             'departamentos' => $departamentos,
             'zonas' => $zonas,
             'referenciadores' => $referenciadores,
-            'lideres' => $lideres // Ahora viene del LiderModel
+            'lideres' => $lideres // Ahora viene de la tabla correcta
         ]);
     } catch (Exception $e) {
         error_log('Error al obtener opciones de filtros: ' . $e->getMessage());
@@ -75,15 +75,7 @@ if (isset($_GET['get_municipios']) && isset($_GET['departamento'])) {
     exit();
 }
 
-// Resto del código para obtener referenciados...
-// ... (mantén el resto del código igual, pero asegúrate de que los filtros incluyan 'lider')
-
-// El resto del código de paginación y filtros se mantiene igual
-// Solo necesitas asegurarte de que el filtro 'lider' se pase correctamente
-?>
-
-<?php
-// Si no es solicitud de opciones, continuar con la consulta normal de referenciados
+// Continuar con la consulta normal de referenciados
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['per_page']) ? max(1, (int)$_GET['per_page']) : 50;
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -97,7 +89,8 @@ $referenciador = isset($_GET['referenciador']) ? (int)$_GET['referenciador'] : 0
 $oferta_apoyo = isset($_GET['oferta_apoyo']) ? (int)$_GET['oferta_apoyo'] : 0;
 $grupo_poblacional = isset($_GET['grupo_poblacional']) ? (int)$_GET['grupo_poblacional'] : 0;
 $grupo_parlamentario = isset($_GET['grupo_parlamentario']) ? (int)$_GET['grupo_parlamentario'] : 0;
-$lider = isset($_GET['lider']) ? (int)$_GET['lider'] : 0; // AGREGAR FILTRO POR LÍDER
+/* ✅ FILTRO POR LÍDER - AHORA USA ID DE LA TABLA LIDERES */
+$lider = isset($_GET['lider']) ? (int)$_GET['lider'] : 0;
 
 // Filtros
 $filters = [];
@@ -112,7 +105,8 @@ if ($referenciador > 0) $filters['referenciador'] = $referenciador;
 if ($oferta_apoyo > 0) $filters['oferta_apoyo'] = $oferta_apoyo;
 if ($grupo_poblacional > 0) $filters['grupo_poblacional'] = $grupo_poblacional;
 if ($grupo_parlamentario > 0) $filters['grupo_parlamentario'] = $grupo_parlamentario;
-if ($lider > 0) $filters['lider'] = $lider; // AGREGAR FILTRO POR LÍDER
+/* ✅ FILTRO POR LÍDER - AHORA USA ID DE LA TABLA LIDERES */
+if ($lider > 0) $filters['lider'] = $lider;
 
 try {
     // Obtener datos paginados

@@ -1321,386 +1321,396 @@ public function countByLider($id_lider) {
 }
 // Método optimizado con paginación CORREGIDO
 public function getReferenciadosPaginados($page = 1, $perPage = 50, $filters = []) {
-    $offset = ($page - 1) * $perPage;
-    
-    $sql = "SELECT r.*, 
-            d.nombre as departamento_nombre,
-            m.nombre as municipio_nombre,
-            b.nombre as barrio_nombre,
-            gp.nombre as grupo_poblacional_nombre,
-            oa.nombre as oferta_apoyo_nombre,
-            z.nombre as zona_nombre,
-            s.nombre as sector_nombre,
-            pv.nombre as puesto_votacion_nombre,
-            gr.nombre as grupo_nombre,
-            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
-            l.nombres as lider_nombres,
-            l.apellidos as lider_apellidos,
-            CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre
-            FROM referenciados r
-            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
-            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
-            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
-            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
-            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
-            LEFT JOIN zona z ON r.id_zona = z.id_zona
-            LEFT JOIN sector s ON r.id_sector = s.id_sector
-            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
-            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
-            LEFT JOIN usuario l ON r.id_lider = l.id_usuario";
-    
-    $conditions = [];
-    $params = [];
-    $paramTypes = [];
-    
-    // Búsqueda global en múltiples campos
-    if (!empty($filters['search'])) {
-        $search = $filters['search'];
+        $offset = ($page - 1) * $perPage;
         
-        // Verificar si la búsqueda es numérica (para mesa, cédula, etc.)
-        $isNumericSearch = is_numeric($search);
+        $sql = "SELECT r.*, 
+                d.nombre as departamento_nombre,
+                m.nombre as municipio_nombre,
+                b.nombre as barrio_nombre,
+                gp.nombre as grupo_poblacional_nombre,
+                oa.nombre as oferta_apoyo_nombre,
+                z.nombre as zona_nombre,
+                s.nombre as sector_nombre,
+                pv.nombre as puesto_votacion_nombre,
+                gr.nombre as grupo_nombre,
+                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+                l.id_lider,
+                l.nombres as lider_nombres,
+                l.apellidos as lider_apellidos,
+                CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre
+                FROM referenciados r
+                LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+                LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+                LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+                LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+                LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+                LEFT JOIN zona z ON r.id_zona = z.id_zona
+                LEFT JOIN sector s ON r.id_sector = s.id_sector
+                LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+                LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                LEFT JOIN lideres l ON r.id_lider = l.id_lider";
         
-        if ($isNumericSearch) {
-            // Si es numérico, buscar en campos numéricos con comparación exacta
-            $conditionParts = [];
+        $conditions = [];
+        $params = [];
+        $paramTypes = [];
+        
+        // Búsqueda global en múltiples campos
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
             
-            // Campos exactos
-            $conditionParts[] = "r.cedula = ?";
-            $conditionParts[] = "r.telefono ILIKE ?";
+            // Verificar si la búsqueda es numérica
+            $isNumericSearch = is_numeric($search);
             
-            // Solo agregar r.mesa si la tabla tiene ese campo
-            if (isset($filters['include_mesa'])) {
-                $conditionParts[] = "CAST(r.mesa AS TEXT) = ?";
-            }
-            
-            // Campos de texto con ILIKE
-            $conditionParts[] = "r.nombre ILIKE ?";
-            $conditionParts[] = "r.apellido ILIKE ?";
-            $conditionParts[] = "r.direccion ILIKE ?";
-            $conditionParts[] = "r.email ILIKE ?";
-            $conditionParts[] = "d.nombre ILIKE ?";
-            $conditionParts[] = "m.nombre ILIKE ?";
-            $conditionParts[] = "b.nombre ILIKE ?";
-            $conditionParts[] = "gp.nombre ILIKE ?";
-            $conditionParts[] = "oa.nombre ILIKE ?";
-            $conditionParts[] = "z.nombre ILIKE ?";
-            $conditionParts[] = "s.nombre ILIKE ?";
-            $conditionParts[] = "pv.nombre ILIKE ?";
-            $conditionParts[] = "gr.nombre ILIKE ?";
-            $conditionParts[] = "u.nombres ILIKE ?";
-            $conditionParts[] = "u.apellidos ILIKE ?";
-            
-            $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
-            
-            // Parámetros para campos exactos
-            $params[] = $search; // Para cedula exacta
-            $params[] = '%' . $search . '%'; // Para teléfono (con ILIKE)
-            $paramTypes[] = \PDO::PARAM_STR;
-            $paramTypes[] = \PDO::PARAM_STR;
-            
-            // Parámetro para mesa si existe
-            if (isset($filters['include_mesa'])) {
-                $params[] = $search; // Para mesa
+            if ($isNumericSearch) {
+                // Si es numérico, buscar en campos numéricos con comparación exacta
+                $conditionParts = [];
+                
+                // Campos exactos
+                $conditionParts[] = "r.cedula = ?";
+                $conditionParts[] = "r.telefono ILIKE ?";
+                
+                // Solo agregar r.mesa si la tabla tiene ese campo
+                if (isset($filters['include_mesa'])) {
+                    $conditionParts[] = "CAST(r.mesa AS TEXT) = ?";
+                }
+                
+                // Campos de texto con ILIKE
+                $conditionParts[] = "r.nombre ILIKE ?";
+                $conditionParts[] = "r.apellido ILIKE ?";
+                $conditionParts[] = "r.direccion ILIKE ?";
+                $conditionParts[] = "r.email ILIKE ?";
+                $conditionParts[] = "d.nombre ILIKE ?";
+                $conditionParts[] = "m.nombre ILIKE ?";
+                $conditionParts[] = "b.nombre ILIKE ?";
+                $conditionParts[] = "gp.nombre ILIKE ?";
+                $conditionParts[] = "oa.nombre ILIKE ?";
+                $conditionParts[] = "z.nombre ILIKE ?";
+                $conditionParts[] = "s.nombre ILIKE ?";
+                $conditionParts[] = "pv.nombre ILIKE ?";
+                $conditionParts[] = "gr.nombre ILIKE ?";
+                $conditionParts[] = "u.nombres ILIKE ?";
+                $conditionParts[] = "u.apellidos ILIKE ?";
+                $conditionParts[] = "l.nombres ILIKE ?";
+                $conditionParts[] = "l.apellidos ILIKE ?";
+                
+                $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
+                
+                // Parámetros para campos exactos
+                $params[] = $search; // Para cedula exacta
+                $params[] = '%' . $search . '%'; // Para teléfono (con ILIKE)
                 $paramTypes[] = \PDO::PARAM_STR;
-            }
-            
-            // Parámetros para campos de texto (15 campos)
-            for ($i = 0; $i < 15; $i++) {
-                $params[] = '%' . $search . '%';
                 $paramTypes[] = \PDO::PARAM_STR;
-            }
-            
-        } else {
-            // Si es texto, buscar normalmente
-            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula ILIKE ? 
-                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono ILIKE ?
-                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
-                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
-                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
-                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?)";
-            
-            for ($i = 0; $i < 17; $i++) {
-                $params[] = '%' . $search . '%';
-                $paramTypes[] = \PDO::PARAM_STR;
+                
+                // Parámetro para mesa si existe
+                if (isset($filters['include_mesa'])) {
+                    $params[] = $search; // Para mesa
+                    $paramTypes[] = \PDO::PARAM_STR;
+                }
+                
+                // Parámetros para campos de texto
+                $totalCamposTexto = isset($filters['include_mesa']) ? 17 : 16; // 15 originales + 2 de líder
+                for ($i = 0; $i < $totalCamposTexto; $i++) {
+                    $params[] = '%' . $search . '%';
+                    $paramTypes[] = \PDO::PARAM_STR;
+                }
+                
+            } else {
+                // Si es texto, buscar normalmente
+                $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula ILIKE ? 
+                                 OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono ILIKE ?
+                                 OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
+                                 OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
+                                 OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
+                                 OR u.nombres ILIKE ? OR u.apellidos ILIKE ?
+                                 /* ✅ BÚSQUEDA EN CAMPOS DE LÍDERES - SOLO nombres y apellidos */
+                                 OR l.nombres ILIKE ? OR l.apellidos ILIKE ?)";
+                
+                // 17 campos originales + 2 de líder = 19 parámetros
+                for ($i = 0; $i < 19; $i++) {
+                    $params[] = '%' . $search . '%';
+                    $paramTypes[] = \PDO::PARAM_STR;
+                }
             }
         }
-    }
-    
-    // Filtro por estado activo/inactivo
-    if (isset($filters['activo']) && $filters['activo'] !== '') {
-        $conditions[] = "r.activo = ?";
         
-        // Convertir a booleano PostgreSQL
-        if ($filters['activo'] === '1' || $filters['activo'] === true || $filters['activo'] === 't') {
-            $params[] = true;
-        } else {
-            $params[] = false;
-        }
-        $paramTypes[] = \PDO::PARAM_BOOL;
-    }
-    
-    // Filtros avanzados
-    if (!empty($filters['departamento'])) {
-        $conditions[] = "r.id_departamento = ?";
-        $params[] = $filters['departamento'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['municipio'])) {
-        $conditions[] = "r.id_municipio = ?";
-        $params[] = $filters['municipio'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['zona'])) {
-        $conditions[] = "r.id_zona = ?";
-        $params[] = $filters['zona'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['referenciador'])) {
-        $conditions[] = "r.id_referenciador = ?";
-        $params[] = $filters['referenciador'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['oferta_apoyo'])) {
-        $conditions[] = "r.id_oferta_apoyo = ?";
-        $params[] = $filters['oferta_apoyo'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['grupo_poblacional'])) {
-        $conditions[] = "r.id_grupo_poblacional = ?";
-        $params[] = $filters['grupo_poblacional'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['grupo_parlamentario'])) {
-        $conditions[] = "r.id_grupo = ?";
-        $params[] = $filters['grupo_parlamentario'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    if (!empty($filters['lider'])) {
-        $conditions[] = "r.id_lider = ?";
-        $params[] = $filters['lider'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    // Construir WHERE
-    if (!empty($conditions)) {
-        $sql .= " WHERE " . implode(' AND ', $conditions);
-    }
-    
-    $sql .= " ORDER BY r.fecha_registro DESC LIMIT ? OFFSET ?";
-    
-    // Agregar LIMIT y OFFSET a los parámetros
-    $params[] = $perPage;
-    $params[] = $offset;
-    $paramTypes[] = \PDO::PARAM_INT;
-    $paramTypes[] = \PDO::PARAM_INT;
-    
-    try {
-        $stmt = $this->pdo->prepare($sql);
-        
-        // Bind parameters con tipos
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+        // Filtro por estado activo/inactivo
+        if (isset($filters['activo']) && $filters['activo'] !== '') {
+            $conditions[] = "r.activo = ?";
+            
+            // Convertir a booleano PostgreSQL
+            if ($filters['activo'] === '1' || $filters['activo'] === true || $filters['activo'] === 't') {
+                $params[] = true;
+            } else {
+                $params[] = false;
+            }
+            $paramTypes[] = \PDO::PARAM_BOOL;
         }
         
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Error en getReferenciadosPaginados: " . $e->getMessage());
-        error_log("SQL: " . $sql);
-        error_log("Params: " . print_r($params, true));
-        return [];
+        // Filtros avanzados
+        if (!empty($filters['departamento'])) {
+            $conditions[] = "r.id_departamento = ?";
+            $params[] = $filters['departamento'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['municipio'])) {
+            $conditions[] = "r.id_municipio = ?";
+            $params[] = $filters['municipio'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['zona'])) {
+            $conditions[] = "r.id_zona = ?";
+            $params[] = $filters['zona'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['referenciador'])) {
+            $conditions[] = "r.id_referenciador = ?";
+            $params[] = $filters['referenciador'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['oferta_apoyo'])) {
+            $conditions[] = "r.id_oferta_apoyo = ?";
+            $params[] = $filters['oferta_apoyo'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['grupo_poblacional'])) {
+            $conditions[] = "r.id_grupo_poblacional = ?";
+            $params[] = $filters['grupo_poblacional'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['grupo_parlamentario'])) {
+            $conditions[] = "r.id_grupo = ?";
+            $params[] = $filters['grupo_parlamentario'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+
+        if (!empty($filters['lider'])) {
+            $conditions[] = "r.id_lider = ?";
+            $params[] = $filters['lider'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        // Construir WHERE
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+        
+        $sql .= " ORDER BY r.fecha_registro DESC LIMIT ? OFFSET ?";
+        
+        // Agregar LIMIT y OFFSET a los parámetros
+        $params[] = $perPage;
+        $params[] = $offset;
+        $paramTypes[] = \PDO::PARAM_INT;
+        $paramTypes[] = \PDO::PARAM_INT;
+        
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            
+            // Bind parameters con tipos
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error en getReferenciadosPaginados: " . $e->getMessage());
+            error_log("SQL: " . $sql);
+            error_log("Params: " . print_r($params, true));
+            return [];
+        }
     }
-}
 
 // Método para contar total (separado, más eficiente) CORREGIDO
-public function getTotalReferenciados($filters = []) {
-    $sql = "SELECT COUNT(*) as total FROM referenciados r";
-    
-    $conditions = [];
-    $params = [];
-    $paramTypes = [];
-    
-    // Solo necesitamos joins si hay búsqueda en campos relacionados
-    if (!empty($filters['search'])) {
-        $sql .= " LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
-                  LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
-                  LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
-                  LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
-                  LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
-                  LEFT JOIN zona z ON r.id_zona = z.id_zona
-                  LEFT JOIN sector s ON r.id_sector = s.id_sector
-                  LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                  LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
-                  LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
-                  LEFT JOIN usuario l ON r.id_lider = l.id_usuario";
-    }
-    
-    // Búsqueda global
-    if (!empty($filters['search'])) {
-        $search = $filters['search'];
+ public function getTotalReferenciados($filters = []) {
+        $sql = "SELECT COUNT(*) as total FROM referenciados r";
         
-        // Verificar si la búsqueda es numérica (para mesa, cédula, etc.)
-        $isNumericSearch = is_numeric($search);
+        $conditions = [];
+        $params = [];
+        $paramTypes = [];
         
-        if ($isNumericSearch) {
-            // Si es numérico, buscar en campos numéricos con comparación exacta
-            $conditionParts = [];
+        // Solo necesitamos joins si hay búsqueda en campos relacionados
+        if (!empty($filters['search'])) {
+            $sql .= " LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+                      LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+                      LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+                      LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+                      LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+                      LEFT JOIN zona z ON r.id_zona = z.id_zona
+                      LEFT JOIN sector s ON r.id_sector = s.id_sector
+                      LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                      LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+                      LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                      LEFT JOIN lideres l ON r.id_lider = l.id_lider";
+        }
+        
+        // Búsqueda global
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
             
-            // Campos exactos
-            $conditionParts[] = "r.cedula = ?";
-            $conditionParts[] = "r.telefono ILIKE ?";
+            // Verificar si la búsqueda es numérica
+            $isNumericSearch = is_numeric($search);
             
-            // Solo agregar r.mesa si la tabla tiene ese campo
-            if (isset($filters['include_mesa'])) {
-                $conditionParts[] = "CAST(r.mesa AS TEXT) = ?";
-            }
-            
-            // Campos de texto con ILIKE
-            $conditionParts[] = "r.nombre ILIKE ?";
-            $conditionParts[] = "r.apellido ILIKE ?";
-            $conditionParts[] = "r.direccion ILIKE ?";
-            $conditionParts[] = "r.email ILIKE ?";
-            $conditionParts[] = "d.nombre ILIKE ?";
-            $conditionParts[] = "m.nombre ILIKE ?";
-            $conditionParts[] = "b.nombre ILIKE ?";
-            $conditionParts[] = "gp.nombre ILIKE ?";
-            $conditionParts[] = "oa.nombre ILIKE ?";
-            $conditionParts[] = "z.nombre ILIKE ?";
-            $conditionParts[] = "s.nombre ILIKE ?";
-            $conditionParts[] = "pv.nombre ILIKE ?";
-            $conditionParts[] = "gr.nombre ILIKE ?";
-            $conditionParts[] = "u.nombres ILIKE ?";
-            $conditionParts[] = "u.apellidos ILIKE ?";
-            $conditionParts[] = "l.nombres ILIKE ?";
-            $conditionParts[] = "l.apellidos ILIKE ?";
-            
-            $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
-            
-            // Parámetros para campos exactos
-            $params[] = $search; // Para cedula exacta
-            $params[] = '%' . $search . '%'; // Para teléfono (con ILIKE)
-            $paramTypes[] = \PDO::PARAM_STR;
-            $paramTypes[] = \PDO::PARAM_STR;
-            
-            // Parámetro para mesa si existe
-            if (isset($filters['include_mesa'])) {
-                $params[] = $search; // Para mesa
+            if ($isNumericSearch) {
+                // Si es numérico, buscar en campos numéricos con comparación exacta
+                $conditionParts = [];
+                
+                // Campos exactos
+                $conditionParts[] = "r.cedula = ?";
+                $conditionParts[] = "r.telefono ILIKE ?";
+                
+                // Solo agregar r.mesa si la tabla tiene ese campo
+                if (isset($filters['include_mesa'])) {
+                    $conditionParts[] = "CAST(r.mesa AS TEXT) = ?";
+                }
+                
+                // Campos de texto con ILIKE
+                $conditionParts[] = "r.nombre ILIKE ?";
+                $conditionParts[] = "r.apellido ILIKE ?";
+                $conditionParts[] = "r.direccion ILIKE ?";
+                $conditionParts[] = "r.email ILIKE ?";
+                $conditionParts[] = "d.nombre ILIKE ?";
+                $conditionParts[] = "m.nombre ILIKE ?";
+                $conditionParts[] = "b.nombre ILIKE ?";
+                $conditionParts[] = "gp.nombre ILIKE ?";
+                $conditionParts[] = "oa.nombre ILIKE ?";
+                $conditionParts[] = "z.nombre ILIKE ?";
+                $conditionParts[] = "s.nombre ILIKE ?";
+                $conditionParts[] = "pv.nombre ILIKE ?";
+                $conditionParts[] = "gr.nombre ILIKE ?";
+                $conditionParts[] = "u.nombres ILIKE ?";
+                $conditionParts[] = "u.apellidos ILIKE ?";
+                $conditionParts[] = "l.nombres ILIKE ?";
+                $conditionParts[] = "l.apellidos ILIKE ?";
+                
+                $conditions[] = "(" . implode(" OR ", $conditionParts) . ")";
+                
+                // Parámetros para campos exactos
+                $params[] = $search; // Para cedula exacta
+                $params[] = '%' . $search . '%'; // Para teléfono (con ILIKE)
                 $paramTypes[] = \PDO::PARAM_STR;
-            }
-            
-            // Parámetros para campos de texto (15 campos)
-            $camposTexto = isset($filters['include_mesa']) ? 17 : 17; // 15 originales + 2 de líder
-            for ($i = 0; $i < $camposTexto; $i++) {
-                $params[] = '%' . $search . '%';
                 $paramTypes[] = \PDO::PARAM_STR;
-            }
-            
-        } else {
-            // Si es texto, buscar normalmente
-            $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula ILIKE ? 
-                             OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono ILIKE ?
-                             OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
-                             OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
-                             OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
-                             OR u.nombres ILIKE ? OR u.apellidos ILIKE ?
-                             OR l.nombres ILIKE ? OR l.apellidos ILIKE ?)";
-                             
-            
-            for ($i = 0; $i < 19; $i++) {
-                $params[] = '%' . $search . '%';
-                $paramTypes[] = \PDO::PARAM_STR;
+                
+                // Parámetro para mesa si existe
+                if (isset($filters['include_mesa'])) {
+                    $params[] = $search; // Para mesa
+                    $paramTypes[] = \PDO::PARAM_STR;
+                }
+                
+                // Parámetros para campos de texto
+                $totalCamposTexto = isset($filters['include_mesa']) ? 17 : 16;
+                for ($i = 0; $i < $totalCamposTexto; $i++) {
+                    $params[] = '%' . $search . '%';
+                    $paramTypes[] = \PDO::PARAM_STR;
+                }
+                
+            } else {
+                // Si es texto, buscar normalmente
+                $conditions[] = "(r.nombre ILIKE ? OR r.apellido ILIKE ? OR r.cedula ILIKE ? 
+                                 OR r.direccion ILIKE ? OR r.email ILIKE ? OR r.telefono ILIKE ?
+                                 OR d.nombre ILIKE ? OR m.nombre ILIKE ? OR b.nombre ILIKE ?
+                                 OR gp.nombre ILIKE ? OR oa.nombre ILIKE ? OR z.nombre ILIKE ?
+                                 OR s.nombre ILIKE ? OR pv.nombre ILIKE ? OR gr.nombre ILIKE ?
+                                 OR u.nombres ILIKE ? OR u.apellidos ILIKE ?
+                                 OR l.nombres ILIKE ? OR l.apellidos ILIKE ?)";
+                
+                // 17 campos originales + 2 de líder = 19 parámetros
+                for ($i = 0; $i < 19; $i++) {
+                    $params[] = '%' . $search . '%';
+                    $paramTypes[] = \PDO::PARAM_STR;
+                }
             }
         }
-    }
-    
-    // Filtro por estado
-    if (isset($filters['activo']) && $filters['activo'] !== '') {
-        $conditions[] = "r.activo = ?";
         
-        if ($filters['activo'] === '1' || $filters['activo'] === true || $filters['activo'] === 't') {
-            $params[] = true;
-        } else {
-            $params[] = false;
+        // Filtro por estado
+        if (isset($filters['activo']) && $filters['activo'] !== '') {
+            $conditions[] = "r.activo = ?";
+            
+            if ($filters['activo'] === '1' || $filters['activo'] === true || $filters['activo'] === 't') {
+                $params[] = true;
+            } else {
+                $params[] = false;
+            }
+            $paramTypes[] = \PDO::PARAM_BOOL;
         }
-        $paramTypes[] = \PDO::PARAM_BOOL;
-    }
-    
-    // Filtros avanzados
-    if (!empty($filters['departamento'])) {
-        $conditions[] = "r.id_departamento = ?";
-        $params[] = $filters['departamento'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['municipio'])) {
-        $conditions[] = "r.id_municipio = ?";
-        $params[] = $filters['municipio'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['zona'])) {
-        $conditions[] = "r.id_zona = ?";
-        $params[] = $filters['zona'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['referenciador'])) {
-        $conditions[] = "r.id_referenciador = ?";
-        $params[] = $filters['referenciador'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['oferta_apoyo'])) {
-        $conditions[] = "r.id_oferta_apoyo = ?";
-        $params[] = $filters['oferta_apoyo'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['grupo_poblacional'])) {
-        $conditions[] = "r.id_grupo_poblacional = ?";
-        $params[] = $filters['grupo_poblacional'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    
-    if (!empty($filters['grupo_parlamentario'])) {
-        $conditions[] = "r.id_grupo = ?";
-        $params[] = $filters['grupo_parlamentario'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
+        
+        // Filtros avanzados
+        if (!empty($filters['departamento'])) {
+            $conditions[] = "r.id_departamento = ?";
+            $params[] = $filters['departamento'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['municipio'])) {
+            $conditions[] = "r.id_municipio = ?";
+            $params[] = $filters['municipio'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['zona'])) {
+            $conditions[] = "r.id_zona = ?";
+            $params[] = $filters['zona'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['referenciador'])) {
+            $conditions[] = "r.id_referenciador = ?";
+            $params[] = $filters['referenciador'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['oferta_apoyo'])) {
+            $conditions[] = "r.id_oferta_apoyo = ?";
+            $params[] = $filters['oferta_apoyo'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['grupo_poblacional'])) {
+            $conditions[] = "r.id_grupo_poblacional = ?";
+            $params[] = $filters['grupo_poblacional'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
+        
+        if (!empty($filters['grupo_parlamentario'])) {
+            $conditions[] = "r.id_grupo = ?";
+            $params[] = $filters['grupo_parlamentario'];
+            $paramTypes[] = \PDO::PARAM_INT;
+        }
         if (!empty($filters['lider'])) {
-        $conditions[] = "r.id_lider = ?";
-        $params[] = $filters['lider'];
-        $paramTypes[] = \PDO::PARAM_INT;
-    }
-    // Construir WHERE
-    if (!empty($conditions)) {
-        $sql .= " WHERE " . implode(' AND ', $conditions);
-    }
-    
-    try {
-        $stmt = $this->pdo->prepare($sql);
-        
-        // Bind parameters con tipos
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+            $conditions[] = "r.id_lider = ?";
+            $params[] = $filters['lider'];
+            $paramTypes[] = \PDO::PARAM_INT;
         }
         
-        $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (int)($result['total'] ?? 0);
-    } catch (PDOException $e) {
-        error_log("Error en getTotalReferenciados: " . $e->getMessage());
-        error_log("SQL: " . $sql);
-        error_log("Params: " . print_r($params, true));
-        return 0;
+        // Construir WHERE
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+        
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            
+            // Bind parameters con tipos
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)($result['total'] ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error en getTotalReferenciados: " . $e->getMessage());
+            error_log("SQL: " . $sql);
+            error_log("Params: " . print_r($params, true));
+            return 0;
+        }
     }
-}
 /**
  * Obtener referenciados con filtros aplicados (basado en getAllReferenciados)
  * @param array $filtros Filtros a aplicar

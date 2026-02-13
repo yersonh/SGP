@@ -516,12 +516,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <div class="system-info">
             <p>
-                <strong>© 2026 Sistema de Gestión Política SGP</strong> • Puerto Gaitán - Meta <br>
+                <strong>© 2026 Sistema de Gestión Política SGP</strong> • Puerto Gaitán - Meta
                 Módulo de SGA Sistema de Gestión Administrativa 2026 
                 SGA Solución de Gestión Administrativa Enterprise Premium 1.0™
-                Desarrollado por SISGONTech Technology® • Conjunto Residencial Portal del Llano, Casa 104, Villavicencio, Meta. <br>
+                Desarrollado por SISGONTech Technology® • Conjunto Residencial Portal del Llano, Casa 104, Villavicencio, Meta.
                 Asesores e-Governance Solutions para Entidades Públicas 2026® 
-                Propietario software: Ing. Yerson Solano Alfonso<br>
+                Propietario software: Ing. Yerson Solano Alfonso
                 ☎️ (+57) 313 333 62 27 • Email: soportesgp@gmail.com • © Reservado por derechos de autor.
             </p>
         </div>

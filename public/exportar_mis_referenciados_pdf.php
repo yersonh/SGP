@@ -18,11 +18,86 @@ $usuarioModel = new UsuarioModel($pdo);
 // Obtener datos del usuario
 $usuario = $usuarioModel->getUsuarioById($id_usuario_logueado);
 
-// Filtrar por activos si se solicita
-$soloActivos = isset($_GET['solo_activos']) && $_GET['solo_activos'] == 1;
+// ============================================
+// Obtener filtro de líder desde la URL
+// ============================================
+$filtro_lider = isset($_GET['filtro_lider']) ? $_GET['filtro_lider'] : 'todos';
+$nombre_lider_filtro = isset($_GET['nombre_lider']) ? trim($_GET['nombre_lider']) : '';
+
+// Obtener todos los referenciados del usuario
 $referenciados = $referenciadoModel->getReferenciadosByUsuario($id_usuario_logueado);
 
-// Si solo activos, filtrar
+// ============================================
+// FUNCIÓN DE FILTRADO MEJORADA (igual que en Excel)
+// ============================================
+function filtrarPorLider($referenciados, $filtro_lider, $nombre_lider_filtro) {
+    if ($filtro_lider === 'todos') {
+        return $referenciados;
+    }
+    
+    $resultado = [];
+    
+    foreach ($referenciados as $ref) {
+        // Obtener nombre completo del líder de este referenciado
+        $liderReferenciado = '';
+        if (!empty($ref['lider_nombres']) || !empty($ref['lider_apellidos'])) {
+            $liderReferenciado = trim(
+                ($ref['lider_nombres'] ?? '') . ' ' . 
+                ($ref['lider_apellidos'] ?? '')
+            );
+        }
+        
+        if ($filtro_lider === 'sin_lider') {
+            // Mostrar solo los que NO tienen líder
+            if (empty($liderReferenciado)) {
+                $resultado[] = $ref;
+            }
+        } else {
+            // Filtrar por líder específico
+            $coincide = false;
+            
+            // Comparar con el nombre completo del líder
+            if (!empty($liderReferenciado)) {
+                // Intentar con el nombre del filtro
+                if (!empty($nombre_lider_filtro)) {
+                    // Comparación exacta (sin importar mayúsculas/minúsculas)
+                    if (strcasecmp(trim($liderReferenciado), trim($nombre_lider_filtro)) === 0) {
+                        $coincide = true;
+                    }
+                    // Comparación parcial (si el nombre contiene el filtro)
+                    elseif (stripos($liderReferenciado, $nombre_lider_filtro) !== false) {
+                        $coincide = true;
+                    }
+                    // Comparación inversa (si el filtro contiene el nombre)
+                    elseif (stripos($nombre_lider_filtro, $liderReferenciado) !== false) {
+                        $coincide = true;
+                    }
+                }
+                
+                // Si no hay nombre específico, usar el valor del select
+                if (!$coincide && !empty($filtro_lider) && $filtro_lider !== 'sin_lider') {
+                    if (stripos($liderReferenciado, $filtro_lider) !== false) {
+                        $coincide = true;
+                    }
+                }
+            }
+            
+            if ($coincide) {
+                $resultado[] = $ref;
+            }
+        }
+    }
+    
+    return $resultado;
+}
+
+// Aplicar filtro de líder
+$referenciados = filtrarPorLider($referenciados, $filtro_lider, $nombre_lider_filtro);
+
+// ============================================
+// Filtrar por activos si se solicita
+// ============================================
+$soloActivos = isset($_GET['solo_activos']) && $_GET['solo_activos'] == 1;
 if ($soloActivos) {
     $referenciados = array_filter($referenciados, function($referenciado) {
         $activo = $referenciado['activo'] ?? true;
@@ -30,15 +105,53 @@ if ($soloActivos) {
     });
 }
 
+// Re-indexar array después de los filtros
+$referenciados = array_values($referenciados);
+
+// Si no hay resultados, mostrar mensaje y salir
+if (empty($referenciados)) {
+    // Incluir TCPDF para mostrar mensaje
+    $tcpdfPath = __DIR__ . '/../tcpdf/tcpdf.php';
+    if (!file_exists($tcpdfPath)) {
+        $tcpdfPath = __DIR__ . '/../tcpdf/tcpdf.php';
+    }
+    require_once($tcpdfPath);
+    
+    $pdf = new TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+    $pdf->SetCreator('Sistema de Gestión Política');
+    $pdf->SetAuthor('SISGONTech');
+    $pdf->SetTitle('Sin resultados');
+    $pdf->AddPage();
+    
+    $pdf->SetFont('helvetica', 'B', 16);
+    $pdf->Cell(0, 20, 'NO HAY RESULTADOS', 0, 1, 'C');
+    $pdf->SetFont('helvetica', '', 12);
+    $pdf->Cell(0, 10, 'No se encontraron referenciados con el filtro aplicado:', 0, 1, 'C');
+    $pdf->Ln(10);
+    
+    if ($filtro_lider === 'sin_lider') {
+        $pdf->Cell(0, 10, '• Filtro: Sin líder asignado', 0, 1, 'C');
+    } elseif ($filtro_lider !== 'todos') {
+        $pdf->Cell(0, 10, '• Líder: ' . htmlspecialchars($nombre_lider_filtro ?: $filtro_lider), 0, 1, 'C');
+    }
+    if ($soloActivos) {
+        $pdf->Cell(0, 10, '• Filtro adicional: Solo activos', 0, 1, 'C');
+    }
+    
+    $pdf->Output('sin_resultados_' . date('Y-m-d_H-i-s') . '.pdf', 'D');
+    exit;
+}
+
 // ORDENAR POR ID DE FORMA DESCENDENTE (últimos primero...)
 usort($referenciados, function($a, $b) {
     return ($b['id_referenciado'] ?? 0) <=> ($a['id_referenciado'] ?? 0);
 });
 
-// Contar estadísticas
+// Contar estadísticas (después de aplicar filtros)
 $totalReferidos = count($referenciados);
 $totalActivos = 0;
 $totalInactivos = 0;
+$referidosSinLider = 0;
 
 foreach ($referenciados as $referenciado) {
     $activo = $referenciado['activo'] ?? true;
@@ -47,6 +160,11 @@ foreach ($referenciados as $referenciado) {
         $totalActivos++;
     } else {
         $totalInactivos++;
+    }
+    
+    // Contar referidos sin líder
+    if (empty($referenciado['lider_nombres']) && empty($referenciado['lider_apellidos'])) {
+        $referidosSinLider++;
     }
 }
 
@@ -98,22 +216,34 @@ $pdf->Line(10, $pdf->GetY(), 290, $pdf->GetY());
 $pdf->Ln(5);
 
 // ============================================
-// INFORMACIÓN DEL REPORTE
+// INFORMACIÓN DEL REPORTE (CON FILTROS)
 // ============================================
 $pdf->SetFont('helvetica', '', 9);
-$infoText = "Fecha de exportación: " . date('d/m/Y H:i:s') . "\n";
-$infoText .= "Referenciador: " . $usuario['nombres'] . ' ' . $usuario['apellidos'] . "\n";
-$infoText .= "Total referenciados: " . number_format($totalReferidos, 0, ',', '.') . 
-             " (Activos: " . number_format($totalActivos, 0, ',', '.') . 
-             ", Inactivos: " . number_format($totalInactivos, 0, ',', '.') . ")\n";
-$infoText .= "Tope: " . ($usuario['total_referenciados'] ?? 0) . "/" . ($usuario['tope'] ?? 0) . 
-             " (" . ($usuario['porcentaje_tope'] ?? 0) . "% completado)";
-             
-if ($soloActivos) {
-    $infoText .= "\nFiltro aplicado: Solo referidos activos";
+
+// Construir texto de filtros aplicados
+$filtrosTexto = "Fecha de exportación: " . date('d/m/Y H:i:s') . "\n";
+$filtrosTexto .= "Referenciador: " . $usuario['nombres'] . ' ' . $usuario['apellidos'] . "\n";
+
+// Agregar información del filtro de líder
+if ($filtro_lider !== 'todos') {
+    if ($filtro_lider === 'sin_lider') {
+        $filtrosTexto .= "Filtro por líder: SOLO SIN LÍDER ASIGNADO\n";
+    } else {
+        $filtrosTexto .= "Filtro por líder: " . htmlspecialchars($nombre_lider_filtro ?: $filtro_lider) . "\n";
+    }
 }
 
-$pdf->MultiCell(0, 5, $infoText, 0, 'L');
+$filtrosTexto .= "Total referenciados: " . number_format($totalReferidos, 0, ',', '.') . 
+                 " (Activos: " . number_format($totalActivos, 0, ',', '.') . 
+                 ", Inactivos: " . number_format($totalInactivos, 0, ',', '.') . ")\n";
+$filtrosTexto .= "Tope: " . ($usuario['total_referenciados'] ?? 0) . "/" . ($usuario['tope'] ?? 0) . 
+                 " (" . ($usuario['porcentaje_tope'] ?? 0) . "% completado)";
+                 
+if ($soloActivos) {
+    $filtrosTexto .= "\nFiltro adicional: Solo referidos activos";
+}
+
+$pdf->MultiCell(0, 5, $filtrosTexto, 0, 'L');
 $pdf->Ln(5);
 
 // ============================================
@@ -121,10 +251,10 @@ $pdf->Ln(5);
 // ============================================
 $pdf->SetFont('helvetica', 'B', 8);
 
-// Encabezados de la tabla - AGREGADA COLUMNA "LÍDER"
+// Encabezados de la tabla
 $header = array('ID', 'Estado', 'Nombre', 'Apellido', 'Cédula', 'Teléfono', 'Afinidad', 'Vota', 'Puesto', 'Mesa', 'Líder', 'Fecha Reg.');
 
-// Anchos de columna - AJUSTADOS PARA INCLUIR LÍDER
+// Anchos de columna
 $widths = array(10, 15, 25, 20, 20, 20, 15, 15, 25, 15, 30, 20);
 
 // Dibujar encabezados
@@ -138,10 +268,10 @@ for ($i = 0; $i < count($header); $i++) {
 }
 $pdf->Ln();
 
-// Contenido de la tabla - TODAS LAS FILAS EN BLANCO
+// Contenido de la tabla
 $pdf->SetFont('helvetica', '', 7);
 $pdf->SetTextColor(0);
-$pdf->SetFillColor(255); // FONDO BLANCO FIJO
+$pdf->SetFillColor(255);
 $pdf->SetDrawColor(200);
 
 $rowNum = 0;
@@ -151,8 +281,6 @@ foreach ($referenciados as $referenciado) {
     // Verificar si necesitamos nueva página
     if ($pdf->GetY() > 180) {
         $pdf->AddPage();
-        
-        // REINICIAR CONTADOR DE FILAS PARA NUEVA PÁGINA
         $rowsInCurrentPage = 0;
         
         // Redibujar encabezados
@@ -224,8 +352,16 @@ foreach ($referenciados as $referenciado) {
     }
     $pdf->Cell($widths[9], 6, $mesa, 'LR', 0, 'C', true);
     
-    // LÍDER (NUEVA COLUMNA) - acortado
-    $lider = $referenciado['lider_nombre_completo'] ?? 'SIN LÍDER';
+    // LÍDER - Obtener nombre completo
+    $liderNombre = '';
+    if (!empty($referenciado['lider_nombres']) || !empty($referenciado['lider_apellidos'])) {
+        $liderNombre = trim(
+            ($referenciado['lider_nombres'] ?? '') . ' ' . 
+            ($referenciado['lider_apellidos'] ?? '')
+        );
+    }
+    $lider = !empty($liderNombre) ? $liderNombre : 'SIN LÍDER';
+    
     if (strlen($lider) > 15) {
         $lider = substr($lider, 0, 15) . '...';
     }
@@ -252,19 +388,22 @@ $pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(0, 6, 'RESUMEN ESTADÍSTICO', 0, 1, 'C');
 $pdf->Ln(2);
 
-// Contar estadísticas de líderes para el referenciador
+// Contar estadísticas de líderes para los referenciados filtrados
 $lideresCount = [];
-$referidosSinLider = 0;
 
 foreach ($referenciados as $referenciado) {
-    $liderNombre = $referenciado['lider_nombre_completo'] ?? '';
+    $liderNombre = '';
+    if (!empty($referenciado['lider_nombres']) || !empty($referenciado['lider_apellidos'])) {
+        $liderNombre = trim(
+            ($referenciado['lider_nombres'] ?? '') . ' ' . 
+            ($referenciado['lider_apellidos'] ?? '')
+        );
+    }
     if (!empty($liderNombre)) {
         if (!isset($lideresCount[$liderNombre])) {
             $lideresCount[$liderNombre] = 0;
         }
         $lideresCount[$liderNombre]++;
-    } else {
-        $referidosSinLider++;
     }
 }
 
@@ -295,6 +434,17 @@ $summaryData = array(
     array('Tope Completado', ($usuario['total_referenciados'] ?? 0) . '/' . ($usuario['tope'] ?? 0)),
     array('Porcentaje Completado', ($usuario['porcentaje_tope'] ?? 0) . '%')
 );
+
+// Agregar información del filtro aplicado al resumen
+if ($filtro_lider !== 'todos') {
+    $filtroTexto = "Filtro aplicado: ";
+    if ($filtro_lider === 'sin_lider') {
+        $filtroTexto .= "Solo sin líder";
+    } else {
+        $filtroTexto .= "Líder: " . ($nombre_lider_filtro ?: $filtro_lider);
+    }
+    array_unshift($summaryData, array($filtroTexto, ''));
+}
 
 foreach ($summaryData as $row) {
     $pdf->Cell($summaryWidths[0], 7, $row[0], 'LR', 0, 'L', true);
@@ -348,7 +498,20 @@ $pdf->Ln();
 $pdf->Cell(0, 5, '© ' . date('Y') . ' Derechos reservados - Generado automáticamente', 0, 0, 'C');
 
 // ============================================
-// SALIDA DEL PDF
+// SALIDA DEL PDF (CON NOMBRE DINÁMICO)
 // ============================================
-$pdf->Output('mis_referenciados_' . date('Y-m-d_H-i-s') . '.pdf', 'D');
+$nombre_archivo = 'mis_referenciados';
+if ($filtro_lider !== 'todos') {
+    if ($filtro_lider === 'sin_lider') {
+        $nombre_archivo .= '_sin_lider';
+    } else {
+        $nombre_archivo .= '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $nombre_lider_filtro);
+    }
+}
+if ($soloActivos) {
+    $nombre_archivo .= '_activos';
+}
+$nombre_archivo .= '_' . date('Y-m-d_H-i-s') . '.pdf';
+
+$pdf->Output($nombre_archivo, 'D');
 exit;

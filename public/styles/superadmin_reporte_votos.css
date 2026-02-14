@@ -586,6 +586,124 @@ body {
 .quality-average { background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%); }
 .quality-poor { background: linear-gradient(90deg, #dc3545 0%, #e83e8c 100%); }
 
+/* ===== CARDS Y TABLAS PARA CONTENIDO AJAX ===== */
+.card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h5, .card-header h6 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.card-footer {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+}
+
+/* Tablas */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #333;
+    border-collapse: collapse;
+}
+
+.table th {
+    padding: 12px;
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Badges y etiquetas */
+.badge {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.badge.bg-success { background-color: #28a745 !important; color: white; }
+.badge.bg-warning { background-color: #ffc107 !important; color: #212529; }
+.badge.bg-danger { background-color: #dc3545 !important; color: white; }
+.badge.bg-info { background-color: #17a2b8 !important; color: white; }
+.badge.bg-secondary { background-color: #6c757d !important; color: white; }
+
+/* Paginación */
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+    justify-content: center;
+}
+
+.page-item {
+    margin: 0 2px;
+}
+
+.page-link {
+    display: block;
+    padding: 8px 12px;
+    color: #3498db;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.page-item.active .page-link {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: white;
+    border-color: #dee2e6;
+}
+
+.page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
 /* ===== MODAL Y COMPONENTES DE SISTEMA ===== */
 .modal-system-info .modal-header {
     background: linear-gradient(135deg, #2c3e50, #1a252f);
@@ -1071,12 +1189,12 @@ body {
     }
 }
 
-/* ===== MODO OSCURO - CORREGIDO ===== */
+/* ===== MODO OSCURO COMPLETO (INCLUYE CONTENIDO AJAX) ===== */
 @media (prefers-color-scheme: dark) {
     /* Fondo general */
     body {
         background-color: #1a1a1a;
-        color: #e0e0e0;
+        color: #ffffff;
     }
     
     /* Header */
@@ -1095,26 +1213,54 @@ body {
     .countdown-compact-container,
     .modal-content,
     .feature-card,
-    .licencia-info {
+    .licencia-info,
+    .panel-licencia,
+    div[class*="licencia"],
+    div[class*="runtime"],
+    .runtime-info,
+    .info-licencia,
+    .modal-body,
+    .modal-footer,
+    .card,
+    .card-header,
+    .card-footer,
+    .list-group-item,
+    .dropdown-menu {
         background-color: #2d2d2d !important;
         box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         border-color: #404040 !important;
     }
     
-    /* Textos generales */
-    h1, h2, h3, h4, h5, h6,
+    /* Bordes específicos */
+    .tabs-container,
+    .card,
+    .modal-content,
+    .list-group-item {
+        border: 1px solid #404040 !important;
+    }
+    
+    .card-header,
+    .card-footer,
+    .modal-header,
+    .modal-footer,
+    .list-group-item {
+        border-bottom-color: #404040 !important;
+        border-top-color: #404040 !important;
+    }
+    
+    /* TODOS LOS TEXTOS EN BLANCO PARA MÁXIMA VISIBILIDAD */
+    body, p, span, div, h1, h2, h3, h4, h5, h6,
     .header-title h1,
     .grafica-header h4,
     .mini-grafica-card h5,
     .profile-name,
     .feature-title,
+    .modal-title,
     .licencia-title,
-    .modal-title {
-        color: #ffffff !important;
-    }
-    
-    /* Textos secundarios */
-    p, span, div:not(.kpi-value):not(.hora-pico-value):not(.countdown-compact-timer):not(.licencia-dias),
+    .runtime-title,
+    .card-title,
+    .card-header h5,
+    .card-header h6,
     .filtro-group label,
     .kpi-title,
     .kpi-subtitle,
@@ -1123,16 +1269,52 @@ body {
     .feature-text,
     .breadcrumb-item.active,
     .system-footer p,
-    .licencia-fecha,
+    .modal-body p,
+    .modal-body span,
     .tab-pane p,
     .text-muted,
     small,
     .form-label,
-    .modal-body,
-    .modal-body p,
-    .modal-body span,
-    .modal-body div:not(.licencia-dias) {
-        color: #b0b0b0 !important;
+    .licencia-fecha,
+    .runtime-date,
+    .fecha-expiracion,
+    .dias-texto,
+    .licencia-label,
+    .runtime-label,
+    .card-text,
+    .card-body p,
+    .card-body small,
+    .table td,
+    .table th,
+    .table td small,
+    .text-muted,
+    .list-group-item,
+    .list-group-item small,
+    .list-group-item .text-muted,
+    .alert p,
+    .alert small,
+    #proyeccionContainer p,
+    #proyeccionContainer small,
+    #proyeccionContainer .text-muted,
+    .dropdown-item,
+    .tooltip-inner,
+    .page-link,
+    .badge:not([class*="bg-"]) {
+        color: #ffffff !important;
+    }
+    
+    /* Textos secundarios con un poco menos de brillo */
+    .text-muted,
+    small,
+    .filtro-group label,
+    .kpi-subtitle,
+    .hora-pico-desc,
+    .licencia-fecha,
+    .dias-texto,
+    .licencia-label,
+    .card-footer small,
+    .table td small {
+        color: #e0e0e0 !important;
     }
     
     /* Valores numéricos importantes */
@@ -1140,9 +1322,64 @@ body {
     .hora-pico-value,
     .countdown-compact-timer,
     .licencia-dias,
+    .runtime-days,
+    .dias-restantes,
+    .numero-dias,
+    span.dias,
+    .valor-dias,
     .stat-value,
-    .numero-destacado {
+    .numero-destacado,
+    [class*="dias"]:not(.dias-texto):not(.licencia-label),
+    .table td strong,
+    .h5, .h4, .h3, .h2, .h1,
+    .display-4 {
         color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Badge de días - FONDO AZUL */
+    .licencia-dias,
+    .runtime-days,
+    .badge-licencia,
+    .runtime-badge,
+    .licencia-dias-badge {
+        background-color: #3498db !important;
+        color: #ffffff !important;
+        padding: 4px 12px !important;
+        border-radius: 20px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Barra de progreso de licencia */
+    .licencia-progress,
+    .progress-bar-licencia,
+    .runtime-progress {
+        background-color: #4d4d4d !important;
+        height: 12px !important;
+        border-radius: 6px !important;
+        overflow: hidden !important;
+    }
+    
+    .licencia-progress-bar,
+    .progress-bar-fill,
+    .runtime-progress-bar {
+        background: linear-gradient(90deg, #3498db, #5dade2) !important;
+        height: 100% !important;
+        border-radius: 6px !important;
+        transition: width 0.6s ease;
+    }
+    
+    /* Contenedor de información de licencia */
+    .licencia-info,
+    .runtime-info {
+        background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%) !important;
+        border: 1px solid #404040 !important;
+    }
+    
+    .licencia-header {
+        border-bottom: 1px solid #404040 !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 15px !important;
     }
     
     /* Inputs y selects */
@@ -1156,7 +1393,7 @@ body {
     textarea {
         background-color: #3d3d3d !important;
         border-color: #4d4d4d !important;
-        color: #e0e0e0 !important;
+        color: #ffffff !important;
     }
     
     .filtro-group select:focus,
@@ -1169,7 +1406,7 @@ body {
     
     /* Placeholders */
     ::placeholder {
-        color: #888 !important;
+        color: #b0b0b0 !important;
         opacity: 1;
     }
     
@@ -1180,7 +1417,7 @@ body {
     }
     
     .tab-btn {
-        color: #b0b0b0 !important;
+        color: #e0e0e0 !important;
     }
     
     .tab-btn.active {
@@ -1191,22 +1428,31 @@ body {
     
     .tab-btn:hover {
         background: rgba(52, 152, 219, 0.15) !important;
-        color: #3498db !important;
+        color: #ffffff !important;
     }
     
     /* Botones de acción */
     .btn-grafica-action,
     .btn-secondary,
-    .btn-outline-secondary {
+    .btn-outline-secondary,
+    .btn-outline-primary {
         background-color: #3d3d3d !important;
         border-color: #4d4d4d !important;
-        color: #e0e0e0 !important;
+        color: #ffffff !important;
     }
     
     .btn-grafica-action:hover,
     .btn-secondary:hover,
-    .btn-outline-secondary:hover {
+    .btn-outline-secondary:hover,
+    .btn-outline-primary:hover {
         background-color: #4d4d4d !important;
+        color: #ffffff !important;
+    }
+    
+    .btn-outline-primary.active {
+        background-color: #3498db !important;
+        color: white !important;
+        border-color: #2980b9 !important;
     }
     
     /* Botones principales */
@@ -1248,7 +1494,7 @@ body {
     }
     
     .breadcrumb-item.active {
-        color: #999 !important;
+        color: #e0e0e0 !important;
     }
     
     /* Contador compacto */
@@ -1295,7 +1541,7 @@ body {
         color: #e67e7e !important;
     }
     
-    /* Badges de resultado */
+    /* Badges de resultado (AJAX) */
     .resultado-contactado {
         background-color: #1e4a2a !important;
         color: #a3d9a5 !important;
@@ -1321,9 +1567,77 @@ body {
         color: #fff !important;
     }
     
+    /* Tablas (AJAX) */
+    .table {
+        color: #ffffff !important;
+    }
+    
+    .table thead th {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+        border-bottom-color: #4d4d4d !important;
+    }
+    
+    .table td {
+        border-color: #4d4d4d !important;
+        background-color: #2d2d2d !important;
+        color: #ffffff !important;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #2d2d2d !important;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) td {
+        background-color: #2d2d2d !important;
+        color: #ffffff !important;
+    }
+    
+    .table-striped tbody tr:nth-of-type(even) {
+        background-color: #3a3a3a !important;
+    }
+    
+    .table-striped tbody tr:nth-of-type(even) td {
+        background-color: #3a3a3a !important;
+        color: #ffffff !important;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #4a4a4a !important;
+    }
+    
+    .table-hover tbody tr:hover td {
+        background-color: #4a4a4a !important;
+        color: #ffffff !important;
+    }
+    
+    /* Paginación (AJAX) */
+    .page-link {
+        background-color: #3d3d3d !important;
+        border-color: #4d4d4d !important;
+        color: #ffffff !important;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #3498db !important;
+        color: white !important;
+        border-color: #2980b9 !important;
+    }
+    
+    .page-item.disabled .page-link {
+        background-color: #2d2d2d !important;
+        color: #b0b0b0 !important;
+    }
+    
+    .page-link:hover {
+        background-color: #4d4d4d !important;
+        color: white !important;
+    }
+    
     /* Modal */
     .modal-content {
         background-color: #2d2d2d !important;
+        border: 1px solid #404040 !important;
     }
     
     .modal-header {
@@ -1339,50 +1653,52 @@ body {
         border-top-color: #404040 !important;
     }
     
-    /* Licencia */
-    .licencia-progress {
-        background-color: #4d4d4d !important;
+    /* Alertas y mensajes de carga */
+    .alert {
+        background-color: #3d3d3d !important;
+        border-color: #4d4d4d !important;
+        color: #ffffff !important;
     }
     
-    .licencia-progress-bar {
-        background-color: #3498db !important;
+    .alert-warning {
+        background-color: #7d5d1a !important;
+        color: #ffd966 !important;
+    }
+    
+    .alert-info {
+        background-color: #1a5a7a !important;
+        color: #a3d9ff !important;
+    }
+    
+    .alert-success {
+        background-color: #1e4a2a !important;
+        color: #a3d9a5 !important;
+    }
+    
+    .alert-danger {
+        background-color: #7a2a2a !important;
+        color: #f7a7a7 !important;
+    }
+    
+    /* Loading spinners */
+    .fa-spinner,
+    .fa-spin {
+        color: #ffffff !important;
     }
     
     /* Feature cards */
     .feature-card {
         border-left-color: #3498db !important;
-    }
-    
-    /* Tablas */
-    .table {
-        color: #e0e0e0 !important;
-    }
-    
-    .table thead th {
         background-color: #3d3d3d !important;
-        color: #ffffff !important;
-        border-bottom-color: #4d4d4d !important;
-    }
-    
-    .table td {
-        border-color: #4d4d4d !important;
-    }
-    
-    .table-striped tbody tr:nth-of-type(odd) {
-        background-color: #2d2d2d !important;
-    }
-    
-    .table-striped tbody tr:nth-of-type(even) {
-        background-color: #3a3a3a !important;
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: #4a4a4a !important;
     }
     
     /* Footer */
     .system-footer {
         border-top-color: #404040 !important;
+    }
+    
+    .system-footer p {
+        color: #e0e0e0 !important;
     }
     
     /* Enlaces */
@@ -1420,6 +1736,10 @@ body {
         color: #f4b350 !important;
     }
     
+    .rating-stars i {
+        color: #f4b350 !important;
+    }
+    
     /* Progress bars */
     .progress {
         background-color: #4d4d4d !important;
@@ -1433,6 +1753,180 @@ body {
     .quality-good { background: linear-gradient(90deg, #20c997 0%, #17a2b8 100%) !important; }
     .quality-average { background: linear-gradient(90deg, #f39c12 0%, #fd7e14 100%) !important; }
     .quality-poor { background: linear-gradient(90deg, #c0392b 0%, #e83e8c 100%) !important; }
+    
+    /* Elementos específicos de licencia */
+    .licencia-dias,
+    .runtime-days {
+        background-color: #3498db !important;
+        color: #ffffff !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        padding: 4px 12px !important;
+        border-radius: 20px !important;
+    }
+    
+    .licencia-progress-bar {
+        background: linear-gradient(90deg, #3498db, #5dade2) !important;
+    }
+    
+    .licencia-fecha {
+        color: #e0e0e0 !important;
+    }
+    
+    /* List groups (AJAX) */
+    .list-group-item {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+        color: #ffffff !important;
+    }
+    
+    .list-group-item:hover {
+        background-color: #3d3d3d !important;
+    }
+    
+    .list-group-item .text-primary {
+        color: #5dade2 !important;
+    }
+    
+    /* Tooltips y pequeños elementos */
+    .tooltip-inner {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+        border: 1px solid #4d4d4d !important;
+    }
+    
+    /* Dropdowns */
+    .dropdown-menu {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+    }
+    
+    .dropdown-item {
+        color: #ffffff !important;
+    }
+    
+    .dropdown-item:hover {
+        background-color: #3d3d3d !important;
+    }
+    
+    /* Badges en tablas */
+    .badge.bg-primary {
+        background-color: #2980b9 !important;
+        color: white !important;
+    }
+    
+    .badge.bg-success {
+        background-color: #27ae60 !important;
+        color: white !important;
+    }
+    
+    .badge.bg-warning {
+        background-color: #f39c12 !important;
+        color: #212529 !important;
+    }
+    
+    .badge.bg-danger {
+        background-color: #c0392b !important;
+        color: white !important;
+    }
+    
+    .badge.bg-info {
+        background-color: #2980b9 !important;
+        color: white !important;
+    }
+    
+    .badge.bg-secondary {
+        background-color: #4a4a4a !important;
+        color: #ffffff !important;
+    }
+    
+    /* Contenedor de proyección */
+    #proyeccionContainer {
+        color: #ffffff !important;
+    }
+    
+    #proyeccionContainer .card {
+        background-color: #3d3d3d !important;
+    }
+    
+    #proyeccionContainer .card-body {
+        background-color: #3d3d3d !important;
+    }
+    
+    #proyeccionContainer .text-muted {
+        color: #e0e0e0 !important;
+    }
+        /* ===== ESTILOS PARA GRÁFICAS EN MODO OSCURO ===== */
+    
+    /* Textos de ejes y etiquetas de Chart.js */
+    .grafica-body canvas,
+    .grafica-principal-container canvas,
+    .card canvas,
+    #graficaPorHora,
+    #graficaDistribucionResultado,
+    #graficaCalidad,
+    #graficaRatingPorHora,
+    #graficaLlamadores,
+    #graficaEficienciaLlamadores,
+    #graficaTendencias,
+    #graficaComparativaSemanal {
+        filter: brightness(1.1);
+    }
+    
+    /* Forzar colores de texto en gráficas usando estilos de Chart.js */
+    .chartjs-tooltip {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+        border: 1px solid #4d4d4d !important;
+        border-radius: 5px !important;
+        padding: 8px !important;
+        font-size: 12px !important;
+    }
+    
+    .chartjs-tooltip-key {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 5px;
+    }
+    
+    /* Estilos para las etiquetas de los ejes (se aplican mediante Chart.js options) */
+    .chart-axis-label {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+    }
+    
+    /* Para títulos de leyendas */
+    .chart-legend li span {
+        color: #ffffff !important;
+    }
+    
+    /* Para tooltips personalizados si existen */
+    .chart-tooltip {
+        background: #3d3d3d !important;
+        color: #ffffff !important;
+        border: 1px solid #4d4d4d !important;
+    }
+    
+    /* Estilos para el título de la gráfica si existe */
+    .chart-title {
+        color: #ffffff !important;
+    }
+    
+    /* Para asegurar que los textos en el canvas tengan contraste */
+    .grafica-body {
+        background-color: #2d2d2d !important;
+    }
+    
+    .grafica-principal-container {
+        background-color: #2d2d2d !important;
+    }
+    
+    /* Si hay labels personalizados en las gráficas */
+    .chart-label {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+    }
 }
 
 /* Ajustes específicos para móviles en modo oscuro */
@@ -1451,102 +1945,6 @@ body {
     }
 }
 
-/* ===== ESTILOS PARA MODO OSCURO - CONTENIDO DINÁMICO ===== */
-@media (prefers-color-scheme: dark) {
-    #tablaDetalle {
-        background-color: #2d2d2d !important;
-        color: #e0e0e0 !important;
-        border-color: #4d4d4d !important;
-    }
-    
-    #tablaDetalle thead {
-        background-color: #3d3d3d !important;
-    }
-    
-    #tablaDetalle thead th {
-        background-color: #3d3d3d !important;
-        color: #ffffff !important;
-        border-color: #5d5d5d !important;
-    }
-    
-    #tablaDetalle td {
-        background-color: #2d2d2d !important;
-        color: #e0e0e0 !important;
-        border-color: #4d4d4d !important;
-    }
-    
-    #tablaDetalle tbody tr:nth-child(odd) {
-        background-color: #2d2d2d !important;
-    }
-    
-    #tablaDetalle tbody tr:nth-child(even) {
-        background-color: #3a3a3a !important;
-    }
-    
-    #tablaDetalle tbody tr:hover {
-        background-color: #4a4a4a !important;
-    }
-    
-    #tablaDetalle .badge.bg-primary {
-        background-color: #2980b9 !important;
-    }
-    
-    #tablaDetalle .badge.bg-success {
-        background-color: #27ae60 !important;
-    }
-    
-    #tablaDetalle .text-center {
-        color: #e0e0e0 !important;
-    }
-    
-    #tablaDetalle .text-muted {
-        color: #b0b0b0 !important;
-    }
-    
-    #tablaDetalle .fa-info-circle {
-        color: #3498db !important;
-    }
-    
-    #comparativasContenido .card {
-        background-color: #3d3d3d !important;
-        color: #e0e0e0 !important;
-        border-color: #4d4d4d !important;
-    }
-    
-    #comparativasContenido .card-header {
-        background-color: #4d4d4d !important;
-        border-color: #5d5d5d !important;
-        color: #ffffff !important;
-    }
-    
-    #comparativasContenido .text-muted {
-        color: #b0b0b0 !important;
-    }
-    
-    #comparativasContenido .text-primary {
-        color: #3498db !important;
-    }
-    
-    #comparativasContenido .text-success {
-        color: #2ecc71 !important;
-    }
-    
-    #comparativasContenido .text-danger {
-        color: #e74c3c !important;
-    }
-    
-    .grafica-full-card,
-    .grafica-half-card {
-        background-color: #3d3d3d !important;
-        color: #e0e0e0 !important;
-        border-color: #4d4d4d !important;
-    }
-    
-    .grafica-header {
-        color: #ffffff !important;
-    }
-}
-
 /* ===== CLASES AUXILIARES ===== */
 .bg-dark-row {
     background-color: #2d2d2d !important;
@@ -1559,5 +1957,53 @@ body {
 @media (prefers-color-scheme: light) {
     .bg-dark-row, .bg-darker-row {
         background-color: inherit !important;
+    }
+}
+
+/* Estilos para elementos específicos de Chart.js en modo oscuro */
+@media (prefers-color-scheme: dark) {
+    canvas {
+        filter: brightness(0.9);
+    }
+    /* Forzar color de texto en todos los elementos de Chart.js */
+    .chartjs-render-monitor {
+        color: #ffffff !important;
+    }
+    
+    /* Para elementos SVG dentro de Chart.js */
+    .chartjs-size-monitor,
+    .chartjs-render-monitor text,
+    .chartjs-render-monitor tspan {
+        fill: #ffffff !important;
+        color: #ffffff !important;
+        stroke: none !important;
+    }
+    
+    /* Para las líneas de la cuadrícula (mantener sutiles) */
+    .chartjs-render-monitor line,
+    .chartjs-render-monitor path {
+        stroke: #4d4d4d !important;
+    }
+    
+    /* Para las leyendas */
+    .chartjs-legend ul li span {
+        color: #ffffff !important;
+    }
+    
+    /* Para tooltips */
+    .chartjs-tooltip-body-item > span {
+        color: #ffffff !important;
+    }
+    
+    .chartjs-tooltip-body-item-value {
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+    /* Ajustes para tooltips de Chart.js */
+    .chartjs-tooltip {
+        background-color: #3d3d3d !important;
+        color: #ffffff !important;
+        border: 1px solid #4d4d4d !important;
+        border-radius: 5px !important;
     }
 }

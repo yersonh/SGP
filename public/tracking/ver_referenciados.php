@@ -938,84 +938,210 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             resetRatingSystem();
         }
 
-        // Función para guardar la valoración
         async function guardarValoracion() {
-            const rating = parseInt(document.getElementById('ratingValor').value);
-            const observaciones = document.getElementById('observaciones').value.trim();
-            const idReferenciado = document.getElementById('ratingIdReferenciado').value;
-            const resultadoSelect = document.getElementById('resultadoLlamada');
-            const idResultado = parseInt(resultadoSelect.value);
-            const { nombre, telefono, boton } = llamadaActual;
+    const rating = parseInt(document.getElementById('ratingValor').value);
+    const observaciones = document.getElementById('observaciones').value.trim();
+    const idReferenciado = document.getElementById('ratingIdReferenciado').value;
+    const resultadoSelect = document.getElementById('resultadoLlamada');
+    const idResultado = parseInt(resultadoSelect.value);
+    const { nombre, telefono, boton } = llamadaActual;
+    
+    if (rating === 0) {
+        showNotification('Por favor, seleccione una calificación', 'error');
+        return;
+    }
+    
+    // Crear objeto con datos de la valoración
+    const datosValoracion = {
+        id_referenciado: idReferenciado,
+        telefono: telefono,
+        rating: rating,
+        observaciones: observaciones,
+        fecha_llamada: new Date().toISOString(),
+        id_resultado: idResultado
+    };
+    
+    try {
+        // Mostrar loading
+        const btnGuardar = document.getElementById('btnGuardarValoracion');
+        const originalText = btnGuardar.innerHTML;
+        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btnGuardar.disabled = true;
+        
+        // Enviar datos al servidor
+        const response = await fetch('../ajax/guardar_valoracion_llamada.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(datosValoracion)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Determinar tipo de mensaje según la decisión del servidor
+            let mensaje = result.message || 'Valoración guardada exitosamente';
+            let tipoNotificacion = 'success';
+            let icono = '✅';
             
-            if (rating === 0) {
-                showNotification('Por favor, seleccione una calificación', 'error');
-                return;
+            // Analizar la respuesta del servidor para personalizar la notificación
+            if (result.analisis) {
+                const { nuevo_estado, decision, estado_actualizado } = result.analisis;
+                
+                if (estado_actualizado) {
+                    if (nuevo_estado === 'activo') {
+                        icono = '🔄';
+                        tipoNotificacion = 'success';
+                        mensaje = `Referenciado REACTIVADO: ${decision}`;
+                    } else if (nuevo_estado === 'inactivo') {
+                        icono = '❌';
+                        tipoNotificacion = 'error';
+                        mensaje = `Referenciado DESACTIVADO: ${decision}`;
+                    }
+                } else if (nuevo_estado === 'mantener') {
+                    icono = 'ℹ️';
+                    tipoNotificacion = 'info';
+                    mensaje = `Estado mantenido: ${decision}`;
+                }
             }
             
-            // Crear objeto con datos de la valoración
-            const datosValoracion = {
-                id_referenciado: idReferenciado,
-                telefono: telefono,
-                rating: rating,
-                observaciones: observaciones,
-                fecha_llamada: new Date().toISOString(),
-                id_resultado: idResultado
-            };
+            // Mostrar notificación personalizada
+            showNotification(mensaje, tipoNotificacion);
             
-            try {
-                // Mostrar loading
-                const btnGuardar = document.getElementById('btnGuardarValoracion');
-                const originalText = btnGuardar.innerHTML;
-                btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-                btnGuardar.disabled = true;
-                
-                // Enviar datos al servidor
-                const response = await fetch('../ajax/guardar_valoracion_llamada.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(datosValoracion)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Valoración guardada exitosamente', 'success');
-                    
-                    // Cerrar modal
-                    const modalRating = bootstrap.Modal.getInstance(document.getElementById('modalRating'));
-                    modalRating.hide();
-                    
-                    // Reset rating system
-                    resetRatingSystem();
-                    
-                    // Cambiar el botón a verde
-                    if (boton) {
-                        boton.classList.add('llamada-realizada');
-                        boton.title = 'Llamada ya realizada';
-                        boton.innerHTML = '<i class="fas fa-phone-alt"></i><i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>';
-                        
-                        // Actualizar tooltip
-                        if (boton._tooltip) {
-                            boton._tooltip.dispose();
-                            new bootstrap.Tooltip(boton);
-                        }
-                    }
-                    
-                } else {
-                    showNotification('Error: ' + result.message, 'error');
-                    btnGuardar.innerHTML = originalText;
-                    btnGuardar.disabled = false;
+            // Cerrar modal de rating
+            const modalRating = bootstrap.Modal.getInstance(document.getElementById('modalRating'));
+            modalRating.hide();
+            
+            // Resetear sistema de rating
+            resetRatingSystem();
+            
+            // Actualizar la interfaz según el nuevo estado
+            if (result.analisis && result.analisis.estado_actualizado) {
+                actualizarEstadoEnTabla(idReferenciado, result.analisis.nuevo_estado, nombre);
+            }
+            
+            // Actualizar el botón de llamada (siempre marcar como llamada realizada)
+            if (boton) {
+                boton.classList.add('llamada-realizada');
+                boton.title = 'Llamada ya realizada';
+                boton.innerHTML = '<i class="fas fa-phone-alt"></i><i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>';
+                 // Siempre habilitado
+                boton.disabled = false;
+                boton.classList.remove('disabled');
+                // Actualizar tooltip
+                if (boton._tooltip) {
+                    boton._tooltip.dispose();
                 }
-                
-            } catch (error) {
-                showNotification('Error de conexión: ' + error.message, 'error');
-                const btnGuardar = document.getElementById('btnGuardarValoracion');
-                btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i>Guardar Valoración';
-                btnGuardar.disabled = false;
+                new bootstrap.Tooltip(boton);
+            }
+            
+            // Log para debugging
+            console.log('Respuesta del servidor:', result);
+            
+        } else {
+            showNotification('Error: ' + (result.message || 'Error desconocido'), 'error');
+            btnGuardar.innerHTML = originalText;
+            btnGuardar.disabled = false;
+        }
+        
+    } catch (error) {
+        console.error('Error en guardarValoracion:', error);
+        showNotification('Error de conexión: ' + error.message, 'error');
+        const btnGuardar = document.getElementById('btnGuardarValoracion');
+        btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i>Guardar Valoración';
+        btnGuardar.disabled = false;
+    }
+}
+
+/**
+ * Función auxiliar para actualizar el estado en la tabla
+ */
+function actualizarEstadoEnTabla(idReferenciado, nuevoEstado, nombre) {
+    // Buscar la fila por el ID (asegúrate de que las filas tengan este atributo)
+    const fila = document.querySelector(`tr[data-id-referenciado="${idReferenciado}"]`);
+    
+    if (!fila) {
+        // Si no encuentra por data-id, intentar buscar por el botón
+        const boton = document.querySelector(`button[onclick*="${idReferenciado}"]`);
+        if (boton) {
+            const filaBoton = boton.closest('tr');
+            if (filaBoton) {
+                filaBoton.setAttribute('data-id-referenciado', idReferenciado);
+                actualizarFila(filaBoton, nuevoEstado, nombre);
             }
         }
+    } else {
+        actualizarFila(fila, nuevoEstado, nombre);
+    }
+}
+
+/**
+ * Función para actualizar una fila específica
+ */
+/**
+ * Función para actualizar una fila específica
+ */
+function actualizarFila(fila, nuevoEstado, nombre) {
+    // Actualizar clase de la fila (solo para estilo visual)
+    if (nuevoEstado === 'inactivo') {
+        fila.classList.add('inactive-row');
+    } else {
+        fila.classList.remove('inactive-row');
+    }
+    
+    // Actualizar el badge de estado (columna 12)
+    const estadoCell = fila.querySelector('td:nth-child(12)');
+    if (estadoCell) {
+        if (nuevoEstado === 'inactivo') {
+            estadoCell.innerHTML = '<span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactivo</span>';
+        } else {
+            estadoCell.innerHTML = '<span class="status-badge status-active"><i class="fas fa-check-circle"></i> Activo</span>';
+        }
+    }
+    
+    // =============================================
+    // TODOS los botones de tracking SIEMPRE habilitados
+    // Incluso si está inactivo, se puede llamar para reactivar
+    // =============================================
+    
+    // Botón de llamada - SIEMPRE HABILITADO
+    const botonLlamada = fila.querySelector('.tracking-btn:not(.tracking-detalle)');
+    if (botonLlamada) {
+        botonLlamada.disabled = false;
+        botonLlamada.classList.remove('disabled');
+        
+        // El título cambia según el estado pero siempre se puede llamar
+        if (nuevoEstado === 'inactivo') {
+            botonLlamada.title = `Llamar a ${nombre} (intento de reactivación)`;
+        } else {
+            if (botonLlamada.classList.contains('llamada-realizada')) {
+                botonLlamada.title = 'Llamada ya realizada - Click para llamar de nuevo';
+            } else {
+                botonLlamada.title = `Llamar a ${nombre}`;
+            }
+        }
+        
+        // Actualizar tooltip
+        if (botonLlamada._tooltip) {
+            botonLlamada._tooltip.dispose();
+        }
+        new bootstrap.Tooltip(botonLlamada);
+    }
+    
+    // Botón de detalles - SIEMPRE HABILITADO
+    const botonDetalle = fila.querySelector('.tracking-btn.tracking-detalle');
+    if (botonDetalle) {
+        botonDetalle.disabled = false;
+        botonDetalle.classList.remove('disabled');
+        botonDetalle.title = 'Ver detalles de la llamada';
+        
+        if (botonDetalle._tooltip) {
+            botonDetalle._tooltip.dispose();
+        }
+        new bootstrap.Tooltip(botonDetalle);
+    }
+}
 // Función para mostrar detalles de llamadas
 async function mostrarDetalleLlamada(idReferenciado, nombre) {
     try {

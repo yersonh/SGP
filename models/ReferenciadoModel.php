@@ -1953,5 +1953,36 @@ private function buildConsultaBase() {
             -- Líder (LEFT JOIN con tabla lideres)
             LEFT JOIN public.lideres l ON r.id_lider = l.id_lider";
 }
+/**
+ * Actualizar el estado activo/inactivo de un referenciado
+ */
+public function actualizarEstadoReferenciado($id_referenciado, $activo, $motivo = null, $id_usuario = null) {
+    try {
+        // LOG: Ver qué está llegando
+        error_log("=== DEBUG ACTUALIZAR ESTADO ===");
+        error_log("ID Referenciado: " . $id_referenciado);
+        error_log("Valor activo recibido: " . var_export($activo, true));
+        error_log("Tipo de dato: " . gettype($activo));
+        
+        // Asegurar que sea boolean verdadero
+        $activoBool = $activo === true || $activo === 1 || $activo === '1' || $activo === 't' ? true : false;
+        error_log("Valor convertido: " . var_export($activoBool, true));
+        
+        $sql = "UPDATE referenciados SET activo = :activo WHERE id_referenciado = :id_referenciado";
+        $stmt = $this->pdo->prepare($sql);
+        
+        $stmt->bindValue(':activo', $activoBool, PDO::PARAM_BOOL);
+        $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
+        
+        $resultado = $stmt->execute();
+        error_log("Resultado UPDATE: " . ($resultado ? 'ÉXITO' : 'FALLÓ'));
+        
+        return $resultado;
+        
+    } catch (PDOException $e) {
+        error_log("Error al actualizar estado del referenciado: " . $e->getMessage());
+        return false;
+    }
+}
 }
 ?>

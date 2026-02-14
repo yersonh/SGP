@@ -5,42 +5,44 @@ class LlamadaModel {
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
-    
+    public function getConnection() {
+    return $this->pdo;
+}
     /**
      * Guardar una nueva valoración de llamada
      */
-    public function guardarValoracionLlamada($datos) {
-        $sql = "INSERT INTO llamadas_tracking (
-                    id_referenciado, 
-                    id_usuario, 
-                    id_resultado,
-                    telefono, 
-                    rating, 
-                    observaciones,
-                    fecha_llamada
-                ) VALUES (
-                    :id_referenciado, 
-                    :id_usuario, 
-                    :id_resultado,
-                    :telefono, 
-                    :rating, 
-                    :observaciones,
-                    :fecha_llamada
-                ) RETURNING id_llamada";
-        
-        $stmt = $this->pdo->prepare($sql);
-        
-        $stmt->bindValue(':id_referenciado', $datos['id_referenciado'], PDO::PARAM_INT);
-        $stmt->bindValue(':id_usuario', $datos['id_usuario'], PDO::PARAM_INT);
-        $stmt->bindValue(':id_resultado', $datos['id_resultado'] ?? 1, PDO::PARAM_INT); // Default: Contactado (id=1)
-        $stmt->bindValue(':telefono', $datos['telefono']);
-        $stmt->bindValue(':rating', $datos['rating'] ?? null, PDO::PARAM_INT);
-        $stmt->bindValue(':observaciones', $datos['observaciones'] ?? null);
-        $stmt->bindValue(':fecha_llamada', $datos['fecha_llamada'] ?? date('Y-m-d H:i:s'));
-        
-        $stmt->execute();
-        return $stmt->fetchColumn();
-    }
+public function guardarValoracionLlamada($datos) {
+    $sql = "INSERT INTO llamadas_tracking (
+                id_referenciado, 
+                id_usuario, 
+                id_resultado,
+                telefono, 
+                rating, 
+                observaciones,
+                fecha_llamada
+            ) VALUES (
+                :id_referenciado, 
+                :id_usuario, 
+                :id_resultado,
+                :telefono, 
+                :rating, 
+                :observaciones,
+                :fecha_llamada
+            ) RETURNING id_llamada";
+    
+    $stmt = $this->pdo->prepare($sql);
+    
+    $stmt->bindValue(':id_referenciado', intval($datos['id_referenciado']), PDO::PARAM_INT);
+    $stmt->bindValue(':id_usuario', intval($datos['id_usuario']), PDO::PARAM_INT);
+    $stmt->bindValue(':id_resultado', isset($datos['id_resultado']) ? intval($datos['id_resultado']) : 1, PDO::PARAM_INT);
+    $stmt->bindValue(':telefono', $datos['telefono'] ?? '');
+    $stmt->bindValue(':rating', isset($datos['rating']) ? intval($datos['rating']) : null, $datos['rating'] !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
+    $stmt->bindValue(':observaciones', $datos['observaciones'] ?? null);
+    $stmt->bindValue(':fecha_llamada', $datos['fecha_llamada'] ?? date('Y-m-d H:i:s'));
+    
+    $stmt->execute();
+    return $stmt->fetchColumn();
+}
     
     /**
      * Obtener tipos de resultado disponibles
@@ -63,22 +65,6 @@ class LlamadaModel {
         $stmt->execute([$idReferenciado]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['total'] > 0;
-    }
-    
-    /**
-     * Obtener la última llamada de un referenciado
-     */
-    public function obtenerUltimaLlamada($idReferenciado) {
-        $stmt = $this->pdo->prepare("
-            SELECT lt.*, tr.nombre as resultado_nombre
-            FROM llamadas_tracking lt
-            LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
-            WHERE lt.id_referenciado = ? 
-            ORDER BY lt.fecha_llamada DESC 
-            LIMIT 1
-        ");
-        $stmt->execute([$idReferenciado]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     
     /**
@@ -905,7 +891,7 @@ public function getAnalisisCalidad($filtros = []) {
 /**
  * Construir cláusula WHERE basada en filtros
  */
-private function construirWhereFiltros($filtros) {
+public function construirWhereFiltros($filtros) {
     $where = "WHERE 1=1";
     $params = [];
     
@@ -1310,6 +1296,43 @@ private function convertirArrayADiccionario($array, $clave) {
         }
     }
     return $resultado;
+}
+/**
+ * Obtener SOLO la última llamada de un referenciado
+ * Para la lógica de decisión (activar/desactivar)
+ * 
+ * @param int $idReferenciado ID del referenciado
+ * @return array|false Datos de la última llamada o false si no tiene
+ */
+public function obtenerUltimaLlamada($idReferenciado) {
+    try {
+        $sql = "SELECT 
+                    lt.id_llamada,
+                    lt.id_referenciado,
+                    lt.id_usuario,
+                    lt.id_resultado,
+                    tr.nombre as resultado_nombre,
+                    lt.fecha_llamada,
+                    lt.telefono,
+                    lt.rating,
+                    lt.observaciones,
+                    u.nickname as usuario_nombre
+                FROM llamadas_tracking lt
+                LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
+                LEFT JOIN usuario u ON lt.id_usuario = u.id_usuario
+                WHERE lt.id_referenciado = :id_referenciado 
+                ORDER BY lt.fecha_llamada DESC
+                LIMIT 1";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id_referenciado' => $idReferenciado]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error al obtener última llamada: " . $e->getMessage());
+        return false;
+    }
 }
 }
 ?>

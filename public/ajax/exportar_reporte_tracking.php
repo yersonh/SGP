@@ -37,16 +37,16 @@ if ($filtros['rango'] === 'personalizado') {
 // Obtener datos del reporte
 try {
     // 1. Datos para el resumen
-    $datosResumen = obtenerDatosResumen($pdo, $filtros);
+    $datosResumen = obtenerDatosResumen($llamadaModel, $filtros);
     
     // 2. Detalle de llamadas
-    $detalleLlamadas = obtenerDetalleLlamadas($pdo, $filtros);
+    $detalleLlamadas = obtenerDetalleLlamadas($llamadaModel, $filtros);
     
     // 3. Top llamadores
     $topLlamadores = $llamadaModel->getTopLlamadoresConFiltros(10, $filtros);
     
     // 4. Distribución por hora
-    $llamadasPorHora = obtenerLlamadasPorHora($pdo, $filtros);
+    $llamadasPorHora = obtenerLlamadasPorHora($llamadaModel, $filtros);
     
     // Configurar headers para archivo Excel
     header('Content-Type: application/vnd.ms-excel');
@@ -65,26 +65,26 @@ try {
 // ==================================================
 
 /**
- * Obtener datos para el resumen
+ * Obtener datos para el resumen - VERSIÓN CORREGIDA PARA POSTGRESQL
  */
-function obtenerDatosResumen($pdo, $filtros) {
-    // Usar la función del modelo o crear una similar
-    $llamadaModel = new LlamadaModel($pdo);
+function obtenerDatosResumen($llamadaModel, $filtros) {
     $whereInfo = $llamadaModel->construirWhereFiltros($filtros);
     $where = $whereInfo['where'];
     $params = $whereInfo['params'];
     
+    $pdo = $llamadaModel->getConnection();
+    
     $sql = "SELECT 
                 COUNT(*) as total_llamadas,
                 COUNT(CASE WHEN lt.id_resultado = 1 THEN 1 END) as contactos_efectivos,
-                ROUND(
-                    COUNT(CASE WHEN lt.id_resultado = 1 THEN 1 END)::float / 
-                    NULLIF(COUNT(*), 0) * 100, 
-                    2
-                ) as porcentaje_contactos,
-                ROUND(COALESCE(AVG(lt.rating), 0)::numeric, 2) as rating_promedio,
+                CASE 
+                    WHEN COUNT(*) > 0 THEN 
+                        ROUND((COUNT(CASE WHEN lt.id_resultado = 1 THEN 1 END)::numeric / COUNT(*)::numeric) * 100, 2)
+                    ELSE 0 
+                END as porcentaje_contactos,
+                COALESCE(ROUND(AVG(lt.rating)::numeric, 2), 0) as rating_promedio,
                 COUNT(DISTINCT lt.id_usuario) as llamadores_activos,
-                TO_CHAR(MAX(lt.fecha_llamada), 'HH24:00') as hora_pico,
+                TO_CHAR(MODE() WITHIN GROUP (ORDER BY EXTRACT(HOUR FROM lt.fecha_llamada)), 'FM00') || ':00' as hora_pico,
                 COUNT(CASE WHEN lt.rating = 5 THEN 1 END) as rating_5,
                 COUNT(CASE WHEN lt.rating = 4 THEN 1 END) as rating_4,
                 COUNT(CASE WHEN lt.rating = 3 THEN 1 END) as rating_3,
@@ -100,19 +100,20 @@ function obtenerDatosResumen($pdo, $filtros) {
 }
 
 /**
- * Obtener detalle de llamadas
+ * Obtener detalle de llamadas - VERSIÓN CORREGIDA
  */
-function obtenerDetalleLlamadas($pdo, $filtros) {
-    $llamadaModel = new LlamadaModel($pdo);
+function obtenerDetalleLlamadas($llamadaModel, $filtros) {
     $whereInfo = $llamadaModel->construirWhereFiltros($filtros);
     $where = $whereInfo['where'];
     $params = $whereInfo['params'];
+    
+    $pdo = $llamadaModel->getConnection();
     
     $sql = "SELECT 
                 TO_CHAR(lt.fecha_llamada, 'DD/MM/YYYY HH24:MI') as fecha_hora,
                 CONCAT(u.nombres, ' ', u.apellidos) as llamador,
                 u.cedula as cedula_llamador,
-                CONCAT(r.nombres, ' ', r.apellidos) as referenciado,
+                CONCAT(r.nombre, ' ', r.apellido) as referenciado,
                 r.cedula as cedula_referenciado,
                 lt.telefono,
                 trl.nombre as resultado,
@@ -128,7 +129,7 @@ function obtenerDetalleLlamadas($pdo, $filtros) {
                 lt.observaciones
             FROM llamadas_tracking lt
             INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
-            INNER JOIN referenciado r ON lt.id_referenciado = r.id_referenciado
+            INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
             LEFT JOIN tipos_resultado_llamada trl ON lt.id_resultado = trl.id_resultado
             {$where}
             ORDER BY lt.fecha_llamada DESC";
@@ -139,18 +140,19 @@ function obtenerDetalleLlamadas($pdo, $filtros) {
 }
 
 /**
- * Obtener llamadas por hora
+ * Obtener llamadas por hora - VERSIÓN CORREGIDA
  */
-function obtenerLlamadasPorHora($pdo, $filtros) {
-    $llamadaModel = new LlamadaModel($pdo);
+function obtenerLlamadasPorHora($llamadaModel, $filtros) {
     $whereInfo = $llamadaModel->construirWhereFiltros($filtros);
     $where = $whereInfo['where'];
     $params = $whereInfo['params'];
     
+    $pdo = $llamadaModel->getConnection();
+    
     $sql = "SELECT 
                 EXTRACT(HOUR FROM lt.fecha_llamada) as hora,
                 COUNT(*) as cantidad,
-                ROUND(COALESCE(AVG(lt.rating), 0)::numeric, 2) as rating_promedio
+                COALESCE(ROUND(AVG(lt.rating)::numeric, 2), 0) as rating_promedio
             FROM llamadas_tracking lt
             {$where}
             GROUP BY EXTRACT(HOUR FROM lt.fecha_llamada)
@@ -200,7 +202,7 @@ function obtenerNombreResultado($pdo, $idResultado) {
 }
 
 /**
- * Generar archivo Excel en HTML
+ * Generar archivo Excel en HTML - UNA SOLA HOJA CON TODO Y TÍTULOS
  */
 function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $filtros) {
     // Iniciar HTML
@@ -212,33 +214,11 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
     echo '<x:ExcelWorkbook>';
     echo '<x:ExcelWorksheets>';
     
-    // Hoja 1: Resumen
+    // ============================================
+    // UNA SOLA HOJA: Reporte Tracking (con todo)
+    // ============================================
     echo '<x:ExcelWorksheet>';
-    echo '<x:Name>Resumen</x:Name>';
-    echo '<x:WorksheetOptions>';
-    echo '<x:DisplayGridlines/>';
-    echo '</x:WorksheetOptions>';
-    echo '</x:ExcelWorksheet>';
-    
-    // Hoja 2: Detalle
-    echo '<x:ExcelWorksheet>';
-    echo '<x:Name>Detalle Llamadas</x:Name>';
-    echo '<x:WorksheetOptions>';
-    echo '<x:DisplayGridlines/>';
-    echo '</x:WorksheetOptions>';
-    echo '</x:ExcelWorksheet>';
-    
-    // Hoja 3: Top Llamadores
-    echo '<x:ExcelWorksheet>';
-    echo '<x:Name>Top Llamadores</x:Name>';
-    echo '<x:WorksheetOptions>';
-    echo '<x:DisplayGridlines/>';
-    echo '</x:WorksheetOptions>';
-    echo '</x:ExcelWorksheet>';
-    
-    // Hoja 4: Distribución por Hora
-    echo '<x:ExcelWorksheet>';
-    echo '<x:Name>Distribución Horaria</x:Name>';
+    echo '<x:Name>Reporte Tracking</x:Name>';
     echo '<x:WorksheetOptions>';
     echo '<x:DisplayGridlines/>';
     echo '</x:WorksheetOptions>';
@@ -249,7 +229,7 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
     echo '</xml>';
     echo '<![endif]-->';
     echo '<style>';
-    echo 'td { mso-number-format:\@; }'; // Forzar formato de texto
+    echo 'td { mso-number-format:\@; }';
     echo '.titulo { font-size: 18px; font-weight: bold; color: #2c3e50; }';
     echo '.subtitulo { font-size: 14px; color: #7f8c8d; }';
     echo '.resaltado { background-color: #ecf0f1; font-weight: bold; }';
@@ -257,29 +237,35 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
     echo '.amarillo { background-color: #fefbd8; }';
     echo '.rojo { background-color: #fadbd8; }';
     echo '.centrado { text-align: center; }';
+    echo '.seccion-titulo { background-color: #3498db; color: white; font-weight: bold; font-size: 16px; padding: 10px; margin-top: 30px; margin-bottom: 10px; }';
     echo '</style>';
     echo '</head>';
     echo '<body>';
     
     // ==================================================
-    // HOJA 1: RESUMEN
+    // ENCABEZADO DEL REPORTE
     // ==================================================
     echo '<h1 class="titulo">REPORTE DE TRACKING DE LLAMADAS</h1>';
     echo '<p class="subtitulo">Fecha de generación: ' . date('d/m/Y H:i:s') . '</p>';
     echo '<p class="subtitulo">Rango: ' . getDescripcionRango($filtros) . '</p>';
     echo '<br>';
     
-    // Tabla de resumen
+    // ==================================================
+    // SECCIÓN 1: RESUMEN GENERAL
+    // ==================================================
+    echo '<div class="seccion-titulo">📊 RESUMEN GENERAL</div>';
+    echo '<br>';
+    
     echo '<table border="1" cellpadding="5" cellspacing="0">';
     echo '<tr style="background-color: #3498db; color: white; font-weight: bold;">';
-    echo '<th colspan="2">RESUMEN GENERAL</th>';
+    echo '<th colspan="2">MÉTRICAS PRINCIPALES</th>';
     echo '</tr>';
     
     $metricas = [
         'Total de Llamadas' => $resumen['total_llamadas'] ?? 0,
         'Contactos Efectivos' => $resumen['contactos_efectivos'] ?? 0,
         'Tasa de Contactos' => ($resumen['porcentaje_contactos'] ?? 0) . '%',
-        'Rating Promedio' => $resumen['rating_promedio'] ?? 0,
+        'Rating Promedio' => number_format($resumen['rating_promedio'] ?? 0, 2),
         'Llamadores Activos' => $resumen['llamadores_activos'] ?? 0,
         'Hora Pico' => $resumen['hora_pico'] ?? 'N/A'
     ];
@@ -294,12 +280,14 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
     
     echo '<br><br>';
     
-    // Distribución de ratings
+    // ==================================================
+    // SECCIÓN 2: DISTRIBUCIÓN DE RATINGS
+    // ==================================================
+    echo '<div class="seccion-titulo">⭐ DISTRIBUCIÓN DE RATINGS</div>';
+    echo '<br>';
+    
     echo '<table border="1" cellpadding="5" cellspacing="0">';
     echo '<tr style="background-color: #2ecc71; color: white; font-weight: bold;">';
-    echo '<th colspan="3">DISTRIBUCIÓN DE RATINGS</th>';
-    echo '</tr>';
-    echo '<tr style="background-color: #ecf0f1;">';
     echo '<th>Rating</th>';
     echo '<th>Estrellas</th>';
     echo '<th>Cantidad</th>';
@@ -317,20 +305,127 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
     foreach ($ratings as $rating) {
         echo '<tr>';
         echo '<td class="centrado">' . $rating['estrellas'] . '</td>';
-        echo '<td>' . $rating['estrellas'] . '</td>';
+        echo '<td class="centrado">' . $rating['estrellas'] . '</td>';
         echo '<td class="centrado">' . $rating['cantidad'] . '</td>';
         echo '</tr>';
     }
     
     echo '</table>';
     
-    echo '<br><br><br><br>'; // Espacio para separar hojas
+    echo '<br><br>';
     
     // ==================================================
-    // HOJA 2: DETALLE DE LLAMADAS
+    // SECCIÓN 3: TOP 10 LLAMADORES
     // ==================================================
-    echo '<h1 class="titulo">DETALLE DE LLAMADAS</h1>';
-    echo '<p class="subtitulo">Total de registros: ' . count($detalle) . '</p>';
+    echo '<div class="seccion-titulo">🏆 TOP 10 LLAMADORES</div>';
+    echo '<br>';
+    
+    if (count($topLlamadores) > 0) {
+        echo '<table border="1" cellpadding="5" cellspacing="0">';
+        echo '<tr style="background-color: #9b59b6; color: white; font-weight: bold;">';
+        echo '<th>Posición</th>';
+        echo '<th>Llamador</th>';
+        echo '<th>Cédula</th>';
+        echo '<th>Total Llamadas</th>';
+        echo '<th>Rating Promedio</th>';
+        echo '<th>Contactos Efectivos</th>';
+        echo '<th>Eficiencia</th>';
+        echo '</tr>';
+        
+        foreach ($topLlamadores as $index => $llamador) {
+            $bgcolor = '';
+            if ($index == 0) $bgcolor = 'background-color: #ffd700;';
+            elseif ($index == 1) $bgcolor = 'background-color: #c0c0c0;';
+            elseif ($index == 2) $bgcolor = 'background-color: #cd7f32;';
+            elseif ($index % 2 == 0) $bgcolor = 'background-color: #f8f9fa;';
+            
+            $eficiencia = $llamador['eficiencia'] ?? 0;
+            $colorEficiencia = '';
+            if ($eficiencia >= 80) {
+                $colorEficiencia = 'class="verde"';
+            } elseif ($eficiencia >= 60) {
+                $colorEficiencia = 'class="amarillo"';
+            } else {
+                $colorEficiencia = 'class="rojo"';
+            }
+            
+            echo '<tr style="' . $bgcolor . '">';
+            echo '<td class="centrado">' . ($index + 1) . '</td>';
+            echo '<td>' . htmlspecialchars($llamador['nombre_completo'] ?? '') . '</td>';
+            echo '<td>' . htmlspecialchars($llamador['cedula'] ?? '') . '</td>';
+            echo '<td class="centrado">' . ($llamador['total_llamadas'] ?? 0) . '</td>';
+            echo '<td class="centrado">' . number_format($llamador['rating_promedio'] ?? 0, 2) . '</td>';
+            echo '<td class="centrado">' . ($llamador['contactos_efectivos'] ?? 0) . '</td>';
+            echo '<td class="centrado" ' . $colorEficiencia . '>' . $eficiencia . '%</td>';
+            echo '</tr>';
+        }
+        
+        echo '</table>';
+    } else {
+        echo '<p style="color: #e74c3c; font-weight: bold;">No hay datos de llamadores para los filtros seleccionados.</p>';
+    }
+    
+    echo '<br><br>';
+    
+    // ==================================================
+    // SECCIÓN 4: DISTRIBUCIÓN POR HORA
+    // ==================================================
+    echo '<div class="seccion-titulo">⏰ DISTRIBUCIÓN DE LLAMADAS POR HORA</div>';
+    echo '<br>';
+    
+    if (count($llamadasPorHora) > 0) {
+        echo '<table border="1" cellpadding="5" cellspacing="0">';
+        echo '<tr style="background-color: #e67e22; color: white; font-weight: bold;">';
+        echo '<th>Hora</th>';
+        echo '<th>Cantidad de Llamadas</th>';
+        echo '<th>Rating Promedio</th>';
+        echo '<th>Gráfico</th>';
+        echo '</tr>';
+        
+        $maxCantidad = 0;
+        foreach ($llamadasPorHora as $hora) {
+            if ($hora['cantidad'] > $maxCantidad) {
+                $maxCantidad = $hora['cantidad'];
+            }
+        }
+        
+        foreach ($llamadasPorHora as $hora) {
+            $porcentaje = $maxCantidad > 0 ? ($hora['cantidad'] / $maxCantidad * 100) : 0;
+            $barraAncho = min(100, $porcentaje * 2);
+            
+            $barraColor = '';
+            if ($hora['cantidad'] >= 10) {
+                $barraColor = 'background-color: #2ecc71;';
+            } elseif ($hora['cantidad'] >= 5) {
+                $barraColor = 'background-color: #f39c12;';
+            } else {
+                $barraColor = 'background-color: #e74c3c;';
+            }
+            
+            echo '<tr>';
+            echo '<td class="centrado">' . sprintf('%02d:00', $hora['hora']) . '</td>';
+            echo '<td class="centrado">' . $hora['cantidad'] . '</td>';
+            echo '<td class="centrado">' . number_format($hora['rating_promedio'] ?? 0, 2) . '</td>';
+            echo '<td>';
+            echo '<div style="width: 200px; height: 20px; background-color: #ecf0f1; border-radius: 3px; overflow: hidden;">';
+            echo '<div style="width: ' . $barraAncho . 'px; height: 100%; ' . $barraColor . '"></div>';
+            echo '</div>';
+            echo '</td>';
+            echo '</tr>';
+        }
+        
+        echo '</table>';
+    } else {
+        echo '<p style="color: #e74c3c; font-weight: bold;">No hay datos de distribución horaria.</p>';
+    }
+    
+    echo '<br><br>';
+    
+    // ==================================================
+    // SECCIÓN 5: DETALLE DE LLAMADAS
+    // ==================================================
+    echo '<div class="seccion-titulo">📋 DETALLE DE LLAMADAS</div>';
+    echo '<p>Total de registros: ' . count($detalle) . '</p>';
     echo '<br>';
     
     if (count($detalle) > 0) {
@@ -358,7 +453,6 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
             echo '<td>' . htmlspecialchars($llamada['cedula_referenciado']) . '</td>';
             echo '<td>' . htmlspecialchars($llamada['telefono']) . '</td>';
             
-            // Color según resultado
             $colorResultado = '';
             $resultado = $llamada['resultado'] ?? '';
             if (stripos($resultado, 'contactado') !== false) {
@@ -381,130 +475,27 @@ function generarExcel($resumen, $detalle, $topLlamadores, $llamadasPorHora, $fil
         echo '<p style="color: #e74c3c; font-weight: bold;">No hay registros de llamadas para los filtros seleccionados.</p>';
     }
     
-    echo '<br><br><br><br>'; // Espacio para separar hojas
-    
-    // ==================================================
-    // HOJA 3: TOP LLAMADORES
-    // ==================================================
-    echo '<h1 class="titulo">TOP 10 LLAMADORES</h1>';
-    echo '<br>';
-    
-    if (count($topLlamadores) > 0) {
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<tr style="background-color: #9b59b6; color: white; font-weight: bold;">';
-        echo '<th>Posición</th>';
-        echo '<th>Llamador</th>';
-        echo '<th>Cédula</th>';
-        echo '<th>Total Llamadas</th>';
-        echo '<th>Rating Promedio</th>';
-        echo '<th>Contactos Efectivos</th>';
-        echo '<th>Eficiencia</th>';
-        echo '</tr>';
-        
-        foreach ($topLlamadores as $index => $llamador) {
-            // Determinar color de fondo según posición
-            $bgcolor = '';
-            if ($index == 0) $bgcolor = 'background-color: #ffd700;'; // Oro
-            elseif ($index == 1) $bgcolor = 'background-color: #c0c0c0;'; // Plata
-            elseif ($index == 2) $bgcolor = 'background-color: #cd7f32;'; // Bronce
-            elseif ($index % 2 == 0) $bgcolor = 'background-color: #f8f9fa;';
-            
-            // Color de eficiencia
-            $eficiencia = $llamador['eficiencia'] ?? 0;
-            $colorEficiencia = '';
-            if ($eficiencia >= 80) {
-                $colorEficiencia = 'class="verde"';
-            } elseif ($eficiencia >= 60) {
-                $colorEficiencia = 'class="amarillo"';
-            } else {
-                $colorEficiencia = 'class="rojo"';
-            }
-            
-            echo '<tr style="' . $bgcolor . '">';
-            echo '<td class="centrado">' . ($index + 1) . '</td>';
-            echo '<td>' . htmlspecialchars($llamador['nombre_completo'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($llamador['cedula'] ?? '') . '</td>';
-            echo '<td class="centrado">' . ($llamador['total_llamadas'] ?? 0) . '</td>';
-            echo '<td class="centrado">' . ($llamador['rating_promedio'] ?? 0) . '</td>';
-            echo '<td class="centrado">' . ($llamador['contactos_efectivos'] ?? 0) . '</td>';
-            echo '<td class="centrado" ' . $colorEficiencia . '>' . $eficiencia . '%</td>';
-            echo '</tr>';
-        }
-        
-        echo '</table>';
-    } else {
-        echo '<p style="color: #e74c3c; font-weight: bold;">No hay datos de llamadores para los filtros seleccionados.</p>';
-    }
-    
-    echo '<br><br><br><br>'; // Espacio para separar hojas
-    
-    // ==================================================
-    // HOJA 4: DISTRIBUCIÓN POR HORA
-    // ==================================================
-    echo '<h1 class="titulo">DISTRIBUCIÓN DE LLAMADAS POR HORA</h1>';
-    echo '<br>';
-    
-    if (count($llamadasPorHora) > 0) {
-        echo '<table border="1" cellpadding="5" cellspacing="0">';
-        echo '<tr style="background-color: #e67e22; color: white; font-weight: bold;">';
-        echo '<th>Hora</th>';
-        echo '<th>Cantidad de Llamadas</th>';
-        echo '<th>Rating Promedio</th>';
-        echo '<th>Gráfico</th>';
-        echo '</tr>';
-        
-        // Encontrar máximo para la barra
-        $maxCantidad = 0;
-        foreach ($llamadasPorHora as $hora) {
-            if ($hora['cantidad'] > $maxCantidad) {
-                $maxCantidad = $hora['cantidad'];
-            }
-        }
-        
-        foreach ($llamadasPorHora as $hora) {
-            $porcentaje = $maxCantidad > 0 ? ($hora['cantidad'] / $maxCantidad * 100) : 0;
-            $barraAncho = min(100, $porcentaje * 2); // Escalar para visualización
-            
-            // Color según cantidad
-            $barraColor = '';
-            if ($hora['cantidad'] >= 10) {
-                $barraColor = 'background-color: #2ecc71;'; // Verde
-            } elseif ($hora['cantidad'] >= 5) {
-                $barraColor = 'background-color: #f39c12;'; // Naranja
-            } else {
-                $barraColor = 'background-color: #e74c3c;'; // Rojo
-            }
-            
-            echo '<tr>';
-            echo '<td class="centrado">' . sprintf('%02d:00', $hora['hora']) . '</td>';
-            echo '<td class="centrado">' . $hora['cantidad'] . '</td>';
-            echo '<td class="centrado">' . ($hora['rating_promedio'] ?? 0) . '</td>';
-            echo '<td>';
-            echo '<div style="width: 200px; height: 20px; background-color: #ecf0f1; border-radius: 3px; overflow: hidden;">';
-            echo '<div style="width: ' . $barraAncho . 'px; height: 100%; ' . $barraColor . '"></div>';
-            echo '</div>';
-            echo '</td>';
-            echo '</tr>';
-        }
-        
-        echo '</table>';
-    } else {
-        echo '<p style="color: #e74c3c; font-weight: bold;">No hay datos de distribución horaria.</p>';
-    }
-    
     echo '<br><br>';
     
-    // Información del sistema
+    // ==================================================
+    // SECCIÓN 6: INFORMACIÓN DEL REPORTE
+    // ==================================================
+    echo '<div class="seccion-titulo">ℹ️ INFORMACIÓN DEL REPORTE</div>';
+    echo '<br>';
+    
     echo '<table border="1" cellpadding="5" cellspacing="0" style="background-color: #f8f9fa;">';
-    echo '<tr><th colspan="2" style="background-color: #34495e; color: white;">INFORMACIÓN DEL REPORTE</th></tr>';
+    echo '<tr><th colspan="2" style="background-color: #34495e; color: white;">DETALLES DE LA EXPORTACIÓN</th></tr>';
     echo '<tr><td><strong>Exportado por:</strong></td><td>' . htmlspecialchars($_SESSION['nombres'] ?? '') . ' ' . htmlspecialchars($_SESSION['apellidos'] ?? '') . '</td></tr>';
     echo '<tr><td><strong>Fecha de exportación:</strong></td><td>' . date('d/m/Y H:i:s') . '</td></tr>';
     echo '<tr><td><strong>Tipo de reporte:</strong></td><td>Tracking de Llamadas</td></tr>';
     echo '<tr><td><strong>Filtros aplicados:</strong></td><td>' . getDescripcionRango($filtros) . '</td></tr>';
     
     if (!empty($filtros['tipo_resultado']) && $filtros['tipo_resultado'] !== 'todos') {
-        $resultadoNombre = obtenerNombreResultado($GLOBALS['pdo'], $filtros['tipo_resultado']);
-        echo '<tr><td><strong>Resultado filtrado:</strong></td><td>' . htmlspecialchars($resultadoNombre) . '</td></tr>';
+        $pdo = $GLOBALS['pdo'] ?? null;
+        if ($pdo) {
+            $resultadoNombre = obtenerNombreResultado($pdo, $filtros['tipo_resultado']);
+            echo '<tr><td><strong>Resultado filtrado:</strong></td><td>' . htmlspecialchars($resultadoNombre) . '</td></tr>';
+        }
     }
     
     if (!empty($filtros['rating']) && $filtros['rating'] !== 'todos') {

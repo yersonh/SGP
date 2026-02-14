@@ -905,69 +905,78 @@ if ($porcentajeRestante > 50) {
         
         // Función para crear gráfica por hora
         function crearGraficaPorHora(datos) {
-            const ctx = document.getElementById('graficaPorHora').getContext('2d');
-            
-            // Destruir gráfica anterior si existe
-            if (chartPorHora) {
-                chartPorHora.destroy();
-            }
-            
-            // Preparar datos
-            const horas = datos.map(item => item.hora + ':00');
-            const cantidades = datos.map(item => item.cantidad);
-            
-            // Crear nueva gráfica
-            chartPorHora = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: horas,
-                    datasets: [{
-                        label: 'Llamadas',
-                        data: cantidades,
-                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        borderWidth: 1
-                    }]
+    const ctx = document.getElementById('graficaPorHora').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (chartPorHora) {
+        chartPorHora.destroy();
+    }
+    
+    const horas = datos.map(item => item.hora + ':00');
+    const cantidades = datos.map(item => item.cantidad);
+    
+    chartPorHora = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: horas,
+            datasets: [{
+                label: 'Llamadas',
+                data: cantidades,
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                borderColor: 'rgba(52, 152, 219, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                    labels: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Llamadas',
+                        color: isDarkMode ? '#ffffff' : '#333'
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Cantidad de Llamadas'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Hora del Día'
-                            }
-                        }
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Hora del Día',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 }
-            });
-            
-            // Configurar eventos de botones de tipo de gráfica
-            $('.btn-grafica-action').off('click').click(function() {
-                const tipo = $(this).data('chart-type');
-                
-                // Cambiar tipo de gráfica
-                chartPorHora.config.type = tipo;
-                chartPorHora.update();
-                
-                // Actualizar botones activos
-                $('.btn-grafica-action').removeClass('active');
-                $(this).addClass('active');
-            });
+            }
         }
+    });
+}
         function actualizarLogoSegunTema() {
             const logo = document.getElementById('footer-logo');
             if (!logo) return;
@@ -989,40 +998,49 @@ if ($porcentajeRestante > 50) {
         });
         // Función para crear gráfica de distribución por resultado
         function crearGraficaDistribucionResultado(datos) {
-            const ctx = document.getElementById('graficaDistribucionResultado').getContext('2d');
-            
-            if (chartDistribucionResultado) {
-                chartDistribucionResultado.destroy();
-            }
-            
-            const labels = datos.map(item => item.resultado);
-            const valores = datos.map(item => item.cantidad);
-            const colores = datos.map(item => obtenerColorResultado(item.id_resultado));
-            
-            chartDistribucionResultado = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: colores,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20
-                            }
-                        }
+    const ctx = document.getElementById('graficaDistribucionResultado').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (chartDistribucionResultado) {
+        chartDistribucionResultado.destroy();
+    }
+    
+    const labels = datos.map(item => item.resultado);
+    const valores = datos.map(item => item.cantidad);
+    const colores = datos.map(item => obtenerColorResultado(item.id_resultado));
+    
+    chartDistribucionResultado = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: colores,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        color: isDarkMode ? '#ffffff' : '#333'
                     }
+                },
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0
                 }
-            });
+            }
         }
+    });
+}
         
         // Función para obtener color según tipo de resultado
         function obtenerColorResultado(idResultado) {
@@ -1097,40 +1115,35 @@ if ($porcentajeRestante > 50) {
         // Función para crear gráfica de calidad
 function crearGraficaCalidad(data) {
     const ctx = document.getElementById('graficaCalidad').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Destruir gráfica anterior si existe
     if (window.chartCalidad) {
         window.chartCalidad.destroy();
     }
     
-    // Preparar datos de la distribución de rating
-    // data.distribucion_rating viene del AJAX
     const distribucion = data.distribucion_rating || {};
-    
-    // Crear arrays para la gráfica
     const labels = ['★☆☆☆☆ (1)', '★★☆☆☆ (2)', '★★★☆☆ (3)', '★★★★☆ (4)', '★★★★★ (5)'];
     const valores = [
-        distribucion['1']?.cantidad || 0,  // Rating 1
-        distribucion['2']?.cantidad || 0,  // Rating 2
-        distribucion['3']?.cantidad || 0,  // Rating 3
-        distribucion['4']?.cantidad || 0,  // Rating 4
-        distribucion['5']?.cantidad || 0   // Rating 5
+        distribucion['1']?.cantidad || 0,
+        distribucion['2']?.cantidad || 0,
+        distribucion['3']?.cantidad || 0,
+        distribucion['4']?.cantidad || 0,
+        distribucion['5']?.cantidad || 0
     ];
     
-    // Crear la gráfica con Chart.js
     window.chartCalidad = new Chart(ctx, {
-        type: 'bar',  // Tipo: gráfica de barras
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Cantidad de Llamadas',
                 data: valores,
                 backgroundColor: [
-                    'rgba(220, 53, 69, 0.7)',    // Rojo para 1 estrella
-                    'rgba(253, 126, 20, 0.7)',   // Naranja para 2 estrellas
-                    'rgba(255, 193, 7, 0.7)',    // Amarillo para 3 estrellas
-                    'rgba(23, 162, 184, 0.7)',   // Azul claro para 4 estrellas
-                    'rgba(40, 167, 69, 0.7)'     // Verde para 5 estrellas
+                    'rgba(220, 53, 69, 0.7)',
+                    'rgba(253, 126, 20, 0.7)',
+                    'rgba(255, 193, 7, 0.7)',
+                    'rgba(23, 162, 184, 0.7)',
+                    'rgba(40, 167, 69, 0.7)'
                 ],
                 borderColor: [
                     'rgba(220, 53, 69, 1)',
@@ -1147,9 +1160,14 @@ function crearGraficaCalidad(data) {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: false  // Ocultar leyenda
+                    display: false
                 },
                 tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0,
                     callbacks: {
                         label: function(context) {
                             const valor = context.raw;
@@ -1165,13 +1183,27 @@ function crearGraficaCalidad(data) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Cantidad de Llamadas'
+                        text: 'Cantidad de Llamadas',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 },
                 x: {
                     title: {
                         display: true,
-                        text: 'Rating (Estrellas)'
+                        text: 'Rating (Estrellas)',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 }
             }
@@ -1215,57 +1247,82 @@ function crearGraficaCalidad(data) {
         
         // Función para crear gráfica de rating por hora
         function crearGraficaRatingPorHora(datos) {
-            const ctx = document.getElementById('graficaRatingPorHora').getContext('2d');
-            
-            if (chartRatingPorHora) {
-                chartRatingPorHora.destroy();
-            }
-            
-            const horas = datos.map(item => item.hora + ':00');
-            const ratings = datos.map(item => item.rating_promedio);
-            
-            chartRatingPorHora = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: horas,
-                    datasets: [{
-                        label: 'Rating Promedio',
-                        data: ratings,
-                        borderColor: 'rgba(255, 193, 7, 1)',
-                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true
-                    }]
+    const ctx = document.getElementById('graficaRatingPorHora').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (chartRatingPorHora) {
+        chartRatingPorHora.destroy();
+    }
+    
+    const horas = datos.map(item => item.hora + ':00');
+    const ratings = datos.map(item => item.rating_promedio);
+    
+    chartRatingPorHora = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: horas,
+            datasets: [{
+                label: 'Rating Promedio',
+                data: ratings,
+                borderColor: 'rgba(255, 193, 7, 1)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                borderWidth: 3,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                    labels: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    min: 0,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Rating Promedio',
+                        color: isDarkMode ? '#ffffff' : '#333'
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            min: 0,
-                            max: 5,
-                            title: {
-                                display: true,
-                                text: 'Rating Promedio'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Hora del Día'
-                            }
-                        }
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Hora del Día',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 }
-            });
+            }
         }
+    });
+}
         
         // Función para actualizar estadísticas de observaciones
         function actualizarEstadisticasObservaciones(data) {
@@ -1437,100 +1494,132 @@ function crearGraficaCalidad(data) {
         
         // Función para crear gráfica de distribución por llamador
         function crearGraficaLlamadores(datos) {
-            const ctx = document.getElementById('graficaLlamadores').getContext('2d');
-            
-            if (chartLlamadores) {
-                chartLlamadores.destroy();
-            }
-            
-            const labels = datos.map(item => item.nombre.substring(0, 15) + '...');
-            const valores = datos.map(item => item.total_llamadas);
-            
-            chartLlamadores = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: [
-                            'rgba(52, 152, 219, 0.7)',
-                            'rgba(155, 89, 182, 0.7)',
-                            'rgba(46, 204, 113, 0.7)',
-                            'rgba(241, 196, 15, 0.7)',
-                            'rgba(230, 126, 34, 0.7)',
-                            'rgba(231, 76, 60, 0.7)',
-                            'rgba(149, 165, 166, 0.7)'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+    const ctx = document.getElementById('graficaLlamadores').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (chartLlamadores) {
+        chartLlamadores.destroy();
+    }
+    
+    const labels = datos.map(item => item.nombre.substring(0, 15) + '...');
+    const valores = datos.map(item => item.total_llamadas);
+    
+    chartLlamadores = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(155, 89, 182, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(241, 196, 15, 0.7)',
+                    'rgba(230, 126, 34, 0.7)',
+                    'rgba(231, 76, 60, 0.7)',
+                    'rgba(149, 165, 166, 0.7)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: isDarkMode ? '#ffffff' : '#333'
                     }
+                },
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0
                 }
-            });
+            }
         }
+    });
+}
         
         // Función para crear gráfica de eficiencia por llamador
         function crearGraficaEficienciaLlamadores(datos) {
-            const ctx = document.getElementById('graficaEficienciaLlamadores').getContext('2d');
-            
-            if (chartEficienciaLlamadores) {
-                chartEficienciaLlamadores.destroy();
-            }
-            
-            const labels = datos.map(item => item.nombre.substring(0, 10));
-            const eficiencias = datos.map(item => item.eficiencia);
-            
-            // Colores según eficiencia
-            const colores = eficiencias.map(ef => {
-                if (ef >= 80) return 'rgba(40, 167, 69, 0.7)';
-                if (ef >= 60) return 'rgba(255, 193, 7, 0.7)';
-                return 'rgba(220, 53, 69, 0.7)';
-            });
-            
-            chartEficienciaLlamadores = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Eficiencia (%)',
-                        data: eficiencias,
-                        backgroundColor: colores,
-                        borderWidth: 1
-                    }]
+    const ctx = document.getElementById('graficaEficienciaLlamadores').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (chartEficienciaLlamadores) {
+        chartEficienciaLlamadores.destroy();
+    }
+    
+    const labels = datos.map(item => item.nombre.substring(0, 10));
+    const eficiencias = datos.map(item => item.eficiencia);
+    
+    const colores = eficiencias.map(ef => {
+        if (ef >= 80) return 'rgba(40, 167, 69, 0.7)';
+        if (ef >= 60) return 'rgba(255, 193, 7, 0.7)';
+        return 'rgba(220, 53, 69, 0.7)';
+    });
+    
+    chartEficienciaLlamadores = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Eficiencia (%)',
+                data: eficiencias,
+                backgroundColor: colores,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Eficiencia (%)',
+                        color: isDarkMode ? '#ffffff' : '#333'
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Eficiencia (%)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Llamador'
-                            }
-                        }
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Llamador',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 }
-            });
+            }
         }
+    });
+}
         
         // Función para cargar datos de tendencias - VERSIÓN MEJORADA
 function cargarDatosTendencias() {
@@ -1597,89 +1686,63 @@ function mostrarErrorTendencias(mensaje) {
   // Función para crear gráfica de tendencias - VERSIÓN MEJORADA Y CORREGIDA
 function crearGraficaTendencias(datos, periodo = 7) {
     const ctx = document.getElementById('graficaTendencias').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (chartTendencias) {
         chartTendencias.destroy();
     }
     
-    // Verificar si hay datos
     if (!datos || datos.length === 0) {
         mostrarMensajeSinDatosTendencias();
         return;
     }
     
-    // Determinar el rango de fechas basado en el período
-    let fechaInicio;
-    const hoy = new Date();
+    const fechaInicio = new Date();
+    fechaInicio.setDate(fechaInicio.getDate() - periodo);
     
-    switch(periodo) {
-        case 7:
-            fechaInicio = new Date(hoy);
-            fechaInicio.setDate(hoy.getDate() - 6); // Últimos 7 días incluido hoy
-            break;
-        case 30:
-            fechaInicio = new Date(hoy);
-            fechaInicio.setDate(hoy.getDate() - 29); // Últimos 30 días
-            break;
-        case 90:
-            fechaInicio = new Date(hoy);
-            fechaInicio.setDate(hoy.getDate() - 89); // Últimos 90 días
-            break;
-        default:
-            fechaInicio = new Date(hoy);
-            fechaInicio.setDate(hoy.getDate() - 6); // Por defecto 7 días
-    }
-    
-    // Crear array con todas las fechas del rango
     const todasFechas = [];
     const fechaActual = new Date(fechaInicio);
+    const hoy = new Date();
     
     while (fechaActual <= hoy) {
         todasFechas.push(new Date(fechaActual));
         fechaActual.setDate(fechaActual.getDate() + 1);
     }
     
-    // Crear un mapa de los datos recibidos para fácil acceso
     const datosMap = {};
     datos.forEach(item => {
         const fecha = new Date(item.fecha);
-        const fechaKey = fecha.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        const fechaKey = fecha.toISOString().split('T')[0];
         datosMap[fechaKey] = {
             cantidad_llamadas: item.cantidad_llamadas || 0,
             rating_promedio: item.rating_promedio || 0
         };
     });
     
-    // Preparar arrays para la gráfica
     const fechasFormateadas = [];
     const cantidades = [];
     const ratings = [];
     
     todasFechas.forEach(fecha => {
         const fechaKey = fecha.toISOString().split('T')[0];
-        
-        // Formatear fecha para el eje X (ej: "03/Feb")
         const dia = fecha.getDate().toString().padStart(2, '0');
         const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
         fechasFormateadas.push(`${dia}/${mes}`);
         
-        // Obtener datos o usar 0 si no existen
         if (datosMap[fechaKey]) {
             cantidades.push(datosMap[fechaKey].cantidad_llamadas);
-            ratings.push((datosMap[fechaKey].rating_promedio || 0) * 20); // Escalar a 0-100
+            ratings.push((datosMap[fechaKey].rating_promedio || 0) * 20);
         } else {
             cantidades.push(0);
             ratings.push(0);
         }
     });
     
-    // Si todos los valores son 0, mostrar mensaje
     if (cantidades.every(val => val === 0) && ratings.every(val => val === 0)) {
         mostrarMensajeSinDatosTendencias();
         return;
     }
     
-    // Crear la gráfica
     chartTendencias = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1716,7 +1779,19 @@ function crearGraficaTendencias(datos, periodo = 7) {
                 intersect: false
             },
             plugins: {
+                legend: {
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 6,
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    }
+                },
                 tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0,
                     callbacks: {
                         label: function(context) {
                             if (context.datasetIndex === 0) {
@@ -1725,12 +1800,6 @@ function crearGraficaTendencias(datos, periodo = 7) {
                                 return `Rating: ${(context.raw / 20).toFixed(1)}/5`;
                             }
                         }
-                    }
-                },
-                legend: {
-                    labels: {
-                        usePointStyle: true,
-                        boxWidth: 6
                     }
                 }
             },
@@ -1741,11 +1810,16 @@ function crearGraficaTendencias(datos, periodo = 7) {
                     position: 'left',
                     title: {
                         display: true,
-                        text: 'Cantidad de Llamadas'
+                        text: 'Cantidad de Llamadas',
+                        color: isDarkMode ? '#ffffff' : '#333'
                     },
                     beginAtZero: true,
                     ticks: {
-                        precision: 0
+                        precision: 0,
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 },
                 y1: {
@@ -1754,17 +1828,33 @@ function crearGraficaTendencias(datos, periodo = 7) {
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Rating Promedio (escalado)'
+                        text: 'Rating Promedio (escalado)',
+                        color: isDarkMode ? '#ffffff' : '#333'
                     },
                     grid: {
-                        drawOnChartArea: false
+                        drawOnChartArea: false,
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     },
                     min: 0,
                     max: 100,
                     ticks: {
                         callback: function(value) {
-                            return (value / 20).toFixed(1); // Mostrar como 0-5
-                        }
+                            return (value / 20).toFixed(1);
+                        },
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Fecha',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 }
             }
@@ -1774,60 +1864,86 @@ function crearGraficaTendencias(datos, periodo = 7) {
     // Actualizar botones de período
     $('[data-periodo]').off('click').click(function() {
         const nuevoPeriodo = $(this).data('periodo');
-        
-        // Actualizar botones activos
         $('[data-periodo]').removeClass('active');
         $(this).addClass('active');
-        
-        // Volver a crear la gráfica con el nuevo período
         crearGraficaTendencias(datos, nuevoPeriodo);
     });
 }
         
         // Función para crear gráfica comparativa semanal
         function crearGraficaComparativaSemanal(datos) {
-            const ctx = document.getElementById('graficaComparativaSemanal').getContext('2d');
-            
-            if (chartComparativaSemanal) {
-                chartComparativaSemanal.destroy();
-            }
-            
-            const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-            const estaSemana = datos.esta_semana || [0,0,0,0,0,0,0];
-            const semanaPasada = datos.semana_pasada || [0,0,0,0,0,0,0];
-            
-            chartComparativaSemanal = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dias,
-                    datasets: [
-                        {
-                            label: 'Esta Semana',
-                            data: estaSemana,
-                            backgroundColor: 'rgba(52, 152, 219, 0.7)'
-                        },
-                        {
-                            label: 'Semana Pasada',
-                            data: semanaPasada,
-                            backgroundColor: 'rgba(155, 89, 182, 0.7)'
-                        }
-                    ]
+    const ctx = document.getElementById('graficaComparativaSemanal').getContext('2d');
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (chartComparativaSemanal) {
+        chartComparativaSemanal.destroy();
+    }
+    
+    const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const estaSemana = datos.esta_semana || [0,0,0,0,0,0,0];
+    const semanaPasada = datos.semana_pasada || [0,0,0,0,0,0,0];
+    
+    chartComparativaSemanal = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dias,
+            datasets: [
+                {
+                    label: 'Esta Semana',
+                    data: estaSemana,
+                    backgroundColor: 'rgba(52, 152, 219, 0.7)'
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Cantidad de Llamadas'
-                            }
-                        }
+                {
+                    label: 'Semana Pasada',
+                    data: semanaPasada,
+                    backgroundColor: 'rgba(155, 89, 182, 0.7)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#3d3d3d' : 'rgba(0,0,0,0.8)',
+                    titleColor: isDarkMode ? '#ffffff' : '#fff',
+                    bodyColor: isDarkMode ? '#ffffff' : '#fff',
+                    borderColor: isDarkMode ? '#4d4d4d' : 'transparent',
+                    borderWidth: isDarkMode ? 1 : 0
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Llamadas',
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: isDarkMode ? '#ffffff' : '#333'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#4d4d4d' : '#e0e0e0'
                     }
                 }
-            });
+            }
         }
+    });
+}
         
         // Función para actualizar proyección
         function actualizarProyeccion(data) {

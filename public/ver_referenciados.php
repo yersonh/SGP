@@ -1792,41 +1792,88 @@ document.addEventListener('tableUpdated', function() {
         }
         
         // Función para exportar mis referenciados
-        function exportarMisReferenciados(formato) {
-            const soloActivos = document.getElementById('exportSoloActivos').checked;
-            
-            let url = 'exportar_mis_referenciados_excel.php';
-            
-            // Cambiar URL según formato
-            if (formato === 'pdf') {
-                url = 'exportar_mis_referenciados_pdf.php';
-            }
-            
-            // Agregar parámetro si es necesario
-            if (soloActivos) {
-                url += '?solo_activos=1';
-            }
-            
-            // Cerrar modal
-            const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
-            if (exportModal) {
-                exportModal.hide();
-            }
-            
-            // Mostrar mensaje de procesamiento
-            showNotification('Generando archivo ' + formato.toUpperCase() + '...', 'info');
-            
-            // Descargar archivo después de un pequeño delay
-            setTimeout(() => {
-                // Crear un link temporal para la descarga
-                const link = document.createElement('a');
-                link.href = url;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }, 300);
+        // Función para exportar mis referenciados (MODIFICADA)
+function exportarMisReferenciados(formato) {
+    const soloActivos = document.getElementById('exportSoloActivos').checked;
+    
+    // ============================================
+    // NUEVO: Obtener filtro de líder actual
+    // ============================================
+    const filtroLider = filtroActual.lider || 'todos';
+    let nombreLider = filtroActual.nombreLider || '';
+    
+    // Limpiar nombre del líder para URL
+    if (filtroLider !== 'todos' && filtroLider !== 'sin_lider') {
+        // Eliminar caracteres especiales
+        nombreLider = nombreLider.replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '').trim();
+    }
+    
+    let url = 'exportar_mis_referenciados_excel.php';
+    
+    // Cambiar URL según formato
+    if (formato === 'pdf') {
+        url = 'exportar_mis_referenciados_pdf.php';
+    }
+    
+    // Construir parámetros de la URL
+    const params = new URLSearchParams();
+    
+    if (soloActivos) {
+        params.append('solo_activos', '1');
+    }
+    
+    // ============================================
+    // NUEVO: Agregar filtro de líder a la URL
+    // ============================================
+    params.append('filtro_lider', filtroLider);
+    if (nombreLider && filtroLider !== 'todos' && filtroLider !== 'sin_lider') {
+        params.append('nombre_lider', nombreLider);
+    }
+    
+    // Convertir parámetros a string
+    const queryString = params.toString();
+    if (queryString) {
+        url += '?' + queryString;
+    }
+    
+    // Cerrar modal
+    const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+    if (exportModal) {
+        exportModal.hide();
+    }
+    
+    // Mostrar mensaje de procesamiento con información del filtro
+    let mensaje = 'Generando archivo ' + formato.toUpperCase();
+    if (filtroLider !== 'todos') {
+        if (filtroLider === 'sin_lider') {
+            mensaje += ' para referenciados SIN líder';
+        } else {
+            mensaje += ' para líder: ' + nombreLider;
         }
+    }
+    if (soloActivos) {
+        mensaje += ' (solo activos)';
+    }
+    mensaje += '...';
+    
+    showNotification(mensaje, 'info');
+    
+    // Descargar archivo después de un pequeño delay
+    setTimeout(() => {
+        // Crear un link temporal para la descarga
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Mostrar confirmación
+        setTimeout(() => {
+            showNotification('Archivo generado correctamente', 'success');
+        }, 1000);
+    }, 300);
+}
         
         // Función para mostrar historial de llamadas (MODIFICADA)
         async function mostrarHistorialLlamadas(idReferenciado, nombre, telefono, email) {
@@ -1979,7 +2026,12 @@ document.addEventListener('tableUpdated', function() {
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             }
-            
+            if (typeof filtroActual === 'undefined') {
+                filtroActual = {
+                    lider: 'todos',
+                    nombreLider: ''
+                };
+            }
             if (urlParams.has('error')) {
                 const errorType = urlParams.get('error');
                 let message = '';

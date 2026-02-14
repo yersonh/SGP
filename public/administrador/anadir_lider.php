@@ -12,7 +12,7 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Administra
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 
-// Obtener referenciadores activos para el combobox usando tu función
+// Obtener referenciadores activos para el combobox
 $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
 ?>
 
@@ -662,7 +662,7 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
                     </div>
                 </div>
                 
-                <!-- Referenciador Asignado (Usando tu función getAllReferenciadoresActivos) -->
+                <!-- Referenciador Asignado -->
                 <div class="form-group">
                     <label class="form-label" for="id_referenciador">
                         <i class="fas fa-user-tie"></i> Coordinador Asignado
@@ -794,15 +794,51 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
                 // Error en la verificación
                 statusElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.message || 'Error al verificar cédula'}`;
                 statusElement.className = 'cedula-status cedula-taken';
-                submitBtn.disabled = false; // Permitir enviar pero con advertencia
+                submitBtn.disabled = false;
                 return false;
             }
         } catch (error) {
             console.error('Error verificando cédula:', error);
             statusElement.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error de conexión al verificar cédula';
             statusElement.className = 'cedula-status cedula-taken';
-            submitBtn.disabled = false; // Permitir enviar en caso de error
+            submitBtn.disabled = false;
             return false;
+        }
+    }
+    
+    // ==================== FUNCIÓN PARA ENVIAR CORREOS ====================
+    async function enviarCorreosConfirmacion() {
+        const emailData = new FormData();
+        emailData.append('email_lider', document.getElementById('correo').value);
+        emailData.append('nombres_lider', document.getElementById('nombres').value);
+        emailData.append('apellidos_lider', document.getElementById('apellidos').value);
+        emailData.append('cedula_lider', document.getElementById('cedula').value);
+        emailData.append('telefono_lider', document.getElementById('telefono').value);
+        
+        const idReferenciador = document.getElementById('id_referenciador').value;
+        if (idReferenciador) {
+            emailData.append('id_referenciador', idReferenciador);
+        }
+        
+        try {
+            const response = await fetch('../ajax/enviar_correos_lider.php', {
+                method: 'POST',
+                body: emailData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification('📧 ' + result.message, 'success');
+                if (result.details) {
+                    console.log('Detalles de correos:', result.details);
+                }
+            } else {
+                showNotification('⚠️ Líder registrado pero no se pudieron enviar los correos: ' + (result.error || 'Error desconocido'), 'warning');
+            }
+        } catch (error) {
+            console.error('Error enviando correos:', error);
+            showNotification('⚠️ Líder registrado pero hubo un error al enviar las notificaciones', 'warning');
         }
     }
     
@@ -947,6 +983,9 @@ $referenciadores = $usuarioModel->getAllReferenciadoresActivos();
                 
                 if (data.success) {
                     showNotification(data.message, 'success');
+                    
+                    // Enviar correos de confirmación
+                    await enviarCorreosConfirmacion();
                     
                     // Resetear formulario después de éxito
                     setTimeout(() => {

@@ -14,7 +14,7 @@ class BrevoEmail {
     }
     
     /**
-     * Enviar correo de confirmación de registro
+     * Enviar correo de confirmación de registro (referenciado)
      */
     public function enviarConfirmacionRegistro($referido, $referenciador) {
         try {
@@ -43,14 +43,10 @@ class BrevoEmail {
                     'CEDULA' => $referido['cedula'],
                     'EMAIL' => $referido['email'],
                     'TELEFONO' => $referido['telefono'],
-                    'FECHA_REGISTRO' => $fechaRegistro,  // ¡Esta es la fecha correcta!
+                    'FECHA_REGISTRO' => $fechaRegistro,
                     'REFERENCIADOR' => $referenciador['nombres'] . ' ' . $referenciador['apellidos']
                 ]
             ];
-            
-            error_log("📨 Datos del correo preparados");
-            error_log("   - Para: " . $referido['email']);
-            error_log("   - Fecha en correo: " . $fechaRegistro);
             
             // Enviar usando la API de Brevo
             return $this->enviarAPI($correoData);
@@ -65,7 +61,140 @@ class BrevoEmail {
     }
     
     /**
-     * Generar contenido HTML del correo
+     * Envía correo de confirmación de registro a un líder
+     */
+    public function enviarConfirmacionRegistroLider($lider, $administrador) {
+    try {
+        $fechaRegistro = $lider['fecha_registro'] ?? date('d/m/Y H:i:s');
+        
+        error_log("📅 Enviando correo de confirmación a líder: " . $lider['email']);
+        
+        $correoData = [
+            'sender' => [
+                'name' => getenv('SMTP_FROM_NAME') ?: 'Sistema de Gestión',
+                'email' => getenv('SMTP_FROM') ?: 'solanoalfonsoy@gmail.com'
+            ],
+            'to' => [
+                [
+                    'email' => $lider['email'],
+                    'name' => $lider['nombre'] . ' ' . $lider['apellido']
+                ]
+            ],
+            'subject' => 'Has sido registrado como Líder - SGP', // Cambié el título para que sea menos "comercial"
+            'htmlContent' => $this->generarHTMLCorreoLider($lider, $administrador, $fechaRegistro),
+            'textContent' => $this->generarTextoCorreoLider($lider, $administrador, $fechaRegistro), // ¡AGREGADO!
+            'replyTo' => [
+                'email' => getenv('SMTP_FROM') ?: 'solanoalfonsoy@gmail.com',
+                'name' => 'Soporte SGP'
+            ],
+            'params' => [
+                'NOMBRE_COMPLETO' => $lider['nombre'] . ' ' . $lider['apellido'],
+                'CEDULA' => $lider['cedula'],
+                'EMAIL' => $lider['email'],
+                'TELEFONO' => $lider['telefono'],
+                'FECHA_REGISTRO' => $fechaRegistro,
+                'COORDINADOR' => $lider['coordinador_nombre'] ?? 'No asignado',
+                'COORDINADOR_EMAIL' => $lider['coordinador_email'] ?? 'No disponible',
+                'COORDINADOR_TELEFONO' => $lider['coordinador_telefono'] ?? 'No disponible',
+                'ADMINISTRADOR' => $administrador['nombres'] . ' ' . $administrador['apellidos']
+            ]
+        ];
+        
+        return $this->enviarAPI($correoData);
+        
+    } catch (Exception $e) {
+        error_log('❌ Error en enviarConfirmacionRegistroLider: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+}
+
+// Agrega este método para generar texto plano
+private function generarTextoCorreoLider($lider, $administrador, $fechaRegistro) {
+    $nombreCompleto = $lider['nombre'] . ' ' . $lider['apellido'];
+    $anio = date('Y');
+    
+    $texto = "Hola $nombreCompleto,\n\n";
+    $texto .= "Has sido registrado exitosamente en el Sistema de Gestión de Proyectos (SGP) como LÍDER.\n\n";
+    $texto .= "DATOS DE REGISTRO:\n";
+    $texto .= "• Nombres: $nombreCompleto\n";
+    $texto .= "• Cédula: " . $lider['cedula'] . "\n";
+    $texto .= "• Teléfono: " . $lider['telefono'] . "\n";
+    $texto .= "• Correo: " . $lider['email'] . "\n";
+    $texto .= "• Fecha de registro: $fechaRegistro\n";
+    
+    if ($lider['coordinador_nombre'] !== 'No asignado') {
+        $texto .= "• Coordinador asignado: " . $lider['coordinador_nombre'] . "\n";
+        $texto .= "• Email coordinador: " . $lider['coordinador_email'] . "\n";
+        $texto .= "• Tel. coordinador: " . $lider['coordinador_telefono'] . "\n";
+    }
+    
+    $texto .= "\nCREDENCIALES DE ACCESO:\n";
+    $texto .= "• Usuario: " . $lider['cedula'] . "\n";
+    $texto .= "• Contraseña inicial: " . $lider['cedula'] . " (mismo número de cédula)\n\n";
+    $texto .= "IMPORTANTE: Por seguridad, cambia tu contraseña en el primer inicio de sesión.\n\n";
+    $texto .= "Accede al sistema: http://sgp-desarrollo-production.up.railway.app/login.php\n\n";
+    $texto .= "Como líder podrás:\n";
+    $texto .= "- Gestionar y hacer seguimiento de tus referenciados\n";
+    $texto .= "- Generar reportes de gestión\n";
+    $texto .= "- Coordinar actividades con tu equipo\n\n";
+    $texto .= "Saludos cordiales,\n";
+    $texto .= "Equipo SGP\n";
+    $texto .= "© $anio Sistema de Gestión de Proyectos\n\n";
+    $texto .= "-- \n";
+    $texto .= "Este correo fue enviado por " . $administrador['nombres'] . " " . $administrador['apellidos'] . " (Administrador del sistema)";
+    
+    return $texto;
+}
+    
+    /**
+     * Envía notificación al referenciador sobre la asignación de un nuevo líder
+     */
+    public function enviarNotificacionAsignacionLider($lider, $referenciador, $administrador) {
+        try {
+            $fechaRegistro = $lider['fecha_registro'] ?? date('d/m/Y H:i:s');
+            
+            error_log("📅 Enviando notificación a coordinador: " . $referenciador['correo']);
+            
+            $correoData = [
+                'sender' => [
+                    'name' => getenv('SMTP_FROM_NAME') ?: 'Sistema de Gestión',
+                    'email' => getenv('SMTP_FROM') ?: 'solanoalfonsoy@gmail.com'
+                ],
+                'to' => [
+                    [
+                        'email' => $referenciador['correo'],
+                        'name' => $referenciador['nombres'] . ' ' . $referenciador['apellidos']
+                    ]
+                ],
+                'subject' => 'Nuevo Líder asignado a tu equipo - SGP',
+                'htmlContent' => $this->generarHTMLNotificacionCoordinador($lider, $referenciador, $administrador, $fechaRegistro),
+                'params' => [
+                    'LIDER_NOMBRE' => $lider['nombre'] . ' ' . $lider['apellido'],
+                    'LIDER_CEDULA' => $lider['cedula'],
+                    'LIDER_EMAIL' => $lider['email'],
+                    'LIDER_TELEFONO' => $lider['telefono'],
+                    'FECHA_ASIGNACION' => $fechaRegistro,
+                    'COORDINADOR_NOMBRE' => $referenciador['nombres'] . ' ' . $referenciador['apellidos'],
+                    'ADMINISTRADOR' => $administrador['nombres'] . ' ' . $administrador['apellidos']
+                ]
+            ];
+            
+            return $this->enviarAPI($correoData);
+            
+        } catch (Exception $e) {
+            error_log('❌ Error en enviarNotificacionAsignacionLider: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Generar contenido HTML del correo para referenciado
      */
     private function generarHTMLCorreo($referido, $referenciador, $fechaRegistro) {
         return '
@@ -171,7 +300,372 @@ class BrevoEmail {
     }
     
     /**
-     * Generar contenido de texto plano
+     * Generar contenido HTML del correo para líder
+     */
+    private function generarHTMLCorreoLider($lider, $administrador, $fechaRegistro) {
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Bienvenido Líder - SGP</title>
+            <style>
+                body {
+                    font-family: "Segoe UI", Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    border-radius: 15px;
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 40px 30px;
+                    text-align: center;
+                }
+                .header h1 {
+                    margin: 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                }
+                .header p {
+                    margin: 10px 0 0;
+                    opacity: 0.9;
+                    font-size: 16px;
+                }
+                .content {
+                    padding: 40px 30px;
+                }
+                .welcome-message {
+                    font-size: 18px;
+                    color: #2d3748;
+                    margin-bottom: 30px;
+                }
+                .info-card {
+                    background: #f7fafc;
+                    border-radius: 12px;
+                    padding: 25px;
+                    margin: 20px 0;
+                    border: 1px solid #e2e8f0;
+                }
+                .info-card h3 {
+                    margin: 0 0 20px;
+                    color: #4a5568;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 2fr;
+                    gap: 12px;
+                }
+                .info-label {
+                    color: #718096;
+                    font-weight: 500;
+                }
+                .info-value {
+                    color: #2d3748;
+                    font-weight: 600;
+                }
+                .coordinator-card {
+                    background: #ebf4ff;
+                    border-radius: 12px;
+                    padding: 25px;
+                    margin: 20px 0;
+                    border-left: 4px solid #4299e1;
+                }
+                .warning-card {
+                    background: #fffaf0;
+                    border-radius: 12px;
+                    padding: 25px;
+                    margin: 20px 0;
+                    border-left: 4px solid #ed8936;
+                }
+                .btn {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    text-decoration: none;
+                    padding: 14px 35px;
+                    border-radius: 30px;
+                    font-weight: 600;
+                    margin: 20px 0;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                }
+                .footer {
+                    background: #f8f9fa;
+                    padding: 30px;
+                    text-align: center;
+                    color: #718096;
+                    font-size: 14px;
+                    border-top: 1px solid #e2e8f0;
+                }
+                .credentials-box {
+                    background: #2d3748;
+                    color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-family: monospace;
+                    font-size: 16px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎉 ¡Bienvenido al Sistema de Gestión!</h1>
+                    <p>Has sido registrado exitosamente como LÍDER</p>
+                </div>
+                
+                <div class="content">
+                    <div class="welcome-message">
+                        Hola <strong>{{params.NOMBRE_COMPLETO}}</strong>,
+                    </div>
+                    
+                    <p>Te informamos que has sido registrado en el Sistema de Gestión de Proyectos (SGP) con el rol de <strong>LÍDER</strong>.</p>
+                    
+                    <div class="info-card">
+                        <h3>📋 Datos de tu registro</h3>
+                        <div class="info-grid">
+                            <span class="info-label">Nombres completos:</span>
+                            <span class="info-value">{{params.NOMBRE_COMPLETO}}</span>
+                            
+                            <span class="info-label">Cédula:</span>
+                            <span class="info-value">{{params.CEDULA}}</span>
+                            
+                            <span class="info-label">Teléfono:</span>
+                            <span class="info-value">{{params.TELEFONO}}</span>
+                            
+                            <span class="info-label">Correo:</span>
+                            <span class="info-value">{{params.EMAIL}}</span>
+                            
+                            <span class="info-label">Rol:</span>
+                            <span class="info-value">Líder</span>
+                            
+                            <span class="info-label">Fecha registro:</span>
+                            <span class="info-value">{{params.FECHA_REGISTRO}}</span>
+                        </div>
+                    </div>';
+        
+        if ($lider['coordinador_nombre'] !== 'No asignado') {
+            $html .= '
+                    <div class="coordinator-card">
+                        <h3>👥 Tu Coordinador asignado</h3>
+                        <div class="info-grid">
+                            <span class="info-label">Nombre:</span>
+                            <span class="info-value">{{params.COORDINADOR}}</span>
+                            
+                            <span class="info-label">Email:</span>
+                            <span class="info-value">{{params.COORDINADOR_EMAIL}}</span>
+                            
+                            <span class="info-label">Teléfono:</span>
+                            <span class="info-value">{{params.COORDINADOR_TELEFONO}}</span>
+                        </div>
+                        <p style="margin-top: 15px; color: #4a5568;">Este será tu coordinador de referencia para todas las actividades del sistema.</p>
+                    </div>';
+        }
+        
+        $html .= '
+                    <div class="warning-card">
+                        <h3>🔑 Credenciales de acceso</h3>
+                        <div class="credentials-box">
+                            <p><strong>Usuario:</strong> {{params.CEDULA}}</p>
+                            <p><strong>Contraseña inicial:</strong> {{params.CEDULA}} (mismo número de cédula)</p>
+                        </div>
+                        <p style="color: #744210; margin-top: 10px;">
+                            <strong>Importante:</strong> Por seguridad, cambia tu contraseña en el primer inicio de sesión.
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #2d3748;">Como líder podrás:</p>
+                    <ul style="color: #4a5568; margin-bottom: 30px;">
+                        <li>✓ Gestionar y hacer seguimiento de tus referenciados</li>
+                        <li>✓ Generar reportes de gestión detallados</li>
+                        <li>✓ Coordinar actividades con tu equipo</li>
+                        <li>✓ Visualizar estadísticas de rendimiento</li>
+                    </ul>
+                    
+                    <div style="text-align: center;">
+                        <a href="http://tudominio.com/login.php" class="btn">Acceder al Sistema</a>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>Este correo fue enviado por <strong>{{params.ADMINISTRADOR}}</strong> (Administrador del sistema).</p>
+                    <p>© ' . date('Y') . ' Sistema de Gestión de Proyectos - Todos los derechos reservados</p>
+                    <p style="font-size: 12px; margin-top: 15px;">Si no esperabas este correo, por favor ignóralo o contacta al administrador.</p>
+                </div>
+            </div>
+        </body>
+        </html>';
+        
+        return $html;
+    }
+    
+    /**
+     * Generar contenido HTML para notificación al coordinador
+     */
+    private function generarHTMLNotificacionCoordinador($lider, $referenciador, $administrador, $fechaRegistro) {
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Nuevo Líder Asignado - SGP</title>
+            <style>
+                body {
+                    font-family: "Segoe UI", Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    border-radius: 15px;
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                .header {
+                    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+                    color: white;
+                    padding: 40px 30px;
+                    text-align: center;
+                }
+                .header h1 {
+                    margin: 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                }
+                .header p {
+                    margin: 10px 0 0;
+                    opacity: 0.9;
+                    font-size: 16px;
+                }
+                .content {
+                    padding: 40px 30px;
+                }
+                .info-card {
+                    background: #f7fafc;
+                    border-radius: 12px;
+                    padding: 25px;
+                    margin: 20px 0;
+                    border: 1px solid #e2e8f0;
+                }
+                .info-card h3 {
+                    margin: 0 0 20px;
+                    color: #2f855a;
+                    font-size: 18px;
+                }
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 2fr;
+                    gap: 12px;
+                }
+                .info-label {
+                    color: #718096;
+                    font-weight: 500;
+                }
+                .info-value {
+                    color: #2d3748;
+                    font-weight: 600;
+                }
+                .highlight {
+                    background: #ebf8ff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    border-left: 4px solid #4299e1;
+                    margin: 20px 0;
+                }
+                .btn {
+                    display: inline-block;
+                    background: #38a169;
+                    color: white;
+                    text-decoration: none;
+                    padding: 12px 30px;
+                    border-radius: 30px;
+                    font-weight: 600;
+                    margin-top: 20px;
+                }
+                .footer {
+                    background: #f8f9fa;
+                    padding: 30px;
+                    text-align: center;
+                    color: #718096;
+                    font-size: 14px;
+                    border-top: 1px solid #e2e8f0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📢 Nuevo Líder en tu equipo</h1>
+                    <p>Se ha asignado un nuevo líder a tu coordinación</p>
+                </div>
+                
+                <div class="content">
+                    <p>Hola <strong>{{params.COORDINADOR_NOMBRE}}</strong>,</p>
+                    
+                    <p>Te informamos que se ha registrado un nuevo líder en el sistema y ha sido asignado a tu equipo de trabajo.</p>
+                    
+                    <div class="info-card">
+                        <h3>👤 Datos del nuevo líder</h3>
+                        <div class="info-grid">
+                            <span class="info-label">Nombres:</span>
+                            <span class="info-value">{{params.LIDER_NOMBRE}}</span>
+                            
+                            <span class="info-label">Cédula:</span>
+                            <span class="info-value">{{params.LIDER_CEDULA}}</span>
+                            
+                            <span class="info-label">Teléfono:</span>
+                            <span class="info-value">{{params.LIDER_TELEFONO}}</span>
+                            
+                            <span class="info-label">Correo:</span>
+                            <span class="info-value">{{params.LIDER_EMAIL}}</span>
+                            
+                            <span class="info-label">Fecha asignación:</span>
+                            <span class="info-value">{{params.FECHA_ASIGNACION}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight">
+                        <p style="margin: 0; color: #2c3e50;">
+                            <strong>Acciones recomendadas:</strong><br>
+                            • Contacta al nuevo líder para darle la bienvenida<br>
+                            • Explícale sus funciones y responsabilidades<br>
+                            • Asegúrate de que tenga acceso al sistema<br>
+                            • Programa una reunión inicial de coordinación
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>Registro realizado por: <strong>{{params.ADMINISTRADOR}}</strong></p>
+                    <p>© ' . date('Y') . ' Sistema de Gestión de Proyectos</p>
+                </div>
+            </div>
+        </body>
+        </html>';
+    }
+    
+    /**
+     * Generar contenido de texto plano (para referenciado)
      */
     private function generarTextoCorreo($referido, $referenciador, $fechaRegistro) {
         return "CONFIRMACIÓN DE REGISTRO - SISTEMA SGP\n\n" .
@@ -181,7 +675,7 @@ class BrevoEmail {
                "Cédula: " . $referido['cedula'] . "\n" .
                "Email: " . $referido['email'] . "\n" .
                "Teléfono: " . $referido['telefono'] . "\n" .
-               "Fecha: " . $fechaRegistro . "\n" .  // ¡Fecha correcta!
+               "Fecha: " . $fechaRegistro . "\n" .
                "Referenciador: " . $referenciador['nombres'] . " " . $referenciador['apellidos'] . "\n\n" .
                "Saludos cordiales,\n" .
                "Equipo SGP\n\n" .

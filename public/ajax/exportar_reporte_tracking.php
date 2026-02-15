@@ -6,9 +6,10 @@ require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/ReferenciadoModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
-if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
-    header('HTTP/1.1 403 Forbidden');
-    exit('Acceso denegado');
+if (!isset($_SESSION['id_usuario']) || 
+    ($_SESSION['tipo_usuario'] !== 'SuperAdmin' && $_SESSION['tipo_usuario'] !== 'Tracking')) {
+    echo json_encode(['success' => false, 'error' => 'No autorizado']);
+    exit();
 }
 
 $pdo = Database::getConnection();

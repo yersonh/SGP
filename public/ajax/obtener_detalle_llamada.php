@@ -13,12 +13,11 @@ error_log("=== INICIO obtener_detalle_llamada.php ===");
 error_log("POST recibido: " . json_encode($_POST));
 error_log("SESSION usuario: " . ($_SESSION['id_usuario'] ?? 'NO HAY'));
 
-if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
-    error_log("ERROR: Usuario no autorizado");
+if (!isset($_SESSION['id_usuario']) || 
+    ($_SESSION['tipo_usuario'] !== 'SuperAdmin' && $_SESSION['tipo_usuario'] !== 'Tracking')) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);
     exit();
 }
-
 if (!isset($_POST['id_llamada']) || empty($_POST['id_llamada'])) {
     error_log("ERROR: ID de llamada no especificado. POST: " . json_encode($_POST));
     echo json_encode(['success' => false, 'error' => 'ID de llamada no especificado']);

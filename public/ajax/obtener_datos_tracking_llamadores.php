@@ -3,7 +3,8 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/LlamadaModel.php';
 
-if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
+if (!isset($_SESSION['id_usuario']) || 
+    ($_SESSION['tipo_usuario'] !== 'SuperAdmin' && $_SESSION['tipo_usuario'] !== 'Tracking')) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);
     exit();
 }

@@ -387,6 +387,42 @@ if ($porcentajeRestante > 50) {
     cursor: help;
 }
 
+/* ESTILOS PARA EL BOTÓN DE TRACKING DIARIO */
+.tracking-daily-btn {
+    background: linear-gradient(135deg, #ff6b6b, #ee5253);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(238, 82, 83, 0.3);
+    margin-left: 15px;
+}
+
+.tracking-daily-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(238, 82, 83, 0.4);
+    color: white;
+    background: linear-gradient(135deg, #ee5253, #ff6b6b);
+}
+
+.tracking-daily-btn i {
+    font-size: 1.1rem;
+}
+
+/* Contenedor de botones del header */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
     </style>
     
 </head>
@@ -400,12 +436,21 @@ if ($porcentajeRestante > 50) {
                     <span class="user-count"><?php echo $usuarios_activos; ?> usuarios</span>
                 </h1>
             </div>
-            <a href="../logout.php" class="logout-btn">
-                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-            </a>
+            <div class="header-actions">
+                <!-- NUEVO BOTÓN DE TRACKING DIARIO -->
+                <a href="reporte_tracking.php" class="tracking-daily-btn">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Tracking diario</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <a href="../logout.php" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
         </div>
     </header>
-<!-- CONTADOR COMPACTO -->
+
+    <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">
             <div class="countdown-compact-title">
@@ -424,6 +469,7 @@ if ($porcentajeRestante > 50) {
             </div>
         </div>
     </div>
+
     <div class="main-container">
         <!-- Información del usuario actual -->
         <div class="current-user-info">

@@ -34,6 +34,9 @@ $referenciadoresActivos = $usuarioModel->getReferenciadoresActivos();
 
 // Determinar si estamos en modo pantalla completa
 $isFullscreen = isset($_GET['fullscreen']) && $_GET['fullscreen'] == '1';
+
+// URL de Google Earth para Puerto Gaitán
+$googleEarthUrl = "https://earth.google.com/web/search/Puerto+Gait%c3%a1n,+Meta/@4.28475243,-72.0469134,146.11304094a,157225.57233928d,35y,-0h,0t,0r/data=CiwiJgokCYm1oYrk8TNAEYW1oYrk8TPAGVXKvJzJsEhAIZN146BL9knAQgIIATIpCicKJQohMWs5SHVHYndLUmJGbm9HenpqVWZqQnJmQnBDblBXazFQIAE6AwoBMEICCABKCAjyzNPuBxAB?pli=1&authuser=0";
 ?>
 
 <!DOCTYPE html>
@@ -92,6 +95,47 @@ $isFullscreen = isset($_GET['fullscreen']) && $_GET['fullscreen'] == '1';
             border: none;
             <?php endif; ?>
         }
+
+        /* Estilos para el botón de Google Earth */
+        .google-earth-btn {
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            color: white !important;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .google-earth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            filter: brightness(1.1);
+            color: white !important;
+        }
+        
+        .google-earth-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .google-earth-btn small {
+            font-size: 0.7rem;
+            opacity: 0.9;
+        }
+        
+        /* Estilos para el contenedor de botones de mapa */
+        .map-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body class="<?php echo $isFullscreen ? 'fullscreen-mode' : 'normal-mode'; ?>">
@@ -147,6 +191,16 @@ $isFullscreen = isset($_GET['fullscreen']) && $_GET['fullscreen'] == '1';
                                     <?php endif; ?>
                                 </select>
                             </div>
+                            
+                            <!-- NUEVO: BOTÓN DE GOOGLE EARTH -->
+                            <a href="<?php echo $googleEarthUrl; ?>" 
+                               target="_blank" 
+                               class="google-earth-btn"
+                               title="Ver Puerto Gaitán en Google Earth (se abre en nueva pestaña)">
+                                <i class="fab fa-google"></i>
+                                <span>Visor Google Earth</span>
+                                <small>🌍</small>
+                            </a>
                             
                             <button class="map-btn" id="locateUserBtn">
                                 <i class="fas fa-location-crosshairs"></i> Mi Ubicación

@@ -16,49 +16,56 @@ class BrevoEmail {
     /**
      * Enviar correo de confirmación de registro (referenciado)
      */
-    public function enviarConfirmacionRegistro($referido, $referenciador) {
-        try {
-            // Usar la fecha que viene del archivo PHP (ya formateada correctamente)
-            $fechaRegistro = $referido['fecha_registro'] ?? date('d/m/Y H:i:s');
-            
-            error_log("📅 Fecha a usar en correo: " . $fechaRegistro);
-            
-            // Preparar el correo
-            $correoData = [
-                'sender' => [
-                    'name' => getenv('SMTP_FROM_NAME') ?: 'Soporte - SGP',
-                    'email' => getenv('SMTP_FROM') ?: 'solanoalfonsoy@gmail.com'
-                ],
-                'to' => [
-                    [
-                        'email' => $referido['email'],
-                        'name' => $referido['nombre'] . ' ' . $referido['apellido']
-                    ]
-                ],
-                'subject' => 'Confirmación de Registro - Sistema de Gestión Política',
-                'htmlContent' => $this->generarHTMLCorreo($referido, $referenciador, $fechaRegistro),
-                'textContent' => $this->generarTextoCorreo($referido, $referenciador, $fechaRegistro),
-                'params' => [
-                    'NOMBRE_COMPLETO' => $referido['nombre'] . ' ' . $referido['apellido'],
-                    'CEDULA' => $referido['cedula'],
-                    'EMAIL' => $referido['email'],
-                    'TELEFONO' => $referido['telefono'],
-                    'FECHA_REGISTRO' => $fechaRegistro,
-                    'REFERENCIADOR' => $referenciador['nombres'] . ' ' . $referenciador['apellidos']
-                ]
-            ];
-            
-            // Enviar usando la API de Brevo
-            return $this->enviarAPI($correoData);
-            
-        } catch (Exception $e) {
-            error_log("❌ Error Brevo: " . $e->getMessage());
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
+    public function enviarConfirmacionRegistro($referido, $referenciador, $lider = null) {
+    try {
+        $fechaRegistro = $referido['fecha_registro'] ?? date('d/m/Y H:i:s');
+        
+        error_log("📅 Fecha a usar en correo: " . $fechaRegistro);
+        
+        // Determinar el nombre del líder
+        $nombreLider = 'No asignado';
+        if ($lider && isset($lider['nombres'])) {
+            $nombreLider = $lider['nombres'] . ' ' . ($lider['apellidos'] ?? '');
+        } elseif ($lider && isset($lider['nombre_completo'])) {
+            $nombreLider = $lider['nombre_completo'];
         }
+        
+        // Preparar el correo
+        $correoData = [
+            'sender' => [
+                'name' => getenv('SMTP_FROM_NAME') ?: 'Soporte - SGP',
+                'email' => getenv('SMTP_FROM') ?: 'solanoalfonsoy@gmail.com'
+            ],
+            'to' => [
+                [
+                    'email' => $referido['email'],
+                    'name' => $referido['nombre'] . ' ' . $referido['apellido']
+                ]
+            ],
+            'subject' => 'Confirmación de Registro - Sistema de Gestión Política',
+            'htmlContent' => $this->generarHTMLCorreo($referido, $referenciador, $lider, $fechaRegistro),
+            'textContent' => $this->generarTextoCorreo($referido, $referenciador, $lider, $fechaRegistro),
+            'params' => [
+                'NOMBRE_COMPLETO' => $referido['nombre'] . ' ' . $referido['apellido'],
+                'CEDULA' => $referido['cedula'],
+                'EMAIL' => $referido['email'],
+                'TELEFONO' => $referido['telefono'],
+                'FECHA_REGISTRO' => $fechaRegistro,
+                'REFERENCIADOR' => $referenciador['nombres'] . ' ' . $referenciador['apellidos'],
+                'LIDER' => $nombreLider
+            ]
+        ];
+        
+        return $this->enviarAPI($correoData);
+        
+    } catch (Exception $e) {
+        error_log("❌ Error Brevo: " . $e->getMessage());
+        return [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
     }
+}
     
     /**
      * Envía correo de confirmación de registro a un líder
@@ -194,110 +201,140 @@ private function generarTextoCorreoLider($lider, $administrador, $fechaRegistro)
     }
     
     /**
-     * Generar contenido HTML del correo para referenciado
-     */
-    private function generarHTMLCorreo($referido, $referenciador, $fechaRegistro) {
-        return '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Confirmación de Registro</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    max-width: 600px;
-                    margin: 0 auto;
-                    padding: 20px;
-                }
-                .header {
-                    background: linear-gradient(135deg, #2c3e50, #3498db);
-                    color: white;
-                    padding: 20px;
-                    text-align: center;
-                    border-radius: 10px 10px 0 0;
-                }
-                .content {
-                    padding: 30px;
-                    background-color: #f9f9f9;
-                    border: 1px solid #ddd;
-                    border-top: none;
-                    border-radius: 0 0 10px 10px;
-                }
-                .info-box {
-                    background: white;
-                    border-left: 4px solid #3498db;
-                    padding: 15px;
-                    margin: 15px 0;
-                    border-radius: 4px;
-                }
-                .footer {
-                    text-align: center;
-                    margin-top: 30px;
-                    padding-top: 20px;
-                    border-top: 1px solid #eee;
-                    color: #666;
-                    font-size: 12px;
-                }
-                .highlight {
-                    color: #2c3e50;
-                    font-weight: bold;
-                }
-                .logo {
-                    text-align: center;
-                    margin-bottom: 20px;
-                }
-                .logo-text {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: #2c3e50;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="logo">
-                <div class="logo-text">SGP</div>
-                <div style="color: #666; font-size: 14px;">Sistema de Gestión Política</div>
-            </div>
-            
-            <div class="header">
-                <h1>¡Registro Confirmado!</h1>
-                <p>Gracias por ser parte de nuestro sistema</p>
-            </div>
-            
-            <div class="content">
-                <p>Estimado/a <span class="highlight">{{params.NOMBRE_COMPLETO}}</span>,</p>
-                
-                <p>Su registro en el Sistema de Gestión Política ha sido completado exitosamente.</p>
-                
-                <div class="info-box">
-                    <h3>Información de su registro:</h3>
-                    <p><strong>Cédula:</strong> {{params.CEDULA}}</p>
-                    <p><strong>Email:</strong> {{params.EMAIL}}</p>
-                    <p><strong>Teléfono:</strong> {{params.TELEFONO}}</p>
-                    <p><strong>Fecha de registro:</strong> {{params.FECHA_REGISTRO}}</p>
-                    <p><strong>Referenciador:</strong> {{params.REFERENCIADOR}}</p>
-                </div>
-                
-                <p>Su información ha sido registrada en nuestra base de datos y será utilizada para mantenerle informado sobre actividades y eventos relevantes.</p>
-                
-                <p>Si tiene alguna pregunta o necesita actualizar sus datos, no dude en contactarnos.</p>
-                
-                <p>Saludos cordiales,<br>
-                <strong>Equipo SGP</strong></p>
-            </div>
-            
-            <div class="footer">
-                <p>© ' . date('Y') . ' Sistema de Gestión Política - Todos los derechos reservados</p>
-                <p>Este es un correo automático, por favor no responder a esta dirección.</p>
-            </div>
-        </body>
-        </html>
-        ';
+ * Generar contenido HTML del correo para referenciado
+ */
+private function generarHTMLCorreo($referido, $referenciador, $lider, $fechaRegistro) {
+    // Determinar el nombre del líder
+    $nombreLider = 'No asignado';
+    if ($lider && isset($lider['nombres'])) {
+        $nombreLider = $lider['nombres'] . ' ' . ($lider['apellidos'] ?? '');
+    } elseif ($lider && isset($lider['nombre_completo'])) {
+        $nombreLider = $lider['nombre_completo'];
+    } elseif ($lider && isset($lider['id_lider'])) {
+        // Si solo tenemos el ID pero no los datos, mostrar "Asignado"
+        $nombreLider = 'Asignado (ID: ' . $lider['id_lider'] . ')';
     }
+    
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmación de Registro</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background: linear-gradient(135deg, #2c3e50, #3498db);
+                color: white;
+                padding: 20px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+            }
+            .content {
+                padding: 30px;
+                background-color: #f9f9f9;
+                border: 1px solid #ddd;
+                border-top: none;
+                border-radius: 0 0 10px 10px;
+            }
+            .info-box {
+                background: white;
+                border-left: 4px solid #3498db;
+                padding: 15px;
+                margin: 15px 0;
+                border-radius: 4px;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #eee;
+                color: #666;
+                font-size: 12px;
+            }
+            .highlight {
+                color: #2c3e50;
+                font-weight: bold;
+            }
+            .logo {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .logo-text {
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+            }
+            .badge-lider {
+                display: inline-block;
+                background-color: #27ae60;
+                color: white;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: normal;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="logo">
+            <div class="logo-text">SGP</div>
+            <div style="color: #666; font-size: 14px;">Sistema de Gestión Política</div>
+        </div>
+        
+        <div class="header">
+            <h1>¡Registro Confirmado!</h1>
+            <p>Gracias por ser parte de nuestro sistema</p>
+        </div>
+        
+        <div class="content">
+            <p>Estimado/a <span class="highlight">{{params.NOMBRE_COMPLETO}}</span>,</p>
+            
+            <p>Su registro en el Sistema de Gestión Política ha sido completado exitosamente.</p>
+            
+            <div class="info-box">
+                <h3>Información de su registro:</h3>
+                <p><strong>Cédula:</strong> {{params.CEDULA}}</p>
+                <p><strong>Email:</strong> {{params.EMAIL}}</p>
+                <p><strong>Teléfono:</strong> {{params.TELEFONO}}</p>
+                <p><strong>Fecha de registro:</strong> {{params.FECHA_REGISTRO}}</p>
+                <p><strong>Referenciador:</strong> {{params.REFERENCIADOR}}</p>
+                <p><strong>Líder asignado:</strong> ' . htmlspecialchars($nombreLider) . '</p> <!-- NUEVO CAMPO -->
+            </div>';
+            
+            // Si hay líder asignado, mostrar un mensaje adicional
+            if ($lider && $nombreLider != 'No asignado') {
+                $return .= '
+                <div style="background-color: #e8f5e9; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #27ae60;">
+                    <p style="margin: 0;"><strong>📢 Información importante:</strong> Su líder asignado, <strong>' . htmlspecialchars($nombreLider) . '</strong>, estará a cargo de su acompañamiento y seguimiento en el proceso.</p>
+                </div>';
+            }
+            
+            $return .= '
+            <p>Su información ha sido registrada en nuestra base de datos y será utilizada para mantenerle informado sobre actividades y eventos relevantes.</p>
+            
+            <p>Si tiene alguna pregunta o necesita actualizar sus datos, no dude en contactarnos.</p>
+            
+            <p>Saludos cordiales,<br>
+            <strong>Equipo SGP</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>© ' . date('Y') . ' Sistema de Gestión Política - Todos los derechos reservados</p>
+            <p>Este es un correo automático, por favor no responder a esta dirección.</p>
+        </div>
+    </body>
+    </html>
+    ';
+}
     
     /**
      * Generar contenido HTML del correo para líder
@@ -667,20 +704,30 @@ private function generarTextoCorreoLider($lider, $administrador, $fechaRegistro)
     /**
      * Generar contenido de texto plano (para referenciado)
      */
-    private function generarTextoCorreo($referido, $referenciador, $fechaRegistro) {
-        return "CONFIRMACIÓN DE REGISTRO - SISTEMA SGP\n\n" .
-               "Estimado/a " . $referido['nombre'] . " " . $referido['apellido'] . ",\n\n" .
-               "Su registro en el Sistema de Gestión Política ha sido completado exitosamente.\n\n" .
-               "INFORMACIÓN DE REGISTRO:\n" .
-               "Cédula: " . $referido['cedula'] . "\n" .
-               "Email: " . $referido['email'] . "\n" .
-               "Teléfono: " . $referido['telefono'] . "\n" .
-               "Fecha: " . $fechaRegistro . "\n" .
-               "Referenciador: " . $referenciador['nombres'] . " " . $referenciador['apellidos'] . "\n\n" .
-               "Saludos cordiales,\n" .
-               "Equipo SGP\n\n" .
-               "© " . date('Y') . " Sistema de Gestión Política";
+    private function generarTextoCorreo($referido, $referenciador, $lider, $fechaRegistro) {
+    // Determinar el nombre del líder
+    $nombreLider = 'No asignado';
+    if ($lider && isset($lider['nombres'])) {
+        $nombreLider = $lider['nombres'] . ' ' . ($lider['apellidos'] ?? '');
+    } elseif ($lider && isset($lider['nombre_completo'])) {
+        $nombreLider = $lider['nombre_completo'];
     }
+    
+    return "CONFIRMACIÓN DE REGISTRO - SISTEMA SGP\n\n" .
+           "Estimado/a " . $referido['nombre'] . " " . $referido['apellido'] . ",\n\n" .
+           "Su registro en el Sistema de Gestión Política ha sido completado exitosamente.\n\n" .
+           "INFORMACIÓN DE REGISTRO:\n" .
+           "Cédula: " . $referido['cedula'] . "\n" .
+           "Email: " . $referido['email'] . "\n" .
+           "Teléfono: " . $referido['telefono'] . "\n" .
+           "Fecha: " . $fechaRegistro . "\n" .
+           "Referenciador: " . $referenciador['nombres'] . " " . $referenciador['apellidos'] . "\n" .
+           "Líder asignado: " . $nombreLider . "\n\n" .
+           
+           "Saludos cordiales,\n" .
+           "Equipo SGP\n\n" .
+           "© " . date('Y') . " Sistema de Gestión Política";
+}
     
     /**
      * Enviar correo usando la API de Brevo

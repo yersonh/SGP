@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/BarrioModel.php';
 require_once __DIR__ . '/../../models/ReferenciadoModel.php';
+require_once __DIR__ . '/../../models/LiderModel.php'; // ← NUEVO: Incluir modelo de líder
 require_once __DIR__ . '/../../lib/BrevoEmail.php';
 
 header('Content-Type: application/json');
@@ -25,6 +26,7 @@ try {
     $usuarioModel = new UsuarioModel($pdo);
     $barrioModel = new BarrioModel($pdo);
     $referenciadoModel = new ReferenciadoModel($pdo);
+    $liderModel = new LiderModel($pdo); // ← NUEVO: Instanciar modelo de líder
     
     // Obtener datos del referenciador (usuario logueado)
     $id_usuario_logueado = $_SESSION['id_usuario'];
@@ -43,6 +45,17 @@ try {
         $fechaRegistro = date('d/m/Y H:i:s');
     }
     
+    // Obtener datos del líder si se proporcionó
+    $lider = null;
+    $id_lider = isset($_POST['id_lider']) && !empty($_POST['id_lider']) ? $_POST['id_lider'] : null;
+    
+    if ($id_lider) {
+        $lider = $liderModel->getById($id_lider);
+        error_log("📋 Líder encontrado para correo: " . ($lider ? $lider['nombres'] . ' ' . $lider['apellidos'] : 'No encontrado'));
+    } else {
+        error_log("📋 No se proporcionó ID de líder para el correo");
+    }
+    
     // Preparar datos del referido
     $referido = [
         'nombre' => $_POST['nombre'],
@@ -52,7 +65,8 @@ try {
         'telefono' => $_POST['telefono'] ?? '',
         'direccion' => $_POST['direccion'] ?? '',
         'afinidad' => $_POST['afinidad'] ?? '0',
-        'fecha_registro' => $fechaRegistro
+        'fecha_registro' => $fechaRegistro,
+        'id_lider' => $id_lider // ← NUEVO: Incluir ID del líder en los datos del referido
     ];
     
     // Si tenemos el ID del barrio, obtener el nombre
@@ -63,15 +77,17 @@ try {
         }
     }
     
-    // Enviar correo de confirmación
+    // Enviar correo de confirmación con los datos del líder
     $brevo = new BrevoEmail();
-    $resultado = $brevo->enviarConfirmacionRegistro($referido, $referenciador);
+    // Pasar el líder como tercer parámetro
+    $resultado = $brevo->enviarConfirmacionRegistro($referido, $referenciador, $lider);
     
     if ($resultado['success']) {
         echo json_encode([
             'success' => true,
             'message' => 'Correo enviado exitosamente',
-            'message_id' => $resultado['message_id'] ?? null
+            'message_id' => $resultado['message_id'] ?? null,
+            'lider_incluido' => $lider ? true : false // Opcional: para depuración
         ]);
     } else {
         echo json_encode([

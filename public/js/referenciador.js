@@ -1226,7 +1226,8 @@ async function enviarCorreoConfirmacion(formData) {
             telefono: formData.get('telefono'),
             direccion: formData.get('direccion'),
             barrio: formData.get('barrio'), // Enviar ID del barrio
-            afinidad: formData.get('afinidad')
+            afinidad: formData.get('afinidad'),
+            id_lider: formData.get('id_lider')
         };
         
         console.log('📝 Datos para correo:', datosReferido);
@@ -1253,7 +1254,8 @@ async function enviarCorreoConfirmacion(formData) {
                 telefono: datosReferido.telefono,
                 direccion: datosReferido.direccion,
                 barrio: datosReferido.barrio,
-                afinidad: datosReferido.afinidad
+                afinidad: datosReferido.afinidad,
+                id_lider: datosReferido.id_lider || ''
             })
         });
         

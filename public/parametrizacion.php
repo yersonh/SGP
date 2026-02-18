@@ -11,6 +11,7 @@ require_once __DIR__ . '/../models/OfertaApoyoModel.php';
 require_once __DIR__ . '/../models/PuestoVotacionModel.php';
 require_once __DIR__ . '/../models/ZonaModel.php';
 require_once __DIR__ . '/../models/SectorModel.php';
+require_once __DIR__ . '/../models/CandidatoModel.php'; // NUEVO: Modelo de Candidatos
 
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -33,6 +34,7 @@ $ofertaApoyoModel = new OfertaApoyoModel($pdo);
 $puestoVotacionModel = new PuestoVotacionModel($pdo);
 $zonaModel = new ZonaModel($pdo);
 $sectorModel = new SectorModel($pdo);
+$candidatoModel = new CandidatoModel($pdo); // NUEVO: Instanciar modelo de Candidatos
 
 $id_usuario_logueado = $_SESSION['id_usuario'];
 
@@ -52,6 +54,9 @@ $ofertasApoyo = $ofertaApoyoModel->getAll();
 $puestosVotacion = $puestoVotacionModel->getAll();
 $zonas = $zonaModel->getAll();
 $sectores = $sectorModel->getAll();
+$candidatos = $candidatoModel->getAll(); // NUEVO: Obtener candidatos
+$gruposParaCombo = $candidatoModel->getGruposParaCombo(); // NUEVO: Para combo de grupos
+$partidosParaCombo = $candidatoModel->getPartidosParaCombo(); // NUEVO: Para combo de partidos
 
 // Obtener información del sistema
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
@@ -763,6 +768,11 @@ $seccion_activa = isset($_GET['seccion']) ? $_GET['seccion'] : 'barrios';
                     <i class="fas fa-th-large"></i> Sectores
                     <span class="badge bg-secondary"><?php echo count($sectores); ?></span>
                 </a>
+                <!-- NUEVA PESTAÑA: CANDIDATOS -->
+                <a href="?seccion=candidatos" class="param-tab <?php echo $seccion_activa == 'candidatos' ? 'active' : ''; ?>">
+                    <i class="fas fa-user-tie"></i> Candidatos
+                    <span class="badge bg-secondary"><?php echo count($candidatos); ?></span>
+                </a>
             </div>
 
             <!-- Contenido según sección activa -->
@@ -1210,9 +1220,145 @@ $seccion_activa = isset($_GET['seccion']) ? $_GET['seccion'] : 'barrios';
                             </tbody>
                         </table>
                     </div>
+
+                <?php
+                // CANDIDATOS - NUEVA SECCIÓN
+                elseif ($seccion_activa == 'candidatos'): 
+                ?>
+                    <div class="param-header">
+                        <h3><i class="fas fa-user-tie"></i> Administración de Candidatos</h3>
+                        <a href="#" class="btn-agregar" data-bs-toggle="modal" data-bs-target="#modalCandidato">
+                            <i class="fas fa-plus"></i> Nuevo Candidato
+                        </a>
+                    </div>
+                    <div class="table-container">
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Grupo Parlamentario</th>
+                                    <th>Partido Político</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($candidatos as $candidato): ?>
+                                <tr>
+                                    <td>#<?php echo $candidato['id_candidato']; ?></td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($candidato['nombre'] . ' ' . $candidato['apellido']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($candidato['grupo_nombre'])): ?>
+                                            <span class="badge bg-info text-white">
+                                                <?php echo htmlspecialchars($candidato['grupo_nombre']); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">Sin grupo</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($candidato['partido_nombre'])): ?>
+                                            <span class="badge" style="background-color: #27ae60; color: white;">
+                                                <?php echo htmlspecialchars($candidato['partido_nombre']); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">Sin partido</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div class="acciones-cell">
+                                            <a href="#" class="btn-accion btn-editar" title="Editar candidato" data-id="<?php echo $candidato['id_candidato']; ?>">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="#" class="btn-accion btn-eliminar" title="Eliminar candidato" data-id="<?php echo $candidato['id_candidato']; ?>">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($candidatos)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="fas fa-info-circle me-2"></i> No hay candidatos registrados
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </main>
+    </div>
+
+    <!-- Modal para Candidatos -->
+    <div class="modal fade" id="modalCandidato" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-tie me-2"></i>
+                        <span id="modalCandidatoTitle">Nuevo Candidato</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <form id="formCandidato" method="POST">
+                    <input type="hidden" name="id_candidato" id="candidato_id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="candidato_nombre" class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="candidato_nombre" name="nombre" required maxlength="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="candidato_apellido" class="form-label">Apellido *</label>
+                                <input type="text" class="form-control" id="candidato_apellido" name="apellido" required maxlength="100">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="candidato_id_grupo" class="form-label">Grupo Parlamentario</label>
+                                <select class="form-select" id="candidato_id_grupo" name="id_grupo">
+                                    <option value="">-- Seleccione un grupo --</option>
+                                    <?php foreach ($gruposParaCombo as $grupo): ?>
+                                        <option value="<?php echo $grupo['id_grupo']; ?>">
+                                            <?php echo htmlspecialchars($grupo['nombre']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="candidato_id_partido" class="form-label">Partido Político</label>
+                                <select class="form-select" id="candidato_id_partido" name="id_partido">
+                                    <option value="">-- Seleccione un partido --</option>
+                                    <?php foreach ($partidosParaCombo as $partido): ?>
+                                        <option value="<?php echo $partido['id_partido']; ?>">
+                                            <?php echo htmlspecialchars($partido['nombre']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle me-1"></i> Los campos marcados con * son obligatorios.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btnGuardarCandidato">
+                            <i class="fas fa-save me-1"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -1331,11 +1477,142 @@ $seccion_activa = isset($_GET['seccion']) ? $_GET['seccion'] : 'barrios';
                     showNotification(`${accion} - Funcionalidad en desarrollo para ${seccion}`, 'info');
                 });
             });
-        });
 
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-            actualizarLogoSegunTema();
+            // Manejar edición de candidatos
+            document.querySelectorAll('.btn-editar[data-id]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const id = this.dataset.id;
+        
+        // Mostrar loading
+        showNotification('Cargando datos del candidato...', 'info');
+        
+        // Cargar datos del candidato via AJAX
+        fetch(`../ajax/get_candidato.php?id=${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('candidato_id').value = data.id_candidato;
+                    document.getElementById('candidato_nombre').value = data.nombre;
+                    document.getElementById('candidato_apellido').value = data.apellido;
+                    document.getElementById('candidato_id_grupo').value = data.id_grupo || '';
+                    document.getElementById('candidato_id_partido').value = data.id_partido || '';
+                    
+                    document.getElementById('modalCandidatoTitle').textContent = 'Editar Candidato';
+                    new bootstrap.Modal(document.getElementById('modalCandidato')).show();
+                } else {
+                    showNotification('Error al cargar datos: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error de conexión al cargar datos', 'error');
+                console.error('Error:', error);
+            });
+    });
+});
+                                    });
+
+// Manejar eliminación de candidatos - VERSIÓN REAL CON AJAX
+document.querySelectorAll('.btn-eliminar[data-id]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const id = this.dataset.id;
+        const nombre = this.closest('tr').querySelector('td strong')?.textContent || 'candidato';
+        
+        if (confirm(`¿Está seguro de eliminar al candidato "${nombre}"?`)) {
+            // Mostrar loading en el botón
+            const originalHTML = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.style.pointerEvents = 'none';
+            
+            fetch('../ajax/eliminar_candidato.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${id}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Candidato eliminado correctamente', 'success');
+                    // Recargar la página después de 1 segundo
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('Error: ' + data.message, 'error');
+                    // Restaurar botón
+                    this.innerHTML = originalHTML;
+                    this.style.pointerEvents = 'auto';
+                }
+            })
+            .catch(error => {
+                showNotification('Error de conexión', 'error');
+                console.error('Error:', error);
+                // Restaurar botón
+                this.innerHTML = originalHTML;
+                this.style.pointerEvents = 'auto';
+            });
+        }
+    });
+});
+
+// Manejar envío del formulario de candidatos - VERSIÓN REAL CON AJAX
+if (document.getElementById('formCandidato')) {
+    document.getElementById('formCandidato').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validar campos requeridos
+        const nombre = document.getElementById('candidato_nombre').value.trim();
+        const apellido = document.getElementById('candidato_apellido').value.trim();
+        
+        if (!nombre || !apellido) {
+            showNotification('El nombre y apellido son obligatorios', 'error');
+            return;
+        }
+        
+        const formData = new FormData(this);
+        const id = document.getElementById('candidato_id').value;
+        const esEdicion = !!id;
+        
+        // Mostrar loading
+        const btn = document.getElementById('btnGuardarCandidato');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+        btn.disabled = true;
+        
+        // Determinar URL según sea creación o edición
+        const url = esEdicion ? '../ajax/actualizar_candidato.php' : '../ajax/crear_candidato.php';
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                
+                // Cerrar modal
+                bootstrap.Modal.getInstance(document.getElementById('modalCandidato')).hide();
+                
+                // Recargar la página después de 1.5 segundos
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Error: ' + data.message, 'error');
+                // Restaurar botón
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            showNotification('Error de conexión al servidor', 'error');
+            console.error('Error:', error);
+            // Restaurar botón
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         });
+    });
+}
 
         // Mostrar notificaciones
         function showNotification(message, type = 'info') {

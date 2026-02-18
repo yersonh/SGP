@@ -875,7 +875,8 @@ public function getReferenciadoresParaCombo() {
                     u.apellidos,
                     u.cedula,
                     u.correo,
-                    u.telefono
+                    u.telefono,
+                    u.tope
                   FROM usuario u 
                   WHERE u.tipo_usuario = 'Referenciador' 
                   AND u.activo = true

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../models/MunicipioModel.php';
 require_once __DIR__ . '/../../models/ZonaModel.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/LiderModel.php';
+require_once __DIR__ . '/../../models/OfertaApoyoModel.php'; // ✅ NUEVO: Modelo para ofertas de apoyo
 
 header('Content-Type: application/json');
 
@@ -28,21 +29,22 @@ if ($getOptions === 'true') {
     // Devolver opciones para filtros
     $departamentoModel = new DepartamentoModel($pdo);
     $zonaModel = new ZonaModel($pdo);
+    $ofertaApoyoModel = new OfertaApoyoModel($pdo); // ✅ NUEVO: Instanciar modelo
     
     try {
         $departamentos = $departamentoModel->getAll();
         $zonas = $zonaModel->getAll();
         $referenciadores = $usuarioModel->getReferenciadoresParaCombo();
-        
-        /* ✅ CORREGIDO: Obtener líderes desde LiderModel (tabla lideres) */
-        $lideres = $liderModel->getActivos(); // Esto trae SOLO líderes de la tabla lideres
+        $lideres = $liderModel->getActivos(); // Trae líderes de la tabla lideres
+        $ofertas_apoyo = $ofertaApoyoModel->getAll(); // ✅ NUEVO: Obtener todas las ofertas de apoyo
         
         echo json_encode([
             'success' => true,
             'departamentos' => $departamentos,
             'zonas' => $zonas,
             'referenciadores' => $referenciadores,
-            'lideres' => $lideres // Ahora viene de la tabla correcta
+            'lideres' => $lideres,
+            'ofertas_apoyo' => $ofertas_apoyo // ✅ NUEVO: Incluir ofertas de apoyo
         ]);
     } catch (Exception $e) {
         error_log('Error al obtener opciones de filtros: ' . $e->getMessage());
@@ -86,7 +88,7 @@ $departamento = isset($_GET['departamento']) ? (int)$_GET['departamento'] : 0;
 $municipio = isset($_GET['municipio']) ? (int)$_GET['municipio'] : 0;
 $zona = isset($_GET['zona']) ? (int)$_GET['zona'] : 0;
 $referenciador = isset($_GET['referenciador']) ? (int)$_GET['referenciador'] : 0;
-$oferta_apoyo = isset($_GET['oferta_apoyo']) ? (int)$_GET['oferta_apoyo'] : 0;
+$oferta_apoyo = isset($_GET['oferta_apoyo']) ? (int)$_GET['oferta_apoyo'] : 0; // ✅ NUEVO: Capturar el parámetro
 $grupo_poblacional = isset($_GET['grupo_poblacional']) ? (int)$_GET['grupo_poblacional'] : 0;
 $grupo_parlamentario = isset($_GET['grupo_parlamentario']) ? (int)$_GET['grupo_parlamentario'] : 0;
 /* ✅ FILTRO POR LÍDER - AHORA USA ID DE LA TABLA LIDERES */
@@ -102,7 +104,7 @@ if ($departamento > 0) $filters['departamento'] = $departamento;
 if ($municipio > 0) $filters['municipio'] = $municipio;
 if ($zona > 0) $filters['zona'] = $zona;
 if ($referenciador > 0) $filters['referenciador'] = $referenciador;
-if ($oferta_apoyo > 0) $filters['oferta_apoyo'] = $oferta_apoyo;
+if ($oferta_apoyo > 0) $filters['oferta_apoyo'] = $oferta_apoyo; // ✅ NUEVO: Agregar a los filtros
 if ($grupo_poblacional > 0) $filters['grupo_poblacional'] = $grupo_poblacional;
 if ($grupo_parlamentario > 0) $filters['grupo_parlamentario'] = $grupo_parlamentario;
 /* ✅ FILTRO POR LÍDER - AHORA USA ID DE LA TABLA LIDERES */

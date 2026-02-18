@@ -543,7 +543,34 @@ body {
 .logo-clickable:hover {
     transform: scale(1.05);
 }
+/* Breadcrumb Navigation */
+        .breadcrumb-nav {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            padding: 0 15px;
 
+            display: flex;
+            justify-content: center;
+        }
+        
+        .breadcrumb {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+
+            display: flex;
+            gap: 5px;
+        }
+        
+        .breadcrumb-item a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item.active {
+            color: #666;
+        }
 /* =========================================== */
 /* CONTADOR COMPACTO - COLORES FIJOS (NO CAMBIAN) */
 /* =========================================== */
@@ -1085,7 +1112,15 @@ body {
             </div>
         </div>
     </header>
-
+<!-- Breadcrumb Navigation -->
+    <div class="breadcrumb-nav">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="../superadmin_dashboard.php"><i class="fas fa-home"></i> Panel Super Admin</a></li>
+                <li class="breadcrumb-item"><i class="fas fa-database"></i> Auditoría</li>
+            </ol>
+        </nav>
+    </div>
     <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">

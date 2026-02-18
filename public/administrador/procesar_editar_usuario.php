@@ -96,10 +96,7 @@ try {
     $nueva_password = null;
     
     if (!empty($_POST['nueva_password'])) {
-        if (strlen($_POST['nueva_password']) < 6) {
-            echo json_encode(['success' => false, 'message' => 'La contraseña debe tener al menos 6 caracteres']);
-            exit();
-        }
+        // Eliminé la validación de mínimo 6 caracteres
         
         if ($_POST['nueva_password'] !== $_POST['confirmar_password']) {
             echo json_encode(['success' => false, 'message' => 'Las contraseñas no coinciden']);
@@ -107,7 +104,8 @@ try {
         }
         
         $cambiar_password = true;
-        $nueva_password = password_hash($_POST['nueva_password'], PASSWORD_DEFAULT);
+        // MODIFICADO: Guardar en texto plano, sin password_hash
+        $nueva_password = $_POST['nueva_password'];
     }
     
     // Preparar datos para actualizar
@@ -211,6 +209,7 @@ try {
     
     // Agregar contraseña si se cambió
     if ($cambiar_password) {
+        // MODIFICADO: Guardar en texto plano
         $datos_actualizar['password'] = $nueva_password;
     }
     
@@ -320,3 +319,4 @@ function redimensionarImagen($ruta_imagen, $ancho_maximo, $alto_maximo) {
     
     return true;
 }
+?>

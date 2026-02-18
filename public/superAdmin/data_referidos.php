@@ -320,7 +320,13 @@ if ($porcentajeRestante > 50) {
                                         <option value="">Todas las zonas</option>
                                     </select>
                                 </div>
-                                
+                                <!-- NUEVO CAMPO: Oferta de apoyo -->
+                                <div class="col-md-3">
+                                    <label for="filterOfertaApoyo" class="form-label">Oferta de apoyo</label>
+                                    <select class="form-select" id="filterOfertaApoyo" name="oferta_apoyo">
+                                        <option value="">Todas las ofertas</option>
+                                    </select>
+                                </div>
                                 <!-- Referenciador -->
                                 <div class="col-md-3">
                                     <label for="filterReferenciador" class="form-label">Referenciador</label>
@@ -620,59 +626,68 @@ $(document).ready(function() {
 
     // Cargar opciones de filtros avanzados al iniciar
     function cargarOpcionesFiltrosAvanzados() {
-        $.ajax({
-            url: '../ajax/get_referenciados.php',
-            type: 'GET',
-            data: { get_options: 'true' },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    // Llenar departamentos
-                    var departamentoSelect = $('#filterDepartamento');
-                    departamentoSelect.html('<option value="">Todos los departamentos</option>');
-                    $.each(response.departamentos, function(index, departamento) {
-                        departamentoSelect.append('<option value="' + departamento.id_departamento + '">' + departamento.nombre + '</option>');
+    $.ajax({
+        url: '../ajax/get_referenciados.php',
+        type: 'GET',
+        data: { get_options: 'true' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Llenar departamentos
+                var departamentoSelect = $('#filterDepartamento');
+                departamentoSelect.html('<option value="">Todos los departamentos</option>');
+                $.each(response.departamentos, function(index, departamento) {
+                    departamentoSelect.append('<option value="' + departamento.id_departamento + '">' + departamento.nombre + '</option>');
+                });
+                
+                // Llenar zonas
+                var zonaSelect = $('#filterZona');
+                zonaSelect.html('<option value="">Todas las zonas</option>');
+                $.each(response.zonas, function(index, zona) {
+                    zonaSelect.append('<option value="' + zona.id_zona + '">' + zona.nombre + '</option>');
+                });
+                
+                // Llenar referenciadores
+                var referenciadorSelect = $('#filterReferenciador');
+                referenciadorSelect.html('<option value="">Todos los referenciadores</option>');
+                $.each(response.referenciadores, function(index, referenciador) {
+                    var nombreCompleto = referenciador.nombres + ' ' + referenciador.apellidos + ' - ' + (referenciador.cedula || '');
+                    referenciadorSelect.append('<option value="' + referenciador.id_usuario + '">' + nombreCompleto + '</option>');
+                });
+                
+                // Llenar líderes
+                var liderSelect = $('#filterLider');
+                liderSelect.html('<option value="">Todos los líderes</option>');
+                if (response.lideres && response.lideres.length > 0) {
+                    $.each(response.lideres, function(index, lider) {
+                        var nombreCompleto = lider.nombres + ' ' + lider.apellidos;
+                        if (lider.cc) {
+                            nombreCompleto += ' - ' + lider.cc;
+                        }
+                        liderSelect.append('<option value="' + lider.id_lider + '">' + nombreCompleto + '</option>');
                     });
-                    
-                    // Llenar zonas
-                    var zonaSelect = $('#filterZona');
-                    zonaSelect.html('<option value="">Todas las zonas</option>');
-                    $.each(response.zonas, function(index, zona) {
-                        zonaSelect.append('<option value="' + zona.id_zona + '">' + zona.nombre + '</option>');
-                    });
-                    
-                    // Llenar referenciadores
-                    var referenciadorSelect = $('#filterReferenciador');
-                    referenciadorSelect.html('<option value="">Todos los referenciadores</option>');
-                    $.each(response.referenciadores, function(index, referenciador) {
-                        var nombreCompleto = referenciador.nombres + ' ' + referenciador.apellidos + ' - ' + (referenciador.cedula || '');
-                        referenciadorSelect.append('<option value="' + referenciador.id_usuario + '">' + nombreCompleto + '</option>');
-                    });
-                    
-                    // Llenar líderes
-                    var liderSelect = $('#filterLider');
-                    liderSelect.html('<option value="">Todos los líderes</option>');
-                    if (response.lideres && response.lideres.length > 0) {
-                        $.each(response.lideres, function(index, lider) {
-                            var nombreCompleto = lider.nombres + ' ' + lider.apellidos;
-                            if (lider.cc) {
-                                nombreCompleto += ' - ' + lider.cc;
-                            }
-                            liderSelect.append('<option value="' + lider.id_lider + '">' + nombreCompleto + '</option>');
-                        });
-                    }
-                    
-                    // Aplicar filtros guardados después de cargar las opciones
-                    aplicarFiltrosAvanzadosGuardados();
-                } else {
-                    showNotification('Error al cargar opciones de filtros: ' + (response.error || 'Error desconocido'), 'error');
                 }
-            },
-            error: function(xhr, status, error) {
-                showNotification('Error al cargar opciones de filtros: ' + error, 'error');
+                
+                // NUEVO: Llenar ofertas de apoyo
+                var ofertaSelect = $('#filterOfertaApoyo');
+                ofertaSelect.html('<option value="">Todas las ofertas</option>');
+                if (response.ofertas_apoyo && response.ofertas_apoyo.length > 0) {
+                    $.each(response.ofertas_apoyo, function(index, oferta) {
+                        ofertaSelect.append('<option value="' + oferta.id_oferta + '">' + oferta.nombre + '</option>');
+                    });
+                }
+                
+                // Aplicar filtros guardados después de cargar las opciones
+                aplicarFiltrosAvanzadosGuardados();
+            } else {
+                showNotification('Error al cargar opciones de filtros: ' + (response.error || 'Error desconocido'), 'error');
             }
-        });
-    }
+        },
+        error: function(xhr, status, error) {
+            showNotification('Error al cargar opciones de filtros: ' + error, 'error');
+        }
+    });
+}
 
     // Función para cargar municipios según departamento
     function cargarMunicipios(idDepartamento) {
@@ -712,40 +727,45 @@ $(document).ready(function() {
 
     // Aplicar filtros avanzados guardados al UI
     function aplicarFiltrosAvanzadosGuardados() {
-        // Aplicar departamento si existe
-        if (currentFilters.departamento) {
-            $('#filterDepartamento').val(currentFilters.departamento);
-            
-            // Si hay departamento, cargar municipios
-            if (currentFilters.municipio) {
-                setTimeout(() => {
-                    cargarMunicipios(currentFilters.departamento);
-                    // Establecer el municipio después de cargar
-                    setTimeout(() => {
-                        $('#filterMunicipio').val(currentFilters.municipio);
-                    }, 500);
-                }, 300);
-            } else {
-                // Solo cargar municipios sin seleccionar
+    // Aplicar departamento si existe
+    if (currentFilters.departamento) {
+        $('#filterDepartamento').val(currentFilters.departamento);
+        
+        // Si hay departamento, cargar municipios
+        if (currentFilters.municipio) {
+            setTimeout(() => {
                 cargarMunicipios(currentFilters.departamento);
-            }
-        }
-        
-        // Aplicar zona si existe
-        if (currentFilters.zona) {
-            $('#filterZona').val(currentFilters.zona);
-        }
-        
-        // Aplicar referenciador si existe
-        if (currentFilters.referenciador) {
-            $('#filterReferenciador').val(currentFilters.referenciador);
-        }
-        
-        // Aplicar líder si existe
-        if (currentFilters.lider) {
-            $('#filterLider').val(currentFilters.lider);
+                // Establecer el municipio después de cargar
+                setTimeout(() => {
+                    $('#filterMunicipio').val(currentFilters.municipio);
+                }, 500);
+            }, 300);
+        } else {
+            // Solo cargar municipios sin seleccionar
+            cargarMunicipios(currentFilters.departamento);
         }
     }
+    
+    // Aplicar zona si existe
+    if (currentFilters.zona) {
+        $('#filterZona').val(currentFilters.zona);
+    }
+    
+    // Aplicar referenciador si existe
+    if (currentFilters.referenciador) {
+        $('#filterReferenciador').val(currentFilters.referenciador);
+    }
+    
+    // Aplicar líder si existe
+    if (currentFilters.lider) {
+        $('#filterLider').val(currentFilters.lider);
+    }
+    
+    // NUEVO: Aplicar oferta de apoyo si existe
+    if (currentFilters.oferta_apoyo) {
+        $('#filterOfertaApoyo').val(currentFilters.oferta_apoyo);
+    }
+}
 
     // Evento para cambio de departamento
     $('#filterDepartamento').on('change', function() {
@@ -759,51 +779,56 @@ $(document).ready(function() {
 
     // Función para aplicar filtros avanzados
     window.applyAdvancedFilters = function() {
-        currentFilters.departamento = $('#filterDepartamento').val() || '';
-        currentFilters.municipio = $('#filterMunicipio').val() || '';
-        currentFilters.zona = $('#filterZona').val() || '';
-        currentFilters.referenciador = $('#filterReferenciador').val() || '';
-        currentFilters.lider = $('#filterLider').val() || '';
-        
-        // Guardar filtros
-        saveFilters();
-        
-        // Cargar datos con los nuevos filtros
-        loadReferenciados(1);
-        
-        // Cerrar el collapse de filtros avanzados
-        var advancedFilters = bootstrap.Collapse.getInstance(document.getElementById('advancedFilters'));
-        if (advancedFilters) {
-            advancedFilters.hide();
-        }
-        
-        showNotification('Filtros avanzados aplicados', 'success');
-    };
+    currentFilters.departamento = $('#filterDepartamento').val() || '';
+    currentFilters.municipio = $('#filterMunicipio').val() || '';
+    currentFilters.zona = $('#filterZona').val() || '';
+    currentFilters.referenciador = $('#filterReferenciador').val() || '';
+    currentFilters.lider = $('#filterLider').val() || '';
+    // NUEVO: Oferta de apoyo
+    currentFilters.oferta_apoyo = $('#filterOfertaApoyo').val() || '';
+    
+    // Guardar filtros
+    saveFilters();
+    
+    // Cargar datos con los nuevos filtros
+    loadReferenciados(1);
+    
+    // Cerrar el collapse de filtros avanzados
+    var advancedFilters = bootstrap.Collapse.getInstance(document.getElementById('advancedFilters'));
+    if (advancedFilters) {
+        advancedFilters.hide();
+    }
+    
+    showNotification('Filtros avanzados aplicados', 'success');
+};
 
     // Función para limpiar filtros avanzados
     window.clearAdvancedFilters = function() {
-        $('#filterDepartamento').val('');
-        $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
-        $('#filterMunicipio').prop('disabled', true);
-        $('#filterZona').val('');
-        $('#filterReferenciador').val('');
-        $('#filterLider').val('');
-        
-        // Actualizar currentFilters
-        delete currentFilters.departamento;
-        delete currentFilters.municipio;
-        delete currentFilters.zona;
-        delete currentFilters.referenciador;
-        delete currentFilters.lider;
-        
-        // Guardar filtros
-        saveFilters();
-        
-        // Cargar datos sin filtros avanzados
-        loadReferenciados(1);
-        
-        showNotification('Filtros avanzados limpiados', 'info');
-    };
+    $('#filterDepartamento').val('');
+    $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+    $('#filterMunicipio').prop('disabled', true);
+    $('#filterZona').val('');
+    $('#filterReferenciador').val('');
+    $('#filterLider').val('');
+    // NUEVO: Limpiar oferta de apoyo
+    $('#filterOfertaApoyo').val('');
+    
+    // Actualizar currentFilters
+    delete currentFilters.departamento;
+    delete currentFilters.municipio;
+    delete currentFilters.zona;
+    delete currentFilters.referenciador;
+    delete currentFilters.lider;
+    delete currentFilters.oferta_apoyo; // NUEVO
+    
+    // Guardar filtros
+    saveFilters();
+    
+    // Cargar datos sin filtros avanzados
+    loadReferenciados(1);
+    
+    showNotification('Filtros avanzados limpiados', 'info');
+};
 
     // ============================================
     // FUNCIONES DE SESSIONSTORAGE
@@ -811,95 +836,103 @@ $(document).ready(function() {
     
     // Guardar filtros en sessionStorage
     function saveFilters() {
-        try {
-            const filtersToSave = {
-                search: currentFilters.search || '',
-                activo: currentFilters.activo || '',
-                departamento: currentFilters.departamento || '',
-                municipio: currentFilters.municipio || '',
-                zona: currentFilters.zona || '',
-                referenciador: currentFilters.referenciador || '',
-                lider: currentFilters.lider || '',
-                currentPage: currentPage || 1
-            };
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
-        } catch (e) {
-            console.error('Error al guardar filtros:', e);
-        }
+    try {
+        const filtersToSave = {
+            search: currentFilters.search || '',
+            activo: currentFilters.activo || '',
+            departamento: currentFilters.departamento || '',
+            municipio: currentFilters.municipio || '',
+            zona: currentFilters.zona || '',
+            referenciador: currentFilters.referenciador || '',
+            lider: currentFilters.lider || '',
+            oferta_apoyo: currentFilters.oferta_apoyo || '', // NUEVO
+            currentPage: currentPage || 1
+        };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
+    } catch (e) {
+        console.error('Error al guardar filtros:', e);
     }
+}
     
     // Cargar filtros desde sessionStorage
     function loadFilters() {
-        try {
-            const saved = sessionStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                
-                // Aplicar filtros al UI
-                if (parsed.search) {
-                    $('#searchInput').val(parsed.search);
-                    currentFilters.search = parsed.search;
-                }
-                
-                if (parsed.activo !== undefined && parsed.activo !== '') {
-                    currentFilters.activo = parsed.activo;
-                    updateFilterButtons();
-                }
-                
-                if (parsed.departamento) {
-                    currentFilters.departamento = parsed.departamento;
-                    $('#filterDepartamento').val(parsed.departamento);
-                }
-                
-                if (parsed.municipio) {
-                    currentFilters.municipio = parsed.municipio;
-                    $('#filterMunicipio').val(parsed.municipio);
-                }
-                
-                if (parsed.zona) {
-                    currentFilters.zona = parsed.zona;
-                    $('#filterZona').val(parsed.zona);
-                }
-                
-                if (parsed.referenciador) {
-                    currentFilters.referenciador = parsed.referenciador;
-                    $('#filterReferenciador').val(parsed.referenciador);
-                }
-                
-                if (parsed.lider) {
-                    currentFilters.lider = parsed.lider;
-                    $('#filterLider').val(parsed.lider);
-                }
-                
-                if (parsed.currentPage) {
-                    currentPage = parsed.currentPage;
-                }
-                
-                return true;
+    try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            
+            // Aplicar filtros al UI
+            if (parsed.search) {
+                $('#searchInput').val(parsed.search);
+                currentFilters.search = parsed.search;
             }
-        } catch (e) {
-            console.error('Error al cargar filtros:', e);
-            sessionStorage.removeItem(STORAGE_KEY);
+            
+            if (parsed.activo !== undefined && parsed.activo !== '') {
+                currentFilters.activo = parsed.activo;
+                updateFilterButtons();
+            }
+            
+            if (parsed.departamento) {
+                currentFilters.departamento = parsed.departamento;
+                $('#filterDepartamento').val(parsed.departamento);
+            }
+            
+            if (parsed.municipio) {
+                currentFilters.municipio = parsed.municipio;
+                $('#filterMunicipio').val(parsed.municipio);
+            }
+            
+            if (parsed.zona) {
+                currentFilters.zona = parsed.zona;
+                $('#filterZona').val(parsed.zona);
+            }
+            
+            if (parsed.referenciador) {
+                currentFilters.referenciador = parsed.referenciador;
+                $('#filterReferenciador').val(parsed.referenciador);
+            }
+            
+            if (parsed.lider) {
+                currentFilters.lider = parsed.lider;
+                $('#filterLider').val(parsed.lider);
+            }
+            
+            // NUEVO: Cargar oferta de apoyo
+            if (parsed.oferta_apoyo) {
+                currentFilters.oferta_apoyo = parsed.oferta_apoyo;
+                $('#filterOfertaApoyo').val(parsed.oferta_apoyo);
+            }
+            
+            if (parsed.currentPage) {
+                currentPage = parsed.currentPage;
+            }
+            
+            return true;
         }
-        return false;
+    } catch (e) {
+        console.error('Error al cargar filtros:', e);
+        sessionStorage.removeItem(STORAGE_KEY);
     }
+    return false;
+}
     
     // Limpiar todos los filtros y sessionStorage
     function clearAllFiltersAndStorage() {
-        currentFilters = {};
-        sessionStorage.removeItem(STORAGE_KEY);
-        
-        // Limpiar UI
-        $('#searchInput').val('');
-        $('#filterDepartamento').val('');
-        $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
-        $('#filterMunicipio').prop('disabled', true);
-        $('#filterZona').val('');
-        $('#filterReferenciador').val('');
-        $('#filterLider').val('');
-        
-        updateFilterButtons();
-    }
+    currentFilters = {};
+    sessionStorage.removeItem(STORAGE_KEY);
+    
+    // Limpiar UI
+    $('#searchInput').val('');
+    $('#filterDepartamento').val('');
+    $('#filterMunicipio').html('<option value="">Todos los municipios</option>');
+    $('#filterMunicipio').prop('disabled', true);
+    $('#filterZona').val('');
+    $('#filterReferenciador').val('');
+    $('#filterLider').val('');
+    $('#filterOfertaApoyo').val(''); // NUEVO
+    
+    updateFilterButtons();
+}
     
     // ============================================
     // FUNCIONES PRINCIPALES
@@ -953,6 +986,9 @@ $(document).ready(function() {
         }
         if (currentFilters.lider) {
             url += `&lider=${currentFilters.lider}`;
+        }
+        if (currentFilters.oferta_apoyo) { 
+            url += `&oferta_apoyo=${currentFilters.oferta_apoyo}`; 
         }
         
         $.ajax({
@@ -1163,47 +1199,52 @@ $(document).ready(function() {
     
     // Función para actualizar información total (mejorada)
     function updateTotalInfo(stats, pagination) {
-        const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
-        const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
-        
-        let filterInfo = '';
-        if (currentFilters.search) {
-            filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
-        }
-        if (currentFilters.activo === '1') {
-            filterInfo += ' | Solo activos';
-        } else if (currentFilters.activo === '0') {
-            filterInfo += ' | Solo inactivos';
-        }
-        
-        // Agregar información de filtros avanzados
-        if (currentFilters.departamento) {
-            const deptoName = $('#filterDepartamento option:selected').text();
-            filterInfo += ` | Departamento: ${deptoName}`;
-        }
-        if (currentFilters.municipio) {
-            const muniName = $('#filterMunicipio option:selected').text();
-            filterInfo += ` | Municipio: ${muniName}`;
-        }
-        if (currentFilters.zona) {
-            const zonaName = $('#filterZona option:selected').text();
-            filterInfo += ` | Zona: ${zonaName}`;
-        }
-        if (currentFilters.referenciador) {
-            const refName = $('#filterReferenciador option:selected').text();
-            filterInfo += ` | Referenciador: ${refName}`;
-        }
-        if (currentFilters.lider) {
-            const liderName = $('#filterLider option:selected').text();
-            filterInfo += ` | Líder: ${liderName}`;
-        }
-        
-        $('#infoFooter p').html(`
-            <i class="fas fa-info-circle"></i> 
-            Mostrando ${from} a ${to} de ${pagination.total} referidos 
-            (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
-        `);
+    const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+    const to = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+    
+    let filterInfo = '';
+    if (currentFilters.search) {
+        filterInfo += ` | Búsqueda: "${currentFilters.search}"`;
     }
+    if (currentFilters.activo === '1') {
+        filterInfo += ' | Solo activos';
+    } else if (currentFilters.activo === '0') {
+        filterInfo += ' | Solo inactivos';
+    }
+    
+    // Agregar información de filtros avanzados
+    if (currentFilters.departamento) {
+        const deptoName = $('#filterDepartamento option:selected').text();
+        filterInfo += ` | Departamento: ${deptoName}`;
+    }
+    if (currentFilters.municipio) {
+        const muniName = $('#filterMunicipio option:selected').text();
+        filterInfo += ` | Municipio: ${muniName}`;
+    }
+    if (currentFilters.zona) {
+        const zonaName = $('#filterZona option:selected').text();
+        filterInfo += ` | Zona: ${zonaName}`;
+    }
+    if (currentFilters.referenciador) {
+        const refName = $('#filterReferenciador option:selected').text();
+        filterInfo += ` | Referenciador: ${refName}`;
+    }
+    if (currentFilters.lider) {
+        const liderName = $('#filterLider option:selected').text();
+        filterInfo += ` | Líder: ${liderName}`;
+    }
+    // NUEVO: Mostrar filtro de oferta de apoyo
+    if (currentFilters.oferta_apoyo) {
+        const ofertaName = $('#filterOfertaApoyo option:selected').text();
+        filterInfo += ` | Oferta: ${ofertaName}`;
+    }
+    
+    $('#infoFooter p').html(`
+        <i class="fas fa-info-circle"></i> 
+        Mostrando ${from} a ${to} de ${pagination.total} referidos 
+        (${stats.activos} activos, ${stats.inactivos} inactivos)${filterInfo}
+    `);
+}
     
     // Funciones helper
     function escapeHtml(text) {
@@ -1372,9 +1413,6 @@ window.editarReferenciado = editarReferenciadoConFiltros;
 function exportarReferidos(formato) {
     const soloActivos = document.getElementById('exportSoloActivos')?.checked || false;
     
-    // ✅ AHORA currentFilters ES ACCESIBLE (VARIABLE GLOBAL)
-    console.log('Exportando con filtros:', currentFilters);
-    
     // Construir URL con TODOS los filtros actuales
     let params = new URLSearchParams();
     
@@ -1412,6 +1450,10 @@ function exportarReferidos(formato) {
     }
     if (currentFilters.lider) {
         params.append('lider', currentFilters.lider);
+    }
+    // NUEVO: Agregar oferta de apoyo a la exportación
+    if (currentFilters.oferta_apoyo) {
+        params.append('oferta_apoyo', currentFilters.oferta_apoyo);
     }
     
     // Determinar URL según formato

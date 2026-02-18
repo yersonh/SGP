@@ -186,6 +186,9 @@ $estadisticas = [
             max-width: 1400px;
             margin: 0 auto 20px;
             padding: 0 15px;
+
+            display: flex;
+            justify-content: center;
         }
         
         .breadcrumb {
@@ -193,6 +196,9 @@ $estadisticas = [
             padding: 0;
             margin: 0;
             font-size: 0.9rem;
+
+            display: flex;
+            gap: 5px;
         }
         
         .breadcrumb-item a {
@@ -898,7 +904,27 @@ $estadisticas = [
         // Variables para búsqueda en tiempo real
         let timeoutBusqueda = null;
         let buscandoActivo = false;
+        function actualizarLogoSegunTema() {
+                    const logo = document.getElementById('footer-logo');
+                    if (!logo) return;
+                    
+                    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    
+                    if (isDarkMode) {
+                        logo.src = logo.getAttribute('data-img-oscuro');
+                    } else {
+                        logo.src = logo.getAttribute('data-img-claro');
+                    }
+                }
+                  // Ejecutar al cargar y cuando cambie el tema
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
 
+        // Escuchar cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
         // Inicializar eventos de búsqueda
         function inicializarBusquedaTiempoReal() {
             // Eventos para inputs de búsqueda en tiempo real
@@ -967,7 +993,7 @@ function verificarBusquedaCedula(valor) {
         ejecutarBusqueda();
     }, delay);
 }
-        // Modificar ejecutarBusqueda para usar los inputs ocultos
+// Modificar ejecutarBusqueda para forzar la aplicación del tema oscuro
 function ejecutarBusqueda() {
     if (buscandoActivo) return;
     
@@ -1010,6 +1036,27 @@ function ejecutarBusqueda() {
                 
                 // Actualizar contador de resultados
                 actualizarContadorResultados(response.pagination);
+                
+                // === SOLUCIÓN PARA MODO OSCURO ===
+                // Forzar la aplicación del tema al contenido nuevo
+                setTimeout(function() {
+                    // Verificar si está en modo oscuro
+                    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    
+                    if (isDarkMode) {
+                        // Forzar un reflow en la tabla y contenedores
+                        document.body.style.backgroundColor = '#121212';
+                        $('#tbody-lideres').css('color', '#e0e0e0');
+                        $('.table-container').css('background-color', '#1e1e1e');
+                        $('.table').css('color', '#e0e0e0');
+                        
+                        // Forzar que las celdas también hereden el color
+                        $('#tbody-lideres td').css('color', 'inherit');
+                        
+                        // Forzar recálculo de estilos
+                        document.body.offsetHeight;
+                    }
+                }, 100);
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -1073,118 +1120,118 @@ $('#inputIrPagina').keypress(function(e) {
     }
 });
         // Función para actualizar la tabla
-        function actualizarTablaLideres(lideres, page, perPage) {
-            let html = '';
-            let contador = 1 + ((page - 1) * perPage);
+function actualizarTablaLideres(lideres, page, perPage) {
+    let html = '';
+    let contador = 1 + ((page - 1) * perPage);
+    
+    if (lideres.length === 0) {
+        html = `
+            <tr id="sin-resultados">
+                <td colspan="10" class="text-center py-4">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5>No se encontraron líderes</h5>
+                    <p class="text-muted">Intenta con otros filtros de búsqueda</p>
+                </td>
+            </tr>
+        `;
+    } else {
+        lideres.forEach(function(lider) {
+            const esDestacado = lider.cantidad_referidos >= 10;
+            const destacadoClass = esDestacado ? 'highlight-row' : '';
             
-            if (lideres.length === 0) {
-                html = `
-                    <tr id="sin-resultados">
-                        <td colspan="10" class="text-center py-4">
-                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                            <h5>No se encontraron líderes</h5>
-                            <p class="text-muted">Intenta con otros filtros de búsqueda</p>
-                        </td>
-                    </tr>
-                `;
-            } else {
-                lideres.forEach(function(lider) {
-                    const esDestacado = lider.cantidad_referidos >= 10;
-                    const destacadoClass = esDestacado ? 'highlight-row' : '';
-                    
-                    // Formatear fecha
-                    let fechaCreacion = 'N/A';
-                    if (lider.fecha_creacion) {
-                        const fecha = new Date(lider.fecha_creacion);
-                        fechaCreacion = fecha.toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
-                    }
-                    
-                    // Preparar botones de acción
-                    let botones = `
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-info"
-                                    onclick="verDetalleLider(${lider.id_lider})"
-                                    title="Ver detalles">
-                                <i class="fas fa-info-circle"></i>
-                            </button>`;
-                    
-                    if (lider.cantidad_referidos > 0) {
-                        const nombreCompleto = escapeHtml(lider.nombres + ' ' + lider.apellidos);
-                        botones += `
-                            <button type="button" class="btn btn-outline-success"
-                                    onclick="verReferidos(${lider.id_lider}, '${nombreCompleto}')"
-                                    title="Ver referidos">
-                                <i class="fas fa-users"></i>
-                            </button>`;
-                    }
-                    
-                    botones += `</div>`;
-                    
-                    html += `
-                        <tr class="${destacadoClass}" data-id="${lider.id_lider}">
-                            <td>${contador++}</td>
-                            <td>
-                                <strong>${escapeHtml(lider.nombres + ' ' + lider.apellidos)}</strong>
-                                ${esDestacado ? 
-                                    '<span class="badge bg-warning ms-1"><i class="fas fa-star"></i> Destacado</span>' : 
-                                    ''}
-                            </td>
-                            <td>${escapeHtml(lider.cc)}</td>
-                            <td>
-                                <small class="d-block">
-                                    <i class="fas fa-phone me-1"></i>
-                                    ${escapeHtml(lider.telefono || 'N/A')}
-                                </small>
-                                <small class="d-block">
-                                    <i class="fas fa-envelope me-1"></i>
-                                    ${escapeHtml(lider.correo || 'N/A')}
-                                </small>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-primary rounded-pill">
-                                        ${lider.cantidad_referidos}
-                                    </span>
-                                </div>
-                            </td>
-                            <td>
-                                ${lider.referenciador_id ? 
-                                    `<span class="badge bg-info">${escapeHtml(lider.referenciador_nombre)}</span>` : 
-                                    `<span class="badge bg-secondary">No asignado</span>`}
-                            </td>
-                            <td>
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-success" 
-                                         style="width: ${Math.min(lider.porcentaje_contribucion, 100)}%"
-                                         role="progressbar"
-                                         title="${lider.porcentaje_contribucion}%">
-                                    </div>
-                                </div>
-                                <small class="text-muted">
-                                    ${lider.porcentaje_contribucion}%
-                                </small>
-                            </td>
-                            <td>
-                                ${(lider.estado === true || lider.estado === 'true' || lider.estado === 1) ? 
-                                    '<span class="badge badge-estado-activo"><i class="fas fa-check-circle me-1"></i> Activo</span>' : 
-                                    '<span class="badge badge-estado-inactivo"><i class="fas fa-times-circle me-1"></i> Inactivo</span>'}
-                            </td>
-                            <td>${fechaCreacion}</td>
-                            <td>${botones}</td>
-                        </tr>
-                    `;
+            // Formatear fecha
+            let fechaCreacion = 'N/A';
+            if (lider.fecha_creacion) {
+                const fecha = new Date(lider.fecha_creacion);
+                fechaCreacion = fecha.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
                 });
             }
             
-            // Animación suave para actualizar tabla
-            $('#tbody-lideres').fadeOut(200, function() {
-                $(this).html(html).fadeIn(300);
-            });
-        }
+            // Preparar botones de acción
+            let botones = `
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-info"
+                            onclick="verDetalleLider(${lider.id_lider})"
+                            title="Ver detalles">
+                        <i class="fas fa-info-circle"></i>
+                    </button>`;
+            
+            if (lider.cantidad_referidos > 0) {
+                const nombreCompleto = escapeHtml(lider.nombres + ' ' + lider.apellidos);
+                botones += `
+                    <button type="button" class="btn btn-outline-success"
+                            onclick="verReferidos(${lider.id_lider}, '${nombreCompleto}')"
+                            title="Ver referidos">
+                        <i class="fas fa-users"></i>
+                    </button>`;
+            }
+            
+            botones += `</div>`;
+            
+            html += `
+                <tr class="${destacadoClass}" data-id="${lider.id_lider}">
+                    <td>${contador++}</td>
+                    <td>
+                        <strong>${escapeHtml(lider.nombres + ' ' + lider.apellidos)}</strong>
+                        ${esDestacado ? 
+                            '<span class="badge bg-warning ms-1"><i class="fas fa-star"></i> Destacado</span>' : 
+                            ''}
+                    </td>
+                    <td>${escapeHtml(lider.cc)}</td>
+                    <td>
+                        <small class="d-block">
+                            <i class="fas fa-phone me-1"></i>
+                            ${escapeHtml(lider.telefono || 'N/A')}
+                        </small>
+                        <small class="d-block">
+                            <i class="fas fa-envelope me-1"></i>
+                            ${escapeHtml(lider.correo || 'N/A')}
+                        </small>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary rounded-pill">
+                                ${lider.cantidad_referidos}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        ${lider.referenciador_id ? 
+                            `<span class="badge bg-info">${escapeHtml(lider.referenciador_nombre)}</span>` : 
+                            `<span class="badge bg-secondary">No asignado</span>`}
+                    </td>
+                    <td>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" 
+                                 style="width: ${Math.min(lider.porcentaje_contribucion, 100)}%"
+                                 role="progressbar"
+                                 title="${lider.porcentaje_contribucion}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            ${lider.porcentaje_contribucion}%
+                        </small>
+                    </td>
+                    <td>
+                        ${(lider.estado === true || lider.estado === 'true' || lider.estado === 1) ? 
+                            '<span class="badge badge-estado-activo"><i class="fas fa-check-circle me-1"></i> Activo</span>' : 
+                            '<span class="badge badge-estado-inactivo"><i class="fas fa-times-circle me-1"></i> Inactivo</span>'}
+                    </td>
+                    <td>${fechaCreacion}</td>
+                    <td>${botones}</td>
+                </tr>
+            `;
+        });
+    }
+    
+    // Animación suave para actualizar tabla
+    $('#tbody-lideres').fadeOut(200, function() {
+        $(this).html(html).fadeIn(300);
+    });
+}
 
         // Función para actualizar estadísticas
         function actualizarEstadisticas(estadisticas) {
@@ -1649,6 +1696,22 @@ function verReferidos(idLider, nombreLider) {
             });
         }
     });
+    // Detectar cambios en el tema del sistema (opcional pero recomendado)
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    // Si hay contenido en la tabla, forzar actualización del tema
+    if ($('#tbody-lideres tr').length > 0) {
+        const isDarkMode = e.matches;
+        if (isDarkMode) {
+            document.body.style.backgroundColor = '#121212';
+            $('.table-container').css('background-color', '#1e1e1e');
+            $('.table').css('color', '#e0e0e0');
+        } else {
+            document.body.style.backgroundColor = '#f5f7fa';
+            $('.table-container').css('background-color', '#ffffff');
+            $('.table').css('color', '#333333');
+        }
+    }
+});
 }
     </script>
     <script src="../js/modal-sistema.js"></script> 

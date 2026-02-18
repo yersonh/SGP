@@ -1806,7 +1806,10 @@ public function getReferenciadosFiltrados($filtros = []) {
             $sql .= " AND r.id_lider = ?";
             $params[] = $filtros['lider'];
         }
-        
+        if (!empty($filtros['oferta_apoyo'])) {
+            $sql .= " AND r.id_oferta_apoyo = ?";
+            $params[] = $filtros['oferta_apoyo'];
+        }
         // ORDENAR
         $sql .= " ORDER BY r.fecha_registro DESC";
         

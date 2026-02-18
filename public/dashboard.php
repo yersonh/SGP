@@ -1105,7 +1105,7 @@ body > .system-footer {
                         <p>Administrar líderes registrados</p>
                     </a>
                     
-                    <a href="#" class="action-btn parametrizacion">
+                    <a href="parametrizacion.php" class="action-btn parametrizacion">
                         <div class="action-icon">
                             <i class="fas fa-sliders-h"></i>
                         </div>

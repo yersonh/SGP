@@ -1090,7 +1090,7 @@ $editando_a_si_mismo = ($usuario_logueado['id_usuario'] == $usuario_editar['id_u
                 
                 <!-- Botones -->
                 <div class="form-group full-width form-actions">
-                    <a href="../dashboard.php" class="cancel-btn">
+                    <a href="../gestion_usuarios.php" class="cancel-btn">
                         <i class="fas fa-times"></i> Cancelar
                     </a>
                     <button type="submit" class="submit-btn" id="submit-btn">

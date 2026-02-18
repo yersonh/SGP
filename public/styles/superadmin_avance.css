@@ -1357,3 +1357,115 @@ html {
 .btn-reset-filters:hover {
     background: #ff5252;
 }
+/* ==========================================================================
+   CORRECCIÓN PARA TEXTO DE REFERIDOS EN MODO OSCURO
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+    /* Forzar color blanco para el texto de referidos */
+    .lider-card .stat-item .stat-number,
+    .lider-card .user-stats .stat-item:first-child .stat-number,
+    .lider-card [class*="referidos"] .stat-number,
+    .lider-card .stat-number.text-success,
+    .lider-card .stat-number.text-primary,
+    .lider-card .stat-number.text-warning {
+        color: #e0e0e0 !important;
+    }
+    
+    /* Mantener el color solo para el número de referidos destacado */
+    .lider-card .stat-number.text-success {
+        color: #4caf50 !important;
+    }
+    
+    .lider-card .stat-number.text-primary {
+        color: #58a6ff !important;
+    }
+    
+    .lider-card .stat-number.text-warning {
+        color: #ffb74d !important;
+    }
+    
+    /* Asegurar que el texto en las estadísticas sea visible */
+    .lider-card .stat-desc {
+        color: #b0b0b0 !important;
+    }
+    
+    /* Forzar color blanco para cualquier número en tarjetas de líderes */
+    #referenciadoresList .lider-card .stat-number {
+        color: #e0e0e0 !important;
+    }
+    
+    /* Excepción para el ícono de estado */
+    .lider-card .fa-check-circle.text-success {
+        color: #4caf50 !important;
+    }
+    
+    .lider-card .fa-times-circle.text-secondary {
+        color: #888888 !important;
+    }
+}
+/* ==========================================================================
+   CORRECCIÓN PARA TEXTO DE REFERIDOS EN TARJETAS DE LÍDERES - MODO OSCURO
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+    /* El número de referidos (el que tiene la clase ${referidosClass}) debe ser blanco */
+    .lider-card .stat-item.stat-destacado .stat-number {
+        color: #ffffff !important;
+    }
+    
+    /* Si tiene clase text-success, mantener verde pero más claro */
+    .lider-card .stat-item.stat-destacado .stat-number.text-success {
+        color: #6fcf97 !important;
+    }
+    
+    /* Si tiene clase text-primary, mantener azul pero más claro */
+    .lider-card .stat-item.stat-destacado .stat-number.text-primary {
+        color: #76b9ff !important;
+    }
+    
+    /* Si tiene clase text-warning, mantener amarillo pero más claro */
+    .lider-card .stat-item.stat-destacado .stat-number.text-warning {
+        color: #f9ca7f !important;
+    }
+    
+    /* El texto "Referidos" debe ser gris claro */
+    .lider-card .stat-item.stat-destacado .stat-desc {
+        color: #b0b0b0 !important;
+    }
+    
+    /* Los otros stat-number (estado y eficiencia) también deben ser blancos */
+    .lider-card .stat-item:not(.stat-destacado) .stat-number {
+        color: #ffffff !important;
+    }
+    
+    /* El ícono de estado check debe mantener su color verde */
+    .lider-card .fa-check-circle.text-success {
+        color: #6fcf97 !important;
+    }
+    
+    /* El ícono de estado times debe ser gris */
+    .lider-card .fa-times-circle.text-secondary {
+        color: #888888 !important;
+    }
+    
+    /* Los textos "Estado" y "Eficiencia" deben ser gris claro */
+    .lider-card .stat-item:not(.stat-destacado) .stat-desc {
+        color: #b0b0b0 !important;
+    }
+}
+/* ==========================================================================
+   CORRECCIÓN RADICAL PARA NÚMERO DE REFERIDOS EN MODO OSCURO
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+    /* Anular todas las clases de Bootstrap para el número de referidos */
+    .lider-card .stat-item.stat-destacado .stat-number,
+    .lider-card .stat-item.stat-destacado .stat-number.text-success,
+    .lider-card .stat-item.stat-destacado .stat-number.text-primary,
+    .lider-card .stat-item.stat-destacado .stat-number.text-warning,
+    .lider-card .stat-item.stat-destacado .stat-number.text-danger,
+    .lider-card .stat-item.stat-destacado .stat-number.fw-bold,
+    .lider-card .stat-item.stat-destacado .stat-number.fw-bold.text-success,
+    .lider-card .stat-item.stat-destacado .stat-number.fw-bold.text-primary,
+    .lider-card .stat-item.stat-destacado .stat-number.fw-bold.text-warning {
+        color: #ffffff !important;
+    }
+}

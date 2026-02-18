@@ -179,6 +179,96 @@ if ($porcentajeRestante > 50) {
             margin-left: 3px;
             font-size: 0.9em;
         }
+        .referenciador-option {
+        padding: 8px 12px !important;
+        border-bottom: 1px solid #eee;
+    }
+    .referenciador-option:last-child {
+        border-bottom: none;
+    }
+    .option-nombre {
+        font-weight: 500;
+        color: #333;
+    }
+    .option-tope {
+        font-size: 0.85rem;
+        color: #666;
+        margin-left: 8px;
+    }
+    .option-tope-value {
+        font-weight: bold;
+        color: #4caf50;
+        background: #f0f9f0;
+        padding: 2px 8px;
+        border-radius: 12px;
+        display: inline-block;
+        margin-left: 5px;
+    }
+    /* Modo oscuro */
+    @media (prefers-color-scheme: dark) {
+        .option-nombre {
+            color: #e0e0e0;
+        }
+        .option-tope {
+            color: #aaa;
+        }
+        .option-tope-value {
+            background: #1e3a1e;
+            color: #8bc34a;
+        }
+        .referenciador-option {
+            border-bottom-color: #333;
+        }
+    }
+    /* Eliminar borde verde de estadísticas destacadas */
+.stat-item.stat-destacado,
+.stat-destacado {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Si quieres mantener algún indicador sutil de qué está ordenado */
+.stat-item.stat-destacado .stat-number {
+    position: relative;
+}
+
+.stat-item.stat-destacado .stat-number::after {
+    content: '↓';
+    font-size: 12px;
+    margin-left: 4px;
+    color: #666;
+}
+/* Estilos para la métrica de contribución */
+.stat-number .fa-pie-chart {
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.stat-item:hover .fa-pie-chart {
+    opacity: 1;
+}
+
+/* Tooltip personalizado */
+[title] {
+    cursor: help;
+    position: relative;
+}
+
+/* Mejoras para la barra de progreso según contribución */
+.progress-excelente {
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+}
+.progress-bueno {
+    background: linear-gradient(90deg, #2196f3, #64b5f6);
+}
+.progress-medio {
+    background: linear-gradient(90deg, #ff9800, #ffb74d);
+}
+.progress-bajo {
+    background: linear-gradient(90deg, #f44336, #e57373);
+}
     </style>
 </head>
 <body>
@@ -338,17 +428,37 @@ if ($porcentajeRestante > 50) {
                 </div>
                 
                 <!-- NUEVO: Combo Box de Referenciadores -->
-                <div class="form-group">
-                    <label for="id_referenciador"><i class="fas fa-user-tie"></i> Referenciador</label>
-                    <select id="id_referenciador" class="form-select filtro-select" data-filtro="id_referenciador">
-                        <option value="">Todos los referenciadores</option>
-                        <?php foreach ($referenciadoresCombo as $ref): ?>
-                            <option value="<?php echo $ref['id_usuario']; ?>">
-                                <?php echo htmlspecialchars($ref['nombres'] . ' ' . $ref['apellidos'] . ' '); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+<!-- NUEVO: Combo Box de Referenciadores con data-tope -->
+<div class="form-group">
+    <label for="id_referenciador">
+        <i class="fas fa-user-tie"></i> Filtrar por Referenciador
+    </label>
+    <select id="id_referenciador" class="form-select filtro-select" data-filtro="id_referenciador">
+        <option value="" class="referenciador-option">
+            <span class="option-nombre">Todos los referenciadores</span>
+        </option>
+        <?php foreach ($referenciadoresCombo as $ref): ?>
+            <?php 
+            $nombre_completo = $ref['nombres'] . ' ' . $ref['apellidos'];
+            $tope_formateado = number_format($ref['tope'], 0, ',', '.');
+            $iniciales = strtoupper(substr($ref['nombres'], 0, 1) . substr($ref['apellidos'], 0, 1));
+            ?>
+            <option value="<?php echo $ref['id_usuario']; ?>" 
+                    class="referenciador-option"
+                    data-tope="<?php echo $ref['tope']; ?>">
+                <span class="option-nombre">
+                    <?php echo htmlspecialchars($nombre_completo); ?>
+                </span>
+                <span class="option-tope">
+                    Tope: <span class="option-tope-value"><?php echo $tope_formateado; ?></span>
+                </span>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <small class="form-text text-muted">
+        <i class="fas fa-info-circle"></i> Selecciona un referenciador para ver sus líderes y su contribución al tope
+    </small>
+</div>
                 
                 <!-- Zona -->
                 <div class="form-group">
@@ -1088,7 +1198,7 @@ function mostrarResultadosReferenciadores(data) {
     }, 300);
 }
 
-// 5. NUEVA FUNCIÓN: Buscar líderes por referenciador
+// 5. FUNCIÓN MODIFICADA: Buscar líderes por referenciador
 function buscarLideresPorReferenciador(id_referenciador) {
     vistaActual = 'lideres';
     referenciadorSeleccionado = id_referenciador;
@@ -1098,15 +1208,25 @@ function buscarLideresPorReferenciador(id_referenciador) {
     $('#referenciadoresList').hide();
     $('#paginacionContainer').hide();
     
-    // Obtener nombre del referenciador seleccionado
-    var referenciadorNombre = $('#id_referenciador option:selected').text();
+    // Obtener nombre y tope del referenciador seleccionado
+    var selectedOption = $('#id_referenciador option:selected');
+    var referenciadorNombre = selectedOption.text();
+    
+    // Extraer el tope del texto de la opción (formato: "Nombre Apellido Tope: XXX")
+    var topeMatch = referenciadorNombre.match(/Tope:?[\s:]*([\d.,]+)/i);
+    var topeReferenciador = topeMatch ? parseFloat(topeMatch[1].replace(/[.,]/g, '')) : 0;
+    
+    // Si no se pudo extraer del texto, intentar obtener del data attribute
+    if (topeReferenciador === 0) {
+        topeReferenciador = parseFloat(selectedOption.data('tope')) || 0;
+    }
     
     // Actualizar filtros activos
     $('#activeFiltersContainer').show();
     $('#filtroIndicator').show();
     $('#activeFiltersList').html(`
         <span class="filter-badge">
-            Referenciador: ${referenciadorNombre}
+            Referenciador: ${referenciadorNombre} (Tope: ${topeReferenciador.toLocaleString()})
             <span class="close" onclick="limpiarFiltroReferenciador()">&times;</span>
         </span>
     `);
@@ -1123,6 +1243,8 @@ function buscarLideresPorReferenciador(id_referenciador) {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
+                // Agregar el tope del referenciador a la respuesta
+                response.data.tope_referenciador = topeReferenciador;
                 mostrarResultadosLideres(response.data);
             } else {
                 mostrarError(response.error || 'Error al obtener líderes');
@@ -1137,18 +1259,42 @@ function buscarLideresPorReferenciador(id_referenciador) {
     });
 }
 
-// 6. NUEVA FUNCIÓN: Mostrar líderes
+// 6. FUNCIÓN MODIFICADA: Mostrar líderes con CONTRIBUCIÓN (formato decimal corregido)
 function mostrarResultadosLideres(data) {
     var container = $('#referenciadoresList');
     container.empty();
     
+    // Obtener tope del referenciador
+    var topeReferenciador = data.tope_referenciador || 0;
+    var totalReferidosLideres = 0;
+    
+    // Calcular total de referidos de todos los líderes
+    if (data.lideres && data.lideres.length > 0) {
+        totalReferidosLideres = data.lideres.reduce(function(sum, lider) {
+            return sum + (lider.cantidad_referidos || 0);
+        }, 0);
+    }
+    
     // Mostrar estadísticas
     if (data.estadisticas) {
         $('#resultadosInfo').show();
+        
+        // Calcular porcentaje de contribución total con 2 decimales máximo
+        var contribucionTotal = 0;
+        if (topeReferenciador > 0) {
+            contribucionTotal = (totalReferidosLideres / topeReferenciador) * 100;
+            // Formatear a máximo 2 decimales
+            contribucionTotal = parseFloat(contribucionTotal.toFixed(2));
+            // Limitar a 100% máximo
+            contribucionTotal = Math.min(contribucionTotal, 100);
+        }
+        
         $('#resultadosText').html(`
             <strong>${data.estadisticas.total_lideres}</strong> líderes | 
             <strong>${data.estadisticas.lideres_activos}</strong> activos | 
-            <strong>${data.estadisticas.total_referidos}</strong> referidos totales
+            <strong>${totalReferidosLideres.toLocaleString()}</strong> referidos totales |
+            <strong class="${contribucionTotal >= 100 ? 'text-success' : (contribucionTotal >= 75 ? 'text-primary' : 'text-warning')}">
+                ${contribucionTotal}%</strong> del tope alcanzado
         `);
     }
     
@@ -1170,17 +1316,50 @@ function mostrarResultadosLideres(data) {
                 '<span class="badge bg-success">Activo</span>' : 
                 '<span class="badge bg-secondary">Inactivo</span>';
             
-            // Determinar color según cantidad de referidos
+            // Obtener referidos del líder
             var referidos = lider.cantidad_referidos || 0;
-            var referidosClass = '';
-            if (referidos >= 50) referidosClass = 'text-success fw-bold';
-            else if (referidos >= 20) referidosClass = 'text-primary';
-            else if (referidos >= 10) referidosClass = 'text-warning';
             
-            // Porcentaje de eficiencia (basado en referidos)
-            var eficiencia = Math.min(referidos, 100);
+            // ============================================================
+            // CÁLCULO DE CONTRIBUCIÓN CON FORMATO DECIMAL CORRECTO
+            // ============================================================
+            var contribucionPorcentaje = 0;
+            var contribucionFormateada = '0';
             
-            // Construir HTML de la tarjeta
+            if (topeReferenciador > 0) {
+                // Calcular porcentaje exacto
+                contribucionPorcentaje = (referidos / topeReferenciador) * 100;
+                
+                // Limitar a 100% máximo
+                contribucionPorcentaje = Math.min(contribucionPorcentaje, 100);
+                
+                // Formatear a máximo 2 decimales
+                // Si tiene decimales, mostrar hasta 2, si es entero, mostrar sin decimales
+                if (Number.isInteger(contribucionPorcentaje)) {
+                    contribucionFormateada = contribucionPorcentaje.toString();
+                } else {
+                    contribucionFormateada = contribucionPorcentaje.toFixed(2).replace(/\.?0+$/, '');
+                }
+            }
+            
+            // Determinar color según contribución
+            var contribucionClass = '';
+            if (contribucionPorcentaje >= 50) {
+                contribucionClass = 'text-success fw-bold';
+            } else if (contribucionPorcentaje >= 30) {
+                contribucionClass = 'text-primary';
+            } else if (contribucionPorcentaje >= 15) {
+                contribucionClass = 'text-warning';
+            } else {
+                contribucionClass = 'text-danger';
+            }
+            
+            // Tooltip para explicar la contribución
+            var contribucionTooltip = `Contribución al tope del referenciador:\n`;
+            contribucionTooltip += `• Tope del referenciador: ${topeReferenciador.toLocaleString()}\n`;
+            contribucionTooltip += `• Referidos del líder: ${referidos.toLocaleString()}\n`;
+            contribucionTooltip += `• Contribución: ${contribucionFormateada}%`;
+            
+            // Construir HTML de la tarjeta - SIN el texto redundante en la barra
             var html = `
                 <div class="referenciador-header">
                     <div class="user-info-section">
@@ -1204,9 +1383,9 @@ function mostrarResultadosLideres(data) {
                     </div>
                     
                     <div class="user-stats">
-                        <div class="stat-item stat-destacado">
-                            <div class="stat-number ${referidosClass}">
-                                ${referidos}
+                        <div class="stat-item">
+                            <div class="stat-number">
+                                ${referidos.toLocaleString()}
                             </div>
                             <div class="stat-desc">Referidos</div>
                         </div>
@@ -1217,32 +1396,30 @@ function mostrarResultadosLideres(data) {
                             <div class="stat-desc">Estado</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-number">
-                                ${eficiencia}%
+                            <div class="stat-number ${contribucionClass}" title="${contribucionTooltip}">
+                                ${contribucionFormateada}%
+                                <i class="fas fa-pie-chart ms-1" style="font-size: 0.8rem; opacity: 0.7;"></i>
                             </div>
-                            <div class="stat-desc">Eficiencia</div>
+                            <div class="stat-desc">Contribución</div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="individual-progress">
                     <div class="progress-label-small">
-                        Referidos conseguidos: <strong>${referidos}</strong>
-                        <span style="float: right; font-weight: bold; color: #00796b;">
-                            <i class="fas fa-user-tie"></i> Líder
-                        </span>
+                        <span>Referidos: <strong>${referidos.toLocaleString()}</strong> de tope ${topeReferenciador.toLocaleString()}</span>
                     </div>
                     <div class="progress-container-small">
-                        <div class="progress-bar-small progress-bueno" 
-                             style="width: ${eficiencia}%">
+                        <div class="progress-bar-small ${contribucionPorcentaje >= 50 ? 'progress-excelente' : (contribucionPorcentaje >= 30 ? 'progress-bueno' : (contribucionPorcentaje >= 15 ? 'progress-medio' : 'progress-bajo'))}" 
+                             style="width: ${contribucionPorcentaje}%">
                         </div>
                     </div>
                     <div class="progress-numbers">
-                        <span>0</span>
-                        <span>25</span>
-                        <span>50</span>
-                        <span>75</span>
-                        <span>100+</span>
+                        <span>0%</span>
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>75%</span>
+                        <span>100%</span>
                     </div>
                 </div>
             `;
@@ -1252,7 +1429,7 @@ function mostrarResultadosLideres(data) {
     }
     
     // Mostrar paginación si es necesario
-    if (data.paginacion.totalPaginas > 1) {
+    if (data.paginacion && data.paginacion.totalPaginas > 1) {
         mostrarPaginacionLideres(data.paginacion, data.estadisticas.referenciador_id);
     } else {
         $('#paginacionContainer').hide();
@@ -1467,7 +1644,28 @@ function mostrarError(mensaje) {
         </div>
     `).show();
 }
+ function actualizarLogoSegunTema() {
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
 
+        // Ejecutar al cargar y cuando cambie el tema
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
+
+        // Escuchar cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
 // ====================================================================
 // EVENT LISTENERS
 // ====================================================================
@@ -1540,6 +1738,7 @@ $(document).ready(function() {
         $(this).css('box-shadow', '0 2px 5px rgba(0,0,0,0.05)');
     });
 });
+
     </script>
     <script src="../js/modal-sistema.js"></script>
     <script src="../js/contador.js"></script>

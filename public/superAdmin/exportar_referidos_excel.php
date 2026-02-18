@@ -43,6 +43,10 @@ if (isset($_GET['referenciador']) && !empty($_GET['referenciador'])) {
 if (isset($_GET['lider']) && !empty($_GET['lider'])) {
     $filtros['lider'] = $_GET['lider'];
 }
+// ✅ NUEVO: Capturar filtro de oferta de apoyo
+if (isset($_GET['oferta_apoyo']) && !empty($_GET['oferta_apoyo'])) {
+    $filtros['oferta_apoyo'] = $_GET['oferta_apoyo'];
+}
 
 // ✅ OBTENER REFERENCIADOS CON LOS FILTROS APLICADOS
 // Usar el mismo método que get_referenciados.php pero sin paginación
@@ -122,6 +126,13 @@ if (!empty($filtros)) {
         $stmt->execute([$filtros['lider']]);
         $lider = $stmt->fetch(PDO::FETCH_ASSOC);
         echo '<tr><td><strong>Líder:</strong></td><td>' . htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']) . '</td></tr>';
+    }
+    // ✅ NUEVO: Mostrar filtro de oferta de apoyo en el resumen
+    if (isset($filtros['oferta_apoyo'])) {
+        $stmt = $pdo->prepare("SELECT nombre FROM oferta_apoyo WHERE id_oferta = ?");
+        $stmt->execute([$filtros['oferta_apoyo']]);
+        $oferta = $stmt->fetchColumn();
+        echo '<tr><td><strong>Oferta de apoyo:</strong></td><td>' . htmlspecialchars($oferta) . '</td></tr>';
     }
     
     echo '<tr><td><strong>Total registros:</strong></td><td>' . count($referenciados) . '</td></tr>';

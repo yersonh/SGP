@@ -62,10 +62,13 @@ if (!empty($id_referenciador_filtro) && $id_referenciador_filtro != 'todos') {
 $referenciadosConLlamadas = $llamadaModel->getReferenciadosConLlamadas($filtros);
 $totalRegistros = count($referenciadosConLlamadas);
 
-// Obtener estadísticas
-$estadisticas = $llamadaModel->getEstadisticasLlamadas();
-$distribucionResultados = $llamadaModel->getDistribucionPorResultado();
-$topLlamadores = $llamadaModel->getTopLlamadores(5);
+// Obtener estadísticas CON FILTROS APLICADOS
+$estadisticas = $llamadaModel->getEstadisticasLlamadas($filtros);
+$distribucionResultados = $llamadaModel->getDistribucionPorResultado($filtros);
+$topLlamadores = $llamadaModel->getTopLlamadores(5, $filtros);
+
+// Opcional: Obtener total exacto de llamadores activos
+$totalLlamadoresActivos = $llamadaModel->getTotalLlamadoresActivos($filtros);
 
 // Calcular algunos totales
 $totalLlamadas = $estadisticas['total_llamadas'] ?? 0;
@@ -249,6 +252,9 @@ if ($porcentajeRestante > 50) {
                 </div>
                 <div class="stat-value"><?php echo count($topLlamadores); ?></div>
                 <div class="stat-label">Equipo de Seguimiento</div>
+                <?php if (!empty($filtros)): ?>
+                    <small class="text-muted d-block">(en período filtrado)</small>
+                <?php endif; ?>
             </div>
         </div>
 

@@ -85,44 +85,189 @@ public function guardarValoracionLlamada($datos) {
     }
     
     /**
-     * Obtener estadísticas de llamadas
-     */
-    public function getEstadisticasLlamadas() {
-        $sql = "
-            SELECT 
-                COUNT(*) as total_llamadas,
-                COUNT(DISTINCT id_referenciado) as referenciados_contactados,
-                COUNT(DISTINCT id_usuario) as usuarios_activos,
-                AVG(rating) as rating_promedio,
-                MIN(fecha_llamada) as primera_llamada,
-                MAX(fecha_llamada) as ultima_llamada
-            FROM llamadas_tracking
-            WHERE rating IS NOT NULL
-        ";
-        
-        $stmt = $this->pdo->query($sql);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+ * Obtener estadísticas de llamadas con filtros opcionales
+ * @param array $filtros Filtros a aplicar
+ * @return array Estadísticas calculadas
+ */
+public function getEstadisticasLlamadas($filtros = []) {
+    $sql = "
+        SELECT 
+            COUNT(*) as total_llamadas,
+            COUNT(DISTINCT lt.id_referenciado) as referenciados_contactados,
+            COUNT(DISTINCT lt.id_usuario) as usuarios_activos,
+            AVG(lt.rating) as rating_promedio,
+            MIN(lt.fecha_llamada) as primera_llamada,
+            MAX(lt.fecha_llamada) as ultima_llamada
+        FROM llamadas_tracking lt
+        INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+        WHERE 1=1
+    ";
+    
+    $params = [];
+    
+    // Aplicar filtros de fecha
+    if (isset($filtros['fecha_desde']) && !empty($filtros['fecha_desde'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) >= :fecha_desde";
+        $params[':fecha_desde'] = $filtros['fecha_desde'];
     }
     
-    /**
-     * Obtener distribución por resultado de llamada
-     */
-    public function getDistribucionPorResultado() {
-        $sql = "
-            SELECT 
-                tr.nombre as resultado,
-                tr.id_resultado,
-                COUNT(lt.id_llamada) as cantidad,
-                ROUND(COUNT(lt.id_llamada) * 100.0 / (SELECT COUNT(*) FROM llamadas_tracking), 2) as porcentaje
-            FROM llamadas_tracking lt
-            LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
-            GROUP BY tr.id_resultado, tr.nombre
-            ORDER BY cantidad DESC
-        ";
-        
-        $stmt = $this->pdo->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (isset($filtros['fecha_hasta']) && !empty($filtros['fecha_hasta'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) <= :fecha_hasta";
+        $params[':fecha_hasta'] = $filtros['fecha_hasta'];
     }
+    
+    // Filtro por resultado
+    if (isset($filtros['id_resultado']) && !empty($filtros['id_resultado']) && $filtros['id_resultado'] != 'todos') {
+        $sql .= " AND lt.id_resultado = :id_resultado";
+        $params[':id_resultado'] = $filtros['id_resultado'];
+    }
+    
+    // Filtros por rating
+    if (isset($filtros['rating_min']) && $filtros['rating_min'] !== '') {
+        $sql .= " AND lt.rating >= :rating_min";
+        $params[':rating_min'] = $filtros['rating_min'];
+    }
+    
+    if (isset($filtros['rating_max']) && $filtros['rating_max'] !== '') {
+        $sql .= " AND lt.rating <= :rating_max";
+        $params[':rating_max'] = $filtros['rating_max'];
+    }
+    
+    // Filtro por referenciador
+    if (isset($filtros['id_referenciador']) && !empty($filtros['id_referenciador']) && $filtros['id_referenciador'] != 'todos') {
+        $sql .= " AND r.id_referenciador = :id_referenciador";
+        $params[':id_referenciador'] = $filtros['id_referenciador'];
+    }
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Asegurar valores por defecto
+    if (!$result) {
+        $result = [
+            'total_llamadas' => 0,
+            'referenciados_contactados' => 0,
+            'usuarios_activos' => 0,
+            'rating_promedio' => null,
+            'primera_llamada' => null,
+            'ultima_llamada' => null
+        ];
+    }
+    
+    return $result;
+}
+    
+    /**
+ * Obtener distribución por resultado de llamada con filtros
+ * @param array $filtros Filtros a aplicar
+ * @return array Distribución por resultado
+ */
+public function getDistribucionPorResultado($filtros = []) {
+    $params = [];
+    
+    // Primero obtener el total con filtros
+    $sqlTotal = "
+        SELECT COUNT(*) as total
+        FROM llamadas_tracking lt
+        INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+        WHERE 1=1
+    ";
+    
+    // Aplicar filtros al total
+    if (isset($filtros['fecha_desde']) && !empty($filtros['fecha_desde'])) {
+        $sqlTotal .= " AND DATE(lt.fecha_llamada) >= :fecha_desde_total";
+        $params[':fecha_desde_total'] = $filtros['fecha_desde'];
+    }
+    
+    if (isset($filtros['fecha_hasta']) && !empty($filtros['fecha_hasta'])) {
+        $sqlTotal .= " AND DATE(lt.fecha_llamada) <= :fecha_hasta_total";
+        $params[':fecha_hasta_total'] = $filtros['fecha_hasta'];
+    }
+    
+    if (isset($filtros['id_resultado']) && !empty($filtros['id_resultado']) && $filtros['id_resultado'] != 'todos') {
+        $sqlTotal .= " AND lt.id_resultado = :id_resultado_total";
+        $params[':id_resultado_total'] = $filtros['id_resultado'];
+    }
+    
+    if (isset($filtros['rating_min']) && $filtros['rating_min'] !== '') {
+        $sqlTotal .= " AND lt.rating >= :rating_min_total";
+        $params[':rating_min_total'] = $filtros['rating_min'];
+    }
+    
+    if (isset($filtros['rating_max']) && $filtros['rating_max'] !== '') {
+        $sqlTotal .= " AND lt.rating <= :rating_max_total";
+        $params[':rating_max_total'] = $filtros['rating_max'];
+    }
+    
+    if (isset($filtros['id_referenciador']) && !empty($filtros['id_referenciador']) && $filtros['id_referenciador'] != 'todos') {
+        $sqlTotal .= " AND r.id_referenciador = :id_referenciador_total";
+        $params[':id_referenciador_total'] = $filtros['id_referenciador'];
+    }
+    
+    $stmtTotal = $this->pdo->prepare($sqlTotal);
+    $stmtTotal->execute($params);
+    $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // Si no hay registros, retornar array vacío
+    if ($total == 0) {
+        return [];
+    }
+    
+    // Ahora obtener la distribución por resultado
+    $sql = "
+        SELECT 
+            tr.nombre as resultado,
+            tr.id_resultado,
+            COUNT(lt.id_llamada) as cantidad,
+            ROUND(COUNT(lt.id_llamada) * 100.0 / :total, 2) as porcentaje
+        FROM llamadas_tracking lt
+        INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+        LEFT JOIN tipos_resultado_llamada tr ON lt.id_resultado = tr.id_resultado
+        WHERE 1=1
+    ";
+    
+    $paramsDistribucion = [':total' => $total];
+    
+    // Aplicar filtros a la distribución
+    if (isset($filtros['fecha_desde']) && !empty($filtros['fecha_desde'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) >= :fecha_desde";
+        $paramsDistribucion[':fecha_desde'] = $filtros['fecha_desde'];
+    }
+    
+    if (isset($filtros['fecha_hasta']) && !empty($filtros['fecha_hasta'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) <= :fecha_hasta";
+        $paramsDistribucion[':fecha_hasta'] = $filtros['fecha_hasta'];
+    }
+    
+    if (isset($filtros['id_resultado']) && !empty($filtros['id_resultado']) && $filtros['id_resultado'] != 'todos') {
+        $sql .= " AND lt.id_resultado = :id_resultado";
+        $paramsDistribucion[':id_resultado'] = $filtros['id_resultado'];
+    }
+    
+    if (isset($filtros['rating_min']) && $filtros['rating_min'] !== '') {
+        $sql .= " AND lt.rating >= :rating_min";
+        $paramsDistribucion[':rating_min'] = $filtros['rating_min'];
+    }
+    
+    if (isset($filtros['rating_max']) && $filtros['rating_max'] !== '') {
+        $sql .= " AND lt.rating <= :rating_max";
+        $paramsDistribucion[':rating_max'] = $filtros['rating_max'];
+    }
+    
+    if (isset($filtros['id_referenciador']) && !empty($filtros['id_referenciador']) && $filtros['id_referenciador'] != 'todos') {
+        $sql .= " AND r.id_referenciador = :id_referenciador";
+        $paramsDistribucion[':id_referenciador'] = $filtros['id_referenciador'];
+    }
+    
+    $sql .= " GROUP BY tr.id_resultado, tr.nombre
+              ORDER BY cantidad DESC";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($paramsDistribucion);
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
     
     /**
      * Obtener referenciados con llamadas (para reporte tracking)
@@ -257,31 +402,129 @@ public function guardarValoracionLlamada($datos) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    /**
-     * Obtener top llamadores (usuarios que más llamadas hacen)
-     */
-    public function getTopLlamadores($limite = 10) {
-        $sql = "
-            SELECT 
-                u.id_usuario,
-                CONCAT(u.nombres, ' ', u.apellidos) as nombre_completo,
-                u.cedula,
-                COUNT(lt.id_llamada) as total_llamadas,
-                COUNT(DISTINCT lt.id_referenciado) as referenciados_unicos,
-                AVG(lt.rating) as rating_promedio
-            FROM llamadas_tracking lt
-            INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
-            GROUP BY u.id_usuario, u.nombres, u.apellidos, u.cedula
-            ORDER BY total_llamadas DESC
-            LIMIT :limite
-        ";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+   /**
+ * Obtener top llamadores (usuarios que más llamadas hacen) con filtros
+ * @param int $limite Número máximo de resultados
+ * @param array $filtros Filtros a aplicar
+ * @return array Top llamadores
+ */
+public function getTopLlamadores($limite = 10, $filtros = []) {
+    $sql = "
+        SELECT 
+            u.id_usuario,
+            CONCAT(u.nombres, ' ', u.apellidos) as nombre_completo,
+            u.cedula,
+            COUNT(lt.id_llamada) as total_llamadas,
+            COUNT(DISTINCT lt.id_referenciado) as referenciados_unicos,
+            ROUND(AVG(lt.rating)::numeric, 2) as rating_promedio
+        FROM llamadas_tracking lt
+        INNER JOIN usuario u ON lt.id_usuario = u.id_usuario
+        INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+        WHERE 1=1
+    ";
+    
+    $params = [];
+    
+    // Aplicar filtros
+    if (isset($filtros['fecha_desde']) && !empty($filtros['fecha_desde'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) >= :fecha_desde";
+        $params[':fecha_desde'] = $filtros['fecha_desde'];
     }
     
+    if (isset($filtros['fecha_hasta']) && !empty($filtros['fecha_hasta'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) <= :fecha_hasta";
+        $params[':fecha_hasta'] = $filtros['fecha_hasta'];
+    }
+    
+    if (isset($filtros['id_resultado']) && !empty($filtros['id_resultado']) && $filtros['id_resultado'] != 'todos') {
+        $sql .= " AND lt.id_resultado = :id_resultado";
+        $params[':id_resultado'] = $filtros['id_resultado'];
+    }
+    
+    if (isset($filtros['rating_min']) && $filtros['rating_min'] !== '') {
+        $sql .= " AND lt.rating >= :rating_min";
+        $params[':rating_min'] = $filtros['rating_min'];
+    }
+    
+    if (isset($filtros['rating_max']) && $filtros['rating_max'] !== '') {
+        $sql .= " AND lt.rating <= :rating_max";
+        $params[':rating_max'] = $filtros['rating_max'];
+    }
+    
+    if (isset($filtros['id_referenciador']) && !empty($filtros['id_referenciador']) && $filtros['id_referenciador'] != 'todos') {
+        $sql .= " AND r.id_referenciador = :id_referenciador";
+        $params[':id_referenciador'] = $filtros['id_referenciador'];
+    }
+    
+    $sql .= " GROUP BY u.id_usuario, u.nombres, u.apellidos, u.cedula
+              ORDER BY total_llamadas DESC
+              LIMIT :limite";
+    
+    $params[':limite'] = (int)$limite;
+    
+    $stmt = $this->pdo->prepare($sql);
+    
+    // Bind parameters
+    foreach ($params as $key => &$val) {
+        if ($key == ':limite') {
+            $stmt->bindParam($key, $val, PDO::PARAM_INT);
+        } else {
+            $stmt->bindParam($key, $val);
+        }
+    }
+    
+    $stmt->execute();
+    $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Redondear rating promedio
+    foreach ($resultados as &$usuario) {
+        $usuario['rating_promedio'] = $usuario['rating_promedio'] ? round($usuario['rating_promedio'], 1) : 0;
+    }
+    
+    return $resultados;
+}
+    /**
+ * Obtener total de llamadores activos según filtros
+ * @param array $filtros Filtros a aplicar
+ * @return int Total de llamadores únicos
+ */
+public function getTotalLlamadoresActivos($filtros = []) {
+    $sql = "
+        SELECT COUNT(DISTINCT lt.id_usuario) as total
+        FROM llamadas_tracking lt
+        INNER JOIN referenciados r ON lt.id_referenciado = r.id_referenciado
+        WHERE 1=1
+    ";
+    
+    $params = [];
+    
+    // Aplicar filtros
+    if (isset($filtros['fecha_desde']) && !empty($filtros['fecha_desde'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) >= :fecha_desde";
+        $params[':fecha_desde'] = $filtros['fecha_desde'];
+    }
+    
+    if (isset($filtros['fecha_hasta']) && !empty($filtros['fecha_hasta'])) {
+        $sql .= " AND DATE(lt.fecha_llamada) <= :fecha_hasta";
+        $params[':fecha_hasta'] = $filtros['fecha_hasta'];
+    }
+    
+    if (isset($filtros['id_resultado']) && !empty($filtros['id_resultado']) && $filtros['id_resultado'] != 'todos') {
+        $sql .= " AND lt.id_resultado = :id_resultado";
+        $params[':id_resultado'] = $filtros['id_resultado'];
+    }
+    
+    if (isset($filtros['id_referenciador']) && !empty($filtros['id_referenciador']) && $filtros['id_referenciador'] != 'todos') {
+        $sql .= " AND r.id_referenciador = :id_referenciador";
+        $params[':id_referenciador'] = $filtros['id_referenciador'];
+    }
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return $result['total'] ?? 0;
+}
     /**
      * Obtener llamadas por rango de fechas
      */

@@ -1334,5 +1334,135 @@ public function obtenerUltimaLlamada($idReferenciado) {
         return false;
     }
 }
+/**
+ * Guardar valoración de llamada con información de votos
+ * @param array $datos Datos de la valoración
+ * @return bool|int ID de la llamada o false
+ */
+public function guardarValoracionConVotos($datos) {
+    try {
+        $sql = "INSERT INTO llamadas_tracking 
+                (id_referenciado, id_usuario, id_resultado, fecha_llamada, telefono, rating, observaciones, voto_camara, voto_senado) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            $datos['id_referenciado'],
+            $_SESSION['id_usuario'],
+            $datos['id_resultado'],
+            $datos['fecha_llamada'],
+            $datos['telefono'],
+            $datos['rating'],
+            $datos['observaciones'],
+            $datos['voto_camara'] ?: null,
+            $datos['voto_senado'] ?: null
+        ]);
+        
+        return $this->pdo->lastInsertId();
+        
+    } catch (PDOException $e) {
+        error_log("Error en guardarValoracionConVotos: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Obtener historial de llamadas (versión simplificada con texto)
+ * @param int $id_referenciado ID del referenciado
+ * @return array Historial de llamadas
+ */
+public function getHistorialLlamadasConVotos($id_referenciado) {
+    try {
+        $sql = "SELECT l.*, 
+                       u.nombres as usuario_nombres,
+                       u.apellidos as usuario_apellidos,
+                       CONCAT(u.nombres, ' ', u.apellidos) as usuario_nombre,
+                       r.nombre as resultado_nombre
+                FROM llamadas_tracking l
+                LEFT JOIN usuario u ON l.id_usuario = u.id_usuario
+                LEFT JOIN resultado_llamadas r ON l.id_resultado = r.id_resultado
+                WHERE l.id_referenciado = ?
+                ORDER BY l.fecha_llamada DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id_referenciado]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error en getHistorialLlamadasConVotos: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtener candidatos para combos
+ * @param int|null $id_grupo Filtrar por grupo (1=Cámara, 2=Senado)
+ * @return array Lista de candidatos
+ */
+public function getCandidatosParaCombo($id_grupo = null) {
+    try {
+        $sql = "SELECT c.id_candidato, 
+                       c.nombre, 
+                       c.apellido,
+                       CONCAT(c.nombre, ' ', c.apellido) as nombre_completo,
+                       c.id_grupo,
+                       gp.nombre as grupo_nombre,
+                       c.id_partido,
+                       p.nombre as partido_nombre
+                FROM candidatos c
+                LEFT JOIN grupos_parlamentarios gp ON c.id_grupo = gp.id_grupo
+                LEFT JOIN partidos_politicos p ON c.id_partido = p.id_partido";
+        
+        $params = [];
+        
+        if ($id_grupo) {
+            $sql .= " WHERE c.id_grupo = ?";
+            $params[] = $id_grupo;
+        }
+        
+        $sql .= " ORDER BY c.nombre, c.apellido";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Error en getCandidatosParaCombo: " . $e->getMessage());
+        return [];
+    }
+}
+/**
+ * Guardar valoración de llamada con información de votos
+ * @param array $datos Datos de la valoración
+ * @return int|false ID de la llamada o false
+ */
+public function guardarValoracionLlamadaConVotos($datos) {
+    try {
+        $sql = "INSERT INTO llamadas_tracking 
+                (id_referenciado, id_usuario, id_resultado, fecha_llamada, telefono, rating, observaciones, voto_camara, voto_senado) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id_llamada";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            $datos['id_referenciado'],
+            $datos['id_usuario'],
+            $datos['id_resultado'],
+            $datos['fecha_llamada'],
+            $datos['telefono'],
+            $datos['rating'],
+            $datos['observaciones'],
+            $datos['voto_camara'],
+            $datos['voto_senado']
+        ]);
+        
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $resultado ? $resultado['id_llamada'] : false;
+        
+    } catch (PDOException $e) {
+        error_log("Error en guardarValoracionLlamadaConVotos: " . $e->getMessage());
+        return false;
+    }
+}
 }
 ?>

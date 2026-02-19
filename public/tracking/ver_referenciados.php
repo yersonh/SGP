@@ -20,7 +20,7 @@ if (!isset($_SESSION['id_usuario'])) {
 
 // Verificar que se haya proporcionado el ID del referenciador
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header('Location: ../dashboard.php'); // Corregido: redirige a dashboard.php en la raíz
+    header('Location: ../dashboard.php');
     exit();
 }
 
@@ -30,18 +30,18 @@ $nickname = isset($_GET['nickname']) ? htmlspecialchars($_GET['nickname']) : 'Us
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
-$llamadaModel = new LlamadaModel($pdo); // Agregar modelo de llamada
+$llamadaModel = new LlamadaModel($pdo);
 
 // Obtener datos del referenciador
 $referenciador = $usuarioModel->getUsuarioById($id_referenciador);
 if (!$referenciador) {
-    header('Location: ../dashboard.php?error=usuario_no_encontrado'); // Corregido
+    header('Location: ../dashboard.php?error=usuario_no_encontrado');
     exit();
 }
 
 // Verificar que el usuario sea un referenciador
 if ($referenciador['tipo_usuario'] !== 'Referenciador') {
-    header('Location: ../dashboard.php?error=usuario_no_es_referenciador'); // Corregido
+    header('Location: ../dashboard.php?error=usuario_no_es_referenciador');
     exit();
 }
 
@@ -49,10 +49,10 @@ if ($referenciador['tipo_usuario'] !== 'Referenciador') {
 $referenciados = $referenciadoModel->getReferenciadosByUsuario($id_referenciador);
 $referenciadosActivos = $referenciadoModel->getReferenciadosByUsuarioActivo($id_referenciador);
 
-// Obtener % de tracking - CORREGIDO: usar $referenciador['id_usuario']
+// Obtener % de tracking
 $trackingData = $llamadaModel->getPorcentajeTrackingPorReferenciador($referenciador['id_usuario']);
 
-// Obtener estadísticas de votación - USANDO EL NUEVO MÉTODO
+// Obtener estadísticas de votación
 $estadisticasVotacion = $referenciadoModel->getEstadisticasVotacionPorReferenciador($id_referenciador);
 
 // Verificar qué referenciados ya tienen llamada registrada
@@ -79,7 +79,7 @@ foreach ($referenciados as $ref) {
     $afinidad_stats[$nivel]++;
 }
 
-// Estadísticas de votación - CORREGIDO
+// Estadísticas de votación
 $vota_fuera_count = $estadisticasVotacion['vota_fuera'] ?? 0;
 $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
 ?>
@@ -109,7 +109,8 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             </a>
         </div>
     </header>
-<!-- CONTADOR COMPACTO -->
+    
+    <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">
             <div class="countdown-compact-title">
@@ -128,6 +129,7 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             </div>
         </div>
     </div>
+    
     <div class="main-container">
         <!-- Información del Referenciador -->
         <div class="info-card">
@@ -185,60 +187,59 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
         </div>
 
         <!-- Estadísticas rápidas -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon" style="color: #3498db;">
-            <i class="fas fa-users"></i>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #3498db;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number"><?php echo number_format($total_referenciadoActivos); ?></div>
+                <div class="stat-label">Referenciados Activos</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #27ae60;">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="stat-number"><?php echo number_format($vota_aqui_count); ?></div>
+                <div class="stat-label">Votan aquí</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #e74c3c;">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <div class="stat-number"><?php echo number_format($vota_fuera_count); ?></div>
+                <div class="stat-label">Votan fuera</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #f39c12;">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-number">
+                    <?php 
+                    echo number_format($trackingData['porcentaje_tracking'] ?? 0, 1); 
+                    ?>%
+                </div>
+                <div class="stat-label">Avance Tracking</div>
+                <div class="stat-subtext">
+                    <?php 
+                    if ($trackingData) {
+                        echo $trackingData['referidos_llamados'] . ' de ' . $trackingData['total_referidos'] . ' referidos';
+                    } else {
+                        echo '0 de ' . $total_referenciadoActivos . ' referidos';
+                    }
+                    ?>
+                </div>
+            </div>
         </div>
-        <div class="stat-number"><?php echo number_format($total_referenciadoActivos); ?></div>
-        <div class="stat-label">Referenciados Activos</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon" style="color: #27ae60;">
-            <i class="fas fa-map-marker-alt"></i>
-        </div>
-        <div class="stat-number"><?php echo number_format($vota_aqui_count); ?></div>
-        <div class="stat-label">Votan aquí</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon" style="color: #e74c3c;">
-            <i class="fas fa-map-marked-alt"></i>
-        </div>
-        <div class="stat-number"><?php echo number_format($vota_fuera_count); ?></div>
-        <div class="stat-label">Votan fuera</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon" style="color: #f39c12;">
-            <i class="fas fa-chart-line"></i>
-        </div>
-        <div class="stat-number">
-            <?php 
-            // Formatear con un solo decimal
-            echo number_format($trackingData['porcentaje_tracking'] ?? 0, 1); 
-            ?>%
-        </div>
-        <div class="stat-label">Avance Tracking</div>
-        <div class="stat-subtext">
-            <?php 
-            if ($trackingData) {
-                echo $trackingData['referidos_llamados'] . ' de ' . $trackingData['total_referidos'] . ' referidos';
-            } else {
-                echo '0 de ' . $total_referenciadoActivos . ' referidos';
-            }
-            ?>
-        </div>
-    </div>
-</div>
+        
         <!-- Gráfico de afinidad -->
         <?php if (!empty($afinidad_stats)): ?>
         <div class="afinidad-chart">
             <h3 class="chart-header"><i class="fas fa-chart-bar"></i> Distribución por Nivel de Afinidad</h3>
             
             <?php 
-            // Ordenar por nivel de afinidad
             ksort($afinidad_stats);
             $max_count = max($afinidad_stats);
             
@@ -297,174 +298,174 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
                         </tr>
                     </thead>
                     <tbody>
-    <?php $counter = 1; ?>
-    <?php foreach ($referenciados as $referenciado): ?>
-    <?php 
-    $esta_activo = ($referenciado['activo'] === true || $referenciado['activo'] === 't' || $referenciado['activo'] == 1);
-    $nombre_completo = htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']);
-    
-    // Determinar información de votación
-    $vota_info = '';
-    if ($referenciado['vota_fuera'] === 'Si') {
-        $vota_info = 'Fuera';
-        $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? '') . 
-                      ' - Mesa ' . ($referenciado['mesa_fuera'] ?? '');
-    } else {
-        $vota_info = 'Aquí';
-        $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? '') . 
-                      ' - Mesa ' . ($referenciado['mesa'] ?? '');
-    }
-    
-    // Obtener información del grupo parlamentario (ya existe en tu consulta como 'grupo_nombre')
-    $grupo_nombre = $referenciado['grupo_nombre'] ?? 'No asignado';
-    
-    // Obtener información del líder (nuevos campos)
-    $lider_info = '';
-    if (!empty($referenciado['lider_nombres']) && !empty($referenciado['lider_apellidos'])) {
-        $lider_nombre_completo = $referenciado['lider_nombres'] . ' ' . $referenciado['lider_apellidos'];
-        $lider_info = htmlspecialchars($lider_nombre_completo);
-        if (!empty($referenciado['lider_cc'])) {
-            $lider_info .= '<br><small class="text-muted">CC: ' . htmlspecialchars($referenciado['lider_cc']) . '</small>';
-        }
-    } else {
-        $lider_info = '<span class="text-muted">No cuenta con líder</span>';
-    }
-    
-    // Verificar si ya tiene llamada registrada
-    $tieneLlamada = $referenciadosConLlamada[$referenciado['id_referenciado']] ?? false;
-    ?>
-    
-    <tr class="<?php echo !$esta_activo ? 'inactive-row' : ''; ?>">
-        <td><?php echo $counter++; ?></td>
-        
-        <td>
-            <strong><?php echo $nombre_completo; ?></strong>
-            <?php if (!empty($referenciado['direccion'])): ?>
-            <br><small class="text-muted"><?php echo htmlspecialchars($referenciado['direccion']); ?></small>
-            <?php endif; ?>
-        </td>
-        
-        <td>
-            <code><?php echo htmlspecialchars($referenciado['cedula']); ?></code>
-        </td>
-        
-        <td>
-            <?php echo !empty($referenciado['telefono']) ? htmlspecialchars($referenciado['telefono']) : '<span class="text-muted">No registrado</span>'; ?>
-        </td>
-        
-        <td>
-            <?php if (!empty($referenciado['email'])): ?>
-            <a href="mailto:<?php echo htmlspecialchars($referenciado['email']); ?>">
-                <?php echo htmlspecialchars($referenciado['email']); ?>
-            </a>
-            <?php else: ?>
-            <span class="text-muted">No registrado</span>
-            <?php endif; ?>
-        </td>
-        
-        <td>
-            <span class="afinidad-badge afinidad-<?php echo $referenciado['afinidad']; ?>">
-                Nivel <?php echo $referenciado['afinidad']; ?>
-            </span>
-        </td>
-        
-        <!-- COLUMNA GRUPO PARLAMENTARIO -->
-        <td>
-            <?php 
-            if (!empty($grupo_nombre) && $grupo_nombre != 'No asignado') {
-                $grupo_class = '';
-                $grupo_nombre_lower = strtolower($grupo_nombre);
-                if (strpos($grupo_nombre_lower, 'cámara') !== false || strpos($grupo_nombre_lower, 'camara') !== false) {
-                    $grupo_class = 'bg-primary';
-                } elseif (strpos($grupo_nombre_lower, 'senado') !== false) {
-                    $grupo_class = 'bg-success';
-                } elseif (strpos($grupo_nombre_lower, 'ambos') !== false || strpos($grupo_nombre_lower, 'pacha') !== false) {
-                    $grupo_class = 'bg-warning text-dark';
-                } else {
-                    $grupo_class = 'bg-secondary';
-                }
-            ?>
-                <span class="badge <?php echo $grupo_class; ?>">
-                    <?php echo htmlspecialchars($grupo_nombre); ?>
-                </span>
-            <?php } else { ?>
-                <span class="text-muted"><?php echo $grupo_nombre; ?></span>
-            <?php } ?>
-        </td>
-        
-        <!-- COLUMNA LÍDER -->
-        <td>
-            <?php echo $lider_info; ?>
-        </td>
-        
-        <td>
-            <?php if ($referenciado['vota_fuera'] === 'Si'): ?>
-                <span class="badge bg-warning text-dark">
-                    <i class="fas fa-external-link-alt"></i> <?php echo $vota_info; ?>
-                </span>
-            <?php else: ?>
-                <span class="badge bg-success">
-                    <i class="fas fa-home"></i> <?php echo $vota_info; ?>
-                </span>
-            <?php endif; ?>
-        </td>
-        
-        <td>
-            <?php echo $puesto_mesa; ?>
-            <?php if (!empty($referenciado['zona_nombre'])): ?>
-            <br><small>Zona: <?php echo htmlspecialchars($referenciado['zona_nombre']); ?></small>
-            <?php endif; ?>
-        </td>
-        
-        <td>
-            <?php 
-            $fecha = new DateTime($referenciado['fecha_registro']);
-            echo $fecha->format('d/m/Y H:i');
-            ?>
-        </td>
-        
-        <td>
-            <?php if ($esta_activo): ?>
-                <span class="status-badge status-active">
-                    <i class="fas fa-check-circle"></i> Activo
-                </span>
-            <?php else: ?>
-                <span class="status-badge status-inactive">
-                    <i class="fas fa-times-circle"></i> Inactivo
-                </span>
-            <?php endif; ?>
-        </td>
-        
-        <!-- COLUMNA TRACKING -->
-        <td>
-            <div class="d-flex align-items-center justify-content-start gap-1">
-                <?php if ($tieneLlamada): ?>
-                    <button class="tracking-btn llamada-realizada" 
-                            title="Llamada ya realizada - Click para llamar de nuevo"
-                            onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
-                            <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
-                        <i class="fas fa-phone-alt"></i>
-                        <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
-                    </button>
-                    
-                    <button class="tracking-btn tracking-detalle" 
-                            title="Ver detalles de la llamada"
-                            onclick="mostrarDetalleLlamada('<?php echo $referenciado['id_referenciado']; ?>', '<?php echo addslashes($nombre_completo); ?>')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                <?php else: ?>
-                    <button class="tracking-btn" 
-                            title="Llamar a <?php echo htmlspecialchars($nombre_completo); ?>"
-                            onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
-                            <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
-                        <i class="fas fa-phone-alt"></i>
-                    </button>
-                <?php endif; ?>
-            </div>
-        </td>
-    </tr>
-    <?php endforeach; ?>
-</tbody>
+                        <?php $counter = 1; ?>
+                        <?php foreach ($referenciados as $referenciado): ?>
+                        <?php 
+                        $esta_activo = ($referenciado['activo'] === true || $referenciado['activo'] === 't' || $referenciado['activo'] == 1);
+                        $nombre_completo = htmlspecialchars($referenciado['nombre'] . ' ' . $referenciado['apellido']);
+                        
+                        // Determinar información de votación
+                        $vota_info = '';
+                        if ($referenciado['vota_fuera'] === 'Si') {
+                            $vota_info = 'Fuera';
+                            $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_fuera'] ?? '') . 
+                                          ' - Mesa ' . ($referenciado['mesa_fuera'] ?? '');
+                        } else {
+                            $vota_info = 'Aquí';
+                            $puesto_mesa = htmlspecialchars($referenciado['puesto_votacion_nombre'] ?? '') . 
+                                          ' - Mesa ' . ($referenciado['mesa'] ?? '');
+                        }
+                        
+                        // Obtener información del grupo parlamentario
+                        $grupo_nombre = $referenciado['grupo_nombre'] ?? 'No asignado';
+                        
+                        // Obtener información del líder
+                        $lider_info = '';
+                        if (!empty($referenciado['lider_nombres']) && !empty($referenciado['lider_apellidos'])) {
+                            $lider_nombre_completo = $referenciado['lider_nombres'] . ' ' . $referenciado['lider_apellidos'];
+                            $lider_info = htmlspecialchars($lider_nombre_completo);
+                            if (!empty($referenciado['lider_cc'])) {
+                                $lider_info .= '<br><small class="text-muted">CC: ' . htmlspecialchars($referenciado['lider_cc']) . '</small>';
+                            }
+                        } else {
+                            $lider_info = '<span class="text-muted">No cuenta con líder</span>';
+                        }
+                        
+                        // Verificar si ya tiene llamada registrada
+                        $tieneLlamada = $referenciadosConLlamada[$referenciado['id_referenciado']] ?? false;
+                        ?>
+                        
+                        <tr data-id-referenciado="<?php echo $referenciado['id_referenciado']; ?>" class="<?php echo !$esta_activo ? 'inactive-row' : ''; ?>">
+                            <td><?php echo $counter++; ?></td>
+                            
+                            <td>
+                                <strong><?php echo $nombre_completo; ?></strong>
+                                <?php if (!empty($referenciado['direccion'])): ?>
+                                <br><small class="text-muted"><?php echo htmlspecialchars($referenciado['direccion']); ?></small>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <td>
+                                <code><?php echo htmlspecialchars($referenciado['cedula']); ?></code>
+                            </td>
+                            
+                            <td>
+                                <?php echo !empty($referenciado['telefono']) ? htmlspecialchars($referenciado['telefono']) : '<span class="text-muted">No registrado</span>'; ?>
+                            </td>
+                            
+                            <td>
+                                <?php if (!empty($referenciado['email'])): ?>
+                                <a href="mailto:<?php echo htmlspecialchars($referenciado['email']); ?>">
+                                    <?php echo htmlspecialchars($referenciado['email']); ?>
+                                </a>
+                                <?php else: ?>
+                                <span class="text-muted">No registrado</span>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <td>
+                                <span class="afinidad-badge afinidad-<?php echo $referenciado['afinidad']; ?>">
+                                    Nivel <?php echo $referenciado['afinidad']; ?>
+                                </span>
+                            </td>
+                            
+                            <!-- COLUMNA GRUPO PARLAMENTARIO -->
+                            <td>
+                                <?php 
+                                if (!empty($grupo_nombre) && $grupo_nombre != 'No asignado') {
+                                    $grupo_class = '';
+                                    $grupo_nombre_lower = strtolower($grupo_nombre);
+                                    if (strpos($grupo_nombre_lower, 'cámara') !== false || strpos($grupo_nombre_lower, 'camara') !== false) {
+                                        $grupo_class = 'bg-primary';
+                                    } elseif (strpos($grupo_nombre_lower, 'senado') !== false) {
+                                        $grupo_class = 'bg-success';
+                                    } elseif (strpos($grupo_nombre_lower, 'ambos') !== false || strpos($grupo_nombre_lower, 'pacha') !== false) {
+                                        $grupo_class = 'bg-warning text-dark';
+                                    } else {
+                                        $grupo_class = 'bg-secondary';
+                                    }
+                                ?>
+                                    <span class="badge <?php echo $grupo_class; ?>">
+                                        <?php echo htmlspecialchars($grupo_nombre); ?>
+                                    </span>
+                                <?php } else { ?>
+                                    <span class="text-muted"><?php echo $grupo_nombre; ?></span>
+                                <?php } ?>
+                            </td>
+                            
+                            <!-- COLUMNA LÍDER -->
+                            <td>
+                                <?php echo $lider_info; ?>
+                            </td>
+                            
+                            <td>
+                                <?php if ($referenciado['vota_fuera'] === 'Si'): ?>
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-external-link-alt"></i> <?php echo $vota_info; ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-home"></i> <?php echo $vota_info; ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <td>
+                                <?php echo $puesto_mesa; ?>
+                                <?php if (!empty($referenciado['zona_nombre'])): ?>
+                                <br><small>Zona: <?php echo htmlspecialchars($referenciado['zona_nombre']); ?></small>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <td>
+                                <?php 
+                                $fecha = new DateTime($referenciado['fecha_registro']);
+                                echo $fecha->format('d/m/Y H:i');
+                                ?>
+                            </td>
+                            
+                            <td>
+                                <?php if ($esta_activo): ?>
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Activo
+                                    </span>
+                                <?php else: ?>
+                                    <span class="status-badge status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactivo
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            
+                            <!-- COLUMNA TRACKING -->
+                            <td>
+                                <div class="d-flex align-items-center justify-content-start gap-1">
+                                    <?php if ($tieneLlamada): ?>
+                                        <button class="tracking-btn llamada-realizada" 
+                                                title="Llamada ya realizada - Click para llamar de nuevo"
+                                                onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
+                                                <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
+                                            <i class="fas fa-phone-alt"></i>
+                                            <i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>
+                                        </button>
+                                        
+                                        <button class="tracking-btn tracking-detalle" 
+                                                title="Ver detalles de la llamada"
+                                                onclick="mostrarDetalleLlamada('<?php echo $referenciado['id_referenciado']; ?>', '<?php echo addslashes($nombre_completo); ?>')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="tracking-btn" 
+                                                title="Llamar a <?php echo htmlspecialchars($nombre_completo); ?>"
+                                                onclick="mostrarModalLlamada('<?php echo htmlspecialchars($referenciado['telefono'] ?? ''); ?>', '<?php echo addslashes($nombre_completo); ?>', '<?php echo $referenciado['id_referenciado']; ?>', this)"
+                                                <?php echo empty($referenciado['telefono']) ? 'disabled' : ''; ?>>
+                                            <i class="fas fa-phone-alt"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <?php else: ?>
@@ -588,22 +589,46 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
                                   placeholder="Escriba aquí sus comentarios sobre la llamada (opcional)..."></textarea>
                         <div class="form-text">Puede incluir detalles sobre el estado de ánimo, compromiso, dudas, etc.</div>
                     </div>
-                    <!-- Campo para resultado de llamada -->
-                <div class="mt-3">
-                    <label for="resultadoLlamada" class="form-label">
-                        <i class="fas fa-clipboard-check me-1"></i>Resultado de la llamada
-                    </label>
-                    <select class="form-select" id="resultadoLlamada">
-                        <option value="1">Contactado</option>
-                        <option value="2">No contesta</option>
-                        <option value="3">Número equivocado</option>
-                        <option value="4">Teléfono apagado</option>
-                        <option value="5">Ocupado</option>
-                        <option value="6">Dejó mensaje</option>
-                        <option value="7">Rechazó llamada</option>
-                    </select>
-                    <div class="form-text">Seleccione el resultado de la llamada realizada.</div>
-                </div>
+                    
+                    <!-- Resultado de la llamada -->
+                    <div class="mt-3">
+                        <label for="resultadoLlamada" class="form-label">
+                            <i class="fas fa-clipboard-check me-1"></i>Resultado de la llamada
+                        </label>
+                        <select class="form-select" id="resultadoLlamada">
+                            <option value="1">Contactado</option>
+                            <option value="2">No contesta</option>
+                            <option value="3">Número equivocado</option>
+                            <option value="4">Teléfono apagado</option>
+                            <option value="5">Ocupado</option>
+                            <option value="6">Dejó mensaje</option>
+                            <option value="7">Rechazó llamada</option>
+                        </select>
+                        <div class="form-text">Seleccione el resultado de la llamada realizada.</div>
+                    </div>
+
+                    <!-- NUEVO: Voto para Cámara -->
+                    <div class="mt-3">
+                        <label for="votoCamara" class="form-label">
+                            <i class="fas fa-landmark me-1"></i>Voto para Cámara
+                        </label>
+                        <select class="form-select" id="votoCamara">
+                            <option value="">Cargando candidatos...</option>
+                        </select>
+                        <div class="form-text">Seleccione el candidato a Cámara por el que votará.</div>
+                    </div>
+
+                    <!-- Voto para Senado (dinámico) -->
+                    <div class="mt-3">
+                        <label for="votoSenado" class="form-label">
+                            <i class="fas fa-university me-1"></i>Voto para Senado
+                        </label>
+                        <select class="form-select" id="votoSenado">
+                            <option value="">Cargando candidatos...</option>
+                        </select>
+                        <div class="form-text">Seleccione el candidato a Senado por el que votará.</div>
+                    </div>
+                    
                     <!-- Campos ocultos para enviar datos -->
                     <input type="hidden" id="ratingIdReferenciado" value="">
                     <input type="hidden" id="ratingValor" value="0">
@@ -619,106 +644,110 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             </div>
         </div>
     </div>
-<!-- Modal de Detalles de Llamada -->
-<div class="modal fade" id="modalDetalleLlamada" tabindex="-1" aria-labelledby="modalDetalleLlamadaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="modalDetalleLlamadaLabel">
-                    <i class="fas fa-clipboard-list me-2"></i>Detalles de Llamada
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="persona-info mb-4">
-                    <h4 id="detalleNombrePersona" class="mb-3"></h4>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <i class="fas fa-phone me-2 text-success"></i>
-                                <strong>Teléfono:</strong> <span id="detalleTelefono"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <i class="fas fa-user-tie me-2 text-primary"></i>
-                                <strong>Referenciador:</strong> <span id="detalleReferenciador"><?php echo htmlspecialchars($referenciador['nickname']); ?></span>
-                            </div>
-                        </div>
-                    </div>
+    
+    <!-- Modal de Detalles de Llamada -->
+    <div class="modal fade" id="modalDetalleLlamada" tabindex="-1" aria-labelledby="modalDetalleLlamadaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="modalDetalleLlamadaLabel">
+                        <i class="fas fa-clipboard-list me-2"></i>Detalles de Llamada
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Llamadas</h6>
+                <div class="modal-body">
+                    <div class="persona-info mb-4">
+                        <h4 id="detalleNombrePersona" class="mb-3"></h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <i class="fas fa-phone me-2 text-success"></i>
+                                    <strong>Teléfono:</strong> <span id="detalleTelefono"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <i class="fas fa-user-tie me-2 text-primary"></i>
+                                    <strong>Referenciador:</strong> <span id="detalleReferenciador"><?php echo htmlspecialchars($referenciador['nickname']); ?></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm" id="tablaHistorialLlamadas">
-                                <thead>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Llamadas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="tablaHistorialLlamadas">
+                                    <thead>
                                     <tr>
                                         <th>Fecha y Hora</th>
                                         <th>Resultado</th>
                                         <th>Calificación</th>
+                                        <th>Voto Cámara</th>
+                                        <th>Voto Senado</th>
                                         <th>Observaciones</th>
                                         <th>Usuario</th>
                                     </tr>
                                 </thead>
-                                <tbody id="cuerpoHistorialLlamadas">
-                                    <!-- Los datos se cargarán aquí -->
-                                </tbody>
-                            </table>
+                                    <tbody id="cuerpoHistorialLlamadas">
+                                        <!-- Los datos se cargarán aquí -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Resumen</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total de llamadas:</span>
+                                        <span class="summary-value" id="totalLlamadas">0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Promedio de calificación:</span>
+                                        <span class="summary-value" id="promedioRating">0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Última llamada:</span>
+                                        <span class="summary-value" id="ultimaLlamada">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-star me-2"></i>Distribución de Calificaciones</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="distribucionRating" class="rating-distribution">
+                                        <!-- Se generarán las barras de distribución aquí -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Resumen</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="summary-item">
-                                    <span class="summary-label">Total de llamadas:</span>
-                                    <span class="summary-value" id="totalLlamadas">0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="summary-label">Promedio de calificación:</span>
-                                    <span class="summary-value" id="promedioRating">0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="summary-label">Última llamada:</span>
-                                    <span class="summary-value" id="ultimaLlamada">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-star me-2"></i>Distribución de Calificaciones</h6>
-                            </div>
-                            <div class="card-body">
-                                <div id="distribucionRating" class="rating-distribution">
-                                    <!-- Se generarán las barras de distribución aquí -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cerrar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnNuevaLlamada">
+                        <i class="fas fa-phone me-2"></i>Nueva Llamada
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cerrar
-                </button>
-                <button type="button" class="btn btn-primary" id="btnNuevaLlamada">
-                    <i class="fas fa-phone me-2"></i>Nueva Llamada
-                </button>
             </div>
         </div>
     </div>
-</div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/contador.js"></script>
@@ -773,7 +802,7 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             modal.show();
         }
 
-        // Función para realizar la llamada (llamada desde el botón del modal)
+        // Función para realizar la llamada
         function realizarLlamada() {
             const { telefono, telefonoLimpio, nombre, boton } = llamadaActual;
             
@@ -802,7 +831,6 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
                 showNotification(`Iniciando llamada a ${nombre}`, 'success');
                 
                 // Configurar timer para mostrar modal de valoración después de 3 segundos
-                // (Simulando que la llamada terminó y volvió a la aplicación)
                 setTimeout(() => {
                     mostrarModalValoracion();
                 }, 3000);
@@ -841,6 +869,13 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             const fechaHoraStr = horaFin.toLocaleDateString('es-ES', opcionesFechaHora);
             
             document.getElementById('ratingFechaHora').textContent = `Llamada realizada: ${fechaHoraStr}`;
+            
+            // Resetear campos de votación
+            document.getElementById('votoCamara').innerHTML = '<option value="">Cargando candidatos...</option>';
+            document.getElementById('votoSenado').innerHTML = '<option value="">Cargando candidatos...</option>';
+            
+            // Cargar candidatos
+            cargarCandidatos();
             
             // Mostrar modal
             const modalRating = new bootstrap.Modal(document.getElementById('modalRating'));
@@ -938,217 +973,222 @@ $vota_aqui_count = $estadisticasVotacion['vota_aqui'] ?? 0;
             resetRatingSystem();
         }
 
+        // Función para guardar la valoración
         async function guardarValoracion() {
-    const rating = parseInt(document.getElementById('ratingValor').value);
-    const observaciones = document.getElementById('observaciones').value.trim();
-    const idReferenciado = document.getElementById('ratingIdReferenciado').value;
-    const resultadoSelect = document.getElementById('resultadoLlamada');
-    const idResultado = parseInt(resultadoSelect.value);
-    const { nombre, telefono, boton } = llamadaActual;
-    
-    if (rating === 0) {
-        showNotification('Por favor, seleccione una calificación', 'error');
-        return;
-    }
-    
-    // Crear objeto con datos de la valoración
-    const datosValoracion = {
-        id_referenciado: idReferenciado,
-        telefono: telefono,
-        rating: rating,
-        observaciones: observaciones,
-        fecha_llamada: new Date().toISOString(),
-        id_resultado: idResultado
-    };
-    
-    try {
-        // Mostrar loading
-        const btnGuardar = document.getElementById('btnGuardarValoracion');
-        const originalText = btnGuardar.innerHTML;
-        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        btnGuardar.disabled = true;
-        
-        // Enviar datos al servidor
-        const response = await fetch('../ajax/guardar_valoracion_llamada.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(datosValoracion)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            // Determinar tipo de mensaje según la decisión del servidor
-            let mensaje = result.message || 'Valoración guardada exitosamente';
-            let tipoNotificacion = 'success';
-            let icono = '✅';
+            const rating = parseInt(document.getElementById('ratingValor').value);
+            const observaciones = document.getElementById('observaciones').value.trim();
+            const idReferenciado = document.getElementById('ratingIdReferenciado').value;
+            const resultadoSelect = document.getElementById('resultadoLlamada');
+            const idResultado = parseInt(resultadoSelect.value);
+            const votoCamara = document.getElementById('votoCamara').value;
+            const votoSenado = document.getElementById('votoSenado').value;
+            const { nombre, telefono, boton } = llamadaActual;
             
-            // Analizar la respuesta del servidor para personalizar la notificación
-            if (result.analisis) {
-                const { nuevo_estado, decision, estado_actualizado } = result.analisis;
+            if (rating === 0) {
+                showNotification('Por favor, seleccione una calificación', 'error');
+                return;
+            }
+            
+            // Crear objeto con datos de la valoración
+            const datosValoracion = {
+                id_referenciado: idReferenciado,
+                telefono: telefono,
+                rating: rating,
+                observaciones: observaciones,
+                fecha_llamada: new Date().toISOString(),
+                id_resultado: idResultado,
+                voto_camara: votoCamara || null,
+                voto_senado: votoSenado || null
+            };
+            
+            try {
+                // Mostrar loading
+                const btnGuardar = document.getElementById('btnGuardarValoracion');
+                const originalText = btnGuardar.innerHTML;
+                btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                btnGuardar.disabled = true;
                 
-                if (estado_actualizado) {
-                    if (nuevo_estado === 'activo') {
-                        icono = '🔄';
-                        tipoNotificacion = 'success';
-                        mensaje = `Referenciado REACTIVADO: ${decision}`;
-                    } else if (nuevo_estado === 'inactivo') {
-                        icono = '❌';
-                        tipoNotificacion = 'error';
-                        mensaje = `Referenciado DESACTIVADO: ${decision}`;
+                // Enviar datos al servidor
+                const response = await fetch('../ajax/guardar_valoracion_llamada.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datosValoracion)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Determinar tipo de mensaje según la decisión del servidor
+                    let mensaje = result.message || 'Valoración guardada exitosamente';
+                    let tipoNotificacion = 'success';
+                    
+                    // Analizar la respuesta del servidor para personalizar la notificación
+                    if (result.analisis) {
+                        const { nuevo_estado, decision, estado_actualizado } = result.analisis;
+                        
+                        if (estado_actualizado) {
+                            if (nuevo_estado === 'activo') {
+                                tipoNotificacion = 'success';
+                                mensaje = `Referenciado REACTIVADO: ${decision}`;
+                            } else if (nuevo_estado === 'inactivo') {
+                                tipoNotificacion = 'error';
+                                mensaje = `Referenciado DESACTIVADO: ${decision}`;
+                            }
+                        } else if (nuevo_estado === 'mantener') {
+                            tipoNotificacion = 'info';
+                            mensaje = `Estado mantenido: ${decision}`;
+                        }
                     }
-                } else if (nuevo_estado === 'mantener') {
-                    icono = 'ℹ️';
-                    tipoNotificacion = 'info';
-                    mensaje = `Estado mantenido: ${decision}`;
+                    
+                    // Mostrar notificación personalizada
+                    showNotification(mensaje, tipoNotificacion);
+                    
+                    // Cerrar modal de rating
+                    const modalRating = bootstrap.Modal.getInstance(document.getElementById('modalRating'));
+                    modalRating.hide();
+                    
+                    // Resetear sistema de rating
+                    resetRatingSystem();
+                    
+                    // Actualizar la interfaz según el nuevo estado
+                    if (result.analisis && result.analisis.estado_actualizado) {
+                        actualizarEstadoEnTabla(idReferenciado, result.analisis.nuevo_estado, nombre);
+                    }
+                    
+                    // Actualizar el botón de llamada
+                    if (boton) {
+                        boton.classList.add('llamada-realizada');
+                        boton.title = 'Llamada ya realizada';
+                        boton.innerHTML = '<i class="fas fa-phone-alt"></i><i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>';
+                        boton.disabled = false;
+                        boton.classList.remove('disabled');
+                        
+                        // Actualizar tooltip
+                        if (boton._tooltip) {
+                            boton._tooltip.dispose();
+                        }
+                        new bootstrap.Tooltip(boton);
+                    }
+                    
+                    // Log para debugging
+                    console.log('Respuesta del servidor:', result);
+                    
+                } else {
+                    showNotification('Error: ' + (result.message || 'Error desconocido'), 'error');
+                    btnGuardar.innerHTML = originalText;
+                    btnGuardar.disabled = false;
                 }
+                
+            } catch (error) {
+                console.error('Error en guardarValoracion:', error);
+                showNotification('Error de conexión: ' + error.message, 'error');
+                const btnGuardar = document.getElementById('btnGuardarValoracion');
+                btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i>Guardar Valoración';
+                btnGuardar.disabled = false;
             }
+        }
+
+        // Función para actualizar el estado en la tabla
+        function actualizarEstadoEnTabla(idReferenciado, nuevoEstado, nombre) {
+            const fila = document.querySelector(`tr[data-id-referenciado="${idReferenciado}"]`);
             
-            // Mostrar notificación personalizada
-            showNotification(mensaje, tipoNotificacion);
-            
-            // Cerrar modal de rating
-            const modalRating = bootstrap.Modal.getInstance(document.getElementById('modalRating'));
-            modalRating.hide();
-            
-            // Resetear sistema de rating
-            resetRatingSystem();
-            
-            // Actualizar la interfaz según el nuevo estado
-            if (result.analisis && result.analisis.estado_actualizado) {
-                actualizarEstadoEnTabla(idReferenciado, result.analisis.nuevo_estado, nombre);
-            }
-            
-            // Actualizar el botón de llamada (siempre marcar como llamada realizada)
-            if (boton) {
-                boton.classList.add('llamada-realizada');
-                boton.title = 'Llamada ya realizada';
-                boton.innerHTML = '<i class="fas fa-phone-alt"></i><i class="fas fa-check" style="font-size: 0.7rem; position: absolute; top: -3px; right: -3px; background: white; border-radius: 50%; padding: 2px;"></i>';
-                 // Siempre habilitado
-                boton.disabled = false;
-                boton.classList.remove('disabled');
-                // Actualizar tooltip
-                if (boton._tooltip) {
-                    boton._tooltip.dispose();
+            if (!fila) {
+                const boton = document.querySelector(`button[onclick*="${idReferenciado}"]`);
+                if (boton) {
+                    const filaBoton = boton.closest('tr');
+                    if (filaBoton) {
+                        filaBoton.setAttribute('data-id-referenciado', idReferenciado);
+                        actualizarFila(filaBoton, nuevoEstado, nombre);
+                    }
                 }
-                new bootstrap.Tooltip(boton);
-            }
-            
-            // Log para debugging
-            console.log('Respuesta del servidor:', result);
-            
-        } else {
-            showNotification('Error: ' + (result.message || 'Error desconocido'), 'error');
-            btnGuardar.innerHTML = originalText;
-            btnGuardar.disabled = false;
-        }
-        
-    } catch (error) {
-        console.error('Error en guardarValoracion:', error);
-        showNotification('Error de conexión: ' + error.message, 'error');
-        const btnGuardar = document.getElementById('btnGuardarValoracion');
-        btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i>Guardar Valoración';
-        btnGuardar.disabled = false;
-    }
-}
-
-/**
- * Función auxiliar para actualizar el estado en la tabla
- */
-function actualizarEstadoEnTabla(idReferenciado, nuevoEstado, nombre) {
-    // Buscar la fila por el ID (asegúrate de que las filas tengan este atributo)
-    const fila = document.querySelector(`tr[data-id-referenciado="${idReferenciado}"]`);
-    
-    if (!fila) {
-        // Si no encuentra por data-id, intentar buscar por el botón
-        const boton = document.querySelector(`button[onclick*="${idReferenciado}"]`);
-        if (boton) {
-            const filaBoton = boton.closest('tr');
-            if (filaBoton) {
-                filaBoton.setAttribute('data-id-referenciado', idReferenciado);
-                actualizarFila(filaBoton, nuevoEstado, nombre);
-            }
-        }
-    } else {
-        actualizarFila(fila, nuevoEstado, nombre);
-    }
-}
-
-/**
- * Función para actualizar una fila específica
- */
-/**
- * Función para actualizar una fila específica
- */
-function actualizarFila(fila, nuevoEstado, nombre) {
-    // Actualizar clase de la fila (solo para estilo visual)
-    if (nuevoEstado === 'inactivo') {
-        fila.classList.add('inactive-row');
-    } else {
-        fila.classList.remove('inactive-row');
-    }
-    
-    // Actualizar el badge de estado (columna 12)
-    const estadoCell = fila.querySelector('td:nth-child(12)');
-    if (estadoCell) {
-        if (nuevoEstado === 'inactivo') {
-            estadoCell.innerHTML = '<span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactivo</span>';
-        } else {
-            estadoCell.innerHTML = '<span class="status-badge status-active"><i class="fas fa-check-circle"></i> Activo</span>';
-        }
-    }
-    
-    // =============================================
-    // TODOS los botones de tracking SIEMPRE habilitados
-    // Incluso si está inactivo, se puede llamar para reactivar
-    // =============================================
-    
-    // Botón de llamada - SIEMPRE HABILITADO
-    const botonLlamada = fila.querySelector('.tracking-btn:not(.tracking-detalle)');
-    if (botonLlamada) {
-        botonLlamada.disabled = false;
-        botonLlamada.classList.remove('disabled');
-        
-        // El título cambia según el estado pero siempre se puede llamar
-        if (nuevoEstado === 'inactivo') {
-            botonLlamada.title = `Llamar a ${nombre} (intento de reactivación)`;
-        } else {
-            if (botonLlamada.classList.contains('llamada-realizada')) {
-                botonLlamada.title = 'Llamada ya realizada - Click para llamar de nuevo';
             } else {
-                botonLlamada.title = `Llamar a ${nombre}`;
+                actualizarFila(fila, nuevoEstado, nombre);
             }
         }
-        
-        // Actualizar tooltip
-        if (botonLlamada._tooltip) {
-            botonLlamada._tooltip.dispose();
+
+        // Función para actualizar una fila específica
+        function actualizarFila(fila, nuevoEstado, nombre) {
+            // Actualizar clase de la fila
+            if (nuevoEstado === 'inactivo') {
+                fila.classList.add('inactive-row');
+            } else {
+                fila.classList.remove('inactive-row');
+            }
+            
+            // Actualizar el badge de estado (columna 12)
+            const estadoCell = fila.querySelector('td:nth-child(12)');
+            if (estadoCell) {
+                if (nuevoEstado === 'inactivo') {
+                    estadoCell.innerHTML = '<span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactivo</span>';
+                } else {
+                    estadoCell.innerHTML = '<span class="status-badge status-active"><i class="fas fa-check-circle"></i> Activo</span>';
+                }
+            }
+            
+            // Botón de llamada - SIEMPRE HABILITADO
+            const botonLlamada = fila.querySelector('.tracking-btn:not(.tracking-detalle)');
+            if (botonLlamada) {
+                botonLlamada.disabled = false;
+                botonLlamada.classList.remove('disabled');
+                
+                if (nuevoEstado === 'inactivo') {
+                    botonLlamada.title = `Llamar a ${nombre} (intento de reactivación)`;
+                } else {
+                    if (botonLlamada.classList.contains('llamada-realizada')) {
+                        botonLlamada.title = 'Llamada ya realizada - Click para llamar de nuevo';
+                    } else {
+                        botonLlamada.title = `Llamar a ${nombre}`;
+                    }
+                }
+                
+                if (botonLlamada._tooltip) {
+                    botonLlamada._tooltip.dispose();
+                }
+                new bootstrap.Tooltip(botonLlamada);
+            }
+            
+            // Botón de detalles - SIEMPRE HABILITADO
+            const botonDetalle = fila.querySelector('.tracking-btn.tracking-detalle');
+            if (botonDetalle) {
+                botonDetalle.disabled = false;
+                botonDetalle.classList.remove('disabled');
+                botonDetalle.title = 'Ver detalles de la llamada';
+                
+                if (botonDetalle._tooltip) {
+                    botonDetalle._tooltip.dispose();
+                }
+                new bootstrap.Tooltip(botonDetalle);
+            }
         }
-        new bootstrap.Tooltip(botonLlamada);
-    }
-    
-    // Botón de detalles - SIEMPRE HABILITADO
-    const botonDetalle = fila.querySelector('.tracking-btn.tracking-detalle');
-    if (botonDetalle) {
-        botonDetalle.disabled = false;
-        botonDetalle.classList.remove('disabled');
-        botonDetalle.title = 'Ver detalles de la llamada';
-        
-        if (botonDetalle._tooltip) {
-            botonDetalle._tooltip.dispose();
+
+        // Función para resetear el sistema de rating
+        function resetRatingSystem() {
+            // Reset stars
+            const stars = document.querySelectorAll('.rating-star');
+            stars.forEach(star => {
+                star.classList.remove('selected', 'hovered');
+            });
+            
+            // Reset fields
+            document.getElementById('ratingValor').value = "0";
+            document.getElementById('ratingText').textContent = "Seleccione una calificación";
+            document.getElementById('ratingValue').textContent = "";
+            document.getElementById('observaciones').value = "";
+            document.getElementById('btnGuardarValoracion').disabled = true;
+            document.getElementById('resultadoLlamada').value = "1";
+            document.getElementById('votoCamara').value = "";
+            document.getElementById('votoSenado').value = "";
         }
-        new bootstrap.Tooltip(botonDetalle);
-    }
-}
-// Función para mostrar detalles de llamadas
+
+        // Función para mostrar detalles de llamadas
 async function mostrarDetalleLlamada(idReferenciado, nombre) {
     try {
         // Mostrar loading
         const modalDetalle = document.getElementById('modalDetalleLlamada');
         const cuerpo = document.getElementById('cuerpoHistorialLlamadas');
-        cuerpo.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</td></tr>';
+        cuerpo.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</td></tr>';
         
         // Actualizar título
         document.getElementById('detalleNombrePersona').textContent = nombre;
@@ -1204,11 +1244,58 @@ async function mostrarDetalleLlamada(idReferenciado, nombre) {
                         estrellasHTML = '<span class="text-muted">Sin calificar</span>';
                     }
                     
+                    // =============================================
+                    // GENERAR INFORMACIÓN DE VOTOS (VERSIÓN MEJORADA)
+                    // =============================================
+                    
+                    // Función auxiliar para formatear voto
+                    const formatearVoto = (voto) => {
+                        if (!voto) return '<span class="text-muted">-</span>';
+                        
+                        // Si tiene el formato del JOIN anterior (con campos separados)
+                        if (typeof voto === 'object' && voto !== null) {
+                            if (voto.candidato_nombre) {
+                                let texto = voto.candidato_nombre;
+                                if (voto.partido_nombre) {
+                                    texto += ` <span class="badge bg-info text-white">${voto.partido_nombre}</span>`;
+                                }
+                                return texto;
+                            }
+                        }
+                        
+                        // Si es texto directo (nuestro nuevo enfoque)
+                        const votoStr = String(voto).toLowerCase();
+                        if (votoStr.includes('voto en blanco')) {
+                            return '<span class="badge bg-secondary">' + voto + '</span>';
+                        } else if (votoStr.includes('no sabe') || votoStr.includes('no responde')) {
+                            return '<span class="badge bg-warning text-dark">' + voto + '</span>';
+                        } else if (votoStr && votoStr !== '') {
+                            return '<span class="badge bg-info text-white">' + voto + '</span>';
+                        }
+                        
+                        return '<span class="text-muted">-</span>';
+                    };
+                    
+                    // Aplicar formateo a los votos
+                    const votoCamaraHTML = llamada.voto_camara ? 
+                        formatearVoto(llamada.voto_camara) : 
+                        (llamada.candidato_camara_nombre ? 
+                            `${llamada.candidato_camara_nombre} ${llamada.candidato_camara_apellido || ''} ${llamada.partido_camara_nombre ? '<span class="badge bg-info text-white">' + llamada.partido_camara_nombre + '</span>' : ''}` : 
+                            '<span class="text-muted">-</span>');
+                    
+                    const votoSenadoHTML = llamada.voto_senado ? 
+                        formatearVoto(llamada.voto_senado) : 
+                        (llamada.candidato_senado_nombre ? 
+                            `${llamada.candidato_senado_nombre} ${llamada.candidato_senado_apellido || ''} ${llamada.partido_senado_nombre ? '<span class="badge bg-info text-white">' + llamada.partido_senado_nombre + '</span>' : ''}` : 
+                            '<span class="text-muted">-</span>');
+                    
                     historialHTML += `
                         <tr>
                             <td>${fechaStr}</td>
                             <td><span class="badge ${getColorResultado(llamada.id_resultado)}">${llamada.resultado_nombre || 'Sin resultado'}</span></td>
                             <td>${estrellasHTML}</td>
+                            <td>${votoCamaraHTML}</td>
+                            <td>${votoSenadoHTML}</td>
                             <td>${llamada.observaciones || '<span class="text-muted">Sin observaciones</span>'}</td>
                             <td>${llamada.usuario_nombre || 'Sistema'}</td>
                         </tr>
@@ -1237,7 +1324,7 @@ async function mostrarDetalleLlamada(idReferenciado, nombre) {
                 generarDistribucionRating(conteoRating, data.historial.filter(l => l.rating).length);
                 
             } else {
-                historialHTML = '<tr><td colspan="5" class="text-center text-muted">No hay historial de llamadas registradas</td></tr>';
+                historialHTML = '<tr><td colspan="7" class="text-center text-muted">No hay historial de llamadas registradas</td></tr>';
                 document.getElementById('totalLlamadas').textContent = '0';
                 document.getElementById('promedioRating').textContent = 'N/A';
                 document.getElementById('ultimaLlamada').textContent = 'Nunca';
@@ -1249,7 +1336,6 @@ async function mostrarDetalleLlamada(idReferenciado, nombre) {
             // Configurar botón de nueva llamada
             document.getElementById('btnNuevaLlamada').onclick = function() {
                 modal.hide();
-                // Buscar el teléfono del referenciado
                 const fila = document.querySelector(`tr[data-id-referenciado="${idReferenciado}"]`);
                 if (fila) {
                     const telefono = fila.querySelector('td:nth-child(4)').textContent.trim();
@@ -1262,88 +1348,123 @@ async function mostrarDetalleLlamada(idReferenciado, nombre) {
             
         } else {
             showNotification('Error al cargar el historial: ' + (data.message || 'Error desconocido'), 'error');
-            cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar el historial</td></tr>';
+            cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar el historial</td></tr>';
         }
         
     } catch (error) {
         showNotification('Error de conexión: ' + error.message, 'error');
-        document.getElementById('cuerpoHistorialLlamadas').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error de conexión</td></tr>';
+        document.getElementById('cuerpoHistorialLlamadas').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión</td></tr>';
     }
 }
 
-// Función para generar la distribución de ratings
-function generarDistribucionRating(conteoRating, totalConRating) {
-    const container = document.getElementById('distribucionRating');
-    let html = '';
-    
-    if (totalConRating > 0) {
-        for (let i = 5; i >= 1; i--) {
-            const porcentaje = totalConRating > 0 ? (conteoRating[i] / totalConRating * 100).toFixed(0) : 0;
-            html += `
-                <div class="rating-dist-item mb-2">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            ${i} <i class="fas fa-star text-warning"></i>
-                            <span class="text-muted">(${conteoRating[i]})</span>
-                        </div>
-                        <div>${porcentaje}%</div>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-warning" style="width: ${porcentaje}%;"></div>
-                    </div>
-                </div>
-            `;
-        }
-    } else {
-        html = '<p class="text-muted mb-0">No hay calificaciones registradas</p>';
-    }
-    
-    container.innerHTML = html;
-}
-
-// Función auxiliar para obtener color según resultado
-function getColorResultado(idResultado) {
-    const colores = {
-        1: 'bg-success',    // Contactado
-        2: 'bg-warning text-dark', // No contesta
-        3: 'bg-secondary',  // Número equivocado
-        4: 'bg-danger',     // Teléfono apagado
-        5: 'bg-info',       // Ocupado
-        6: 'bg-primary',    // Dejó mensaje
-        7: 'bg-dark'        // Rechazó llamada
-    };
-    return colores[idResultado] || 'bg-secondary';
-}
-
-// En el DOMContentLoaded, agregar data-id a las filas para facilitar la búsqueda
-document.addEventListener('DOMContentLoaded', function() {
-    // ... (código existente) ...
-    
-    // Agregar data-id a las filas de la tabla
-    document.querySelectorAll('#referenciados-table tbody tr').forEach((row, index) => {
-        const idReferenciado = row.querySelector('.tracking-btn')?.getAttribute('onclick')?.match(/'(\d+)'/)?.[1];
-        if (idReferenciado) {
-            row.setAttribute('data-id-referenciado', idReferenciado);
-        }
-    });
-});
-        // Función para resetear el sistema de rating
-        function resetRatingSystem() {
-            // Reset stars
-            const stars = document.querySelectorAll('.rating-star');
-            stars.forEach(star => {
-                star.classList.remove('selected', 'hovered');
-            });
+        // Función para generar la distribución de ratings
+        function generarDistribucionRating(conteoRating, totalConRating) {
+            const container = document.getElementById('distribucionRating');
+            let html = '';
             
-            // Reset fields
-            document.getElementById('ratingValor').value = "0";
-            document.getElementById('ratingText').textContent = "Seleccione una calificación";
-            document.getElementById('ratingValue').textContent = "";
-            document.getElementById('observaciones').value = "";
-            document.getElementById('btnGuardarValoracion').disabled = true;
-            document.getElementById('resultadoLlamada').value = "1";
+            if (totalConRating > 0) {
+                for (let i = 5; i >= 1; i--) {
+                    const porcentaje = totalConRating > 0 ? (conteoRating[i] / totalConRating * 100).toFixed(0) : 0;
+                    html += `
+                        <div class="rating-dist-item mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    ${i} <i class="fas fa-star text-warning"></i>
+                                    <span class="text-muted">(${conteoRating[i]})</span>
+                                </div>
+                                <div>${porcentaje}%</div>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-warning" style="width: ${porcentaje}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                html = '<p class="text-muted mb-0">No hay calificaciones registradas</p>';
+            }
+            
+            container.innerHTML = html;
         }
 
+        // Función auxiliar para obtener color según resultado
+        function getColorResultado(idResultado) {
+            const colores = {
+                1: 'bg-success',
+                2: 'bg-warning text-dark',
+                3: 'bg-secondary',
+                4: 'bg-danger',
+                5: 'bg-info',
+                6: 'bg-primary',
+                7: 'bg-dark'
+            };
+            return colores[idResultado] || 'bg-secondary';
+        }
+        // Función para cargar candidatos
+        async function cargarCandidatos() {
+    try {
+        // Cargar candidatos a Cámara
+        const responseCamara = await fetch('../ajax/obtener_candidatos_para_combo.php?grupo=1');
+        const dataCamara = await responseCamara.json();
+        
+        // Cargar candidatos a Senado
+        const responseSenado = await fetch('../ajax/obtener_candidatos_para_combo.php?grupo=2');
+        const dataSenado = await responseSenado.json();
+        
+        const selectCamara = document.getElementById('votoCamara');
+        const selectSenado = document.getElementById('votoSenado');
+        
+        // Limpiar y llenar select de Cámara
+        selectCamara.innerHTML = '<option value="">-- Seleccione candidato --</option>';
+        
+        if (dataCamara.success && dataCamara.candidatos.length > 0) {
+            dataCamara.candidatos.forEach(c => {
+                const option = document.createElement('option');
+                // El VALUE será el nombre completo del candidato
+                let nombreCompleto = `${c.nombre} ${c.apellido}`;
+                if (c.partido_nombre) {
+                    nombreCompleto += ` (${c.partido_nombre})`;
+                }
+                option.value = nombreCompleto; // ← AHORA EL VALUE ES EL NOMBRE COMPLETO
+                option.textContent = nombreCompleto;
+                selectCamara.appendChild(option);
+            });
+        }
+        
+        // Agregar opciones especiales
+        selectCamara.innerHTML += `
+            <option value="Voto en blanco">Voto en blanco</option>
+            <option value="No sabe/No responde">No sabe / No responde</option>
+        `;
+        
+        // Limpiar y llenar select de Senado
+        selectSenado.innerHTML = '<option value="">-- Seleccione candidato --</option>';
+        
+        if (dataSenado.success && dataSenado.candidatos.length > 0) {
+            dataSenado.candidatos.forEach(c => {
+                const option = document.createElement('option');
+                let nombreCompleto = `${c.nombre} ${c.apellido}`;
+                if (c.partido_nombre) {
+                    nombreCompleto += ` (${c.partido_nombre})`;
+                }
+                option.value = nombreCompleto; // ← AHORA EL VALUE ES EL NOMBRE COMPLETO
+                option.textContent = nombreCompleto;
+                selectSenado.appendChild(option);
+            });
+        }
+        
+        // Agregar opciones especiales
+        selectSenado.innerHTML += `
+            <option value="Voto en blanco">Voto en blanco</option>
+            <option value="No sabe/No responde">No sabe / No responde</option>
+        `;
+        
+    } catch (error) {
+        console.error('Error cargando candidatos:', error);
+        document.getElementById('votoCamara').innerHTML = '<option value="">Error al cargar</option>';
+        document.getElementById('votoSenado').innerHTML = '<option value="">Error al cargar</option>';
+    }
+}
         // Configurar eventos al cargar la página
         document.addEventListener('DOMContentLoaded', function() {
             // Configurar botón de confirmar llamada
@@ -1373,6 +1494,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     bar.style.width = width;
                 }, 500);
+            });
+            
+            // Agregar data-id a las filas de la tabla
+            document.querySelectorAll('#referenciados-table tbody tr').forEach((row, index) => {
+                const idReferenciado = row.querySelector('.tracking-btn')?.getAttribute('onclick')?.match(/'(\d+)'/)?.[1];
+                if (idReferenciado) {
+                    row.setAttribute('data-id-referenciado', idReferenciado);
+                }
             });
             
             // Agregar tooltips a los botones de tracking
@@ -1420,10 +1549,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (row.style.display !== 'none') {
                     const rowData = [];
                     row.querySelectorAll('td').forEach(td => {
-                        // Limpiar el texto (quitar HTML, espacios extra)
                         let text = td.textContent.trim();
                         text = text.replace(/\s+/g, ' ');
-                        // Escapar comas
                         if (text.includes(',')) {
                             text = `"${text}"`;
                         }

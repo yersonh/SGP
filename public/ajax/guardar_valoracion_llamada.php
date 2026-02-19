@@ -45,6 +45,13 @@ try {
     $llamadaModel = new LlamadaModel($pdo);
     $referenciadoModel = new ReferenciadoModel($pdo);
     
+    // =============================================
+    // PROCESAMIENTO DE VOTOS - VERSIÓN SIMPLIFICADA
+    // Los valores ya vienen como texto desde el frontend
+    // =============================================
+    $voto_camara = isset($input['voto_camara']) && $input['voto_camara'] !== '' ? $input['voto_camara'] : null;
+    $voto_senado = isset($input['voto_senado']) && $input['voto_senado'] !== '' ? $input['voto_senado'] : null;
+    
     // Preparar datos para guardar
     $datosLlamada = [
         'id_referenciado' => intval($input['id_referenciado']),
@@ -53,7 +60,9 @@ try {
         'telefono' => $input['telefono'] ?? '',
         'rating' => intval($input['rating']),
         'observaciones' => $input['observaciones'] ?? '',
-        'fecha_llamada' => $input['fecha_llamada'] ?? date('Y-m-d H:i:s')
+        'fecha_llamada' => $input['fecha_llamada'] ?? date('Y-m-d H:i:s'),
+        'voto_camara' => $voto_camara,  // Guarda texto: "Juan Pérez (Partido)" o "Voto en blanco" o "No sabe/No responde"
+        'voto_senado' => $voto_senado   // Guarda texto: "María García (Partido)" o "Voto en blanco" o "No sabe/No responde"
     ];
     
     // Validaciones básicas
@@ -73,8 +82,8 @@ try {
         exit();
     }
     
-    // Guardar la valoración
-    $id_llamada = $llamadaModel->guardarValoracionLlamada($datosLlamada);
+    // Guardar la valoración con los votos (como texto)
+    $id_llamada = $llamadaModel->guardarValoracionLlamadaConVotos($datosLlamada);
     
     if ($id_llamada) {
         // =============================================
@@ -160,6 +169,14 @@ try {
                 $motivoCambio .= ' - Obs: ' . $datosLlamada['observaciones'];
             }
             
+            // Agregar información de votos al motivo si existe
+            if ($voto_camara || $voto_senado) {
+                $motivoCambio .= ' - Votos: ';
+                if ($voto_camara) $motivoCambio .= 'Cámara: ' . $voto_camara;
+                if ($voto_camara && $voto_senado) $motivoCambio .= ', ';
+                if ($voto_senado) $motivoCambio .= 'Senado: ' . $voto_senado;
+            }
+            
             // Aplicar cambio de estado SOLO si hay decisión definida (no null)
             if ($nuevoEstado !== null) {
                 $estadoActualizado = $referenciadoModel->actualizarEstadoReferenciado(
@@ -172,7 +189,6 @@ try {
         }
         
         // Obtener el historial completo SOLO para enviar en la respuesta (opcional)
-        // Esto es útil si el frontend necesita actualizar algo
         $historialCompleto = $llamadaModel->obtenerLlamadasPorReferenciado($datosLlamada['id_referenciado']);
         
         // Preparar respuesta detallada
@@ -180,7 +196,13 @@ try {
             'success' => true,
             'message' => 'Valoración guardada exitosamente.',
             'id_llamada' => $id_llamada,
-            'data' => $datosLlamada,
+            'data' => [
+                'id_referenciado' => $datosLlamada['id_referenciado'],
+                'rating' => $datosLlamada['rating'],
+                'id_resultado' => $datosLlamada['id_resultado'],
+                'voto_camara' => $datosLlamada['voto_camara'],  // Texto del voto a Cámara
+                'voto_senado' => $datosLlamada['voto_senado']    // Texto del voto a Senado
+            ],
             'analisis' => [
                 'decision' => $decision,
                 'nuevo_estado' => $nuevoEstado === null ? 'mantener' : ($nuevoEstado ? 'activo' : 'inactivo'),
@@ -200,6 +222,14 @@ try {
             }
         } elseif ($nuevoEstado === null) {
             $respuesta['message'] = 'Valoración guardada. Estado mantenido - ' . $decision;
+        }
+        
+        // Agregar información de votos al mensaje
+        if ($voto_camara || $voto_senado) {
+            $votosInfo = [];
+            if ($voto_camara) $votosInfo[] = "Cámara: " . $voto_camara;
+            if ($voto_senado) $votosInfo[] = "Senado: " . $voto_senado;
+            $respuesta['message'] .= ' | ' . implode(' | ', $votosInfo);
         }
         
         echo json_encode($respuesta);

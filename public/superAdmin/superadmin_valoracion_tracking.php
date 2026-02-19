@@ -232,7 +232,7 @@ if ($porcentajeRestante > 50) {
                     <i class="fas fa-star"></i>
                 </div>
                 <div class="stat-value"><?php echo $ratingPromedio; ?>/5</div>
-                <div class="stat-label">Rating Promedio</div>
+                <div class="stat-label">Calidad Promedio</div>
             </div>
             
             <div class="stat-card contactados">

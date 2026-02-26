@@ -1972,5 +1972,74 @@ public function actualizarEstadoReferenciado($id_referenciado, $activo, $motivo 
         return false;
     }
 }
+/**
+ * Buscar un referenciado por su número de cédula
+ * @param string $cedula Número de cédula a buscar
+ * @return array|false Datos del referenciado o false si no existe
+ */
+public function getReferenciadoPorCedula($cedula) {
+    try {
+        $sql = "SELECT 
+                    r.*,
+                    u.nombres as referenciador_nombres,
+                    u.apellidos as referenciador_apellidos
+                FROM referenciados r
+                LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                WHERE r.cedula = :cedula 
+                AND r.activo = true
+                LIMIT 1";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':cedula' => $cedula]);
+        
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $resultado ?: false;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getReferenciadoPorCedula: " . $e->getMessage());
+        return false;
+    }
+}
+/**
+ * Contar el total de votantes que ya han registrado su voto
+ * @return int Número de votantes que ya votaron
+ */
+public function contarVotantesRegistrados() {
+    try {
+        $sql = "SELECT COUNT(*) as total 
+                FROM referenciados 
+                WHERE voto_registrado = TRUE";
+        
+        $stmt = $this->pdo->query($sql);
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return (int)$resultado['total'];
+        
+    } catch (PDOException $e) {
+        error_log("Error en contarVotantesRegistrados: " . $e->getMessage());
+        return 0;
+    }
+}
+/**
+ * Contar el total de votantes que NO han registrado su voto
+ * @return int Número de votantes pendientes
+ */
+public function contarVotantesPendientes() {
+    try {
+        $sql = "SELECT COUNT(*) as total 
+                FROM referenciados 
+                WHERE voto_registrado = FALSE";
+        
+        $stmt = $this->pdo->query($sql);
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return (int)$resultado['total'];
+        
+    } catch (PDOException $e) {
+        error_log("Error en contarVotantesPendientes: " . $e->getMessage());
+        return 0;
+    }
+}
 }
 ?>

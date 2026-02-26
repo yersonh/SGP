@@ -45,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     case 'Tracking':
                         header('Location: tracking/ver_usuarios.php');
                         break;
+                    case 'Descargador':
+                        header('Location: descargador.php');
+                        break;
                     default:
                         // Redirigir a una vista por defecto o mostrar error
                         header('Location: dashboard.php');

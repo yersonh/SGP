@@ -17,13 +17,10 @@ $sistemaModel = new SistemaModel($pdo);
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
-// 6. Obtener información del sistema
+// Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
 
-// 7. Formatear fecha para mostrar
-$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
-
-// 8. Obtener información completa de la licencia (MODIFICADO)
+// Obtener información completa de la licencia
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
 
 // Extraer valores
@@ -35,7 +32,7 @@ $fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
 // PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
 $porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
 
-// Color de la barra basado en lo que RESTA (ahora es más simple)
+// Color de la barra basado en lo que RESTA
 if ($porcentajeRestante > 50) {
     $barColor = 'bg-success';
 } elseif ($porcentajeRestante > 25) {
@@ -67,6 +64,7 @@ if ($porcentajeRestante > 50) {
     --color-secundario: #2c3e50;
     --color-terciario: #2ecc71;
     --color-cuaternario: #9b59b6; /* Nuevo color para auditoría */
+    --color-quinario: #e67e22; /* Color para descargar pregonero */
     --color-badge: #f8f9fa;
     --color-sombra: rgba(0, 0, 0, 0.08);
     --color-sombra-fuerte: rgba(0, 0, 0, 0.15);
@@ -86,6 +84,7 @@ if ($porcentajeRestante > 50) {
         --color-secundario: #cbd5e0;
         --color-terciario: #48bb78;
         --color-cuaternario: #9f7aea; /* Ajuste para modo oscuro */
+        --color-quinario: #f39c12; /* Color para descargar pregonero en modo oscuro */
         --color-badge: #2d3748;
         --color-sombra: rgba(0, 0, 0, 0.2);
         --color-sombra-fuerte: rgba(0, 0, 0, 0.3);
@@ -247,12 +246,12 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Grid de 2 columnas para los botones - ADAPTADO A 3 COLUMNAS PARA AUDITORÍA */
+/* Grid de 2 columnas para los botones */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-    max-width: 1200px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    max-width: 900px;
     margin: 0 auto;
     width: 100%;
 }
@@ -261,7 +260,7 @@ body {
 .dashboard-option {
     background: var(--color-fondo-secundario);
     border-radius: 12px;
-    padding: 30px 20px;
+    padding: 40px 30px;
     text-align: center;
     text-decoration: none;
     color: var(--color-secundario);
@@ -275,6 +274,7 @@ body {
     border: 1px solid var(--color-borde);
     position: relative;
     overflow: hidden;
+    min-height: 320px;
 }
 
 .dashboard-option::before {
@@ -284,38 +284,75 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--color-cuaternario), var(--color-primario));
+}
+
+/* Color para Revisión para Bono */
+.option-bono::before {
+    background: linear-gradient(90deg, var(--color-terciario), var(--color-primario));
+}
+
+/* Color para Descargar Pregonero */
+.option-descargar::before {
+    background: linear-gradient(90deg, var(--color-quinario), #d35400);
 }
 
 .dashboard-option:hover {
     transform: translateY(-8px);
     box-shadow: 0 12px 25px var(--color-sombra-fuerte);
-    border-color: var(--color-cuaternario);
     text-decoration: none;
     color: var(--color-secundario);
 }
 
+.option-bono:hover {
+    border-color: var(--color-terciario);
+}
+
+.option-descargar:hover {
+    border-color: var(--color-quinario);
+}
+
 .option-icon-wrapper {
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, var(--color-borde-secundario), #e6d4f5);
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     transition: all 0.3s ease;
+}
+
+.option-bono .option-icon-wrapper {
+    background: linear-gradient(135deg, var(--color-borde-secundario), #d4edda);
+}
+
+.option-descargar .option-icon-wrapper {
+    background: linear-gradient(135deg, var(--color-borde-secundario), #ffe0b2);
 }
 
 .dashboard-option:hover .option-icon-wrapper {
-    background: linear-gradient(135deg, var(--color-cuaternario), #8e44ad);
     transform: scale(1.1);
 }
 
+.option-bono:hover .option-icon-wrapper {
+    background: linear-gradient(135deg, var(--color-terciario), #27ae60);
+}
+
+.option-descargar:hover .option-icon-wrapper {
+    background: linear-gradient(135deg, var(--color-quinario), #e67e22);
+}
+
 .option-icon {
-    font-size: 2.2rem;
-    color: var(--color-cuaternario);
+    font-size: 2.5rem;
     transition: all 0.3s ease;
+}
+
+.option-bono .option-icon {
+    color: var(--color-terciario);
+}
+
+.option-descargar .option-icon {
+    color: var(--color-quinario);
 }
 
 .dashboard-option:hover .option-icon {
@@ -323,15 +360,15 @@ body {
 }
 
 .option-title {
-    font-size: 1.3rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    margin-bottom: 12px;
+    margin-bottom: 15px;
     color: var(--color-secundario);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .option-description {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--color-texto-secundario);
     line-height: 1.5;
     max-width: 90%;
@@ -355,7 +392,7 @@ body {
 }
 
 .dashboard-option:hover .access-indicator {
-    background: var(--color-cuaternario);
+    background: var(--color-primario);
     color: white;
 }
 
@@ -648,8 +685,8 @@ body {
 /* Tablets y laptops pequeñas (992px o menos) */
 @media (max-width: 992px) {
     .dashboard-grid {
-        grid-template-columns: repeat(2, 1fr);
-        max-width: 800px;
+        grid-template-columns: 1fr;
+        max-width: 600px;
         gap: 25px;
     }
     
@@ -659,7 +696,8 @@ body {
     }
     
     .dashboard-option {
-        padding: 25px 15px;
+        padding: 35px 25px;
+        min-height: 300px;
     }
     
     .dashboard-title {
@@ -708,9 +746,9 @@ body {
         padding: 0 10px;
     }
     
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-        max-width: 500px;
+    .dashboard-option {
+        padding: 30px 20px;
+        min-height: 280px;
     }
     
     .feature-img-header {
@@ -719,16 +757,17 @@ body {
     }
     
     .option-icon-wrapper {
-        width: 60px;
-        height: 60px;
+        width: 70px;
+        height: 70px;
+        margin-bottom: 20px;
     }
     
     .option-icon {
-        font-size: 1.8rem;
+        font-size: 2.2rem;
     }
     
     .option-title {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
     }
     
     .system-footer {
@@ -812,7 +851,7 @@ body {
     
     .dashboard-option {
         padding: 25px 15px;
-        border-radius: 10px;
+        min-height: 260px;
     }
     
     .feature-img-header {
@@ -821,17 +860,17 @@ body {
     }
     
     .option-icon-wrapper {
-        width: 55px;
-        height: 55px;
-        margin-bottom: 15px;
+        width: 65px;
+        height: 65px;
+        margin-bottom: 18px;
     }
     
     .option-icon {
-        font-size: 1.6rem;
+        font-size: 2rem;
     }
     
     .option-title {
-        font-size: 1.1rem;
+        font-size: 1.3rem;
     }
     
     .option-description {
@@ -892,7 +931,7 @@ body {
 @media (max-width: 400px) {
     .dashboard-option {
         padding: 25px 15px;
-        margin: 0 10px;
+        min-height: 260px;
     }
     
     .feature-img-header {
@@ -901,20 +940,16 @@ body {
     }
     
     .option-icon-wrapper {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
     }
     
     .option-icon {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
     }
     
     .option-title {
-        font-size: 1.1rem;
-    }
-    
-    .option-description {
-        font-size: 0.85rem;
+        font-size: 1.2rem;
     }
     
     .container.text-center.mb-3 img {
@@ -934,8 +969,8 @@ body {
 /* Orientación horizontal en móviles */
 @media (max-height: 500px) and (orientation: landscape) {
     .dashboard-grid {
-        grid-template-columns: repeat(3, 1fr);
-        max-width: 1000px;
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 800px;
         gap: 20px;
     }
     
@@ -945,13 +980,13 @@ body {
     }
     
     .option-icon-wrapper {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
         margin-bottom: 15px;
     }
     
     .option-icon {
-        font-size: 1.8rem;
+        font-size: 2rem;
     }
     
     .option-title {
@@ -1011,7 +1046,7 @@ body {
     }
     
     .dashboard-option:hover .option-icon-wrapper {
-        background: linear-gradient(135deg, var(--color-cuaternario), #6b46c1);
+        background: linear-gradient(135deg, var(--color-quinario), #d35400);
     }
 }
 
@@ -1095,7 +1130,7 @@ body {
     </style>
 </head>
 <body>
-    <!-- Header (igual al referenciador) -->
+    <!-- Header -->
     <header class="main-header">
         <div class="header-container">
             <div class="header-top">
@@ -1112,7 +1147,8 @@ body {
             </div>
         </div>
     </header>
-<!-- Breadcrumb Navigation -->
+    
+    <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -1121,6 +1157,7 @@ body {
             </ol>
         </nav>
     </div>
+    
     <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">
@@ -1155,44 +1192,11 @@ body {
             </p>
         </div>
         
-        <!-- Grid de 3 columnas para Auditoría 
-        <div class="dashboard-grid">-->
-            <!-- Auditoría de Sistema 
-            <a href="superadmin_auditoria_sistema.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                </div>
-                <div class="option-title">AUDITORÍA DE SISTEMA</div>
-                <div class="option-description">
-                    Registro completo de accesos al sistema, 
-                    trazabilidad de operaciones y control de seguridad
-                </div>
-            </a>-->
+        <!-- Grid de 2 columnas -->
+        <div class="dashboard-grid">
             
-            <!-- Auditoría de Referidos 
-            <a href="superadmin_auditoria_referidos.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-user-check"></i>
-                    </div>
-                </div>
-                <div class="option-title">AUDITORÍA DE REFERIDOS</div>
-                <div class="option-description">
-                    Verificación y validación de referidos registrados, 
-                    control de calidad de datos y detección de inconsistencias
-                </div>
-            </a>-->
-            
-            <!-- Aporte de Líderes -->
-            <a href="superadmin_aporte_lideres.php" class="dashboard-option">
+            <!-- REVISIÓN PARA BONO (existente) -->
+            <a href="superadmin_aporte_lideres.php" class="dashboard-option option-bono">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
                 </div>
@@ -1208,56 +1212,22 @@ body {
                 </div>
             </a>
             
-            <!-- Reportes de Auditoría 
-            <a href="superadmin_reportes_auditoria.php" class="dashboard-option">
+            <!-- NUEVO: DESCARGAR PREGONERO -->
+            <a href="descargue_pregoneros.php" class="dashboard-option option-descargar">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="option-icon-wrapper">
                     <div class="option-icon">
-                        <i class="fas fa-file-contract"></i>
+                        <i class="fas fa-bullhorn"></i>
                     </div>
                 </div>
-                <div class="option-title">REPORTES DE AUDITORÍA</div>
+                <div class="option-title">DESCARGAR PREGONERO</div>
                 <div class="option-description">
-                    Generación de informes detallados de auditoría, 
-                    exportación en múltiples formatos y análisis estadístico
+                    Descargar y registrar el voto de pregonero.
                 </div>
-            </a>-->
+            </a>
             
-            <!-- Verificación de Datos 
-            <a href="superadmin_verificacion_datos.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-search-check"></i>
-                    </div>
-                </div>
-                <div class="option-title">VERIFICACIÓN DE DATOS</div>
-                <div class="option-description">
-                    Validación cruzada de información, 
-                    detección de duplicados y control de integridad de datos
-                </div>
-            </a>-->
-            
-            <!-- Historial de Operaciones 
-            <a href="superadmin_historial_operaciones.php" class="dashboard-option">
-                <div class="access-indicator">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="option-icon-wrapper">
-                    <div class="option-icon">
-                        <i class="fas fa-history"></i>
-                    </div>
-                </div>
-                <div class="option-title">HISTORIAL DE OPERACIONES</div>
-                <div class="option-description">
-                    Registro histórico completo de todas las operaciones 
-                    realizadas en el sistema con trazabilidad temporal
-                </div>
-            </a>-->
         </div>
     </div>
 
@@ -1282,136 +1252,128 @@ body {
             </p>
         </div>
     </footer>
+    
     <!-- Modal de Información del Sistema -->
-<div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalSistemaLabel">
-                    <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Logo centrado AGRANDADO -->
-                <div class="modal-logo-container">
-                    <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
-                <div class="licencia-info">
-                    <div class="licencia-header">
-                        <h6 class="licencia-title">Licencia Runtime</h6>
-                        <span class="licencia-dias">
-                            <?php echo $diasRestantes; ?> días restantes
-                        </span>
+                <div class="modal-body">
+                    <!-- Logo centrado -->
+                    <div class="modal-logo-container">
+                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                     </div>
                     
-                    <div class="licencia-progress">
-                        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-                        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                            style="width: <?php echo $porcentajeRestante; ?>%"
-                            role="progressbar" 
-                            aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                            aria-valuemin="0" 
-                            aria-valuemax="100">
+                    <!-- Título del Sistema -->
+                    <div class="licencia-info">
+                        <div class="licencia-header">
+                            <h6 class="licencia-title">Licencia Runtime</h6>
+                            <span class="licencia-dias">
+                                <?php echo $diasRestantes; ?> días restantes
+                            </span>
                         </div>
-                    </div>
-                    
-                    <div class="licencia-fecha">
-                        <i class="fas fa-calendar-alt me-1"></i>
-                        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-                        Válida hasta: <?php echo $validaHastaFormatted; ?>
-                    </div>
-                </div>
-                <div class="feature-image-container">
-                    <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
-                    <div class="profile-info mt-3">
-                        <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
                         
-                        <small class="profile-description">
-                            Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
-                            Magister en Administración Pública.<br>
-                            <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
-                        </small>
+                        <div class="licencia-progress">
+                            <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                style="width: <?php echo $porcentajeRestante; ?>%"
+                                role="progressbar" 
+                                aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                            </div>
+                        </div>
+                        
+                        <div class="licencia-fecha">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                            Válida hasta: <?php echo $validaHastaFormatted; ?>
+                        </div>
+                    </div>
+                    <div class="feature-image-container">
+                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Sección de Características -->
-                <div class="row g-4 mb-4">
-                    <!-- Efectividad de la Herramienta -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-primary mb-3">
-                                <i class="fas fa-bolt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Efectividad de la Herramienta</h5>
-                            <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
-                            <p class="feature-text">
-                                Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Integridad de Datos -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-success mb-3">
-                                <i class="fas fa-database fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Integridad de Datos</h5>
-                            <h6 class="text-muted mb-2">Validación Inteligente</h6>
-                            <p class="feature-text">
-                                Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Monitoreo de Metas -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-warning mb-3">
-                                <i class="fas fa-chart-line fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Monitoreo de Metas</h5>
-                            <h6 class="text-muted mb-2">Seguimiento Visual</h6>
-                            <p class="feature-text">
-                                Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Seguridad Avanzada -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-danger mb-3">
-                                <i class="fas fa-shield-alt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Seguridad Avanzada</h5>
-                            <h6 class="text-muted mb-2">Control Total</h6>
-                            <p class="feature-text">
-                                Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
-                            </p>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
+                       target="_blank" 
+                       class="btn btn-primary"
+                       onclick="cerrarModalSistema();">
+                        <i class="fas fa-external-link-alt me-1"></i> Uso SGP
+                    </a>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
-                <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
-                   target="_blank" 
-                   class="btn btn-primary"
-                   onclick="cerrarModalSistema();">
-                    <i class="fas fa-external-link-alt me-1"></i> Uso SGP
-                </a>
-                
-                <!-- Botón Cerrar - Solo cierra el modal -->
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i> Cerrar
-                </button>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

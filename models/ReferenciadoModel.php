@@ -2041,5 +2041,407 @@ public function contarVotantesPendientes() {
         return 0;
     }
 }
+/**
+ * Obtiene votantes paginados (solo los que ya votaron)
+ * 
+ * @param int $page Número de página
+ * @param int $perPage Registros por página
+ * @param array $filters Filtros a aplicar
+ * @return array Lista de votantes
+ */
+public function getVotantesPaginados($page = 1, $perPage = 50, $filters = []) {
+    $offset = ($page - 1) * $perPage;
+    
+    $sql = "SELECT r.*, 
+            d.nombre as departamento_nombre,
+            m.nombre as municipio_nombre,
+            b.nombre as barrio_nombre,
+            gp.nombre as grupo_poblacional_nombre,
+            oa.nombre as oferta_apoyo_nombre,
+            z.nombre as zona_nombre,
+            s.nombre as sector_nombre,
+            pv.nombre as puesto_votacion_nombre,
+            gr.nombre as grupo_nombre,
+            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+            l.id_lider,
+            l.nombres as lider_nombres,
+            l.apellidos as lider_apellidos,
+            CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre,
+            CONCAT(ur.nombres, ' ', ur.apellidos) as registrador_nombre,
+            r.fecha_voto,
+            r.voto_registrado
+            FROM referenciados r
+            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN lideres l ON r.id_lider = l.id_lider
+            LEFT JOIN usuario ur ON r.id_usuario_registro_voto = ur.id_usuario
+            WHERE r.voto_registrado = TRUE";
+    
+    $conditions = [];
+    $params = [];
+    $paramTypes = [];
+    
+    // ============================================
+    // BÚSQUEDA GLOBAL - CORREGIDA (22 parámetros)
+    // ============================================
+    if (!empty($filters['search'])) {
+        $search = $filters['search'];
+        
+        $conditions[] = "(
+            -- Campos principales de referenciados (6)
+            r.nombre ILIKE ? OR 
+            r.apellido ILIKE ? OR 
+            r.cedula ILIKE ? OR 
+            r.direccion ILIKE ? OR 
+            r.email ILIKE ? OR 
+            r.telefono ILIKE ? OR
+            
+            -- Campos de tablas relacionadas (9)
+            d.nombre ILIKE ? OR 
+            m.nombre ILIKE ? OR 
+            b.nombre ILIKE ? OR
+            gp.nombre ILIKE ? OR 
+            oa.nombre ILIKE ? OR 
+            z.nombre ILIKE ? OR
+            s.nombre ILIKE ? OR 
+            pv.nombre ILIKE ? OR 
+            gr.nombre ILIKE ? OR
+            
+            -- Referenciador (usuario) (2)
+            u.nombres ILIKE ? OR 
+            u.apellidos ILIKE ? OR
+            
+            -- Líder (2)
+            l.nombres ILIKE ? OR 
+            l.apellidos ILIKE ? OR
+            
+            -- Registrador (usuario que registró el voto) (2)
+            ur.nombres ILIKE ? OR 
+            ur.apellidos ILIKE ? OR
+            
+            -- Número de mesa (convertido a texto) (1)
+            CAST(r.mesa AS TEXT) ILIKE ?
+        )";
+        
+        $searchTerm = '%' . $search . '%';
+        
+        // Total de campos: 22 (6+9+2+2+2+1 = 22)
+        for ($i = 0; $i < 22; $i++) {
+            $params[] = $searchTerm;
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+    }
+    
+    // ============================================
+    // FILTROS AVANZADOS
+    // ============================================
+    
+    // Departamento
+    if (!empty($filters['departamento'])) {
+        $conditions[] = "r.id_departamento = ?";
+        $params[] = $filters['departamento'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Municipio
+    if (!empty($filters['municipio'])) {
+        $conditions[] = "r.id_municipio = ?";
+        $params[] = $filters['municipio'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Zona
+    if (!empty($filters['zona'])) {
+        $conditions[] = "r.id_zona = ?";
+        $params[] = $filters['zona'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Referenciador
+    if (!empty($filters['referenciador'])) {
+        $conditions[] = "r.id_referenciador = ?";
+        $params[] = $filters['referenciador'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Oferta de apoyo
+    if (!empty($filters['oferta_apoyo'])) {
+        $conditions[] = "r.id_oferta_apoyo = ?";
+        $params[] = $filters['oferta_apoyo'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Grupo poblacional
+    if (!empty($filters['grupo_poblacional'])) {
+        $conditions[] = "r.id_grupo_poblacional = ?";
+        $params[] = $filters['grupo_poblacional'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // Grupo parlamentario
+    if (!empty($filters['grupo_parlamentario'])) {
+        $conditions[] = "r.id_grupo = ?";
+        $params[] = $filters['grupo_parlamentario'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+
+    // Líder
+    if (!empty($filters['lider'])) {
+        $conditions[] = "r.id_lider = ?";
+        $params[] = $filters['lider'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // ============================================
+    // FILTROS DE FECHA DE VOTO
+    // ============================================
+    if (!empty($filters['fecha_voto_desde'])) {
+        $conditions[] = "DATE(r.fecha_voto) >= ?";
+        $params[] = $filters['fecha_voto_desde'];
+        $paramTypes[] = \PDO::PARAM_STR;
+    }
+    
+    if (!empty($filters['fecha_voto_hasta'])) {
+        $conditions[] = "DATE(r.fecha_voto) <= ?";
+        $params[] = $filters['fecha_voto_hasta'];
+        $paramTypes[] = \PDO::PARAM_STR;
+    }
+    
+    // ============================================
+    // CONSTRUIR CONSULTA FINAL
+    // ============================================
+    if (!empty($conditions)) {
+        $sql .= " AND " . implode(' AND ', $conditions);
+    }
+    
+    $sql .= " ORDER BY r.fecha_voto DESC, r.fecha_registro DESC LIMIT ? OFFSET ?";
+    
+    // Agregar LIMIT y OFFSET a los parámetros
+    $params[] = $perPage;
+    $params[] = $offset;
+    $paramTypes[] = \PDO::PARAM_INT;
+    $paramTypes[] = \PDO::PARAM_INT;
+    
+    try {
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Bind parameters con tipos
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+        }
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getVotantesPaginados: " . $e->getMessage());
+        error_log("SQL: " . $sql);
+        error_log("Params: " . print_r($params, true));
+        return [];
+    }
+}
+
+/**
+ * Obtiene el total de votantes según filtros
+ * 
+ * @param array $filters Filtros a aplicar
+ * @return int Total de registros
+ */
+public function getTotalVotantes($filters = []) {
+    $sql = "SELECT COUNT(*) as total FROM referenciados r";
+    
+    $conditions = ["r.voto_registrado = TRUE"];
+    $params = [];
+    $paramTypes = [];
+    
+    // ============================================
+    // JOINS SOLO SI HAY BÚSQUEDA EN CAMPOS RELACIONADOS
+    // ============================================
+    if (!empty($filters['search'])) {
+        $sql .= " LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+                  LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+                  LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+                  LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+                  LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+                  LEFT JOIN zona z ON r.id_zona = z.id_zona
+                  LEFT JOIN sector s ON r.id_sector = s.id_sector
+                  LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                  LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+                  LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                  LEFT JOIN lideres l ON r.id_lider = l.id_lider
+                  LEFT JOIN usuario ur ON r.id_usuario_registro_voto = ur.id_usuario";
+    }
+    
+    // ============================================
+    // BÚSQUEDA GLOBAL - CORREGIDA (22 parámetros)
+    // ============================================
+    if (!empty($filters['search'])) {
+        $search = $filters['search'];
+        
+        $conditions[] = "(
+            -- Campos principales de referenciados (6)
+            r.nombre ILIKE ? OR 
+            r.apellido ILIKE ? OR 
+            r.cedula ILIKE ? OR 
+            r.direccion ILIKE ? OR 
+            r.email ILIKE ? OR 
+            r.telefono ILIKE ? OR
+            
+            -- Campos de tablas relacionadas (9)
+            d.nombre ILIKE ? OR 
+            m.nombre ILIKE ? OR 
+            b.nombre ILIKE ? OR
+            gp.nombre ILIKE ? OR 
+            oa.nombre ILIKE ? OR 
+            z.nombre ILIKE ? OR
+            s.nombre ILIKE ? OR 
+            pv.nombre ILIKE ? OR 
+            gr.nombre ILIKE ? OR
+            
+            -- Referenciador (usuario) (2)
+            u.nombres ILIKE ? OR 
+            u.apellidos ILIKE ? OR
+            
+            -- Líder (2)
+            l.nombres ILIKE ? OR 
+            l.apellidos ILIKE ? OR
+            
+            -- Registrador (usuario que registró el voto) (2)
+            ur.nombres ILIKE ? OR 
+            ur.apellidos ILIKE ? OR
+            
+            -- Número de mesa (convertido a texto) (1)
+            CAST(r.mesa AS TEXT) ILIKE ?
+        )";
+        
+        $searchTerm = '%' . $search . '%';
+        
+        // 22 parámetros (6+9+2+2+2+1 = 22)
+        for ($i = 0; $i < 22; $i++) {
+            $params[] = $searchTerm;
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+    }
+    
+    // ============================================
+    // FILTROS AVANZADOS
+    // ============================================
+    if (!empty($filters['departamento'])) {
+        $conditions[] = "r.id_departamento = ?";
+        $params[] = $filters['departamento'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['municipio'])) {
+        $conditions[] = "r.id_municipio = ?";
+        $params[] = $filters['municipio'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['zona'])) {
+        $conditions[] = "r.id_zona = ?";
+        $params[] = $filters['zona'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['referenciador'])) {
+        $conditions[] = "r.id_referenciador = ?";
+        $params[] = $filters['referenciador'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['oferta_apoyo'])) {
+        $conditions[] = "r.id_oferta_apoyo = ?";
+        $params[] = $filters['oferta_apoyo'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['grupo_poblacional'])) {
+        $conditions[] = "r.id_grupo_poblacional = ?";
+        $params[] = $filters['grupo_poblacional'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['grupo_parlamentario'])) {
+        $conditions[] = "r.id_grupo = ?";
+        $params[] = $filters['grupo_parlamentario'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    if (!empty($filters['lider'])) {
+        $conditions[] = "r.id_lider = ?";
+        $params[] = $filters['lider'];
+        $paramTypes[] = \PDO::PARAM_INT;
+    }
+    
+    // ============================================
+    // FILTROS DE FECHA DE VOTO
+    // ============================================
+    if (!empty($filters['fecha_voto_desde'])) {
+        $conditions[] = "DATE(r.fecha_voto) >= ?";
+        $params[] = $filters['fecha_voto_desde'];
+        $paramTypes[] = \PDO::PARAM_STR;
+    }
+    
+    if (!empty($filters['fecha_voto_hasta'])) {
+        $conditions[] = "DATE(r.fecha_voto) <= ?";
+        $params[] = $filters['fecha_voto_hasta'];
+        $paramTypes[] = \PDO::PARAM_STR;
+    }
+    
+    // ============================================
+    // CONSTRUIR WHERE
+    // ============================================
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(' AND ', $conditions);
+    }
+    
+    try {
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Bind parameters con tipos
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value, $paramTypes[$key] ?? \PDO::PARAM_STR);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    } catch (PDOException $e) {
+        error_log("Error en getTotalVotantes: " . $e->getMessage());
+        error_log("SQL: " . $sql);
+        error_log("Params: " . print_r($params, true));
+        return 0;
+    }
+}
+
+
+/**
+ * Obtener cantidad de votantes que votaron hoy
+ */
+public function getVotantesHoy() {
+    try {
+        $sql = "SELECT COUNT(*) as total 
+                FROM referenciados 
+                WHERE voto_registrado = TRUE 
+                AND DATE(fecha_voto) = CURRENT_DATE";
+        
+        $stmt = $this->pdo->query($sql);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $result ? (int)$result['total'] : 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error en getVotantesHoy: " . $e->getMessage());
+        return 0;
+    }
+}
 }
 ?>

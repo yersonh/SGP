@@ -50,13 +50,13 @@ try {
         ':id_referenciado' => $id_referenciado
     ]);
 
-    // Obtener estadísticas actualizadas
+    // Obtener estadísticas actualizadas - AHORA CORREGIDO
     $stmtStats = $pdo->query("SELECT 
-                                COUNT(*) as total,
-                                SUM(CASE WHEN voto_registrado = TRUE THEN 1 ELSE 0 END) as ya_votaron,
-                                SUM(CASE WHEN voto_registrado = FALSE THEN 1 ELSE 0 END) as no_han_votado,
-                                COUNT(CASE WHEN fecha_voto >= CURRENT_DATE THEN 1 END) as votaron_hoy
-                              FROM referenciados");
+                                (SELECT COUNT(*) FROM referenciados WHERE activo = true) as total_activos,
+                                (SELECT COUNT(*) FROM referenciados WHERE voto_registrado = TRUE) as ya_votaron,
+                                (SELECT COUNT(*) FROM referenciados WHERE voto_registrado = FALSE AND activo = true) as pendientes,
+                                (SELECT COUNT(*) FROM referenciados WHERE voto_registrado = TRUE AND DATE(fecha_voto) = CURRENT_DATE) as votaron_hoy
+                              ");
     
     $stats = $stmtStats->fetch(PDO::FETCH_ASSOC);
     
@@ -64,11 +64,11 @@ try {
         'success' => true,
         'message' => 'Voto registrado exitosamente',
         'stats' => [
-            'total' => (int)$stats['total'],
+            'total_activos' => (int)$stats['total_activos'],
             'ya_votaron' => (int)$stats['ya_votaron'],
-            'no_han_votado' => (int)$stats['no_han_votado'],
+            'pendientes' => (int)$stats['pendientes'],
             'votaron_hoy' => (int)$stats['votaron_hoy'],
-            'porcentaje' => $stats['total'] > 0 ? round(($stats['ya_votaron'] / $stats['total']) * 100, 2) : 0
+            'porcentaje' => $stats['total_activos'] > 0 ? round(($stats['ya_votaron'] / $stats['total_activos']) * 100, 2) : 0
         ]
     ]);
 

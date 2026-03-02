@@ -48,6 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     case 'Descargador':
                         header('Location: descargador.php');
                         break;
+                    case 'CarguePregoneros':
+                        header('Location: pregonero.php');
+                        break;
                     default:
                         // Redirigir a una vista por defecto o mostrar error
                         header('Location: dashboard.php');

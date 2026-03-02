@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/UsuarioModel.php';
 require_once __DIR__ . '/../../models/SistemaModel.php';
+require_once __DIR__ . '/../../models/PregoneroModel.php';
 
 // Verificar si el usuario está logueado y es SuperAdmin
 if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
@@ -13,12 +14,12 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $sistemaModel = new SistemaModel($pdo);
+$pregoneroModel = new PregoneroModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
 // Obtener estadísticas reales
-// En tu primera vista (data_referidos.php), cambia:
 try {
     // 1. Total de referidos ACTIVOS (solo activos)
     $queryTotalReferidos = "SELECT COUNT(*) as total_referidos FROM referenciados WHERE activo = true";
@@ -26,22 +27,20 @@ try {
     $resultTotal = $stmtTotal->fetch();
     $totalReferidos = $resultTotal['total_referidos'] ?? 0;
 
-    // 2. Suma de todos los topes de usuarios ACTIVOS - ¡CAMBIAR AQUÍ!
-    // Cambia para sumar solo topes de REFERENCIADORES activos
+    // 2. Suma de todos los topes de usuarios ACTIVOS
     $querySumaTopes = "SELECT SUM(tope) as suma_topes 
                        FROM usuario 
                        WHERE tope IS NOT NULL 
                          AND activo = true 
-                         AND tipo_usuario = 'Referenciador'";  // <-- FILTRO CLAVE
+                         AND tipo_usuario = 'Referenciador'";
     $stmtTopes = $pdo->query($querySumaTopes);
     $resultTopes = $stmtTopes->fetch();
     $sumaTopes = $resultTopes['suma_topes'] ?? 0;
     
-    // 3. Contar usuarios con rol "Descargador" ACTIVOS
-    // También filtra por tipo_usuario
+    // 3. Contar descargadores (personas que votaron)
     $queryDescargadores = "SELECT COUNT(*) as total_descargadores 
-                           FROM usuario 
-                           WHERE tipo_usuario = 'Descargador' 
+                           FROM referenciados 
+                           WHERE voto_registrado = true 
                              AND activo = true";
     $stmtDescargadores = $pdo->query($queryDescargadores);
     $resultDescargadores = $stmtDescargadores->fetch();
@@ -56,12 +55,41 @@ try {
     $resultReferenciadores = $stmtReferenciadores->fetch();
     $totalReferenciadores = $resultReferenciadores['total_referenciadores'] ?? 0;
     
-    // Calcular porcentaje de avance (Total Referidos ACTIVOS vs Tope Total de ACTIVOS)
+    // 5. Total de DESCARGADOS
+    $totalDescargados = $totalDescargadores;
+    
+    // 6. META de descargas
+    $metaDescargas = $totalReferidos;
+    
+    // 7. Total de PREGONEROS ACTIVOS
+    $totalPregoneros = $pregoneroModel->contarPregonerosActivos();
+    
+    // 8. PREGONEROS QUE YA VOTARON (para la barra de progreso)
+    $pregonerosVotaron = $pregoneroModel->contarPregonerosVotaron();
+    
+    // 9. META de pregoneros (podría ser un valor fijo o de configuración)
+    // Por ahora usamos el total de pregoneros como meta
+    $metaPregoneros = $totalPregoneros > 0 ? $totalPregoneros : 100; // Si no hay, meta por defecto 100
+    
+    // Calcular porcentaje de avance para referidos
     $porcentajeAvance = 0;
     if ($sumaTopes > 0) {
         $porcentajeAvance = round(($totalReferidos / $sumaTopes) * 100, 2);
-        // Limitar al 100% si se supera
         $porcentajeAvance = min($porcentajeAvance, 100);
+    }
+    
+    // Calcular porcentaje de avance para descargados
+    $porcentajeDescargados = 0;
+    if ($metaDescargas > 0) {
+        $porcentajeDescargados = round(($totalDescargados / $metaDescargas) * 100, 2);
+        $porcentajeDescargados = min($porcentajeDescargados, 100);
+    }
+    
+    // Calcular porcentaje de avance para pregoneros (los que ya votaron vs total)
+    $porcentajePregoneros = 0;
+    if ($metaPregoneros > 0) {
+        $porcentajePregoneros = round(($pregonerosVotaron / $metaPregoneros) * 100, 2);
+        $porcentajePregoneros = min($porcentajePregoneros, 100);
     }
     
 } catch (Exception $e) {
@@ -70,17 +98,21 @@ try {
     $sumaTopes = 0;
     $totalDescargadores = 0;
     $totalReferenciadores = 0;
+    $totalDescargados = 0;
+    $metaDescargas = 0;
+    $totalPregoneros = 0;
+    $pregonerosVotaron = 0;
+    $metaPregoneros = 100;
     $porcentajeAvance = 0;
+    $porcentajeDescargados = 0;
+    $porcentajePregoneros = 0;
     error_log("Error al obtener estadísticas: " . $e->getMessage());
 }
 
-// 6. Obtener información del sistema
+// Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
 
-// 7. Formatear fecha para mostrar
-$fecha_formateada = date('d/m/Y H:i:s', strtotime($fecha_actual));
-
-// 8. Obtener información completa de la licencia (MODIFICADO)
+// Obtener información completa de la licencia
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
 
 // Extraer valores
@@ -92,7 +124,7 @@ $fechaInstalacionFormatted = $licenciaInfo['fecha_instalacion_formatted'];
 // PARA LA BARRA QUE DISMINUYE: Calcular porcentaje RESTANTE
 $porcentajeRestante = $sistemaModel->getPorcentajeRestanteLicencia();
 
-// Color de la barra basado en lo que RESTA (ahora es más simple)
+// Color de la barra basado en lo que RESTA
 if ($porcentajeRestante > 50) {
     $barColor = 'bg-success';
 } elseif ($porcentajeRestante > 25) {
@@ -130,6 +162,8 @@ if ($porcentajeRestante > 50) {
     --accent-dark: #2980b9;
     --success-color: #27ae60;
     --success-dark: #219653;
+    --warning-color: #f39c12;
+    --warning-dark: #e67e22;
     --shadow-color: rgba(0, 0, 0, 0.08);
     --shadow-medium: rgba(0, 0, 0, 0.15);
     --card-bg: #ffffff;
@@ -142,6 +176,8 @@ if ($porcentajeRestante > 50) {
     --gradient-blue-dark: linear-gradient(135deg, #3498db, #2980b9);
     --gradient-green-light: linear-gradient(135deg, #d4edda, #c3e6cb);
     --gradient-green-dark: linear-gradient(135deg, #27ae60, #219653);
+    --gradient-orange-light: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    --gradient-orange-dark: linear-gradient(135deg, #f39c12, #e67e22);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -161,6 +197,8 @@ if ($porcentajeRestante > 50) {
         --accent-dark: #1f6feb;
         --success-color: #2ea043;
         --success-dark: #1e7a34;
+        --warning-color: #f39c12;
+        --warning-dark: #e67e22;
         --shadow-color: rgba(0, 0, 0, 0.3);
         --shadow-medium: rgba(0, 0, 0, 0.4);
         --card-bg: #1e1e1e;
@@ -173,6 +211,8 @@ if ($porcentajeRestante > 50) {
         --gradient-blue-dark: linear-gradient(135deg, #2b6cb0, #2c5282);
         --gradient-green-light: linear-gradient(135deg, #22543d, #276749);
         --gradient-green-dark: linear-gradient(135deg, #2f855a, #38a169);
+        --gradient-orange-light: linear-gradient(135deg, #7b4a1e, #9c6b2e);
+        --gradient-orange-dark: linear-gradient(135deg, #f39c12, #e67e22);
     }
 }
 
@@ -406,13 +446,13 @@ body {
 }
 
 /* ==========================================================================
-   GRID DE OPCIONES
+   GRID DE OPCIONES (ahora 3 columnas)
    ========================================================================== */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 30px;
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     width: 100%;
 }
@@ -423,7 +463,7 @@ body {
 .data-option {
     background: var(--card-bg);
     border-radius: 12px;
-    padding: 40px 30px;
+    padding: 30px 20px;
     text-align: center;
     text-decoration: none;
     color: var(--text-dark);
@@ -437,7 +477,7 @@ body {
     border: 1px solid var(--border-color);
     position: relative;
     overflow: hidden;
-    min-height: 300px;
+    min-height: 320px;
 }
 
 .data-option::before {
@@ -459,6 +499,11 @@ body {
     background: linear-gradient(90deg, var(--success-color), var(--success-dark));
 }
 
+/* Color para Data Pregoneros */
+.data-pregoneros::before {
+    background: linear-gradient(90deg, var(--warning-color), var(--warning-dark));
+}
+
 .data-option:hover {
     transform: translateY(-8px);
     box-shadow: 0 12px 25px var(--shadow-medium);
@@ -474,6 +519,10 @@ body {
     border-color: var(--success-color);
 }
 
+.data-pregoneros:hover {
+    border-color: var(--warning-color);
+}
+
 .data-icon-wrapper {
     width: 80px;
     height: 80px;
@@ -481,7 +530,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     transition: all 0.3s ease;
 }
 
@@ -491,6 +540,10 @@ body {
 
 .data-descargadores .data-icon-wrapper {
     background: var(--gradient-green-light);
+}
+
+.data-pregoneros .data-icon-wrapper {
+    background: var(--gradient-orange-light);
 }
 
 .data-option:hover .data-icon-wrapper {
@@ -503,6 +556,10 @@ body {
 
 .data-descargadores:hover .data-icon-wrapper {
     background: var(--gradient-green-dark);
+}
+
+.data-pregoneros:hover .data-icon-wrapper {
+    background: var(--gradient-orange-dark);
 }
 
 .data-icon {
@@ -518,23 +575,27 @@ body {
     color: var(--success-color);
 }
 
+.data-pregoneros .data-icon {
+    color: var(--warning-color);
+}
+
 .data-option:hover .data-icon {
     color: white;
 }
 
 .data-title {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     color: var(--text-dark);
 }
 
 .data-description {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    line-height: 1.5;
-    max-width: 90%;
-    margin: 0 auto 20px;
+    line-height: 1.4;
+    max-width: 95%;
+    margin: 0 auto 15px;
 }
 
 /* ==========================================================================
@@ -542,62 +603,89 @@ body {
    ========================================================================== */
 .progress-section {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 15px;
 }
 
 .progress-info {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .progress-label {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
     font-weight: 500;
 }
 
 .progress-percentage {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 700;
+}
+
+.data-referidos .progress-percentage {
     color: var(--accent-color);
+}
+
+.data-descargadores .progress-percentage {
+    color: var(--success-color);
+}
+
+.data-pregoneros .progress-percentage {
+    color: var(--warning-color);
 }
 
 .progress-container {
     width: 100%;
-    height: 12px;
+    height: 10px;
     background-color: var(--progress-bg);
-    border-radius: 6px;
+    border-radius: 5px;
     overflow: hidden;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
-.data-referidos .progress-container {
+.data-option .progress-container {
     border: 1px solid var(--border-color);
 }
 
 .progress-bar {
     height: 100%;
-    border-radius: 6px;
-    /* REMOVEMOS LA TRANSICIÓN PARA QUE NO SE ANIME AL PASAR EL MOUSE */
-    /* transition: width 0.5s ease-in-out; */
+    border-radius: 5px;
 }
 
 .data-referidos .progress-bar {
     background: linear-gradient(90deg, var(--accent-color), var(--accent-dark));
 }
 
+.data-descargadores .progress-bar {
+    background: linear-gradient(90deg, var(--success-color), var(--success-dark));
+}
+
+.data-pregoneros .progress-bar {
+    background: linear-gradient(90deg, var(--warning-color), var(--warning-dark));
+}
+
 .progress-stats {
     display: flex;
     justify-content: space-between;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-top: 5px;
+    margin-top: 3px;
 }
 
-.progress-current {
+.data-referidos .progress-current {
     font-weight: 600;
     color: var(--accent-color);
+}
+
+.data-descargadores .progress-current {
+    font-weight: 600;
+    color: var(--success-color);
+}
+
+.data-pregoneros .progress-current {
+    font-weight: 600;
+    color: var(--warning-color);
 }
 
 .progress-target {
@@ -607,42 +695,11 @@ body {
 
 /* Nota sobre estadísticas */
 .stats-note {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-light);
     text-align: center;
-    margin-top: 10px;
+    margin-top: 8px;
     font-style: italic;
-}
-
-/* ==========================================================================
-   DATA DESCARGADORES - ESTADÍSTICAS
-   ========================================================================== */
-.data-stats {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 15px;
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 1.8rem;
-    font-weight: 700;
-    display: block;
-}
-
-.data-descargadores .stat-number {
-    color: var(--success-color);
-}
-
-.stat-label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
 /* ==========================================================================
@@ -834,14 +891,14 @@ body {
    ========================================================================== */
 @media (max-width: 992px) {
     .dashboard-grid {
-        grid-template-columns: 1fr;
-        max-width: 600px;
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 800px;
         gap: 25px;
     }
     
     .data-option {
-        padding: 35px 25px;
-        min-height: 280px;
+        padding: 30px 20px;
+        min-height: 300px;
     }
     
     .dashboard-title {
@@ -911,10 +968,20 @@ body {
     }
     
     /* Opciones */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        max-width: 500px;
+    }
+    
+    .data-option {
+        padding: 30px 20px;
+        min-height: 280px;
+    }
+    
     .data-icon-wrapper {
         width: 70px;
         height: 70px;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
     }
     
     .data-icon {
@@ -927,10 +994,6 @@ body {
     
     .progress-container {
         height: 10px;
-    }
-    
-    .stat-number {
-        font-size: 1.6rem;
     }
     
     /* Logo principal */
@@ -991,14 +1054,14 @@ body {
    ========================================================================== */
 @media (max-width: 480px) {
     .data-option {
-        padding: 30px 20px;
+        padding: 25px 15px;
         min-height: 260px;
     }
     
     .data-icon-wrapper {
         width: 65px;
         height: 65px;
-        margin-bottom: 18px;
+        margin-bottom: 15px;
     }
     
     .data-icon {
@@ -1010,7 +1073,7 @@ body {
     }
     
     .data-description {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
     
     .progress-container {
@@ -1020,13 +1083,8 @@ body {
     .progress-info {
         flex-direction: column;
         align-items: center;
-        gap: 5px;
-        margin-bottom: 10px;
-    }
-    
-    .data-stats {
-        flex-direction: column;
-        gap: 10px;
+        gap: 3px;
+        margin-bottom: 8px;
     }
     
     .container.text-center.mb-3 img {
@@ -1103,7 +1161,8 @@ body {
             </ol>
         </nav>
     </div>
-<!-- CONTADOR COMPACTO -->
+    
+    <!-- CONTADOR COMPACTO -->
     <div class="countdown-compact-container">
         <div class="countdown-compact">
             <div class="countdown-compact-title">
@@ -1122,6 +1181,7 @@ body {
             </div>
         </div>
     </div>
+    
     <!-- Main Content -->
     <div class="main-container">
         <!-- Dashboard Header -->
@@ -1132,11 +1192,11 @@ body {
             </div>
             <p class="dashboard-subtitle">
                 Seleccione el tipo de data que desea gestionar y consultar. 
-                Acceda a toda la información de referenciación y descarga del sistema.
+                Acceda a toda la información de referenciación, descarga y pregoneros del sistema.
             </p>
         </div>
         
-        <!-- Grid de 2 columnas -->
+        <!-- Grid de 3 columnas -->
         <div class="dashboard-grid">
             <!-- Data Referidos -->
             <a href="data_referidos.php" class="data-option data-referidos">
@@ -1148,7 +1208,6 @@ body {
                 <div class="data-title">DATA REFERIDOS</div>
                 <div class="data-description">
                     Gestión completa de todos los referidos registrados en el sistema. 
-                    Consulta, edición y administración de información de referenciación.
                 </div>
                 
                 <!-- Barra de progreso para Data Referidos -->
@@ -1161,11 +1220,11 @@ body {
                         <div class="progress-bar" style="width: <?php echo $porcentajeAvance; ?>%"></div>
                     </div>
                     <div class="progress-stats">
-                        <span class="progress-current"><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos activos</span>
+                        <span class="progress-current"><?php echo number_format($totalReferidos, 0, ',', '.'); ?> referidos</span>
                         <span class="progress-target">Meta: <?php echo number_format($sumaTopes, 0, ',', '.'); ?></span>
                     </div>
                     <div class="stats-note">
-                        <i class="fas fa-info-circle"></i> Solo se cuentan referidos y usuarios activos
+                        <i class="fas fa-info-circle"></i> Solo activos
                     </div>
                 </div>
             </a>
@@ -1179,21 +1238,57 @@ body {
                 </div>
                 <div class="data-title">DATA DESCARGADORES</div>
                 <div class="data-description">
-                    Información detallada de usuarios con rol Descargador. 
-                    Gestión de permisos y acceso a datos de descarga.
+                    Información de usuarios que han registrado su voto.
                 </div>
-                <div class="data-stats">
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($totalDescargadores, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Descargadores Activos</span>
+                
+                <!-- Barra de progreso para Data Descargadores -->
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span class="progress-label">Avance de Descargas</span>
+                        <span class="progress-percentage"><?php echo $porcentajeDescargados; ?>%</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo number_format($totalReferenciadores, 0, ',', '.'); ?></span>
-                        <span class="stat-label">Referenciadores Activos</span>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: <?php echo $porcentajeDescargados; ?>%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span class="progress-current"><?php echo number_format($totalDescargados, 0, ',', '.'); ?> descargados</span>
+                        <span class="progress-target">Meta: <?php echo number_format($metaDescargas, 0, ',', '.'); ?></span>
                     </div>
                 </div>
                 <div class="stats-note">
-                    <i class="fas fa-info-circle"></i> Solo se cuentan usuarios activos
+                    <i class="fas fa-info-circle"></i> Votantes registrados
+                </div>
+            </a>
+            
+            <!-- Data Pregoneros (CON BARRA DE PROGRESO AHORA) -->
+            <a href="data_pregoneros.php" class="data-option data-pregoneros">
+                <div class="data-icon-wrapper">
+                    <div class="data-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                </div>
+                <div class="data-title">DATA PREGONEROS</div>
+                <div class="data-description">
+                    Gestión de pregoneros, líderes y voceros del movimiento.
+                </div>
+                
+                <!-- Barra de progreso para Data Pregoneros (AGREGADA) -->
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span class="progress-label">Avance de Pregoneros</span>
+                        <span class="progress-percentage"><?php echo $porcentajePregoneros; ?>%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: <?php echo $porcentajePregoneros; ?>%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span class="progress-current"><?php echo number_format($pregonerosVotaron, 0, ',', '.'); ?> votaron</span>
+                        <span class="progress-target">Meta: <?php echo number_format($totalPregoneros, 0, ',', '.'); ?> pregoneros</span>
+                    </div>
+                </div>
+                
+                <div class="stats-note">
+                    <i class="fas fa-info-circle"></i> Pregoneros que ya votaron
                 </div>
             </a>
         </div>
@@ -1220,136 +1315,129 @@ body {
             </p>
         </div>
     </footer>
-<!-- Modal de Información del Sistema -->
-<div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalSistemaLabel">
-                    <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Logo centrado AGRANDADO -->
-                <div class="modal-logo-container">
-                    <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
+    
+    <!-- Modal de Información del Sistema -->
+    <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSistemaLabel">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <!-- Título del Sistema - ELIMINADO "Sistema SGP" -->
-                <div class="licencia-info">
-                    <div class="licencia-header">
-                        <h6 class="licencia-title">Licencia Runtime</h6>
-                        <span class="licencia-dias">
-                            <?php echo $diasRestantes; ?> días restantes
-                        </span>
+                <div class="modal-body">
+                    <!-- Logo centrado -->
+                    <div class="modal-logo-container">
+                        <img src="../imagenes/Logo-artguru.png" alt="Logo del Sistema" class="modal-logo">
                     </div>
                     
-                    <div class="licencia-progress">
-                        <!-- BARRA QUE DISMINUYE: muestra el PORCENTAJE RESTANTE -->
-                        <div class="licencia-progress-bar <?php echo $barColor; ?>" 
-                            style="width: <?php echo $porcentajeRestante; ?>%"
-                            role="progressbar" 
-                            aria-valuenow="<?php echo $porcentajeRestante; ?>" 
-                            aria-valuemin="0" 
-                            aria-valuemax="100">
+                    <!-- Título del Sistema -->
+                    <div class="licencia-info">
+                        <div class="licencia-header">
+                            <h6 class="licencia-title">Licencia Runtime</h6>
+                            <span class="licencia-dias">
+                                <?php echo $diasRestantes; ?> días restantes
+                            </span>
                         </div>
-                    </div>
-                    
-                    <div class="licencia-fecha">
-                        <i class="fas fa-calendar-alt me-1"></i>
-                        Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
-                        Válida hasta: <?php echo $validaHastaFormatted; ?>
-                    </div>
-                </div>
-                <div class="feature-image-container">
-                    <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
-                    <div class="profile-info mt-3">
-                        <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
                         
-                        <small class="profile-description">
-                            Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
-                            Magister en Administración Pública.<br>
-                            <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
-                        </small>
+                        <div class="licencia-progress">
+                            <div class="licencia-progress-bar <?php echo $barColor; ?>" 
+                                style="width: <?php echo $porcentajeRestante; ?>%"
+                                role="progressbar" 
+                                aria-valuenow="<?php echo $porcentajeRestante; ?>" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                            </div>
+                        </div>
+                        
+                        <div class="licencia-fecha">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Instalado: <?php echo $fechaInstalacionFormatted; ?> | 
+                            Válida hasta: <?php echo $validaHastaFormatted; ?>
+                        </div>
+                    </div>
+                    <div class="feature-image-container">
+                        <img src="../imagenes/ingeniero2.png" alt="Logo de Herramienta" class="feature-img-header">
+                        <div class="profile-info mt-3">
+                            <h4 class="profile-name"><strong>Rubén Darío González García</strong></h4>
+                            <small class="profile-description">
+                                Ingeniero de Sistemas, administrador de bases de datos, desarrollador de objeto OLE.<br>
+                                Magister en Administración Pública.<br>
+                                <span class="cio-tag"><strong>CIO de equipo soporte SISGONTECH</strong></span>
+                            </small>
+                        </div>
+                    </div>
+                    <!-- Sección de Características -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-primary mb-3">
+                                    <i class="fas fa-bolt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Efectividad de la Herramienta</h5>
+                                <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
+                                <p class="feature-text">
+                                    Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-success mb-3">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Integridad de Datos</h5>
+                                <h6 class="text-muted mb-2">Validación Inteligente</h6>
+                                <p class="feature-text">
+                                    Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-warning mb-3">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Monitoreo de Metas</h5>
+                                <h6 class="text-muted mb-2">Seguimiento Visual</h6>
+                                <p class="feature-text">
+                                    Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <div class="feature-icon text-danger mb-3">
+                                    <i class="fas fa-shield-alt fa-2x"></i>
+                                </div>
+                                <h5 class="feature-title">Seguridad Avanzada</h5>
+                                <h6 class="text-muted mb-2">Control Total</h6>
+                                <p class="feature-text">
+                                    Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Sección de Características -->
-                <div class="row g-4 mb-4">
-                    <!-- Efectividad de la Herramienta -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-primary mb-3">
-                                <i class="fas fa-bolt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Efectividad de la Herramienta</h5>
-                            <h6 class="text-muted mb-2">Optimización de Tiempos</h6>
-                            <p class="feature-text">
-                                Reducción del 70% en el procesamiento manual de datos y generación de reportes de adeptos.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Integridad de Datos -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-success mb-3">
-                                <i class="fas fa-database fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Integridad de Datos</h5>
-                            <h6 class="text-muted mb-2">Validación Inteligente</h6>
-                            <p class="feature-text">
-                                Validación en tiempo real para eliminar duplicados y errores de digitación en la base de datos política.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Monitoreo de Metas -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-warning mb-3">
-                                <i class="fas fa-chart-line fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Monitoreo de Metas</h5>
-                            <h6 class="text-muted mb-2">Seguimiento Visual</h6>
-                            <p class="feature-text">
-                                Seguimiento visual del cumplimiento de objetivos mediante barras de avance dinámicas.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Seguridad Avanzada -->
-                    <div class="col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon text-danger mb-3">
-                                <i class="fas fa-shield-alt fa-2x"></i>
-                            </div>
-                            <h5 class="feature-title">Seguridad Avanzada</h5>
-                            <h6 class="text-muted mb-2">Control Total</h6>
-                            <p class="feature-text">
-                                Control de acceso jerarquizado y trazabilidad total de ingresos al sistema.
-                            </p>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
+                       target="_blank" 
+                       class="btn btn-primary"
+                       onclick="cerrarModalSistema();">
+                        <i class="fas fa-external-link-alt me-1"></i> Uso SGP
+                    </a>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cerrar
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <!-- Botón Uso SGP - Abre enlace en nueva pestaña -->
-                <a href="https://sgp-sistema-de-gestion-politica.webnode.com.co/" 
-                   target="_blank" 
-                   class="btn btn-primary"
-                   onclick="cerrarModalSistema();">
-                    <i class="fas fa-external-link-alt me-1"></i> Uso SGP
-                </a>
-                
-                <!-- Botón Cerrar - Solo cierra el modal -->
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i> Cerrar
-                </button>
             </div>
         </div>
     </div>
-</div>
+    
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1372,28 +1460,29 @@ body {
                 }
             });
         });
+        
         function actualizarLogoSegunTema() {
-    const logo = document.getElementById('footer-logo');
-    if (!logo) return;
-    
-    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (isDarkMode) {
-        logo.src = logo.getAttribute('data-img-oscuro');
-    } else {
-        logo.src = logo.getAttribute('data-img-claro');
-    }
-}
+            const logo = document.getElementById('footer-logo');
+            if (!logo) return;
+            
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (isDarkMode) {
+                logo.src = logo.getAttribute('data-img-oscuro');
+            } else {
+                logo.src = logo.getAttribute('data-img-claro');
+            }
+        }
 
-// Ejecutar al cargar y cuando cambie el tema
-document.addEventListener('DOMContentLoaded', function() {
-    actualizarLogoSegunTema();
-});
+        // Ejecutar al cargar y cuando cambie el tema
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarLogoSegunTema();
+        });
 
-// Escuchar cambios en el tema del sistema
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-    actualizarLogoSegunTema();
-});
+        // Escuchar cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            actualizarLogoSegunTema();
+        });
     </script>
     <script src="../js/modal-sistema.js"></script>
     <script src="../js/contador.js"></script>

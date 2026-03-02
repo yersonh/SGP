@@ -1,14 +1,15 @@
 <?php
 session_start();
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/UsuarioModel.php';
-require_once __DIR__ . '/../models/ReferenciadoModel.php';
-require_once __DIR__ . '/../models/SistemaModel.php';
-require_once __DIR__ . '/../helpers/navigation_helper.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/UsuarioModel.php';
+require_once __DIR__ . '/../../models/ReferenciadoModel.php';
+require_once __DIR__ . '/../../models/SistemaModel.php';
+require_once __DIR__ . '/../../helpers/navigation_helper.php';
+require_once __DIR__ . '/../../models/PregoneroModel.php';
 
-// Verificar si el usuario está logueado y es Descargador
-if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'Descargador') {
-    header('Location: index.php');
+// Verificar si el usuario está logueado y es SuperAdmin
+if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'SuperAdmin') {
+    header('Location: ../index.php');
     exit();
 }
 
@@ -16,13 +17,14 @@ NavigationHelper::pushUrl();
 $pdo = Database::getConnection();
 $usuarioModel = new UsuarioModel($pdo);
 $referenciadoModel = new ReferenciadoModel($pdo);
+$pregoneroModel = new PregoneroModel($pdo);
 $sistemaModel = new SistemaModel($pdo);
 
 // Obtener datos del usuario logueado
 $usuario_logueado = $usuarioModel->getUsuarioById($_SESSION['id_usuario']);
 
 // Obtener referenciados activos
-$referenciados_activos = $referenciadoModel->countReferenciadosActivos();
+$referenciados_activos = $pregoneroModel->contarPregonerosActivos();
 
 // Obtener información del sistema para el modal
 $licenciaInfo = $sistemaModel->getInfoCompletaLicencia();
@@ -41,8 +43,8 @@ if ($porcentajeRestante > 50) {
     $barColor = 'bg-danger';
 }
 
-$totalVotantes = $referenciadoModel->contarVotantesRegistrados();
-$totalPendientes=$referenciadoModel->contarVotantesPendientes();
+$totalVotantes = $pregoneroModel->contarPregonerosVotaron();
+$totalPendientes = $pregoneroModel->contarPregonerosPendientes();
 
 $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $referenciados_activos) * 100, 2, '.', '') : 0;
 ?>
@@ -52,10 +54,10 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Votantes - Descargador - SGP</title>
+    <title>Registro de Votantes - SuperAdmin - SGP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles/descargador.css">
+    <link rel="stylesheet" href="../styles/descargador.css">
 </head>
 <body>
     <!-- Loading Spinner -->
@@ -63,35 +65,24 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         <div class="spinner"></div>
     </div>
 
-    <!-- Header - EXACTAMENTE IGUAL AL EJEMPLO -->
+    <!-- Header - SIN LA BARRA DE PROGRESO -->
     <header class="main-header">
         <div class="header-container">
             <div class="header-top">
                 <div class="header-title">
                     <h1>
                         <i class="fas fa-vote-yea"></i> 
-                        Registro de Votantes - Elecciones 2026
+                        Registro de pregoneros - Elecciones 2026
                     </h1>
                     <div class="user-info">
                         <i class="fas fa-user-circle"></i>
                         <span><?php echo htmlspecialchars($usuario_logueado['nombres'] . ' ' . $usuario_logueado['apellidos']); ?></span>
-                        <span class="badge">Descargador</span>
+                        <span class="badge">SuperAdmin</span>
                     </div>
                 </div>
-                <a href="logout.php" class="logout-btn">
+                <a href="../logout.php" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </a>
-            </div>
-            
-            <!-- Progress Bar -->
-            <div class="progress-container">
-                <div class="progress-header">
-                    <span>Progreso de la Meta: <span id="progresoActual">0</span>/<?php echo number_format($referenciados_activos); ?></span>
-                    <span id="porcentajeProgreso">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progresoFill" style="width: 0%;"></div>
-                </div>
             </div>
         </div>
     </header>
@@ -106,7 +97,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                 </div>
                 <div class="stat-content">
                     <div class="stat-value" id="metaVotantes"><?php echo number_format($referenciados_activos); ?></div>
-                    <div class="stat-label">META</div>
+                    <div class="stat-label">PREGONEROS</div>
                 </div>
             </div>
 
@@ -146,7 +137,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             <div class="form-header">
                 <h2>
                     <i class="fas fa-search"></i>
-                    Buscar Votante
+                    Buscar Pregonero
                 </h2>
                 <button type="button" class="btn-mesa-search" onclick="mostrarEstadisticas()">
                     <i class="fas fa-chart-bar"></i> Ver Estadísticas
@@ -171,7 +162,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         <!-- Empty State -->
         <div class="empty-state" id="emptyState">
             <i class="fas fa-vote-yea"></i>
-            <h3>Busque un votante para comenzar</h3>
+            <h3>Busque un pregonero para comenzar</h3>
             <p>Ingrese el número de cédula para verificar si ya votó y registrar su voto</p>
         </div>
 
@@ -271,7 +262,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         </div>
     </div>
 
-    <!-- Footer - EXACTAMENTE IGUAL AL EJEMPLO -->
+    <!-- Footer -->
     <footer class="system-footer">
         <div class="container text-center mb-3">
             <img src="../imagenes/Logo-artguru.png" 
@@ -290,7 +281,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         </div>
     </footer>
     
-    <!-- Modal de Información del Sistema - EXACTAMENTE IGUAL AL EJEMPLO -->
+    <!-- Modal de Información del Sistema -->
     <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -436,9 +427,6 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         document.getElementById('totalVotantes').textContent = totalVotantes.toLocaleString();
         document.getElementById('porcentajeMeta').textContent = porcentaje + '%';
         document.getElementById('pendientes').textContent = pendientes.toLocaleString();
-        document.getElementById('progresoActual').textContent = totalVotantes.toLocaleString();
-        document.getElementById('porcentajeProgreso').textContent = porcentaje + '%';
-        document.getElementById('progresoFill').style.width = porcentaje + '%';
     }
 
     // Mostrar/ocultar spinner
@@ -481,7 +469,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         showSpinner();
         
         // Hacer la petición AJAX al archivo que creamos
-        fetch(`../ajax/buscar_referido_por_cedula.php?cedula=${cedula}`)
+        fetch(`../ajax/buscar_pregonero_por_identificacion.php?identificacion=${cedula}`)
             .then(response => response.json())
             .then(data => {
                 hideSpinner();
@@ -511,7 +499,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                 
                 // Llenar datos personales
                 document.getElementById('personaNombre').textContent = data.data.nombre_completo;
-                document.getElementById('personaCedula').textContent = data.data.cedula;
+                document.getElementById('personaCedula').textContent = data.data.identificacion; 
                 document.getElementById('personaTelefono').textContent = data.data.telefono;
                 document.getElementById('personaEmail').textContent = data.data.email;
                 document.getElementById('personaDireccion').textContent = data.data.direccion;
@@ -568,7 +556,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             Swal.fire({
                 icon: 'warning',
                 title: 'Error',
-                text: 'No hay un votante seleccionado',
+                text: 'No hay un pregonero seleccionado',
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -579,7 +567,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             Swal.fire({
                 icon: 'info',
                 title: 'Voto ya registrado',
-                text: 'Este votante ya registró su voto anteriormente',
+                text: 'Este pregonero ya registró su voto anteriormente',
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -588,7 +576,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         
         Swal.fire({
             title: '¿Confirmar voto?',
-            text: 'Va a registrar que esta persona ya votó en las elecciones de hoy',
+            text: 'Va a registrar que este pregonero ya votó en las elecciones de hoy',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sí, registrar voto',
@@ -598,13 +586,13 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             if (result.isConfirmed) {
                 showSpinner();
                 
-                // Enviar petición para registrar voto
-                fetch('../ajax/registrar_voto.php', {
+                // Enviar petición para registrar voto de pregonero
+                fetch('../ajax/registrar_voto_pregonero.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: 'id_referenciado=' + currentVotante.id_referenciado
+                    body: 'id_pregonero=' + currentVotante.id_pregonero
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -614,6 +602,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                         // Actualizar estadísticas globales
                         if (data.stats) {
                             totalVotantes = data.stats.ya_votaron;
+                            metaVotantes = data.stats.total_activos;
                         }
                         
                         // Actualizar estado visual
@@ -677,7 +666,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             html: `
                 <div style="text-align: left">
                     <p><strong>Votantes que han votado:</strong> ${totalVotantes}</p>
-                    <p><strong>Total de referenciados activos:</strong> ${metaVotantes}</p>
+                    <p><strong>Total de pregoneres activos:</strong> ${metaVotantes}</p>
                     <p><strong>Porcentaje de participación:</strong> ${metaVotantes > 0 ? ((totalVotantes/metaVotantes)*100).toFixed(2) : 0}%</p>
                     <p><strong>Pendientes por votar:</strong> ${metaVotantes - totalVotantes}</p>
                 </div>

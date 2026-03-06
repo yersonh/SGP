@@ -307,7 +307,23 @@ class PregoneroModel {
             throw new Exception("Error al eliminar el pregonero");
         }
     }
-    
+    /**
+ * Reactiva un pregonero (cambia activo a TRUE)
+ * 
+ * @param int $id_pregonero ID del pregonero
+ * @return bool True si se reactivó correctamente
+ */
+public function reactivar($id_pregonero) {
+    try {
+        $sql = "UPDATE public.pregonero SET activo = TRUE WHERE id_pregonero = :id_pregonero";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
+        return $stmt->execute();
+    } catch (PDOException $e) {
+        error_log("Error al reactivar pregonero: " . $e->getMessage());
+        throw new Exception("Error al reactivar el pregonero");
+    }
+}
     /**
      * Obtiene estadísticas de pregoneros
      * 

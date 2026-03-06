@@ -71,6 +71,18 @@ try {
     // Por ahora usamos el total de pregoneros como meta
     $metaPregoneros = $totalPregoneros > 0 ? $totalPregoneros : 100; // Si no hay, meta por defecto 100
     
+    // 10. Total de PREGONEROS (ACTIVOS E INACTIVOS) para DATA PREGONEROS (NUEVO)
+    $queryTotalPregonerosCompleto = "SELECT COUNT(*) as total_pregoneros_completo FROM pregonero";
+    $stmtPregonerosCompleto = $pdo->query($queryTotalPregonerosCompleto);
+    $resultPregonerosCompleto = $stmtPregonerosCompleto->fetch();
+    $totalPregonerosCompleto = $resultPregonerosCompleto['total_pregoneros_completo'] ?? 0;
+    
+    // 11. PREGONEROS ACTIVOS
+    $pregonerosActivos = $pregoneroModel->contarPregonerosActivos();
+    
+    // 12. PREGONEROS INACTIVOS
+    $pregonerosInactivos = $pregoneroModel->contarPregonerosPendientes(); // Usando pendientes como inactivos
+    
     // Calcular porcentaje de avance para referidos
     $porcentajeAvance = 0;
     if ($sumaTopes > 0) {
@@ -103,6 +115,9 @@ try {
     $totalPregoneros = 0;
     $pregonerosVotaron = 0;
     $metaPregoneros = 100;
+    $totalPregonerosCompleto = 0;
+    $pregonerosActivos = 0;
+    $pregonerosInactivos = 0;
     $porcentajeAvance = 0;
     $porcentajeDescargados = 0;
     $porcentajePregoneros = 0;
@@ -446,13 +461,13 @@ body {
 }
 
 /* ==========================================================================
-   GRID DE OPCIONES (ahora 3 columnas)
+   GRID DE OPCIONES (ahora 4 columnas para incluir DATA PREGONEROS)
    ========================================================================== */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 30px;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
 }
@@ -499,9 +514,14 @@ body {
     background: linear-gradient(90deg, var(--success-color), var(--success-dark));
 }
 
-/* Color para Data Pregoneros */
-.data-pregoneros::before {
+/* Color para Pregoneros Descargados (anterior) */
+.data-pregoneros-descargados::before {
     background: linear-gradient(90deg, var(--warning-color), var(--warning-dark));
+}
+
+/* Color para Data Pregoneros (NUEVO) */
+.data-pregoneros-completo::before {
+    background: linear-gradient(90deg, #9b59b6, #8e44ad); /* Púrpura */
 }
 
 .data-option:hover {
@@ -519,8 +539,12 @@ body {
     border-color: var(--success-color);
 }
 
-.data-pregoneros:hover {
+.data-pregoneros-descargados:hover {
     border-color: var(--warning-color);
+}
+
+.data-pregoneros-completo:hover {
+    border-color: #9b59b6;
 }
 
 .data-icon-wrapper {
@@ -542,8 +566,12 @@ body {
     background: var(--gradient-green-light);
 }
 
-.data-pregoneros .data-icon-wrapper {
+.data-pregoneros-descargados .data-icon-wrapper {
     background: var(--gradient-orange-light);
+}
+
+.data-pregoneros-completo .data-icon-wrapper {
+    background: linear-gradient(135deg, #f3e8ff, #e9d8fd);
 }
 
 .data-option:hover .data-icon-wrapper {
@@ -558,8 +586,12 @@ body {
     background: var(--gradient-green-dark);
 }
 
-.data-pregoneros:hover .data-icon-wrapper {
+.data-pregoneros-descargados:hover .data-icon-wrapper {
     background: var(--gradient-orange-dark);
+}
+
+.data-pregoneros-completo:hover .data-icon-wrapper {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
 }
 
 .data-icon {
@@ -575,8 +607,12 @@ body {
     color: var(--success-color);
 }
 
-.data-pregoneros .data-icon {
+.data-pregoneros-descargados .data-icon {
     color: var(--warning-color);
+}
+
+.data-pregoneros-completo .data-icon {
+    color: #9b59b6;
 }
 
 .data-option:hover .data-icon {
@@ -631,8 +667,12 @@ body {
     color: var(--success-color);
 }
 
-.data-pregoneros .progress-percentage {
+.data-pregoneros-descargados .progress-percentage {
     color: var(--warning-color);
+}
+
+.data-pregoneros-completo .progress-percentage {
+    color: #9b59b6;
 }
 
 .progress-container {
@@ -661,8 +701,12 @@ body {
     background: linear-gradient(90deg, var(--success-color), var(--success-dark));
 }
 
-.data-pregoneros .progress-bar {
+.data-pregoneros-descargados .progress-bar {
     background: linear-gradient(90deg, var(--warning-color), var(--warning-dark));
+}
+
+.data-pregoneros-completo .progress-bar {
+    background: linear-gradient(90deg, #9b59b6, #8e44ad);
 }
 
 .progress-stats {
@@ -683,9 +727,14 @@ body {
     color: var(--success-color);
 }
 
-.data-pregoneros .progress-current {
+.data-pregoneros-descargados .progress-current {
     font-weight: 600;
     color: var(--warning-color);
+}
+
+.data-pregoneros-completo .progress-current {
+    font-weight: 600;
+    color: #9b59b6;
 }
 
 .progress-target {
@@ -889,6 +938,14 @@ body {
 /* ==========================================================================
    RESPONSIVE DESIGN - TABLET (992px y menos)
    ========================================================================== */
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 900px;
+        gap: 25px;
+    }
+}
+
 @media (max-width: 992px) {
     .dashboard-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1196,7 +1253,7 @@ body {
             </p>
         </div>
         
-        <!-- Grid de 3 columnas -->
+        <!-- Grid de 4 columnas (ahora con DATA PREGONEROS) -->
         <div class="dashboard-grid">
             <!-- Data Referidos -->
             <a href="data_referidos.php" class="data-option data-referidos">
@@ -1259,9 +1316,8 @@ body {
                     <i class="fas fa-info-circle"></i> Votantes registrados
                 </div>
             </a>
-            
-            <!-- Data Pregoneros (CON BARRA DE PROGRESO AHORA) -->
-            <a href="data_pregoneros.php" class="data-option data-pregoneros">
+             <!-- DATA PREGONEROS (NUEVO) - TODOS los pregoneros activos e inactivos -->
+            <a href="data_pregoneros.php" class="data-option data-pregoneros-completo">
                 <div class="data-icon-wrapper">
                     <div class="data-icon">
                         <i class="fas fa-bullhorn"></i>
@@ -1269,10 +1325,43 @@ body {
                 </div>
                 <div class="data-title">DATA PREGONEROS</div>
                 <div class="data-description">
-                    Gestión de pregoneros, líderes y voceros del movimiento.
+                   Gestión completa de todos los pregoneros registrados (activos e inactivos).
                 </div>
                 
-                <!-- Barra de progreso para Data Pregoneros (AGREGADA) -->
+                <!-- Barra de progreso para Data Pregoneros -->
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span class="progress-label">Total Pregoneros</span>
+                        <span class="progress-percentage">100%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: 100%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span class="progress-current"><?php echo number_format($totalPregonerosCompleto, 0, ',', '.'); ?> pregoneros</span>
+                        <span class="progress-target">Total registrados</span>
+                    </div>
+                </div>
+                
+                <div class="stats-note">
+                    <i class="fas fa-info-circle"></i> 
+                    <?php echo number_format($pregonerosActivos, 0, ',', '.'); ?> activos · 
+                    <?php echo number_format($pregonerosInactivos, 0, ',', '.'); ?> inactivos
+                </div>
+            </a>
+            <!-- Pregoneros Descargados (anterior) -->
+            <a href="pregoneros_descargados.php" class="data-option data-pregoneros-descargados">
+                <div class="data-icon-wrapper">
+                    <div class="data-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                </div>
+                <div class="data-title">PREGONEROS DESCARGADOS</div>
+                <div class="data-description">
+                   Información de pregoneros que han registrado su voto.
+                </div>
+                
+                <!-- Barra de progreso para Pregoneros Descargados -->
                 <div class="progress-section">
                     <div class="progress-info">
                         <span class="progress-label">Avance de Pregoneros</span>

@@ -29,7 +29,7 @@ try {
     $pdo = Database::getConnection();
     $pregoneroModel = new PregoneroModel($pdo);
     
-    // Recoger y validar datos del formulario
+    // Recoger y validar datos del formulario - INCLUYENDO NUEVOS CAMPOS
     $datos = [
         'nombres' => trim($_POST['nombres'] ?? ''),
         'apellidos' => trim($_POST['apellidos'] ?? ''),
@@ -40,6 +40,9 @@ try {
         'comuna' => trim($_POST['comuna'] ?? ''),
         'id_puesto' => intval($_POST['puesto'] ?? 0),
         'mesa' => intval($_POST['mesa'] ?? 0),
+        // NUEVOS CAMPOS AGREGADOS
+        'quien_reporta' => trim($_POST['quien_reporta'] ?? ''),
+        'id_referenciador' => !empty($_POST['id_referenciador']) ? intval($_POST['id_referenciador']) : null,
         'id_usuario_registro' => $_SESSION['id_usuario']
     ];
     
@@ -55,6 +58,13 @@ try {
     if (empty($datos['comuna'])) $errores[] = 'El campo Comuna es obligatorio';
     if ($datos['id_puesto'] <= 0) $errores[] = 'Debe seleccionar un puesto de votación válido';
     if ($datos['mesa'] < 1 || $datos['mesa'] > 60) $errores[] = 'La mesa debe ser un número entre 1 y 60';
+    
+    // Validar referenciador (ahora es obligatorio según el formulario)
+    if (empty($datos['id_referenciador'])) {
+        $errores[] = 'Debe seleccionar un referenciador';
+    }
+    
+    // quien_reporta es opcional, pero si está vacío y se marcó el checkbox, se maneja en el frontend
     
     // Validar que la identificación no exista
     if ($pregoneroModel->existeIdentificacion($datos['identificacion'])) {

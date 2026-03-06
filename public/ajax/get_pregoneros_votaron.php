@@ -18,8 +18,11 @@ $pregoneroModel = new PregoneroModel($pdo);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 50;
 
-// Construir filtros - POR DEFECTO MOSTRAR TODOS (SIN FILTRO DE VOTO_REGISTRADO)
+// Construir filtros - POR DEFECTO MOSTRAR SOLO LOS QUE YA VOTARON
 $filters = [];
+
+// AÑADIDO: Filtro por defecto para mostrar solo los que ya votaron
+$filters['voto_registrado'] = true;
 
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $filters['search'] = $_GET['search'];
@@ -29,7 +32,7 @@ if (isset($_GET['activo']) && $_GET['activo'] !== '') {
     $filters['activo'] = $_GET['activo'];
 }
 
-// Permitir filtrar por voto_registrado SOLO si se envía explícitamente
+// Permitir sobrescribir el filtro de voto_registrado si se envía explícitamente
 if (isset($_GET['voto_registrado']) && $_GET['voto_registrado'] !== '') {
     $filters['voto_registrado'] = $_GET['voto_registrado'] === 'true' ? true : false;
 }
@@ -88,7 +91,7 @@ if (isset($_GET['get_options']) && $_GET['get_options'] === 'true') {
         // Obtener puestos de votación
         $puestos = $pdo->query("SELECT id_puesto, nombre FROM puesto_votacion ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC);
         
-        // Obtener referenciadores (usuarios tipo Referenciador)
+        // NUEVO: Obtener referenciadores (usuarios tipo Referenciador)
         $referenciadores = $pdo->query("
             SELECT id_usuario, nombres, apellidos, cedula 
             FROM usuario 
@@ -109,7 +112,7 @@ if (isset($_GET['get_options']) && $_GET['get_options'] === 'true') {
             'zonas' => $zonas,
             'barrios' => $barrios,
             'puestos' => $puestos,
-            'referenciadores' => $referenciadores,
+            'referenciadores' => $referenciadores, // NUEVO
             'usuarios_registro' => $usuarios
         ]);
         exit();
@@ -126,14 +129,12 @@ try {
     // 🔍 DEPURACIÓN: Ver qué campos vienen del modelo (opcional - comentar en producción)
     if (!empty($data)) {
         error_log("Campos del primer pregonero: " . print_r(array_keys($data[0]), true));
-        error_log("quien_reporta: " . ($data[0]['quien_reporta'] ?? 'NULL'));
-        error_log("referenciador_nombre: " . ($data[0]['referenciador_nombre'] ?? 'NULL'));
     }
     
     // Obtener total de registros
     $total = $pregoneroModel->getTotalPregoneros($filters);
     
-    // Calcular estadísticas (activos e inactivos)
+    // Calcular estadísticas (activos e inactivos) - AHORA INCLUYE FILTRO DE VOTO_REGISTRADO
     $statsActivos = $pregoneroModel->getTotalPregoneros(array_merge($filters, ['activo' => true]));
     $statsInactivos = $pregoneroModel->getTotalPregoneros(array_merge($filters, ['activo' => false]));
     

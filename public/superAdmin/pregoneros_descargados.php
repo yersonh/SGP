@@ -715,7 +715,7 @@ $(document).ready(function() {
     // Cargar opciones de filtros avanzados al iniciar
     function cargarOpcionesFiltrosAvanzados() {
         $.ajax({
-            url: '../ajax/get_pregoneros.php',
+            url: '../ajax/get_pregoneros_votaron.php',
             type: 'GET',
             data: { get_options: 'true' },
             dataType: 'json',
@@ -1010,7 +1010,7 @@ $(document).ready(function() {
         `);
         
         // Construir URL con parámetros
-        let url = `../ajax/get_pregoneros.php?page=${page}&per_page=${perPage}`;
+        let url = `../ajax/get_pregoneros_votaron.php?page=${page}&per_page=${perPage}`;
         
         if (currentFilters.search) {
             url += `&search=${encodeURIComponent(currentFilters.search)}`;

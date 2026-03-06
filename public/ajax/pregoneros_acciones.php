@@ -59,11 +59,8 @@ function reactivarPregonero($model, $post) {
     }
     
     try {
-        // Necesitas agregar este método al modelo o hacer la consulta directa
-        // Por ahora lo hacemos con consulta directa
-        $sql = "UPDATE public.pregonero SET activo = TRUE WHERE id_pregonero = :id_pregonero";
-        $stmt = $model->pdo->prepare($sql);
-        $resultado = $stmt->execute([':id_pregonero' => $id_pregonero]);
+        // Usar el nuevo método del modelo
+        $resultado = $model->reactivar($id_pregonero);
         
         if ($resultado) {
             echo json_encode(['success' => true, 'message' => 'Pregonero reactivado correctamente']);
@@ -74,3 +71,4 @@ function reactivarPregonero($model, $post) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
+?>

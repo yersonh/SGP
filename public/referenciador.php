@@ -94,7 +94,13 @@ if ($porcentajeRestante > 50) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/referenciador.css">
     <style>
-        /* Estilos para el botón de ver referenciados */
+        /* Estilos para los botones de acción */
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
         .view-referrals-btn {
             background: linear-gradient(135deg, #17a2b8, #138496);
             color: white;
@@ -111,6 +117,54 @@ if ($porcentajeRestante > 50) {
             box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
         }
         
+        .monitoring-btn {
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .monitoring-btn:hover {
+            background: linear-gradient(135deg, #218838, #1e7e34);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .criers-btn {
+            background: linear-gradient(135deg, #fd7e14, #dc3545);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3);
+        }
+        
+        .criers-btn:hover {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
         .view-referrals-btn:hover {
             background: linear-gradient(135deg, #138496, #117a8b);
             transform: translateY(-2px);
@@ -119,7 +173,9 @@ if ($porcentajeRestante > 50) {
             text-decoration: none;
         }
         
-        .view-referrals-btn i {
+        .view-referrals-btn i,
+        .monitoring-btn i,
+        .criers-btn i {
             font-size: 1.1rem;
         }
         
@@ -168,10 +224,20 @@ if ($porcentajeRestante > 50) {
             
             .header-actions {
                 width: 100%;
-                justify-content: space-between;
+                flex-direction: column;
+                align-items: stretch;
             }
             
-            .view-referrals-btn {
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .view-referrals-btn,
+            .monitoring-btn,
+            .criers-btn {
+                width: 100%;
+                justify-content: center;
                 padding: 8px 16px;
                 font-size: 0.9rem;
             }
@@ -311,10 +377,10 @@ if ($porcentajeRestante > 50) {
             color: #6c757d;
         }
         /* Estilo para el asterisco de campo obligatorio */
-.text-danger {
-    color: #dc3545;
-    margin-left: 2px;
-}
+        .text-danger {
+            color: #dc3545;
+            margin-left: 2px;
+        }
     </style>
 </head>
 <body>
@@ -333,10 +399,22 @@ if ($porcentajeRestante > 50) {
                     </div>
                 </div>
                 <div class="header-actions">
-                    <!-- BOTÓN PARA VER REFERENCIADOS -->
-                    <a href="ver_referenciados.php" class="view-referrals-btn">
-                        <i class="fas fa-users"></i> Ver Referenciados
-                    </a>
+                    <div class="action-buttons">
+                        <!-- BOTÓN PARA VER REFERENCIADOS -->
+                        <a href="ver_referenciados.php" class="view-referrals-btn">
+                            <i class="fas fa-users"></i> Ver Referenciados
+                        </a>
+                        
+                        <!-- BOTÓN PARA MONITOREO -->
+                        <a href="monitoreo.php" class="monitoring-btn">
+                            <i class="fas fa-chart-line"></i> Monitoreo
+                        </a>
+                        
+                        <!-- BOTÓN PARA VER PREGONEROS -->
+                        <a href="ver_pregoneros.php" class="criers-btn">
+                            <i class="fas fa-bullhorn"></i> Ver pregoneros
+                        </a>
+                    </div>
                     
                     <a href="logout.php" class="logout-btn">
                         <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
@@ -731,35 +809,35 @@ if ($porcentajeRestante > 50) {
                     </div>
                     
                     <!-- Lider (Combo box) - MOSTRAR SOLO LÍDERES ASIGNADOS -->
-<div class="form-group">
-    <label class="form-label" for="lider">
-        <i class="fas fa-user-tie"></i> Lider
-        <?php if (!empty($lideres)): ?>
-            <span class="text-danger">*</span>
-        <?php endif; ?>
-    </label>
-    <select id="lider" 
-            name="id_lider" 
-            class="form-select" 
-            data-progress="3"
-            <?php echo !empty($lideres) ? 'required' : ''; ?>>
-        <option value="">Seleccione un líder</option>
-        <?php if (!empty($lideres)): ?>
-            <?php foreach ($lideres as $lider): ?>
-            <option value="<?php echo $lider['id_lider']; ?>">
-                <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>
-            </option>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <option value="" disabled>No tiene líderes asignados</option>
-        <?php endif; ?>
-    </select>
-    <?php if (empty($lideres)): ?>
-        <div class="no-lideres-message">
-            <i class="fas fa-info-circle"></i> No hay líderes asignados a su cuenta. Contacte al administrador si necesita asignación de líderes.
-        </div>
-    <?php endif; ?>
-</div>
+                    <div class="form-group">
+                        <label class="form-label" for="lider">
+                            <i class="fas fa-user-tie"></i> Lider
+                            <?php if (!empty($lideres)): ?>
+                                <span class="text-danger">*</span>
+                            <?php endif; ?>
+                        </label>
+                        <select id="lider" 
+                                name="id_lider" 
+                                class="form-select" 
+                                data-progress="3"
+                                <?php echo !empty($lideres) ? 'required' : ''; ?>>
+                            <option value="">Seleccione un líder</option>
+                            <?php if (!empty($lideres)): ?>
+                                <?php foreach ($lideres as $lider): ?>
+                                <option value="<?php echo $lider['id_lider']; ?>">
+                                    <?php echo htmlspecialchars($lider['nombres'] . ' ' . $lider['apellidos']); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="" disabled>No tiene líderes asignados</option>
+                            <?php endif; ?>
+                        </select>
+                        <?php if (empty($lideres)): ?>
+                            <div class="no-lideres-message">
+                                <i class="fas fa-info-circle"></i> No hay líderes asignados a su cuenta. Contacte al administrador si necesita asignación de líderes.
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     
                     <!-- Switch para mostrar/ocultar compromiso -->
                     <div class="form-group">

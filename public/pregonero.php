@@ -8,7 +8,8 @@ require_once __DIR__ . '/../models/PuestoVotacionModel.php';
 require_once __DIR__ . '/../models/PregoneroModel.php';
 
 // Verificar si el usuario está logueado y es referenciador
-if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'CarguePregoneros') {
+if (!isset($_SESSION['id_usuario']) || 
+    !in_array($_SESSION['tipo_usuario'], ['Referenciador', 'CarguePregoneros'])) {
     header('Location: index.php');
     exit();
 }

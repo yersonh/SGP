@@ -8,7 +8,8 @@ require_once __DIR__ . '/../../models/PregoneroModel.php';
 header('Content-Type: application/json');
 
 // Verificar sesión
-if (!isset($_SESSION['id_usuario']) || $_SESSION['tipo_usuario'] !== 'CarguePregoneros') {
+if (!isset($_SESSION['id_usuario']) || 
+    !in_array($_SESSION['tipo_usuario'], ['CarguePregoneros', 'Referenciador'])) {
     echo json_encode([
         'success' => false,
         'message' => 'No tiene permisos para realizar esta acción'

@@ -37,6 +37,9 @@ $puestoModel = new PuestoVotacionModel($pdo);
 $barrios = $barrioModel->getAll();
 $puestos = $puestoModel->getAll();
 
+// Obtener lista de referenciadores (usuarios tipo 'Referenciador')
+$referenciadores = $pregoneroModel->getReferenciadores();
+
 // 6. Obtener información del sistema
 $infoSistema = $sistemaModel->getInformacionSistema();
 
@@ -506,6 +509,14 @@ if ($porcentajeRestante > 50) {
             font-weight: bold;
         }
         
+        /* Estilo para campos no requeridos */
+        .form-label.optional::after {
+            content: " (opcional)";
+            color: #6c757d;
+            font-weight: normal;
+            font-size: 0.8rem;
+        }
+        
         /* Estilo para mensajes de error */
         .error-message {
             color: #e74c3c;
@@ -824,6 +835,26 @@ if ($porcentajeRestante > 50) {
                 transform: translateY(0);
             }
         }
+
+        /* Estilo para el checkbox de mismo reportante */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group label {
+            color: var(--primary-color);
+            font-weight: 500;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -1039,6 +1070,54 @@ if ($porcentajeRestante > 50) {
                                    data-tooltip="Mesa de votación (1-60)">
                         </div>
                         <div class="error-message" id="error-mesa">Este campo es obligatorio (1-60)</div>
+                    </div>
+                    
+                    <!-- ========== NUEVOS CAMPOS ========== -->
+                    
+                    <!-- Quien Reporta -->
+                    <div class="form-group">
+                        <label class="form-label" for="quien_reporta">
+                            <i class="fas fa-user-check"></i> ¿Quién reporta?
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user-check input-icon"></i>
+                            <input type="text" 
+                                   id="quien_reporta" 
+                                   name="quien_reporta" 
+                                   class="form-control" 
+                                   placeholder="Nombre de quien reporta (opcional)"
+                                   data-tooltip="Persona que reporta al pregonero (puede ser el mismo u otra persona)">
+                        </div>
+                        
+                        <!-- Checkbox para indicar que es el mismo pregonero -->
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="mismo_pregonero" name="mismo_pregonero">
+                            <label for="mismo_pregonero">El reportante es el mismo pregonero</label>
+                        </div>
+                        <div class="error-message" id="error-quien_reporta"></div>
+                    </div>
+                    
+                    <!-- Referenciador -->
+                    <div class="form-group">
+                        <label class="form-label required" for="id_referenciador">
+                            <i class="fas fa-user-tie"></i> Referenciador
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user-tie input-icon"></i>
+                            <select id="id_referenciador" name="id_referenciador" class="form-select" required>
+                                <option value="">Seleccione un referenciador</option>
+                                <?php if (!empty($referenciadores)): ?>
+                                    <?php foreach ($referenciadores as $ref): ?>
+                                    <option value="<?php echo $ref['id_usuario']; ?>">
+                                        <?php echo htmlspecialchars($ref['nombres'] . ' ' . $ref['apellidos'] . ' - ' . $ref['cedula']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" disabled>No hay referenciadores disponibles</option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                        <div class="error-message" id="error-id_referenciador">Debe seleccionar un referenciador</div>
                     </div>
                     
                     <!-- Botón de Envío -->
@@ -1460,6 +1539,41 @@ if ($porcentajeRestante > 50) {
         });
     }
 
+    // Función para manejar el checkbox de "mismo pregonero"
+    function setupMismoPregonero() {
+        const mismoCheckbox = document.getElementById('mismo_pregonero');
+        const quienReportaInput = document.getElementById('quien_reporta');
+        const nombresInput = document.getElementById('nombres');
+        const apellidosInput = document.getElementById('apellidos');
+        
+        if (!mismoCheckbox || !quienReportaInput || !nombresInput || !apellidosInput) return;
+        
+        mismoCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Si está marcado, copiar nombres + apellidos al campo quien_reporta
+                const nombreCompleto = `${nombresInput.value.trim()} ${apellidosInput.value.trim()}`.trim();
+                quienReportaInput.value = nombreCompleto;
+                quienReportaInput.disabled = true;
+                quienReportaInput.classList.add('bg-light');
+            } else {
+                // Si se desmarca, habilitar el campo y limpiar
+                quienReportaInput.disabled = false;
+                quienReportaInput.classList.remove('bg-light');
+                quienReportaInput.value = '';
+            }
+        });
+        
+        // Actualizar el campo si se cambian nombres/apellidos mientras el checkbox está marcado
+        [nombresInput, apellidosInput].forEach(input => {
+            input.addEventListener('input', function() {
+                if (mismoCheckbox.checked) {
+                    const nombreCompleto = `${nombresInput.value.trim()} ${apellidosInput.value.trim()}`.trim();
+                    quienReportaInput.value = nombreCompleto;
+                }
+            });
+        });
+    }
+
     // Validación del formulario y envío por AJAX
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM cargado, inicializando formulario...');
@@ -1475,6 +1589,9 @@ if ($porcentajeRestante > 50) {
         document.querySelectorAll('[data-tooltip]').forEach(el => {
             el.classList.add('tooltip-modern');
         });
+        
+        // Setup del checkbox "mismo pregonero"
+        setupMismoPregonero();
         
         // Validación de teléfono
         const telefonoInput = document.getElementById('telefono');
@@ -1551,7 +1668,8 @@ if ($porcentajeRestante > 50) {
                 { id: 'corregimiento', mensaje: 'error-corregimiento', texto: 'Corregimiento' },
                 { id: 'comuna', mensaje: 'error-comuna', texto: 'Comuna' },
                 { id: 'puesto', mensaje: 'error-puesto', texto: 'Puesto' },
-                { id: 'mesa', mensaje: 'error-mesa', texto: 'Mesa' }
+                { id: 'mesa', mensaje: 'error-mesa', texto: 'Mesa' },
+                { id: 'id_referenciador', mensaje: 'error-id_referenciador', texto: 'Referenciador' }
             ];
             
             campos.forEach(campo => {
@@ -1649,6 +1767,14 @@ if ($porcentajeRestante > 50) {
             // Recopilar datos del formulario
             const formData = new FormData(form);
             
+            // Si el checkbox "mismo_pregonero" está marcado, aseguramos que quien_reporta tenga el valor correcto
+            const mismoCheckbox = document.getElementById('mismo_pregonero');
+            if (mismoCheckbox && mismoCheckbox.checked) {
+                const nombres = document.getElementById('nombres').value.trim();
+                const apellidos = document.getElementById('apellidos').value.trim();
+                formData.set('quien_reporta', `${nombres} ${apellidos}`.trim());
+            }
+            
             try {
                 const response = await fetch('ajax/guardar_pregonero.php', {
                     method: 'POST',
@@ -1683,6 +1809,16 @@ if ($porcentajeRestante > 50) {
                         idInput.style.borderColor = '#e0e0e0';
                         idInput.style.backgroundColor = '#f9f9f9';
                         idInput.classList.remove('success', 'error');
+                    }
+                    
+                    // Resetear checkbox y habilitar campo quien_reporta
+                    if (mismoCheckbox) {
+                        mismoCheckbox.checked = false;
+                        const quienReportaInput = document.getElementById('quien_reporta');
+                        if (quienReportaInput) {
+                            quienReportaInput.disabled = false;
+                            quienReportaInput.classList.remove('bg-light');
+                        }
                     }
                 } else {
                     if (typeof showNotification === 'function') {

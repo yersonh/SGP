@@ -1679,13 +1679,13 @@ function exportarPregoneros(formato) {
     let url = '';
     switch(formato) {
         case 'excel':
-            url = 'exportar_pregoneros_excel.php?' + params.toString();
+            url = 'exportar_pregoneros_descargados_excel.php?' + params.toString();
             break;
         case 'pdf':
-            url = 'exportar_pregoneros_pdf.php?' + params.toString();
+            url = 'exportar_pregoneros_descargados_pdf.php?' + params.toString();
             break;
         default:
-            url = 'exportar_pregoneros_excel.php?' + params.toString();
+            url = 'exportar_pregoneros_descargados_excel.php?' + params.toString();
             break;
     }
     

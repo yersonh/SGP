@@ -472,4 +472,4 @@ if ($filtro_voto_registrado !== '') {
 $nombre_archivo .= '_' . date('Y-m-d_H-i-s') . '.pdf';
 
 $pdf->Output($nombre_archivo, 'D');
-exit;
+exit;   

@@ -71,17 +71,44 @@ class PregoneroModel {
             return $result ? $result['id_pregonero'] : false;
             
         } catch (PDOException $e) {
-            // Aquí puedes registrar el error en un log
             error_log("Error al insertar pregonero: " . $e->getMessage());
             
-            // Relanzar la excepción con un mensaje más amigable
-            if ($e->getCode() == 23505) { // Código de error de unique violation
+            if ($e->getCode() == 23505) {
                 throw new Exception("Ya existe un pregonero con esta identificación");
-            } elseif ($e->getCode() == 23503) { // Foreign key violation
+            } elseif ($e->getCode() == 23503) {
                 throw new Exception("El barrio, puesto de votación o referenciador seleccionado no existe");
             } else {
                 throw new Exception("Error al guardar el pregonero: " . $e->getMessage());
             }
+        }
+    }
+    
+    /**
+     * Registrar el voto de un pregonero
+     * 
+     * @param int $id_pregonero ID del pregonero
+     * @param int $id_usuario ID del usuario que registra el voto
+     * @param string|null $foto_ruta Ruta de la foto del comprobante (opcional)
+     * @return bool True si se registró correctamente
+     */
+    public function registrarVoto($id_pregonero, $id_usuario, $foto_ruta = null) {
+        try {
+            $sql = "UPDATE public.pregonero SET 
+                    voto_registrado = TRUE,
+                    fecha_voto = NOW(),
+                    id_usuario_registro_voto = :id_usuario,
+                    foto_comprobante = :foto_ruta
+                    WHERE id_pregonero = :id_pregonero";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
+            $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            $stmt->bindParam(':foto_ruta', $foto_ruta, PDO::PARAM_STR);
+            
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error al registrar voto de pregonero: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -307,23 +334,25 @@ class PregoneroModel {
             throw new Exception("Error al eliminar el pregonero");
         }
     }
+    
     /**
- * Reactiva un pregonero (cambia activo a TRUE)
- * 
- * @param int $id_pregonero ID del pregonero
- * @return bool True si se reactivó correctamente
- */
-public function reactivar($id_pregonero) {
-    try {
-        $sql = "UPDATE public.pregonero SET activo = TRUE WHERE id_pregonero = :id_pregonero";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
-        return $stmt->execute();
-    } catch (PDOException $e) {
-        error_log("Error al reactivar pregonero: " . $e->getMessage());
-        throw new Exception("Error al reactivar el pregonero");
+     * Reactiva un pregonero (cambia activo a TRUE)
+     * 
+     * @param int $id_pregonero ID del pregonero
+     * @return bool True si se reactivó correctamente
+     */
+    public function reactivar($id_pregonero) {
+        try {
+            $sql = "UPDATE public.pregonero SET activo = TRUE WHERE id_pregonero = :id_pregonero";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error al reactivar pregonero: " . $e->getMessage());
+            throw new Exception("Error al reactivar el pregonero");
+        }
     }
-}
+    
     /**
      * Obtiene estadísticas de pregoneros
      * 
@@ -420,40 +449,28 @@ public function reactivar($id_pregonero) {
             $search = $filters['search'];
             
             $conditions[] = "(
-                -- Campos principales de pregoneros (6)
                 p.nombres ILIKE ? OR 
                 p.apellidos ILIKE ? OR 
                 p.identificacion ILIKE ? OR 
                 p.telefono ILIKE ? OR
                 p.corregimiento ILIKE ? OR
                 p.comuna ILIKE ? OR
-                
-                -- Nuevos campos (2)
                 p.quien_reporta ILIKE ? OR
-                
-                -- Campos de tablas relacionadas (4)
                 b.nombre ILIKE ? OR 
                 pv.nombre ILIKE ? OR
                 s.nombre ILIKE ? OR
                 z.nombre ILIKE ? OR
-                
-                -- Usuario que registró (2)
                 u.nombres ILIKE ? OR 
                 u.apellidos ILIKE ? OR
-                
-                -- Referenciador (2)
                 r.nombres ILIKE ? OR 
                 r.apellidos ILIKE ? OR
-                
-                -- Número de mesa (convertido a texto) (1)
                 CAST(p.mesa AS TEXT) ILIKE ?
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            // Total de campos: 18 (6+2+4+2+2+1+1? Revisemos)
-            // 6 (pregonero) + 2 (nuevos) + 4 (relacionadas) + 2 (registrador) + 2 (referenciador) + 1 (mesa) = 17
-            for ($i = 0; $i < 17; $i++) {
+            // 16 parámetros
+            for ($i = 0; $i < 16; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -615,39 +632,28 @@ public function reactivar($id_pregonero) {
             $search = $filters['search'];
             
             $conditions[] = "(
-                -- Campos principales de pregoneros (6)
                 p.nombres ILIKE ? OR 
                 p.apellidos ILIKE ? OR 
                 p.identificacion ILIKE ? OR 
                 p.telefono ILIKE ? OR
                 p.corregimiento ILIKE ? OR
                 p.comuna ILIKE ? OR
-                
-                -- Nuevos campos (2)
                 p.quien_reporta ILIKE ? OR
-                
-                -- Campos de tablas relacionadas (4)
                 b.nombre ILIKE ? OR 
                 pv.nombre ILIKE ? OR
                 s.nombre ILIKE ? OR
                 z.nombre ILIKE ? OR
-                
-                -- Usuario que registró (2)
                 u.nombres ILIKE ? OR 
                 u.apellidos ILIKE ? OR
-                
-                -- Referenciador (2)
                 r.nombres ILIKE ? OR 
                 r.apellidos ILIKE ? OR
-                
-                -- Número de mesa (convertido a texto) (1)
                 CAST(p.mesa AS TEXT) ILIKE ?
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            // 17 parámetros
-            for ($i = 0; $i < 17; $i++) {
+            // 16 parámetros
+            for ($i = 0; $i < 16; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -790,6 +796,7 @@ public function reactivar($id_pregonero) {
                         p.activo,
                         p.voto_registrado,
                         p.fecha_voto,
+                        p.foto_comprobante,  -- NUEVO CAMPO
                         b.nombre as barrio_nombre,
                         pv.nombre as puesto_nombre,
                         s.nombre as sector_nombre,

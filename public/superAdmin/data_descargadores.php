@@ -176,6 +176,54 @@ if ($porcentajeRestante > 50) {
             background-color: #28a745;
             color: white;
         }
+
+        /* Estilo para el icono de cámara */
+        .btn-ver-foto {
+            background: none;
+            border: none;
+            color: #17a2b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .btn-ver-foto:hover {
+            color: #138496;
+            transform: scale(1.1);
+            background-color: rgba(23, 162, 184, 0.1);
+        }
+
+        /* Modal para mostrar la foto */
+        .modal-foto {
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        .modal-foto .modal-content {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .modal-foto img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-foto .btn-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background-color: white;
+            opacity: 0.8;
+            padding: 10px;
+            border-radius: 50%;
+        }
     </style>
     <link rel="stylesheet" href="../styles/descargador.css">
 </head>
@@ -395,13 +443,13 @@ if ($porcentajeRestante > 50) {
                             <th>Líder</th>
                             <th>Fecha Voto</th>
                             <th>Registrado por</th>
-                            <!-- Columna de Acciones ELIMINADA -->
+                            <th>Acciones</th> <!-- NUEVA COLUMNA -->
                         </tr>
                     </thead>
                     <tbody id="tablaBody">
                         <!-- Los datos se cargarán aquí por AJAX -->
                         <tr id="loadingRow">
-                            <td colspan="19" class="text-center">
+                            <td colspan="20" class="text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -611,6 +659,18 @@ if ($porcentajeRestante > 50) {
         </div>
     </div>
 
+    <!-- Modal para mostrar la foto del comprobante -->
+    <div class="modal fade modal-foto" id="modalVerFoto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body text-center p-0 position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    <img id="fotoComprobante" src="" alt="Foto de comprobante" class="img-fluid rounded">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
@@ -624,7 +684,13 @@ let currentFilters = { voto_registrado: true }; // IMPORTANTE: Solo mostrar los 
 let searchTimeout = null;
 const STORAGE_KEY = 'votantes_filters';
 
+// Inicializar modal de foto
+let modalFoto = null;
+
 $(document).ready(function() {
+    // Inicializar modal de Bootstrap
+    modalFoto = new bootstrap.Modal(document.getElementById('modalVerFoto'));
+
     // ============================================
     // FUNCIONES PARA FILTROS AVANZADOS
     // ============================================
@@ -955,7 +1021,7 @@ $(document).ready(function() {
         // Mostrar loading
         $('#tablaBody').html(`
             <tr id="loadingRow">
-                <td colspan="19" class="text-center">
+                <td colspan="20" class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Cargando...</span>
                     </div>
@@ -1016,12 +1082,31 @@ $(document).ready(function() {
         });
     }
     
+    // Función para mostrar la foto en el modal
+    window.verFoto = function(rutaFoto) {
+        if (!rutaFoto) {
+            showNotification('No hay foto disponible', 'info');
+            return;
+        }
+        
+        // Usar serve-image.php para servir la foto
+        const fotoUrl = '../serve-image-comprobantes.php?file=' + encodeURIComponent(rutaFoto.split('/').pop());
+        
+        // Establecer la imagen en el modal
+        document.getElementById('fotoComprobante').src = fotoUrl;
+        
+        // Mostrar el modal
+        if (modalFoto) {
+            modalFoto.show();
+        }
+    };
+    
     // Función para renderizar la tabla
     function renderTable(data) {
         if (data.length === 0) {
             $('#tablaBody').html(`
                 <tr>
-                    <td colspan="19" class="text-center">
+                    <td colspan="20" class="text-center">
                         <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
                         <p>No se encontraron votantes registrados</p>
                         ${currentFilters.search ? 
@@ -1053,6 +1138,14 @@ $(document).ready(function() {
             // Nombre del registrador
             const registrador = votante.registrador_nombre || 'Sistema';
             
+            // Verificar si tiene foto
+            const tieneFoto = votante.foto_comprobante && votante.foto_comprobante.trim() !== '';
+            const botonFoto = tieneFoto ? 
+                `<button class="btn-ver-foto" onclick="verFoto('${votante.foto_comprobante}')" title="Ver foto de comprobante">
+                    <i class="fas fa-camera"></i>
+                </button>` : 
+                `<span class="text-muted" style="opacity: 0.3;"><i class="fas fa-camera"></i></span>`;
+            
             html += `
             <tr>
                 <td>
@@ -1082,7 +1175,9 @@ $(document).ready(function() {
                 <td>${votante.lider_nombre ? `<span class="badge bg-info text-dark">${escapeHtml(votante.lider_nombre)}</span>` : '<span class="badge bg-secondary">Sin líder</span>'}</td>
                 <td>${fechaVoto}</td>
                 <td>${highlight(registrador)}</td>
-                <!-- Celda de Acciones ELIMINADA -->
+                <td class="text-center">
+                    ${botonFoto}
+                </td>
             </tr>`;
         });
         

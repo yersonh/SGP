@@ -24,13 +24,11 @@
           ]
         }
       }
-    }
+    },
+    "image": "ubuntu:22.04"
   },
   "deploy": {
     "startCommand": "bash .platform/scripts/start-votaciones.sh",
     "restartPolicyType": "ON_FAILURE"
-  },
-  "mounts": {
-    "uploads": "/uploads"
   }
 }

@@ -42,7 +42,7 @@ if ($porcentajeRestante > 50) {
 }
 
 $totalVotantes = $referenciadoModel->contarVotantesRegistrados();
-$totalPendientes=$referenciadoModel->contarVotantesPendientes();
+$totalPendientes = $referenciadoModel->contarVotantesPendientes();
 
 $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $referenciados_activos) * 100, 2, '.', '') : 0;
 ?>
@@ -63,7 +63,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         <div class="spinner"></div>
     </div>
 
-    <!-- Header - EXACTAMENTE IGUAL AL EJEMPLO -->
+    <!-- Header -->
     <header class="main-header">
         <div class="header-container">
             <div class="header-top">
@@ -257,6 +257,18 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                     </h4>
                 </div>
 
+                <!-- NUEVO: Campo de carga de foto (opcional) -->
+                <div class="mb-3">
+                    <label for="comprobanteFoto" class="form-label">
+                        <i class="fas fa-camera"></i> Foto de comprobante
+                    </label>
+                    <input type="file" 
+                           class="form-control" 
+                           id="comprobanteFoto" 
+                           name="comprobanteFoto" 
+                           accept="image/jpeg,image/png,image/gif,image/webp">
+                </div>
+
                 <div class="download-actions">
                     <button class="download-btn" id="btnRegistrarVoto" onclick="registrarVoto()">
                         <i class="fas fa-check-circle"></i>
@@ -271,7 +283,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         </div>
     </div>
 
-    <!-- Footer - EXACTAMENTE IGUAL AL EJEMPLO -->
+    <!-- Footer -->
     <footer class="system-footer">
         <div class="container text-center mb-3">
             <img src="../imagenes/Logo-artguru.png" 
@@ -290,7 +302,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
         </div>
     </footer>
     
-    <!-- Modal de Información del Sistema - EXACTAMENTE IGUAL AL EJEMPLO -->
+    <!-- Modal de Información del Sistema -->
     <div class="modal fade modal-system-info" id="modalSistema" tabindex="-1" aria-labelledby="modalSistemaLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -598,13 +610,19 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             if (result.isConfirmed) {
                 showSpinner();
                 
+                // Crear FormData para enviar archivo si existe
+                const formData = new FormData();
+                formData.append('id_referenciado', currentVotante.id_referenciado);
+                
+                const fotoInput = document.getElementById('comprobanteFoto');
+                if (fotoInput.files.length > 0) {
+                    formData.append('comprobanteFoto', fotoInput.files[0]);
+                }
+                
                 // Enviar petición para registrar voto
                 fetch('../ajax/registrar_voto.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'id_referenciado=' + currentVotante.id_referenciado
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -632,6 +650,9 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                         btn.className = 'download-btn votado';
                         btn.innerHTML = '<i class="fas fa-check-circle"></i> Voto Registrado';
                         btn.disabled = true;
+                        
+                        // Limpiar campo de foto
+                        document.getElementById('comprobanteFoto').value = '';
                         
                         // Actualizar stats en la UI
                         actualizarStats();
@@ -706,7 +727,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             modal.hide();
         }
     }
-</script>
+    </script>
     <script src="../js/modal-sistema.js"></script>
 </body>
 </html>

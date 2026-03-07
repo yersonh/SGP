@@ -231,6 +231,54 @@ if ($porcentajeRestante > 50) {
             font-size: 0.7rem;
             color: #6c757d;
         }
+
+        /* Estilo para el icono de cámara */
+        .btn-ver-foto {
+            background: none;
+            border: none;
+            color: #17a2b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .btn-ver-foto:hover {
+            color: #138496;
+            transform: scale(1.1);
+            background-color: rgba(23, 162, 184, 0.1);
+        }
+
+        /* Modal para mostrar la foto */
+        .modal-foto {
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        .modal-foto .modal-content {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .modal-foto img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-foto .btn-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background-color: white;
+            opacity: 0.8;
+            padding: 10px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -468,8 +516,8 @@ if ($porcentajeRestante > 50) {
                             <th>Sector</th>
                             <th>Puesto</th>
                             <th>Mesa</th>
-                            <th>Quien Reporta</th> <!-- NUEVA COLUMNA -->
-                            <th>Referenciador</th> <!-- NUEVA COLUMNA -->
+                            <th>Quien Reporta</th>
+                            <th>Referenciador</th>
                             <th>Registrado por</th>
                             <th>Fecha Registro</th>
                             <th>Acciones</th>
@@ -478,7 +526,7 @@ if ($porcentajeRestante > 50) {
                     <tbody id="tablaBody">
                         <!-- Los datos se cargarán aquí por AJAX -->
                         <tr id="loadingRow">
-                            <td colspan="17" class="text-center">
+                            <td colspan="18" class="text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -694,6 +742,18 @@ if ($porcentajeRestante > 50) {
         </div>
     </div>
 
+    <!-- Modal para mostrar la foto del comprobante -->
+    <div class="modal fade modal-foto" id="modalVerFoto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body text-center p-0 position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    <img id="fotoComprobante" src="" alt="Foto de comprobante" class="img-fluid rounded">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
@@ -707,7 +767,13 @@ let currentFilters = {};
 let searchTimeout = null;
 const STORAGE_KEY = 'pregoneros_filters';
 
+// Inicializar modal de foto
+let modalFoto = null;
+
 $(document).ready(function() {
+    // Inicializar modal de Bootstrap
+    modalFoto = new bootstrap.Modal(document.getElementById('modalVerFoto'));
+
     // ============================================
     // FUNCIONES PARA FILTROS AVANZADOS
     // ============================================
@@ -742,7 +808,7 @@ $(document).ready(function() {
                         puestoSelect.append('<option value="' + puesto.id_puesto + '">' + puesto.nombre + '</option>');
                     });
                     
-                    // Llenar referenciadores (NUEVO)
+                    // Llenar referenciadores
                     var referenciadorSelect = $('#filterReferenciador');
                     referenciadorSelect.html('<option value="">Todos los referenciadores</option>');
                     $.each(response.referenciadores || [], function(index, ref) {
@@ -986,6 +1052,25 @@ $(document).ready(function() {
     // FUNCIONES PRINCIPALES
     // ============================================
     
+    // Función para mostrar la foto en el modal
+    window.verFoto = function(rutaFoto) {
+        if (!rutaFoto) {
+            showNotification('No hay foto disponible', 'info');
+            return;
+        }
+        
+        // Usar serve-image.php para servir la foto
+        const fotoUrl = '/serve-image.php?file=' + encodeURIComponent(rutaFoto.split('/').pop());
+        
+        // Establecer la imagen en el modal
+        document.getElementById('fotoComprobante').src = fotoUrl;
+        
+        // Mostrar el modal
+        if (modalFoto) {
+            modalFoto.show();
+        }
+    };
+    
     // Función para cargar datos por AJAX
     function loadPregoneros(page = 1, useSavedPage = false) {
         if (useSavedPage) {
@@ -1000,7 +1085,7 @@ $(document).ready(function() {
         // Mostrar loading
         $('#tablaBody').html(`
             <tr id="loadingRow">
-                <td colspan="17" class="text-center">
+                <td colspan="18" class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Cargando...</span>
                     </div>
@@ -1073,7 +1158,7 @@ $(document).ready(function() {
                 showNotification('Error de conexión al servidor', 'error');
                 $('#tablaBody').html(`
                     <tr>
-                        <td colspan="17" class="text-center text-danger">
+                        <td colspan="18" class="text-center text-danger">
                             <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
                             <p>Error al cargar los datos. Por favor, intente de nuevo.</p>
                         </td>
@@ -1088,7 +1173,7 @@ $(document).ready(function() {
         if (data.length === 0) {
             $('#tablaBody').html(`
                 <tr>
-                    <td colspan="17" class="text-center">
+                    <td colspan="18" class="text-center">
                         <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
                         <p>No se encontraron pregoneros</p>
                         ${currentFilters.search || currentFilters.activo !== undefined || Object.keys(currentFilters).length > 2 ? 
@@ -1144,54 +1229,40 @@ $(document).ready(function() {
                 </div>`;
             }
             
-            html += `
-            <tr ${rowStyle}>
-                <td>
-                    ${estaActivo ? 
-                        '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>' : 
-                        '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>'}
-                </td>
-                <td>${highlight(pregonero.nombres)}</td>
-                <td>${highlight(pregonero.apellidos)}</td>
-                <td>${highlight(pregonero.identificacion)}</td>
-                <td>${highlight(pregonero.telefono)}</td>
-                <td>${highlight(pregonero.barrio_nombre || 'N/A')}</td>
-                <td>${highlight(pregonero.corregimiento || 'N/A')}</td>
-                <td>${highlight(pregonero.comuna || 'N/A')}</td>
-                <td>${highlight(pregonero.zona_nombre || 'N/A')}</td>
-                <td>${highlight(pregonero.sector_nombre || 'N/A')}</td>
-                <td>${highlight(pregonero.puesto_nombre || 'N/A')}</td>
-                <td>${highlight(pregonero.mesa || '')}</td>
-                <td>${quienReportaHtml}</td>
-                <td>${referenciadorHtml}</td>
-                <td>${highlight(pregonero.usuario_registro_nombre || 'N/A')}</td>
-                <td>${formatDate(pregonero.fecha_registro)}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-action btn-view" 
-                                title="Ver detalle del pregonero"
-                                onclick="verDetalleConFiltros(${pregonero.id_pregonero})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-action btn-edit" 
-                                title="Editar pregonero"
-                                onclick="editarPregoneroConFiltros(${pregonero.id_pregonero})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        ${estaActivo ? 
-                            `<button class="btn-action btn-deactivate" 
-                                    title="Desactivar pregonero"
-                                    onclick="desactivarPregonero(${pregonero.id_pregonero}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
-                                <i class="fas fa-user-slash"></i>
-                            </button>` :
-                            `<button class="btn-action btn-activate" 
-                                    title="Activar pregonero"
-                                    onclick="reactivarPregonero(${pregonero.id_pregonero}, '${nombreCompleto.replace(/'/g, "\\'")}', this)">
-                                <i class="fas fa-user-check"></i>
-                            </button>`}
-                    </div>
-                </td>
-            </tr>`;
+            // Verificar si tiene foto
+const tieneFoto = pregonero.foto_comprobante && pregonero.foto_comprobante.trim() !== '';
+const botonFoto = tieneFoto ? 
+    `<button class="btn-ver-foto" onclick="verFoto('${pregonero.foto_comprobante}')" title="Ver foto de comprobante">
+        <i class="fas fa-camera"></i>
+    </button>` : 
+    `<span class="text-muted" style="opacity: 0.3;"><i class="fas fa-camera"></i></span>`;
+
+html += `
+<tr ${rowStyle}>
+    <td>
+        ${estaActivo ? 
+            '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>' : 
+            '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>'}
+    </td>
+    <td>${highlight(pregonero.nombres)}</td>
+    <td>${highlight(pregonero.apellidos)}</td>
+    <td>${highlight(pregonero.identificacion)}</td>
+    <td>${highlight(pregonero.telefono)}</td>
+    <td>${highlight(pregonero.barrio_nombre || 'N/A')}</td>
+    <td>${highlight(pregonero.corregimiento || 'N/A')}</td>
+    <td>${highlight(pregonero.comuna || 'N/A')}</td>
+    <td>${highlight(pregonero.zona_nombre || 'N/A')}</td>
+    <td>${highlight(pregonero.sector_nombre || 'N/A')}</td>
+    <td>${highlight(pregonero.puesto_nombre || 'N/A')}</td>
+    <td>${highlight(pregonero.mesa || '')}</td>
+    <td>${quienReportaHtml}</td>
+    <td>${referenciadorHtml}</td>
+    <td>${highlight(pregonero.usuario_registro_nombre || 'N/A')}</td>
+    <td>${formatDate(pregonero.fecha_registro)}</td>
+    <td class="text-center">
+        ${botonFoto}
+    </td>
+</tr>`;
         });
         
         $('#tablaBody').html(html);
@@ -1486,136 +1557,6 @@ $(document).ready(function() {
 // ============================================
 // FUNCIONES GLOBALES - DECLARADAS FUERA DE document.ready
 // ============================================
-
-// Función para ver detalle manteniendo filtros
-function verDetalleConFiltros(id) {
-    // Guardar filtros antes de navegar
-    if (typeof saveFilters === 'function') {
-        saveFilters();
-    }
-    window.location.href = 'ver_pregonero.php?id=' + id;
-}
-
-// Función para editar manteniendo filtros
-function editarPregoneroConFiltros(id) {
-    // Guardar filtros antes de navegar
-    if (typeof saveFilters === 'function') {
-        saveFilters();
-    }
-    window.location.href = 'editar_pregonero.php?id=' + id;
-}
-
-// Función para desactivar un pregonero
-async function desactivarPregonero(idPregonero, nombrePregonero, button) {
-    if (!confirm(`¿Está seguro de DESACTIVAR al pregonero "${nombrePregonero}"?\n\nEl pregonero será marcado como inactivo, pero se mantendrá en el sistema.`)) {
-        return;
-    }
-    
-    const originalIcon = button.innerHTML;
-    const originalClass = button.className;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    button.disabled = true;
-    
-    try {
-        const response = await fetch('../ajax/pregoneros_acciones.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `accion=desactivar&id_pregonero=${idPregonero}`
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            button.className = 'btn-action btn-activate';
-            button.title = 'Activar pregonero';
-            button.innerHTML = '<i class="fas fa-user-check"></i>';
-            button.disabled = false;
-            
-            button.setAttribute('onclick', `reactivarPregonero(${idPregonero}, '${nombrePregonero.replace(/'/g, "\\'")}', this)`);
-            
-            const row = button.closest('tr');
-            row.style.backgroundColor = '#f8f9fa';
-            row.style.opacity = '0.8';
-            row.cells[0].innerHTML = '<span style="color: #e74c3c; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactivo</span>';
-            
-            showNotification('Pregonero desactivado correctamente', 'success');
-            
-            setTimeout(() => {
-                if (typeof loadPregoneros === 'function') {
-                    loadPregoneros(currentPage || 1);
-                }
-            }, 100);
-        } else {
-            showNotification('Error: ' + (data.message || 'No se pudo desactivar el pregonero'), 'error');
-            button.innerHTML = originalIcon;
-            button.className = originalClass;
-            button.disabled = false;
-        }
-    } catch (error) {
-        showNotification('Error de conexión: ' + error.message, 'error');
-        button.innerHTML = originalIcon;
-        button.className = originalClass;
-        button.disabled = false;
-    }
-}
-
-// Función para reactivar un pregonero
-async function reactivarPregonero(idPregonero, nombrePregonero, button) {
-    if (!confirm(`¿Desea REACTIVAR al pregonero "${nombrePregonero}"?`)) {
-        return;
-    }
-    
-    const originalIcon = button.innerHTML;
-    const originalClass = button.className;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    button.disabled = true;
-    
-    try {
-        const response = await fetch('../ajax/pregoneros_acciones.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `accion=reactivar&id_pregonero=${idPregonero}`
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            button.className = 'btn-action btn-deactivate';
-            button.title = 'Desactivar pregonero';
-            button.innerHTML = '<i class="fas fa-user-slash"></i>';
-            button.disabled = false;
-            
-            button.setAttribute('onclick', `desactivarPregonero(${idPregonero}, '${nombrePregonero.replace(/'/g, "\\'")}', this)`);
-            
-            const row = button.closest('tr');
-            row.style.backgroundColor = '';
-            row.style.opacity = '';
-            row.cells[0].innerHTML = '<span style="color: #27ae60; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
-            
-            showNotification('Pregonero reactivado correctamente', 'success');
-            
-            setTimeout(() => {
-                if (typeof loadPregoneros === 'function') {
-                    loadPregoneros(currentPage || 1);
-                }
-            }, 100);
-        } else {
-            showNotification('Error: ' + data.message, 'error');
-            button.innerHTML = originalIcon;
-            button.className = originalClass;
-            button.disabled = false;
-        }
-    } catch (error) {
-        showNotification('Error de conexión: ' + error.message, 'error');
-        button.innerHTML = originalIcon;
-        button.className = originalClass;
-        button.disabled = false;
-    }
-}
 
 // Función de exportación
 function exportarPregoneros(formato) {

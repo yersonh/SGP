@@ -63,8 +63,9 @@ if ($porcentajeRestante > 50) {
     --color-primario: #3498db;
     --color-secundario: #2c3e50;
     --color-terciario: #2ecc71;
-    --color-cuaternario: #9b59b6; /* Nuevo color para auditoría */
+    --color-cuaternario: #9b59b6; /* Color para auditoría */
     --color-quinario: #e67e22; /* Color para descargar pregonero */
+    --color-monitoreo: #e74c3c; /* NUEVO: Color para monitoreo día D */
     --color-badge: #f8f9fa;
     --color-sombra: rgba(0, 0, 0, 0.08);
     --color-sombra-fuerte: rgba(0, 0, 0, 0.15);
@@ -83,8 +84,9 @@ if ($porcentajeRestante > 50) {
         --color-primario: #60a5fa;
         --color-secundario: #cbd5e0;
         --color-terciario: #48bb78;
-        --color-cuaternario: #9f7aea; /* Ajuste para modo oscuro */
-        --color-quinario: #f39c12; /* Color para descargar pregonero en modo oscuro */
+        --color-cuaternario: #9f7aea;
+        --color-quinario: #f39c12;
+        --color-monitoreo: #f87171; /* NUEVO: Color para monitoreo en modo oscuro */
         --color-badge: #2d3748;
         --color-sombra: rgba(0, 0, 0, 0.2);
         --color-sombra-fuerte: rgba(0, 0, 0, 0.3);
@@ -246,12 +248,12 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Grid de 2 columnas para los botones */
+/* Grid de 3 columnas para los botones (ACTUALIZADO) */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 30px;
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     width: 100%;
 }
@@ -296,6 +298,11 @@ body {
     background: linear-gradient(90deg, var(--color-quinario), #d35400);
 }
 
+/* NUEVO: Color para Monitoreo Día D */
+.option-monitoreo::before {
+    background: linear-gradient(90deg, var(--color-monitoreo), #c0392b);
+}
+
 .dashboard-option:hover {
     transform: translateY(-8px);
     box-shadow: 0 12px 25px var(--color-sombra-fuerte);
@@ -309,6 +316,10 @@ body {
 
 .option-descargar:hover {
     border-color: var(--color-quinario);
+}
+
+.option-monitoreo:hover {
+    border-color: var(--color-monitoreo);
 }
 
 .option-icon-wrapper {
@@ -330,6 +341,11 @@ body {
     background: linear-gradient(135deg, var(--color-borde-secundario), #ffe0b2);
 }
 
+/* NUEVO: Icon wrapper para Monitoreo */
+.option-monitoreo .option-icon-wrapper {
+    background: linear-gradient(135deg, var(--color-borde-secundario), #f8d7da);
+}
+
 .dashboard-option:hover .option-icon-wrapper {
     transform: scale(1.1);
 }
@@ -340,6 +356,11 @@ body {
 
 .option-descargar:hover .option-icon-wrapper {
     background: linear-gradient(135deg, var(--color-quinario), #e67e22);
+}
+
+/* NUEVO: Hover para Monitoreo */
+.option-monitoreo:hover .option-icon-wrapper {
+    background: linear-gradient(135deg, var(--color-monitoreo), #c0392b);
 }
 
 .option-icon {
@@ -353,6 +374,11 @@ body {
 
 .option-descargar .option-icon {
     color: var(--color-quinario);
+}
+
+/* NUEVO: Icon color para Monitoreo */
+.option-monitoreo .option-icon {
+    color: var(--color-monitoreo);
 }
 
 .dashboard-option:hover .option-icon {
@@ -685,8 +711,8 @@ body {
 /* Tablets y laptops pequeñas (992px o menos) */
 @media (max-width: 992px) {
     .dashboard-grid {
-        grid-template-columns: 1fr;
-        max-width: 600px;
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 800px;
         gap: 25px;
     }
     
@@ -711,6 +737,11 @@ body {
 
 /* Tablets (767px o menos) */
 @media (max-width: 767px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        max-width: 600px;
+    }
+    
     .header-top {
         flex-direction: column;
         align-items: flex-start;
@@ -969,8 +1000,8 @@ body {
 /* Orientación horizontal en móviles */
 @media (max-height: 500px) and (orientation: landscape) {
     .dashboard-grid {
-        grid-template-columns: repeat(2, 1fr);
-        max-width: 800px;
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 900px;
         gap: 20px;
     }
     
@@ -1192,10 +1223,10 @@ body {
             </p>
         </div>
         
-        <!-- Grid de 2 columnas -->
+        <!-- Grid de 3 columnas (ACTUALIZADO) -->
         <div class="dashboard-grid">
             
-            <!-- REVISIÓN PARA BONO (existente) -->
+            <!-- REVISIÓN PARA BONO -->
             <a href="superadmin_aporte_lideres.php" class="dashboard-option option-bono">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
@@ -1212,7 +1243,7 @@ body {
                 </div>
             </a>
             
-            <!-- NUEVO: DESCARGAR PREGONERO -->
+            <!-- DESCARGAR PREGONERO -->
             <a href="descargue_pregoneros.php" class="dashboard-option option-descargar">
                 <div class="access-indicator">
                     <i class="fas fa-arrow-right"></i>
@@ -1225,6 +1256,23 @@ body {
                 <div class="option-title">DESCARGAR PREGONERO</div>
                 <div class="option-description">
                     Descargar y registrar el voto de pregonero.
+                </div>
+            </a>
+            
+            <!-- NUEVO: MONITOREO DÍA D -->
+            <a href="monitoreo_dia_d.php" class="dashboard-option option-monitoreo">
+                <div class="access-indicator">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="option-icon-wrapper">
+                    <div class="option-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                </div>
+                <div class="option-title">MONITOREO DÍA D</div>
+                <div class="option-description">
+                    Seguimiento en tiempo real del avance de votación 
+                    el día de las elecciones
                 </div>
             </a>
             

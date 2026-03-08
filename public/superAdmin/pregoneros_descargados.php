@@ -436,16 +436,6 @@ if ($porcentajeRestante > 50) {
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center h-100">
-                            <small class="text-muted me-2 d-none d-md-block">Estado:</small>
-                            <div class="btn-group btn-group-sm w-100">
-                                <button class="btn btn-primary btn-sm" onclick="filterByStatus('')">Todos</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="filterByStatus('1')">Activos</button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="filterByStatus('0')">Inactivos</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
                 <!-- Filtros avanzados (en collapse) -->

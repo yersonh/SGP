@@ -897,7 +897,7 @@ class PregoneroModel {
      */
     public function contarPregonerosVotaron() {
         try {
-            $sql = "SELECT COUNT(*) as total FROM public.pregonero WHERE voto_registrado = TRUE";
+            $sql = "SELECT COUNT(*) as total FROM public.pregonero WHERE voto_registrado = TRUE AND activo = TRUE";
             $stmt = $this->pdo->query($sql);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int)($result['total'] ?? 0);
@@ -982,6 +982,56 @@ public function countVotaronByReferenciador($id_referenciador) {
     } catch (PDOException $e) {
         error_log("Error en countVotaronByReferenciador: " . $e->getMessage());
         return 0;
+    }
+}
+/**
+ * Obtiene registros por hora (últimas 24 horas)
+ */
+public function getRegistrosPorHora() {
+    try {
+        $sql = "
+            SELECT 
+                EXTRACT(HOUR FROM fecha_registro) as hora,
+                COUNT(*) as cantidad
+            FROM pregonero
+            WHERE fecha_registro >= NOW() - INTERVAL '24 HOURS'
+            GROUP BY EXTRACT(HOUR FROM fecha_registro)
+            ORDER BY hora
+        ";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getRegistrosPorHora: " . $e->getMessage());
+        return [];
+    }
+}
+/**
+ * Obtiene avance por día (últimos N días)
+ */
+public function getAvancePorDia($dias = 7) {
+    try {
+        $sql = "
+            WITH fechas AS (
+                SELECT generate_series(
+                    CURRENT_DATE - INTERVAL '" . ($dias - 1) . " days',
+                    CURRENT_DATE,
+                    '1 day'::interval
+                )::date as fecha
+            )
+            SELECT 
+                f.fecha,
+                COUNT(p.id_pregonero) as cantidad_dia,
+                SUM(COUNT(p.id_pregonero)) OVER (ORDER BY f.fecha) as acumulado
+            FROM fechas f
+            LEFT JOIN pregonero p ON DATE(p.fecha_registro) = f.fecha
+            GROUP BY f.fecha
+            ORDER BY f.fecha
+        ";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getAvancePorDia: " . $e->getMessage());
+        return [];
     }
 }
 }

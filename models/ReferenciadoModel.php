@@ -1996,7 +1996,7 @@ class ReferenciadoModel {
         try {
             $sql = "SELECT COUNT(*) as total 
                     FROM referenciados 
-                    WHERE voto_registrado = TRUE";
+                    WHERE voto_registrado = TRUE AND activo = TRUE";
             
             $stmt = $this->pdo->query($sql);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -2041,40 +2041,41 @@ class ReferenciadoModel {
     public function getVotantesPaginados($page = 1, $perPage = 50, $filters = []) {
         $offset = ($page - 1) * $perPage;
         
-        $sql = "SELECT r.*, 
-                d.nombre as departamento_nombre,
-                m.nombre as municipio_nombre,
-                b.nombre as barrio_nombre,
-                gp.nombre as grupo_poblacional_nombre,
-                oa.nombre as oferta_apoyo_nombre,
-                z.nombre as zona_nombre,
-                s.nombre as sector_nombre,
-                pv.nombre as puesto_votacion_nombre,
-                gr.nombre as grupo_nombre,
-                CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
-                l.id_lider,
-                l.nombres as lider_nombres,
-                l.apellidos as lider_apellidos,
-                CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre,
-                CONCAT(ur.nombres, ' ', ur.apellidos) as registrador_nombre,
-                r.fecha_voto,
-                r.voto_registrado,
-                r.foto_comprobante,
-                r.certificado_electoral  -- NUEVO CAMPO
-                FROM referenciados r
-                LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
-                LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
-                LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
-                LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
-                LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
-                LEFT JOIN zona z ON r.id_zona = z.id_zona
-                LEFT JOIN sector s ON r.id_sector = s.id_sector
-                LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
-                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
-                LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
-                LEFT JOIN lideres l ON r.id_lider = l.id_lider
-                LEFT JOIN usuario ur ON r.id_usuario_registro_voto = ur.id_usuario
-                WHERE r.voto_registrado = TRUE";
+         $sql = "SELECT r.*, 
+            d.nombre as departamento_nombre,
+            m.nombre as municipio_nombre,
+            b.nombre as barrio_nombre,
+            gp.nombre as grupo_poblacional_nombre,
+            oa.nombre as oferta_apoyo_nombre,
+            z.nombre as zona_nombre,
+            s.nombre as sector_nombre,
+            pv.nombre as puesto_votacion_nombre,
+            gr.nombre as grupo_nombre,
+            CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre,
+            l.id_lider,
+            l.nombres as lider_nombres,
+            l.apellidos as lider_apellidos,
+            CONCAT(l.nombres, ' ', l.apellidos) as lider_nombre,
+            CONCAT(ur.nombres, ' ', ur.apellidos) as registrador_nombre,
+            r.fecha_voto,
+            r.voto_registrado,
+            r.foto_comprobante,
+            r.certificado_electoral
+            FROM referenciados r
+            LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+            LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+            LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+            LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+            LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+            LEFT JOIN zona z ON r.id_zona = z.id_zona
+            LEFT JOIN sector s ON r.id_sector = s.id_sector
+            LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+            LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+            LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+            LEFT JOIN lideres l ON r.id_lider = l.id_lider
+            LEFT JOIN usuario ur ON r.id_usuario_registro_voto = ur.id_usuario
+            WHERE r.voto_registrado = TRUE
+            AND r.activo = true";
         
         $conditions = [];
         $params = [];
@@ -2226,7 +2227,7 @@ class ReferenciadoModel {
     public function getTotalVotantes($filters = []) {
         $sql = "SELECT COUNT(*) as total FROM referenciados r";
         
-        $conditions = ["r.voto_registrado = TRUE"];
+        $conditions = ["r.voto_registrado = TRUE", "r.activo = true"];
         $params = [];
         $paramTypes = [];
         
@@ -2462,6 +2463,56 @@ public function getByLider($id_lider) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Error en getByLider: " . $e->getMessage());
+        return [];
+    }
+}
+/**
+ * Obtiene registros por hora (últimas 24 horas)
+ */
+public function getRegistrosPorHora() {
+    try {
+        $sql = "
+            SELECT 
+                EXTRACT(HOUR FROM fecha_registro) as hora,
+                COUNT(*) as cantidad
+            FROM referenciados
+            WHERE fecha_registro >= NOW() - INTERVAL '24 HOURS'
+            GROUP BY EXTRACT(HOUR FROM fecha_registro)
+            ORDER BY hora
+        ";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getRegistrosPorHora: " . $e->getMessage());
+        return [];
+    }
+}
+/**
+ * Obtiene avance por día (últimos N días)
+ */
+public function getAvancePorDia($dias = 7) {
+    try {
+        $sql = "
+            WITH fechas AS (
+                SELECT generate_series(
+                    CURRENT_DATE - INTERVAL '" . ($dias - 1) . " days',
+                    CURRENT_DATE,
+                    '1 day'::interval
+                )::date as fecha
+            )
+            SELECT 
+                f.fecha,
+                COUNT(r.id_referenciado) as cantidad_dia,
+                SUM(COUNT(r.id_referenciado)) OVER (ORDER BY f.fecha) as acumulado
+            FROM fechas f
+            LEFT JOIN referenciados r ON DATE(r.fecha_registro) = f.fecha
+            GROUP BY f.fecha
+            ORDER BY f.fecha
+        ";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getAvancePorDia: " . $e->getMessage());
         return [];
     }
 }

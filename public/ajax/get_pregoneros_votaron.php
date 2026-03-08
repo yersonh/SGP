@@ -18,18 +18,21 @@ $pregoneroModel = new PregoneroModel($pdo);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 50;
 
-// Construir filtros - POR DEFECTO MOSTRAR SOLO LOS QUE YA VOTARON
+// Construir filtros - POR DEFECTO MOSTRAR SOLO LOS QUE YA VOTARON Y ESTÁN ACTIVOS
 $filters = [];
 
-// AÑADIDO: Filtro por defecto para mostrar solo los que ya votaron
+// FILTROS POR DEFECTO: solo los que ya votaron y están activos
 $filters['voto_registrado'] = true;
+$filters['activo'] = true;  // <-- AGREGADO: filtrar solo activos por defecto
 
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $filters['search'] = $_GET['search'];
 }
 
+// Permitir sobrescribir el filtro de activo si se envía explícitamente
 if (isset($_GET['activo']) && $_GET['activo'] !== '') {
-    $filters['activo'] = $_GET['activo'];
+    // Convertir string a booleano para que coincida con el tipo esperado en el modelo
+    $filters['activo'] = $_GET['activo'] === '1' || $_GET['activo'] === 'true' ? true : false;
 }
 
 // Permitir sobrescribir el filtro de voto_registrado si se envía explícitamente

@@ -250,6 +250,25 @@ if ($porcentajeRestante > 50) {
             background-color: rgba(23, 162, 184, 0.1);
         }
 
+        /* Estilo para el icono de certificado (NUEVO) */
+        .btn-ver-certificado {
+            background: none;
+            border: none;
+            color: #28a745;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            padding: 5px;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+
+        .btn-ver-certificado:hover {
+            color: #1e7e34;
+            transform: scale(1.1);
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+
         /* Modal para mostrar la foto */
         .modal-foto {
             max-width: 90vw;
@@ -278,6 +297,27 @@ if ($porcentajeRestante > 50) {
             opacity: 0.8;
             padding: 10px;
             border-radius: 50%;
+        }
+
+        /* Estilo para el certificado en el modal (NUEVO) */
+        .certificado-modal-content {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid #28a745;
+        }
+
+        .certificado-numero {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #28a745;
+            word-break: break-all;
+            font-family: monospace;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -385,7 +425,7 @@ if ($porcentajeRestante > 50) {
                             <input type="text" 
                                    class="form-control form-control-sm" 
                                    id="searchInput" 
-                                   placeholder="Buscar por nombres, apellidos, cédula, teléfono, barrio, comuna, quien reporta, referenciador, etc."
+                                   placeholder="Buscar por nombres, apellidos, cédula, teléfono, barrio, comuna, quien reporta, referenciador, certificado, etc."
                                    onkeyup="handleSearchInput(event)">
                             <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearSearch()" title="Limpiar búsqueda">
                                 <i class="fas fa-times"></i>
@@ -474,6 +514,12 @@ if ($porcentajeRestante > 50) {
                                     </select>
                                 </div>
                                 
+                                <!-- Certificado Electoral (NUEVO) -->
+                                <div class="col-md-4">
+                                    <label for="filterCertificado" class="form-label">Certificado Electoral</label>
+                                    <input type="text" class="form-control" id="filterCertificado" name="certificado" placeholder="Número de certificado">
+                                </div>
+                                
                                 <!-- Rango de fechas -->
                                 <div class="col-md-6">
                                     <label for="filterFechaDesde" class="form-label">Fecha desde</label>
@@ -520,13 +566,14 @@ if ($porcentajeRestante > 50) {
                             <th>Referenciador</th>
                             <th>Registrado por</th>
                             <th>Fecha Registro</th>
+                            <th>Certificado</th> <!-- NUEVA COLUMNA -->
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tablaBody">
                         <!-- Los datos se cargarán aquí por AJAX -->
                         <tr id="loadingRow">
-                            <td colspan="18" class="text-center">
+                            <td colspan="19" class="text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -754,6 +801,32 @@ if ($porcentajeRestante > 50) {
         </div>
     </div>
 
+    <!-- Modal para mostrar el certificado electoral (NUEVO) -->
+    <div class="modal fade" id="modalVerCertificado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-certificate me-2"></i> Certificado Electoral</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="certificado-modal-content">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-certificate" style="font-size: 48px; color: #28a745;"></i>
+                        </div>
+                        <p class="text-center mb-2"><strong>Número de certificado electoral:</strong></p>
+                        <div id="certificadoNumeroModal" class="certificado-numero text-center">
+                            -
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
@@ -767,12 +840,14 @@ let currentFilters = {};
 let searchTimeout = null;
 const STORAGE_KEY = 'pregoneros_filters';
 
-// Inicializar modal de foto
+// Inicializar modales
 let modalFoto = null;
+let modalCertificado = null;
 
 $(document).ready(function() {
-    // Inicializar modal de Bootstrap
+    // Inicializar modales de Bootstrap
     modalFoto = new bootstrap.Modal(document.getElementById('modalVerFoto'));
+    modalCertificado = new bootstrap.Modal(document.getElementById('modalVerCertificado'));
 
     // ============================================
     // FUNCIONES PARA FILTROS AVANZADOS
@@ -863,6 +938,9 @@ $(document).ready(function() {
         if (currentFilters.usuario_registro) {
             $('#filterUsuarioRegistro').val(currentFilters.usuario_registro);
         }
+        if (currentFilters.certificado) {  // NUEVO
+            $('#filterCertificado').val(currentFilters.certificado);
+        }
         if (currentFilters.fecha_desde) {
             $('#filterFechaDesde').val(currentFilters.fecha_desde);
         }
@@ -885,6 +963,7 @@ $(document).ready(function() {
         currentFilters.quien_reporta = $('#filterQuienReporta').val() || '';
         currentFilters.id_referenciador = $('#filterReferenciador').val() || '';
         currentFilters.usuario_registro = $('#filterUsuarioRegistro').val() || '';
+        currentFilters.certificado = $('#filterCertificado').val() || '';  // NUEVO
         currentFilters.fecha_desde = $('#filterFechaDesde').val() || '';
         currentFilters.fecha_hasta = $('#filterFechaHasta').val() || '';
         
@@ -913,6 +992,7 @@ $(document).ready(function() {
         $('#filterQuienReporta').val('');
         $('#filterReferenciador').val('');
         $('#filterUsuarioRegistro').val('');
+        $('#filterCertificado').val('');  // NUEVO
         $('#filterFechaDesde').val('');
         $('#filterFechaHasta').val('');
         
@@ -925,6 +1005,7 @@ $(document).ready(function() {
         delete currentFilters.quien_reporta;
         delete currentFilters.id_referenciador;
         delete currentFilters.usuario_registro;
+        delete currentFilters.certificado;  // NUEVO
         delete currentFilters.fecha_desde;
         delete currentFilters.fecha_hasta;
         
@@ -955,6 +1036,7 @@ $(document).ready(function() {
                 quien_reporta: currentFilters.quien_reporta || '',
                 id_referenciador: currentFilters.id_referenciador || '',
                 usuario_registro: currentFilters.usuario_registro || '',
+                certificado: currentFilters.certificado || '',  // NUEVO
                 fecha_desde: currentFilters.fecha_desde || '',
                 fecha_hasta: currentFilters.fecha_hasta || '',
                 currentPage: currentPage || 1
@@ -1007,6 +1089,9 @@ $(document).ready(function() {
                 if (parsed.usuario_registro) {
                     currentFilters.usuario_registro = parsed.usuario_registro;
                 }
+                if (parsed.certificado) {  // NUEVO
+                    currentFilters.certificado = parsed.certificado;
+                }
                 if (parsed.fecha_desde) {
                     currentFilters.fecha_desde = parsed.fecha_desde;
                 }
@@ -1042,6 +1127,7 @@ $(document).ready(function() {
         $('#filterQuienReporta').val('');
         $('#filterReferenciador').val('');
         $('#filterUsuarioRegistro').val('');
+        $('#filterCertificado').val('');  // NUEVO
         $('#filterFechaDesde').val('');
         $('#filterFechaHasta').val('');
         
@@ -1071,6 +1157,22 @@ $(document).ready(function() {
         }
     };
     
+    // Función para mostrar el certificado electoral en el modal (NUEVO)
+    window.verCertificado = function(certificado) {
+        if (!certificado) {
+            showNotification('No hay certificado electoral disponible', 'info');
+            return;
+        }
+        
+        // Establecer el número en el modal
+        document.getElementById('certificadoNumeroModal').textContent = certificado;
+        
+        // Mostrar el modal
+        if (modalCertificado) {
+            modalCertificado.show();
+        }
+    };
+    
     // Función para cargar datos por AJAX
     function loadPregoneros(page = 1, useSavedPage = false) {
         if (useSavedPage) {
@@ -1085,7 +1187,7 @@ $(document).ready(function() {
         // Mostrar loading
         $('#tablaBody').html(`
             <tr id="loadingRow">
-                <td colspan="18" class="text-center">
+                <td colspan="19" class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Cargando...</span>
                     </div>
@@ -1129,6 +1231,9 @@ $(document).ready(function() {
         if (currentFilters.usuario_registro) {
             url += `&usuario_registro=${currentFilters.usuario_registro}`;
         }
+        if (currentFilters.certificado) {  // NUEVO
+            url += `&certificado=${encodeURIComponent(currentFilters.certificado)}`;
+        }
         if (currentFilters.fecha_desde) {
             url += `&fecha_desde=${currentFilters.fecha_desde}`;
         }
@@ -1158,7 +1263,7 @@ $(document).ready(function() {
                 showNotification('Error de conexión al servidor', 'error');
                 $('#tablaBody').html(`
                     <tr>
-                        <td colspan="18" class="text-center text-danger">
+                        <td colspan="19" class="text-center text-danger">
                             <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
                             <p>Error al cargar los datos. Por favor, intente de nuevo.</p>
                         </td>
@@ -1173,7 +1278,7 @@ $(document).ready(function() {
         if (data.length === 0) {
             $('#tablaBody').html(`
                 <tr>
-                    <td colspan="18" class="text-center">
+                    <td colspan="19" class="text-center">
                         <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
                         <p>No se encontraron pregoneros</p>
                         ${currentFilters.search || currentFilters.activo !== undefined || Object.keys(currentFilters).length > 2 ? 
@@ -1230,14 +1335,22 @@ $(document).ready(function() {
             }
             
             // Verificar si tiene foto
-const tieneFoto = pregonero.foto_comprobante && pregonero.foto_comprobante.trim() !== '';
-const botonFoto = tieneFoto ? 
-    `<button class="btn-ver-foto" onclick="verFoto('${pregonero.foto_comprobante}')" title="Ver foto de comprobante">
-        <i class="fas fa-camera"></i>
-    </button>` : 
-    `<span class="text-muted" style="opacity: 0.3;"><i class="fas fa-camera"></i></span>`;
+            const tieneFoto = pregonero.foto_comprobante && pregonero.foto_comprobante.trim() !== '';
+            const botonFoto = tieneFoto ? 
+                `<button class="btn-ver-foto" onclick="verFoto('${pregonero.foto_comprobante}')" title="Ver foto de comprobante">
+                    <i class="fas fa-camera"></i>
+                </button>` : 
+                `<span class="text-muted" style="opacity: 0.3;" title="Sin foto"><i class="fas fa-camera"></i></span>`;
+            
+            // Verificar si tiene certificado electoral (NUEVO)
+            const tieneCertificado = pregonero.certificado_electoral && pregonero.certificado_electoral.trim() !== '';
+            const botonCertificado = tieneCertificado ? 
+                `<button class="btn-ver-certificado" onclick="verCertificado('${escapeHtml(pregonero.certificado_electoral)}')" title="Ver certificado electoral">
+                    <i class="fas fa-certificate"></i>
+                </button>` : 
+                `<span class="text-muted" style="opacity: 0.3;" title="Sin certificado"><i class="fas fa-certificate"></i></span>`;
 
-html += `
+            html += `
 <tr ${rowStyle}>
     <td>
         ${estaActivo ? 
@@ -1259,6 +1372,9 @@ html += `
     <td>${referenciadorHtml}</td>
     <td>${highlight(pregonero.usuario_registro_nombre || 'N/A')}</td>
     <td>${formatDate(pregonero.fecha_registro)}</td>
+    <td class="text-center">
+        ${botonCertificado}
+    </td>
     <td class="text-center">
         ${botonFoto}
     </td>
@@ -1397,6 +1513,9 @@ html += `
         if (currentFilters.usuario_registro) {
             const usuarioName = $('#filterUsuarioRegistro option:selected').text();
             filterInfo += ` | Registrado por: ${usuarioName}`;
+        }
+        if (currentFilters.certificado) {  // NUEVO
+            filterInfo += ` | Certificado: ${currentFilters.certificado}`;
         }
         if (currentFilters.fecha_desde) {
             filterInfo += ` | Desde: ${currentFilters.fecha_desde}`;
@@ -1608,6 +1727,9 @@ function exportarPregoneros(formato) {
     }
     if (currentFilters.usuario_registro) {
         params.append('usuario_registro', currentFilters.usuario_registro);
+    }
+    if (currentFilters.certificado) {  // NUEVO
+        params.append('certificado', currentFilters.certificado);
     }
     if (currentFilters.fecha_desde) {
         params.append('fecha_desde', currentFilters.fecha_desde);

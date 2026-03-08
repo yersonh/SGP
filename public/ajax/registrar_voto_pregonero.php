@@ -20,6 +20,9 @@ if (!isset($_POST['id_pregonero']) || empty($_POST['id_pregonero'])) {
 $id_pregonero = (int)$_POST['id_pregonero'];
 $id_usuario = $_SESSION['id_usuario'];
 
+// Obtener el número de certificado electoral (NUEVO)
+$certificado_electoral = isset($_POST['certificado_electoral']) ? trim($_POST['certificado_electoral']) : null;
+
 // ============================================
 // PROCESAR LA FOTO DEL COMPROBANTE (OPCIONAL)
 // ============================================
@@ -87,34 +90,22 @@ try {
         exit();
     }
 
-    // Registrar el voto (con o sin foto)
-    if ($foto_ruta) {
-        $sql = "UPDATE public.pregonero 
-                SET voto_registrado = TRUE, 
-                    fecha_voto = NOW(), 
-                    id_usuario_registro_voto = :id_usuario,
-                    foto_comprobante = :foto_ruta 
-                WHERE id_pregonero = :id_pregonero";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id_usuario' => $id_usuario,
-            ':id_pregonero' => $id_pregonero,
-            ':foto_ruta' => $foto_ruta
-        ]);
-    } else {
-        $sql = "UPDATE public.pregonero 
-                SET voto_registrado = TRUE, 
-                    fecha_voto = NOW(), 
-                    id_usuario_registro_voto = :id_usuario 
-                WHERE id_pregonero = :id_pregonero";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id_usuario' => $id_usuario,
-            ':id_pregonero' => $id_pregonero
-        ]);
-    }
+    // Registrar el voto (con foto y/o certificado electoral)
+    $sql = "UPDATE public.pregonero 
+            SET voto_registrado = TRUE, 
+                fecha_voto = NOW(), 
+                id_usuario_registro_voto = :id_usuario,
+                foto_comprobante = :foto_ruta,
+                certificado_electoral = :certificado_electoral
+            WHERE id_pregonero = :id_pregonero";
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ':id_usuario' => $id_usuario,
+        ':id_pregonero' => $id_pregonero,
+        ':foto_ruta' => $foto_ruta,
+        ':certificado_electoral' => $certificado_electoral
+    ]);
 
     // Obtener estadísticas actualizadas de pregoneros
     $stmtStats = $pdo->query("SELECT 
@@ -134,7 +125,8 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Voto de pregonero registrado exitosamente' . ($foto_ruta ? ' con foto' : ''),
-        'foto_ruta' => $foto_ruta, // Opcional: devolver la ruta de la foto
+        'foto_ruta' => $foto_ruta,
+        'certificado_electoral' => $certificado_electoral, // Devolver el certificado
         'stats' => [
             'total_activos' => (int)$stats['total_activos'],
             'ya_votaron' => (int)$stats['ya_votaron'],

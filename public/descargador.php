@@ -56,6 +56,26 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/descargador.css">
+    <style>
+        /* Estilo para el campo de certificado electoral */
+        .certificado-input {
+            background-color: #f8f9fa;
+            border-left: 4px solid #27ae60;
+            transition: all 0.3s ease;
+        }
+        .certificado-input:focus {
+            background-color: #fff;
+            border-color: #2ecc71;
+            box-shadow: 0 0 0 0.2rem rgba(46, 204, 113, 0.25);
+        }
+        .certificado-label {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        .certificado-icon {
+            color: #27ae60;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Spinner -->
@@ -257,7 +277,23 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                     </h4>
                 </div>
 
-                <!-- NUEVO: Campo de carga de foto (opcional) -->
+                <!-- Campo de certificado electoral (NUEVO) -->
+                <div class="mb-3">
+                    <label for="certificadoElectoral" class="form-label certificado-label">
+                        <i class="fas fa-certificate certificado-icon"></i> Número de Certificado Electoral
+                    </label>
+                    <input type="text" 
+                           class="form-control certificado-input" 
+                           id="certificadoElectoral" 
+                           name="certificadoElectoral" 
+                           placeholder="Ingrese el número del certificado electoral"
+                           maxlength="50">
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Ingrese el número que identifica el certificado electoral
+                    </small>
+                </div>
+
+                <!-- Campo de carga de foto (opcional) -->
                 <div class="mb-3">
                     <label for="comprobanteFoto" class="form-label">
                         <i class="fas fa-camera"></i> Foto de comprobante
@@ -279,6 +315,17 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                     <i class="fas fa-info-circle"></i> 
                     Al hacer clic, se registrará que esta persona ya votó en las elecciones de hoy
                 </p>
+            </div>
+
+            <!-- Certificado Electoral Info (Solo visible si ya tiene certificado) -->
+            <div class="certificado-info" id="certificadoInfo" style="display: none; margin-top: 15px; padding: 15px; background-color: #f0f9f0; border-radius: 10px; border-left: 4px solid #27ae60;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-certificate" style="color: #27ae60; font-size: 24px;"></i>
+                    <div>
+                        <div style="font-weight: 600; color: #27ae60;">Certificado Electoral</div>
+                        <div id="certificadoNumero" style="font-size: 1.1rem; word-break: break-all;">-</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -511,6 +558,9 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                     // Mostrar empty state y ocultar resultado
                     document.getElementById('emptyState').style.display = 'block';
                     document.getElementById('resultCard').classList.remove('show');
+                    
+                    // Limpiar certificado info
+                    document.getElementById('certificadoInfo').style.display = 'none';
                     return;
                 }
                 
@@ -528,6 +578,20 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                 document.getElementById('personaEmail').textContent = data.data.email;
                 document.getElementById('personaDireccion').textContent = data.data.direccion;
                 document.getElementById('personaReferenciador').textContent = data.data.referenciador;
+                
+                // Mostrar certificado electoral si existe (NUEVO)
+                const certificadoInfo = document.getElementById('certificadoInfo');
+                const certificadoNumero = document.getElementById('certificadoNumero');
+                const certificadoInput = document.getElementById('certificadoElectoral');
+                
+                if (data.data.certificado_electoral) {
+                    certificadoNumero.textContent = data.data.certificado_electoral;
+                    certificadoInfo.style.display = 'block';
+                    certificadoInput.value = data.data.certificado_electoral;
+                } else {
+                    certificadoInfo.style.display = 'none';
+                    certificadoInput.value = '';
+                }
                 
                 // Actualizar estado de votación basado en voto_registrado
                 const votoIcon = document.getElementById('votoIcon');
@@ -547,6 +611,10 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                     btnRegistrar.className = 'download-btn votado';
                     btnRegistrar.innerHTML = '<i class="fas fa-check-circle"></i> Voto Registrado';
                     btnRegistrar.disabled = true;
+                    
+                    // Deshabilitar campos cuando ya votó
+                    certificadoInput.disabled = true;
+                    document.getElementById('comprobanteFoto').disabled = true;
                 } else {
                     // NO HA VOTADO
                     votoIcon.className = 'voto-status-icon no-votado';
@@ -558,6 +626,10 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                     btnRegistrar.className = 'download-btn';
                     btnRegistrar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Voto';
                     btnRegistrar.disabled = false;
+                    
+                    // Habilitar campos
+                    certificadoInput.disabled = false;
+                    document.getElementById('comprobanteFoto').disabled = false;
                 }
             })
             .catch(error => {
@@ -598,6 +670,18 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
             return;
         }
         
+        // Validar que se haya ingresado el número de certificado electoral
+        const certificadoElectoral = document.getElementById('certificadoElectoral').value.trim();
+        if (!certificadoElectoral) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campo requerido',
+                text: 'Por favor ingrese el número de certificado electoral',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+        
         Swal.fire({
             title: '¿Confirmar voto?',
             text: 'Va a registrar que esta persona ya votó en las elecciones de hoy',
@@ -613,6 +697,7 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                 // Crear FormData para enviar archivo si existe
                 const formData = new FormData();
                 formData.append('id_referenciado', currentVotante.id_referenciado);
+                formData.append('certificado_electoral', certificadoElectoral);
                 
                 const fotoInput = document.getElementById('comprobanteFoto');
                 if (fotoInput.files.length > 0) {
@@ -651,14 +736,20 @@ $porcentajeMeta = $referenciados_activos > 0 ? number_format(($totalVotantes / $
                         btn.innerHTML = '<i class="fas fa-check-circle"></i> Voto Registrado';
                         btn.disabled = true;
                         
-                        // Limpiar campo de foto
-                        document.getElementById('comprobanteFoto').value = '';
+                        // Deshabilitar campos
+                        document.getElementById('certificadoElectoral').disabled = true;
+                        document.getElementById('comprobanteFoto').disabled = true;
+                        
+                        // Mostrar certificado electoral en la info
+                        document.getElementById('certificadoNumero').textContent = certificadoElectoral;
+                        document.getElementById('certificadoInfo').style.display = 'block';
                         
                         // Actualizar stats en la UI
                         actualizarStats();
                         
                         // Actualizar estado local del votante
                         currentVotante.voto_registrado = true;
+                        currentVotante.certificado_electoral = certificadoElectoral;
                         
                         Swal.fire({
                             icon: 'success',

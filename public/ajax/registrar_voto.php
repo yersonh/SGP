@@ -19,6 +19,9 @@ if (!isset($_POST['id_referenciado']) || empty($_POST['id_referenciado'])) {
 $id_referenciado = (int)$_POST['id_referenciado'];
 $id_usuario = $_SESSION['id_usuario'];
 
+// Obtener el número de certificado electoral (NUEVO)
+$certificado_electoral = isset($_POST['certificado_electoral']) ? trim($_POST['certificado_electoral']) : null;
+
 // ============================================
 // PROCESAR LA FOTO DEL COMPROBANTE (OPCIONAL)
 // ============================================
@@ -80,34 +83,22 @@ try {
         exit();
     }
 
-    // Registrar el voto (con o sin foto)
-    if ($foto_ruta) {
-        $sql = "UPDATE referenciados 
-                SET voto_registrado = TRUE, 
-                    fecha_voto = NOW(), 
-                    id_usuario_registro_voto = :id_usuario,
-                    foto_comprobante = :foto_ruta 
-                WHERE id_referenciado = :id_referenciado";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id_usuario' => $id_usuario,
-            ':id_referenciado' => $id_referenciado,
-            ':foto_ruta' => $foto_ruta
-        ]);
-    } else {
-        $sql = "UPDATE referenciados 
-                SET voto_registrado = TRUE, 
-                    fecha_voto = NOW(), 
-                    id_usuario_registro_voto = :id_usuario 
-                WHERE id_referenciado = :id_referenciado";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id_usuario' => $id_usuario,
-            ':id_referenciado' => $id_referenciado
-        ]);
-    }
+    // Registrar el voto (con foto y/o certificado electoral)
+    $sql = "UPDATE referenciados 
+            SET voto_registrado = TRUE, 
+                fecha_voto = NOW(), 
+                id_usuario_registro_voto = :id_usuario,
+                foto_comprobante = :foto_ruta,
+                certificado_electoral = :certificado_electoral
+            WHERE id_referenciado = :id_referenciado";
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ':id_usuario' => $id_usuario,
+        ':id_referenciado' => $id_referenciado,
+        ':foto_ruta' => $foto_ruta,
+        ':certificado_electoral' => $certificado_electoral
+    ]);
 
     // Obtener estadísticas actualizadas
     $stmtStats = $pdo->query("SELECT 
@@ -122,7 +113,8 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Voto registrado exitosamente' . ($foto_ruta ? ' con foto' : ''),
-        'foto_ruta' => $foto_ruta, // Opcional: devolver la ruta de la foto
+        'foto_ruta' => $foto_ruta,
+        'certificado_electoral' => $certificado_electoral, // Opcional: devolver el certificado
         'stats' => [
             'total_activos' => (int)$stats['total_activos'],
             'ya_votaron' => (int)$stats['ya_votaron'],

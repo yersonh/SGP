@@ -7,21 +7,23 @@ class ReferenciadoModel {
     }
     
     /**
-     * Registrar el voto de un referenciado
+     * Registrar el voto de un referenciado (ACTUALIZADO con certificado_electoral)
      */
-    public function registrarVoto($id_referenciado, $id_usuario, $foto_ruta = null) {
+    public function registrarVoto($id_referenciado, $id_usuario, $foto_ruta = null, $certificado_electoral = null) {
         try {
             $sql = "UPDATE referenciados SET 
                     voto_registrado = TRUE,
                     fecha_voto = NOW(),
                     id_usuario_registro_voto = :id_usuario,
-                    foto_comprobante = :foto_ruta
+                    foto_comprobante = :foto_ruta,
+                    certificado_electoral = :certificado_electoral
                     WHERE id_referenciado = :id_referenciado";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindParam(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
             $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
             $stmt->bindParam(':foto_ruta', $foto_ruta, PDO::PARAM_STR);
+            $stmt->bindParam(':certificado_electoral', $certificado_electoral, PDO::PARAM_STR);
             
             return $stmt->execute();
         } catch (PDOException $e) {
@@ -579,7 +581,7 @@ class ReferenciadoModel {
     }
     
     /**
-     * Actualizar un referenciado existente
+     * Actualizar un referenciado existente (ACTUALIZADO con certificado_electoral)
      */
     public function actualizarReferenciado($id_referenciado, $data) {
         error_log("=== actualizarReferenciado INICIADO ===");
@@ -697,11 +699,15 @@ class ReferenciadoModel {
                 error_log("ID Líder: $idLider");
             }
             
+            // Procesar certificado_electoral (NUEVO)
+            $certificadoElectoral = $data['certificado_electoral'] ?? null;
+            error_log("Certificado electoral: $certificadoElectoral");
+            
             // Iniciar transacción
             $this->pdo->beginTransaction();
             error_log("Transacción iniciada");
             
-            // SQL ACTUALIZADO con foto_comprobante? No, esto es para actualizar datos generales, no el voto
+            // SQL ACTUALIZADO con certificado_electoral
             $sql = "UPDATE referenciados SET
                     nombre = :nombre,
                     apellido = :apellido,
@@ -730,7 +736,8 @@ class ReferenciadoModel {
                     activo = :activo,
                     fecha_nacimiento = :fecha_nacimiento,
                     fecha_cumplimiento = :fecha_cumplimiento,
-                    id_lider = :id_lider
+                    id_lider = :id_lider,
+                    certificado_electoral = :certificado_electoral
                     WHERE id_referenciado = :id_referenciado";
             
             error_log("SQL preparado");
@@ -793,6 +800,10 @@ class ReferenciadoModel {
             // ID Líder
             error_log("Bind id_lider: " . ($idLider ?? 'NULL'));
             $stmt->bindValue(':id_lider', $idLider, PDO::PARAM_INT);
+            
+            // Certificado electoral (NUEVO)
+            error_log("Bind certificado_electoral: " . ($certificadoElectoral ?? 'NULL'));
+            $stmt->bindValue(':certificado_electoral', $certificadoElectoral, PDO::PARAM_STR);
             
             // ID del referenciado
             $stmt->bindValue(':id_referenciado', $id_referenciado, PDO::PARAM_INT);
@@ -1354,7 +1365,7 @@ class ReferenciadoModel {
     }
     
     /**
-     * Obtiene referenciados paginados con filtros
+     * Obtiene referenciados paginados con filtros (ACTUALIZADO con certificado_electoral)
      * 
      * @param int $page Número de página
      * @param int $perPage Registros por página
@@ -1420,13 +1431,14 @@ class ReferenciadoModel {
                 u.apellidos ILIKE ? OR
                 l.nombres ILIKE ? OR 
                 l.apellidos ILIKE ? OR
-                CAST(r.mesa AS TEXT) ILIKE ?
+                CAST(r.mesa AS TEXT) ILIKE ? OR
+                r.certificado_electoral ILIKE ?  -- NUEVO CAMPO PARA BÚSQUEDA
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            // Total de campos: 20
-            for ($i = 0; $i < 20; $i++) {
+            // Total de campos: 21 (agregamos certificado_electoral)
+            for ($i = 0; $i < 21; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -1500,6 +1512,13 @@ class ReferenciadoModel {
             $paramTypes[] = \PDO::PARAM_STR;
         }
         
+        // FILTRO POR CERTIFICADO ELECTORAL (NUEVO)
+        if (!empty($filters['certificado_electoral'])) {
+            $conditions[] = "r.certificado_electoral ILIKE ?";
+            $params[] = '%' . $filters['certificado_electoral'] . '%';
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+        
         // CONSTRUIR WHERE
         if (!empty($conditions)) {
             $sql .= " WHERE " . implode(' AND ', $conditions);
@@ -1530,7 +1549,7 @@ class ReferenciadoModel {
     }
     
     /**
-     * Obtiene el total de referenciados según filtros
+     * Obtiene el total de referenciados según filtros (ACTUALIZADO con certificado_electoral)
      * 
      * @param array $filters Filtros a aplicar
      * @return int Total de registros
@@ -1579,12 +1598,14 @@ class ReferenciadoModel {
                 u.apellidos ILIKE ? OR
                 l.nombres ILIKE ? OR 
                 l.apellidos ILIKE ? OR
-                CAST(r.mesa AS TEXT) ILIKE ?
+                CAST(r.mesa AS TEXT) ILIKE ? OR
+                r.certificado_electoral ILIKE ?  -- NUEVO CAMPO PARA BÚSQUEDA
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            for ($i = 0; $i < 20; $i++) {
+            // Total de campos: 21
+            for ($i = 0; $i < 21; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -1652,6 +1673,13 @@ class ReferenciadoModel {
         if (!empty($filters['mesa'])) {
             $conditions[] = "CAST(r.mesa AS TEXT) ILIKE ?";
             $params[] = '%' . $filters['mesa'] . '%';
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+        
+        // FILTRO POR CERTIFICADO ELECTORAL (NUEVO)
+        if (!empty($filters['certificado_electoral'])) {
+            $conditions[] = "r.certificado_electoral ILIKE ?";
+            $params[] = '%' . $filters['certificado_electoral'] . '%';
             $paramTypes[] = \PDO::PARAM_STR;
         }
         
@@ -1801,7 +1829,7 @@ class ReferenciadoModel {
     }
     
     /**
-     * Construye la consulta base para obtener referenciados con todas las relaciones
+     * Construye la consulta base para obtener referenciados con todas las relaciones (ACTUALIZADO con certificado_electoral)
      * @return string SQL base
      */
     private function buildConsultaBase() {
@@ -1825,6 +1853,7 @@ class ReferenciadoModel {
                     r.activo,
                     r.fecha_registro,
                     r.fecha_actualizacion,
+                    r.certificado_electoral,  -- NUEVO CAMPO
                     
                     -- Zona
                     z.id_zona,
@@ -2002,7 +2031,7 @@ class ReferenciadoModel {
     }
     
     /**
-     * Obtiene votantes paginados (solo los que ya votaron)
+     * Obtiene votantes paginados (solo los que ya votaron) - ACTUALIZADO con certificado_electoral
      * 
      * @param int $page Número de página
      * @param int $perPage Registros por página
@@ -2030,7 +2059,8 @@ class ReferenciadoModel {
                 CONCAT(ur.nombres, ' ', ur.apellidos) as registrador_nombre,
                 r.fecha_voto,
                 r.voto_registrado,
-                r.foto_comprobante  -- NUEVO CAMPO
+                r.foto_comprobante,
+                r.certificado_electoral  -- NUEVO CAMPO
                 FROM referenciados r
                 LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
                 LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
@@ -2076,13 +2106,14 @@ class ReferenciadoModel {
                 l.apellidos ILIKE ? OR
                 ur.nombres ILIKE ? OR 
                 ur.apellidos ILIKE ? OR
-                CAST(r.mesa AS TEXT) ILIKE ?
+                CAST(r.mesa AS TEXT) ILIKE ? OR
+                r.certificado_electoral ILIKE ?  -- NUEVO CAMPO PARA BÚSQUEDA
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            // Total de campos: 22
-            for ($i = 0; $i < 22; $i++) {
+            // Total de campos: 23 (agregamos certificado_electoral)
+            for ($i = 0; $i < 23; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -2150,6 +2181,13 @@ class ReferenciadoModel {
             $paramTypes[] = \PDO::PARAM_STR;
         }
         
+        // FILTRO POR CERTIFICADO ELECTORAL (NUEVO)
+        if (!empty($filters['certificado_electoral'])) {
+            $conditions[] = "r.certificado_electoral ILIKE ?";
+            $params[] = '%' . $filters['certificado_electoral'] . '%';
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+        
         // CONSTRUIR CONSULTA FINAL
         if (!empty($conditions)) {
             $sql .= " AND " . implode(' AND ', $conditions);
@@ -2180,7 +2218,7 @@ class ReferenciadoModel {
     }
     
     /**
-     * Obtiene el total de votantes según filtros
+     * Obtiene el total de votantes según filtros (ACTUALIZADO con certificado_electoral)
      * 
      * @param array $filters Filtros a aplicar
      * @return int Total de registros
@@ -2232,12 +2270,13 @@ class ReferenciadoModel {
                 l.apellidos ILIKE ? OR
                 ur.nombres ILIKE ? OR 
                 ur.apellidos ILIKE ? OR
-                CAST(r.mesa AS TEXT) ILIKE ?
+                CAST(r.mesa AS TEXT) ILIKE ? OR
+                r.certificado_electoral ILIKE ?  -- NUEVO CAMPO
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            for ($i = 0; $i < 22; $i++) {
+            for ($i = 0; $i < 23; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -2303,6 +2342,13 @@ class ReferenciadoModel {
             $paramTypes[] = \PDO::PARAM_STR;
         }
         
+        // FILTRO POR CERTIFICADO ELECTORAL (NUEVO)
+        if (!empty($filters['certificado_electoral'])) {
+            $conditions[] = "r.certificado_electoral ILIKE ?";
+            $params[] = '%' . $filters['certificado_electoral'] . '%';
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+        
         if (!empty($conditions)) {
             $sql .= " WHERE " . implode(' AND ', $conditions);
         }
@@ -2345,5 +2391,79 @@ class ReferenciadoModel {
             return 0;
         }
     }
+    /**
+ * Cuenta referenciados por referenciador
+ */
+public function countByReferenciador($id_referenciador) {
+    $sql = "SELECT COUNT(*) as total FROM referenciados WHERE id_referenciador = ? AND activo = true";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([$id_referenciador]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total'] ?? 0;
+}
+
+/**
+ * Cuenta referenciados que votaron por referenciador
+ */
+public function countVotaronByReferenciador($id_referenciador) {
+    $sql = "SELECT COUNT(*) as total FROM referenciados WHERE id_referenciador = ? AND voto_registrado = true AND activo = true";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([$id_referenciador]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total'] ?? 0;
+}
+
+/**
+ * Cuenta referenciados que votaron por líder
+ */
+public function countVotaronByLider($id_lider) {
+    $sql = "SELECT COUNT(*) as total FROM referenciados WHERE id_lider = ? AND voto_registrado = true AND activo = true";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([$id_lider]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['total'] ?? 0;
+}
+/**
+ * Obtiene los referenciados ACTIVOS de un líder específico
+ */
+public function getByLider($id_lider) {
+    try {
+        $sql = "SELECT 
+                    r.*,
+                    d.nombre as departamento_nombre,
+                    m.nombre as municipio_nombre,
+                    b.nombre as barrio_nombre,
+                    gp.nombre as grupo_poblacional_nombre,
+                    oa.nombre as oferta_apoyo_nombre,
+                    z.nombre as zona_nombre,
+                    s.nombre as sector_nombre,
+                    pv.nombre as puesto_votacion_nombre,
+                    gr.nombre as grupo_nombre,
+                    CONCAT(u.nombres, ' ', u.apellidos) as referenciador_nombre
+                FROM referenciados r
+                LEFT JOIN departamento d ON r.id_departamento = d.id_departamento
+                LEFT JOIN municipio m ON r.id_municipio = m.id_municipio
+                LEFT JOIN barrio b ON r.id_barrio = b.id_barrio
+                LEFT JOIN grupo_poblacional gp ON r.id_grupo_poblacional = gp.id_grupo
+                LEFT JOIN oferta_apoyo oa ON r.id_oferta_apoyo = oa.id_oferta
+                LEFT JOIN zona z ON r.id_zona = z.id_zona
+                LEFT JOIN sector s ON r.id_sector = s.id_sector
+                LEFT JOIN puesto_votacion pv ON r.id_puesto_votacion = pv.id_puesto
+                LEFT JOIN grupos_parlamentarios gr ON r.id_grupo = gr.id_grupo
+                LEFT JOIN usuario u ON r.id_referenciador = u.id_usuario
+                WHERE r.id_lider = :id_lider
+                AND r.activo = true
+                ORDER BY r.fecha_registro DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindParam(':id_lider', $id_lider, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en getByLider: " . $e->getMessage());
+        return [];
+    }
+}
 }
 ?>

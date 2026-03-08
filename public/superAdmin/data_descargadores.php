@@ -195,6 +195,46 @@ if ($porcentajeRestante > 50) {
             background-color: rgba(23, 162, 184, 0.1);
         }
 
+        /* Estilo para el icono de certificado (NUEVO) */
+        .btn-ver-certificado {
+            background: none;
+            border: none;
+            color: #28a745;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            padding: 5px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+
+        .btn-ver-certificado:hover {
+            color: #1e7e34;
+            transform: scale(1.1);
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+
+        /* Estilo para el certificado en el modal */
+        .certificado-modal-content {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid #28a745;
+        }
+
+        .certificado-numero {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #28a745;
+            word-break: break-all;
+            font-family: monospace;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
+        }
+
         /* Modal para mostrar la foto */
         .modal-foto {
             max-width: 90vw;
@@ -223,6 +263,36 @@ if ($porcentajeRestante > 50) {
             opacity: 0.8;
             padding: 10px;
             border-radius: 50%;
+        }
+
+        /* Tooltip personalizado */
+        .custom-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        .custom-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
         }
     </style>
     <link rel="stylesheet" href="../styles/descargador.css">
@@ -333,7 +403,7 @@ if ($porcentajeRestante > 50) {
                             <input type="text" 
                                    class="form-control form-control-sm" 
                                    id="searchInput" 
-                                   placeholder="Buscar por nombre, cédula, teléfono, referenciador, etc."
+                                   placeholder="Buscar por nombre, cédula, teléfono, referenciador, certificado electoral, etc."
                                    onkeyup="handleSearchInput(event)">
                             <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearSearch()" title="Limpiar búsqueda">
                                 <i class="fas fa-times"></i>
@@ -443,13 +513,14 @@ if ($porcentajeRestante > 50) {
                             <th>Líder</th>
                             <th>Fecha Voto</th>
                             <th>Registrado por</th>
-                            <th>Acciones</th> <!-- NUEVA COLUMNA -->
+                            <th>Certificado</th> <!-- NUEVA COLUMNA -->
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tablaBody">
                         <!-- Los datos se cargarán aquí por AJAX -->
                         <tr id="loadingRow">
-                            <td colspan="20" class="text-center">
+                            <td colspan="21" class="text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -671,6 +742,32 @@ if ($porcentajeRestante > 50) {
         </div>
     </div>
 
+    <!-- Modal para mostrar el certificado electoral (NUEVO) -->
+    <div class="modal fade" id="modalVerCertificado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-certificate me-2"></i> Certificado Electoral</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="certificado-modal-content">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-certificate" style="font-size: 48px; color: #28a745;"></i>
+                        </div>
+                        <p class="text-center mb-2"><strong>Número de certificado electoral:</strong></p>
+                        <div id="certificadoNumeroModal" class="certificado-numero text-center">
+                            -
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
@@ -684,12 +781,14 @@ let currentFilters = { voto_registrado: true }; // IMPORTANTE: Solo mostrar los 
 let searchTimeout = null;
 const STORAGE_KEY = 'votantes_filters';
 
-// Inicializar modal de foto
+// Inicializar modales
 let modalFoto = null;
+let modalCertificado = null;
 
 $(document).ready(function() {
-    // Inicializar modal de Bootstrap
+    // Inicializar modales de Bootstrap
     modalFoto = new bootstrap.Modal(document.getElementById('modalVerFoto'));
+    modalCertificado = new bootstrap.Modal(document.getElementById('modalVerCertificado'));
 
     // ============================================
     // FUNCIONES PARA FILTROS AVANZADOS
@@ -1021,7 +1120,7 @@ $(document).ready(function() {
         // Mostrar loading
         $('#tablaBody').html(`
             <tr id="loadingRow">
-                <td colspan="20" class="text-center">
+                <td colspan="21" class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Cargando...</span>
                     </div>
@@ -1101,12 +1200,28 @@ $(document).ready(function() {
         }
     };
     
+    // Función para mostrar el certificado electoral en el modal (NUEVO)
+    window.verCertificado = function(certificado) {
+        if (!certificado) {
+            showNotification('No hay certificado electoral disponible', 'info');
+            return;
+        }
+        
+        // Establecer el número en el modal
+        document.getElementById('certificadoNumeroModal').textContent = certificado;
+        
+        // Mostrar el modal
+        if (modalCertificado) {
+            modalCertificado.show();
+        }
+    };
+    
     // Función para renderizar la tabla
     function renderTable(data) {
         if (data.length === 0) {
             $('#tablaBody').html(`
                 <tr>
-                    <td colspan="20" class="text-center">
+                    <td colspan="21" class="text-center">
                         <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
                         <p>No se encontraron votantes registrados</p>
                         ${currentFilters.search ? 
@@ -1144,7 +1259,15 @@ $(document).ready(function() {
                 `<button class="btn-ver-foto" onclick="verFoto('${votante.foto_comprobante}')" title="Ver foto de comprobante">
                     <i class="fas fa-camera"></i>
                 </button>` : 
-                `<span class="text-muted" style="opacity: 0.3;"><i class="fas fa-camera"></i></span>`;
+                `<span class="text-muted" style="opacity: 0.3;" title="Sin foto"><i class="fas fa-camera"></i></span>`;
+            
+            // Verificar si tiene certificado electoral (NUEVO)
+            const tieneCertificado = votante.certificado_electoral && votante.certificado_electoral.trim() !== '';
+            const botonCertificado = tieneCertificado ? 
+                `<button class="btn-ver-certificado" onclick="verCertificado('${escapeHtml(votante.certificado_electoral)}')" title="Ver certificado electoral">
+                    <i class="fas fa-certificate"></i>
+                </button>` : 
+                `<span class="text-muted" style="opacity: 0.3;" title="Sin certificado"><i class="fas fa-certificate"></i></span>`;
             
             html += `
             <tr>
@@ -1175,6 +1298,11 @@ $(document).ready(function() {
                 <td>${votante.lider_nombre ? `<span class="badge bg-info text-dark">${escapeHtml(votante.lider_nombre)}</span>` : '<span class="badge bg-secondary">Sin líder</span>'}</td>
                 <td>${fechaVoto}</td>
                 <td>${highlight(registrador)}</td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center align-items-center">
+                        ${botonCertificado}
+                    </div>
+                </td>
                 <td class="text-center">
                     ${botonFoto}
                 </td>
@@ -1316,6 +1444,7 @@ $(document).ready(function() {
     
     // Funciones helper
     function escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;

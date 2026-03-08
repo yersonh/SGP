@@ -752,7 +752,7 @@ if ($porcentajeRestante > 50) {
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="pregonero.php" class="btn-volver">
+                    <a href="referenciador.php" class="btn-volver">
                         <i class="fas fa-arrow-left"></i> Volver al Formulario
                     </a>
                     <a href="logout.php" class="logout-btn">

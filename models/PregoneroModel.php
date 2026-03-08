@@ -84,26 +84,29 @@ class PregoneroModel {
     }
     
     /**
-     * Registrar el voto de un pregonero
+     * Registrar el voto de un pregonero (ACTUALIZADO con certificado_electoral)
      * 
      * @param int $id_pregonero ID del pregonero
      * @param int $id_usuario ID del usuario que registra el voto
      * @param string|null $foto_ruta Ruta de la foto del comprobante (opcional)
+     * @param string|null $certificado_electoral Número de certificado electoral (opcional)
      * @return bool True si se registró correctamente
      */
-    public function registrarVoto($id_pregonero, $id_usuario, $foto_ruta = null) {
+    public function registrarVoto($id_pregonero, $id_usuario, $foto_ruta = null, $certificado_electoral = null) {
         try {
             $sql = "UPDATE public.pregonero SET 
                     voto_registrado = TRUE,
                     fecha_voto = NOW(),
                     id_usuario_registro_voto = :id_usuario,
-                    foto_comprobante = :foto_ruta
+                    foto_comprobante = :foto_ruta,
+                    certificado_electoral = :certificado_electoral
                     WHERE id_pregonero = :id_pregonero";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
             $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
             $stmt->bindParam(':foto_ruta', $foto_ruta, PDO::PARAM_STR);
+            $stmt->bindParam(':certificado_electoral', $certificado_electoral, PDO::PARAM_STR);
             
             return $stmt->execute();
         } catch (PDOException $e) {
@@ -172,7 +175,7 @@ class PregoneroModel {
     }
     
     /**
-     * Obtiene un pregonero por su ID
+     * Obtiene un pregonero por su ID (ACTUALIZADO con certificado_electoral)
      * 
      * @param int $id_pregonero ID del pregonero
      * @return array|false Datos del pregonero o false si no existe
@@ -188,7 +191,9 @@ class PregoneroModel {
                     u.nombres as usuario_nombres,
                     u.apellidos as usuario_apellidos,
                     r.nombres as referenciador_nombres,
-                    r.apellidos as referenciador_apellidos
+                    r.apellidos as referenciador_apellidos,
+                    uv.nombres as usuario_voto_nombres,
+                    uv.apellidos as usuario_voto_apellidos
                 FROM public.pregonero p
                 INNER JOIN public.barrio b ON p.id_barrio = b.id_barrio
                 INNER JOIN public.puesto_votacion pv ON p.id_puesto = pv.id_puesto
@@ -196,6 +201,7 @@ class PregoneroModel {
                 INNER JOIN public.zona z ON s.id_zona = z.id_zona
                 INNER JOIN public.usuario u ON p.id_usuario_registro = u.id_usuario
                 LEFT JOIN public.usuario r ON p.id_referenciador = r.id_usuario
+                LEFT JOIN public.usuario uv ON p.id_usuario_registro_voto = uv.id_usuario
                 WHERE p.id_pregonero = :id_pregonero AND p.activo = TRUE";
         
         $stmt = $this->pdo->prepare($sql);
@@ -205,7 +211,7 @@ class PregoneroModel {
     }
     
     /**
-     * Obtiene todos los pregoneros (con filtros opcionales)
+     * Obtiene todos los pregoneros (con filtros opcionales) - ACTUALIZADO con certificado_electoral
      * 
      * @param array $filtros Filtros para la búsqueda
      * @return array Lista de pregoneros
@@ -221,7 +227,9 @@ class PregoneroModel {
                     u.nombres as usuario_nombres,
                     u.apellidos as usuario_apellidos,
                     r.nombres as referenciador_nombres,
-                    r.apellidos as referenciador_apellidos
+                    r.apellidos as referenciador_apellidos,
+                    uv.nombres as usuario_voto_nombres,
+                    uv.apellidos as usuario_voto_apellidos
                 FROM public.pregonero p
                 INNER JOIN public.barrio b ON p.id_barrio = b.id_barrio
                 INNER JOIN public.puesto_votacion pv ON p.id_puesto = pv.id_puesto
@@ -229,6 +237,7 @@ class PregoneroModel {
                 INNER JOIN public.zona z ON s.id_zona = z.id_zona
                 INNER JOIN public.usuario u ON p.id_usuario_registro = u.id_usuario
                 LEFT JOIN public.usuario r ON p.id_referenciador = r.id_usuario
+                LEFT JOIN public.usuario uv ON p.id_usuario_registro_voto = uv.id_usuario
                 WHERE p.activo = TRUE";
         
         $params = [];
@@ -272,7 +281,7 @@ class PregoneroModel {
     }
     
     /**
-     * Actualiza los datos de un pregonero
+     * Actualiza los datos de un pregonero (ACTUALIZADO con certificado_electoral)
      * 
      * @param int $id_pregonero ID del pregonero
      * @param array $datos Nuevos datos
@@ -291,7 +300,8 @@ class PregoneroModel {
                         id_puesto = :id_puesto,
                         mesa = :mesa,
                         quien_reporta = :quien_reporta,
-                        id_referenciador = :id_referenciador
+                        id_referenciador = :id_referenciador,
+                        certificado_electoral = :certificado_electoral
                     WHERE id_pregonero = :id_pregonero AND activo = TRUE";
             
             $stmt = $this->pdo->prepare($sql);
@@ -307,6 +317,7 @@ class PregoneroModel {
             $stmt->bindParam(':mesa', $datos['mesa'], PDO::PARAM_INT);
             $stmt->bindParam(':quien_reporta', $datos['quien_reporta'], PDO::PARAM_STR);
             $stmt->bindParam(':id_referenciador', $datos['id_referenciador'], PDO::PARAM_INT);
+            $stmt->bindParam(':certificado_electoral', $datos['certificado_electoral'] ?? null, PDO::PARAM_STR);
             $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
             
             return $stmt->execute();
@@ -366,6 +377,16 @@ class PregoneroModel {
         $stmt = $this->pdo->query($sql);
         $stats['total'] = $stmt->fetchColumn();
         
+        // Pregoneros que ya votaron
+        $sql = "SELECT COUNT(*) as total FROM public.pregonero WHERE activo = TRUE AND voto_registrado = TRUE";
+        $stmt = $this->pdo->query($sql);
+        $stats['votaron'] = $stmt->fetchColumn();
+        
+        // Pregoneros pendientes
+        $sql = "SELECT COUNT(*) as total FROM public.pregonero WHERE activo = TRUE AND voto_registrado = FALSE";
+        $stmt = $this->pdo->query($sql);
+        $stats['pendientes'] = $stmt->fetchColumn();
+        
         // Pregoneros por barrio
         $sql = "SELECT 
                     b.nombre as barrio,
@@ -410,7 +431,7 @@ class PregoneroModel {
     }
     
     /**
-     * Obtiene pregoneros paginados con filtros
+     * Obtiene pregoneros paginados con filtros (ACTUALIZADO con certificado_electoral)
      * 
      * @param int $page Número de página
      * @param int $perPage Registros por página
@@ -428,7 +449,8 @@ class PregoneroModel {
                     s.nombre as sector_nombre,
                     z.nombre as zona_nombre,
                     CONCAT(u.nombres, ' ', u.apellidos) as usuario_registro_nombre,
-                    CONCAT(r.nombres, ' ', r.apellidos) as referenciador_nombre
+                    CONCAT(r.nombres, ' ', r.apellidos) as referenciador_nombre,
+                    CONCAT(uv.nombres, ' ', uv.apellidos) as usuario_voto_nombre
                 FROM public.pregonero p
                 LEFT JOIN public.barrio b ON p.id_barrio = b.id_barrio
                 LEFT JOIN public.puesto_votacion pv ON p.id_puesto = pv.id_puesto
@@ -436,6 +458,7 @@ class PregoneroModel {
                 LEFT JOIN public.zona z ON s.id_zona = z.id_zona
                 LEFT JOIN public.usuario u ON p.id_usuario_registro = u.id_usuario
                 LEFT JOIN public.usuario r ON p.id_referenciador = r.id_usuario
+                LEFT JOIN public.usuario uv ON p.id_usuario_registro_voto = uv.id_usuario
                 WHERE 1=1";
         
         $conditions = [];
@@ -443,7 +466,7 @@ class PregoneroModel {
         $paramTypes = [];
         
         // ============================================
-        // BÚSQUEDA GLOBAL
+        // BÚSQUEDA GLOBAL (ACTUALIZADA con certificado_electoral)
         // ============================================
         if (!empty($filters['search'])) {
             $search = $filters['search'];
@@ -456,6 +479,7 @@ class PregoneroModel {
                 p.corregimiento ILIKE ? OR
                 p.comuna ILIKE ? OR
                 p.quien_reporta ILIKE ? OR
+                p.certificado_electoral ILIKE ? OR  -- NUEVO CAMPO
                 b.nombre ILIKE ? OR 
                 pv.nombre ILIKE ? OR
                 s.nombre ILIKE ? OR
@@ -464,13 +488,15 @@ class PregoneroModel {
                 u.apellidos ILIKE ? OR
                 r.nombres ILIKE ? OR 
                 r.apellidos ILIKE ? OR
+                uv.nombres ILIKE ? OR 
+                uv.apellidos ILIKE ? OR
                 CAST(p.mesa AS TEXT) ILIKE ?
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            // 16 parámetros
-            for ($i = 0; $i < 16; $i++) {
+            // 19 parámetros (agregamos certificado_electoral)
+            for ($i = 0; $i < 19; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -563,6 +589,13 @@ class PregoneroModel {
             $conditions[] = "p.voto_registrado = ?";
             $params[] = $filters['voto_registrado'];
             $paramTypes[] = \PDO::PARAM_BOOL;
+        }
+        
+        // Filtro por certificado electoral (NUEVO)
+        if (!empty($filters['certificado_electoral'])) {
+            $conditions[] = "p.certificado_electoral ILIKE ?";
+            $params[] = '%' . $filters['certificado_electoral'] . '%';
+            $paramTypes[] = \PDO::PARAM_STR;
         }
         
         // ============================================
@@ -599,7 +632,7 @@ class PregoneroModel {
     }
     
     /**
-     * Obtiene el total de pregoneros según filtros
+     * Obtiene el total de pregoneros según filtros (ACTUALIZADO con certificado_electoral)
      * 
      * @param array $filters Filtros a aplicar
      * @return int Total de registros
@@ -620,13 +653,14 @@ class PregoneroModel {
                       LEFT JOIN public.sector s ON pv.id_sector = s.id_sector
                       LEFT JOIN public.zona z ON s.id_zona = z.id_zona
                       LEFT JOIN public.usuario u ON p.id_usuario_registro = u.id_usuario
-                      LEFT JOIN public.usuario r ON p.id_referenciador = r.id_usuario";
+                      LEFT JOIN public.usuario r ON p.id_referenciador = r.id_usuario
+                      LEFT JOIN public.usuario uv ON p.id_usuario_registro_voto = uv.id_usuario";
         }
         
         $sql .= " WHERE 1=1";
         
         // ============================================
-        // BÚSQUEDA GLOBAL
+        // BÚSQUEDA GLOBAL (ACTUALIZADA con certificado_electoral)
         // ============================================
         if (!empty($filters['search'])) {
             $search = $filters['search'];
@@ -639,6 +673,7 @@ class PregoneroModel {
                 p.corregimiento ILIKE ? OR
                 p.comuna ILIKE ? OR
                 p.quien_reporta ILIKE ? OR
+                p.certificado_electoral ILIKE ? OR  -- NUEVO CAMPO
                 b.nombre ILIKE ? OR 
                 pv.nombre ILIKE ? OR
                 s.nombre ILIKE ? OR
@@ -647,13 +682,15 @@ class PregoneroModel {
                 u.apellidos ILIKE ? OR
                 r.nombres ILIKE ? OR 
                 r.apellidos ILIKE ? OR
+                uv.nombres ILIKE ? OR 
+                uv.apellidos ILIKE ? OR
                 CAST(p.mesa AS TEXT) ILIKE ?
             )";
             
             $searchTerm = '%' . $search . '%';
             
-            // 16 parámetros
-            for ($i = 0; $i < 16; $i++) {
+            // 19 parámetros (agregamos certificado_electoral)
+            for ($i = 0; $i < 19; $i++) {
                 $params[] = $searchTerm;
                 $paramTypes[] = \PDO::PARAM_STR;
             }
@@ -748,6 +785,13 @@ class PregoneroModel {
             $paramTypes[] = \PDO::PARAM_BOOL;
         }
         
+        // Filtro por certificado electoral (NUEVO)
+        if (!empty($filters['certificado_electoral'])) {
+            $conditions[] = "p.certificado_electoral ILIKE ?";
+            $params[] = '%' . $filters['certificado_electoral'] . '%';
+            $paramTypes[] = \PDO::PARAM_STR;
+        }
+        
         // ============================================
         // CONSTRUIR WHERE
         // ============================================
@@ -775,7 +819,7 @@ class PregoneroModel {
     }
     
     /**
-     * Obtiene un pregonero por su número de identificación
+     * Obtiene un pregonero por su número de identificación (ACTUALIZADO con certificado_electoral)
      * 
      * @param string $identificacion Número de identificación
      * @return array|false Datos del pregonero o false si no existe
@@ -796,7 +840,8 @@ class PregoneroModel {
                         p.activo,
                         p.voto_registrado,
                         p.fecha_voto,
-                        p.foto_comprobante,  -- NUEVO CAMPO
+                        p.foto_comprobante,
+                        p.certificado_electoral,  -- NUEVO CAMPO
                         b.nombre as barrio_nombre,
                         pv.nombre as puesto_nombre,
                         s.nombre as sector_nombre,
@@ -904,5 +949,40 @@ class PregoneroModel {
             return [];
         }
     }
+/**
+ * Cuenta pregoneros por referenciador
+ */
+public function countByReferenciador($id_referenciador) {
+    try {
+        $sql = "SELECT COUNT(*) as total 
+                FROM pregonero 
+                WHERE id_referenciador = ? AND activo = true";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id_referenciador]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    } catch (PDOException $e) {
+        error_log("Error en countByReferenciador: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Cuenta pregoneros que votaron por referenciador
+ */
+public function countVotaronByReferenciador($id_referenciador) {
+    try {
+        $sql = "SELECT COUNT(*) as total 
+                FROM pregonero 
+                WHERE id_referenciador = ? AND voto_registrado = true AND activo = true";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id_referenciador]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    } catch (PDOException $e) {
+        error_log("Error en countVotaronByReferenciador: " . $e->getMessage());
+        return 0;
+    }
+}
 }
 ?>

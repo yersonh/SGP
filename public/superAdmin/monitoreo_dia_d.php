@@ -1519,140 +1519,98 @@ if ($porcentajeRestante > 50) {
             });
         }
         
-        function cargarGraficasGenerales() {
-            $.ajax({
-                url: '../ajax/get_datos_graficas.php',
-                method: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        if (!chartAvanceReferidos) {
-                            // Crear gráfica de avance referidos
-                            const ctx3 = document.getElementById('chartAvanceReferidos').getContext('2d');
-                            chartAvanceReferidos = new Chart(ctx3, {
-                                type: 'line',
-                                data: {
-                                    labels: response.avanceVotosReferidos.map(item => item.fecha),
-                                    datasets: [
-                                        {
-                                            label: 'Votos del día',
-                                            data: response.avanceVotosReferidos.map(item => item.votos_dia),
-                                            borderColor: 'rgba(52, 152, 219, 0.5)',
-                                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                                            type: 'bar',
-                                            yAxisID: 'y'
-                                        },
-                                        {
-                                            label: 'Votos acumulados',
-                                            data: response.avanceVotosReferidos.map(item => item.votos_acumulados),
-                                            borderColor: 'rgba(46, 204, 113, 1)',
-                                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                                            type: 'line',
-                                            tension: 0.4,
-                                            fill: false,
-                                            yAxisID: 'y1'
-                                        }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        y: {
-                                            beginAtZero: true,
-                                            position: 'left',
-                                            title: {
-                                                display: true,
-                                                text: 'Votos por día'
-                                            }
-                                        },
-                                        y1: {
-                                            beginAtZero: true,
-                                            position: 'right',
-                                            grid: {
-                                                drawOnChartArea: false
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Votos acumulados'
-                                            }
+function cargarGraficasGenerales() {
+    // Obtener la hora actual del cliente (tu hora local)
+    const ahora = new Date();
+    // Ajustar por zona horaria de Colombia (UTC-5)
+    const horaColombia = ahora.getHours(); // Esto ya debería dar la hora local
+    
+    $.ajax({
+        url: '../ajax/get_datos_graficas_generales.php',
+        method: 'GET',
+        data: { hora_cliente: horaColombia },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                if (!chartAvanceReferidos) {
+                    // Crear gráfica de referidos
+                    const ctx3 = document.getElementById('chartAvanceReferidos').getContext('2d');
+                    chartAvanceReferidos = new Chart(ctx3, {
+                        type: 'bar',
+                        data: {
+                            labels: response.horas,
+                            datasets: [{
+                                label: 'Acumulado de votos referidos',
+                                data: response.acumuladoReferidos,
+                                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                                borderColor: 'rgba(52, 152, 219, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1,
+                                        callback: function(value) {
+                                            if (Number.isInteger(value)) return value;
                                         }
                                     }
                                 }
-                            });
-                            
-                            // Crear gráfica de avance pregoneros
-                            const ctx4 = document.getElementById('chartAvancePregoneros').getContext('2d');
-                            chartAvancePregoneros = new Chart(ctx4, {
-                                type: 'line',
-                                data: {
-                                    labels: response.avanceVotosPregoneros.map(item => item.fecha),
-                                    datasets: [
-                                        {
-                                            label: 'Votos del día',
-                                            data: response.avanceVotosPregoneros.map(item => item.votos_dia),
-                                            borderColor: 'rgba(243, 156, 18, 0.5)',
-                                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                                            type: 'bar',
-                                            yAxisID: 'y'
-                                        },
-                                        {
-                                            label: 'Votos acumulados',
-                                            data: response.avanceVotosPregoneros.map(item => item.votos_acumulados),
-                                            borderColor: 'rgba(46, 204, 113, 1)',
-                                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                                            type: 'line',
-                                            tension: 0.4,
-                                            fill: false,
-                                            yAxisID: 'y1'
-                                        }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        y: {
-                                            beginAtZero: true,
-                                            position: 'left',
-                                            title: {
-                                                display: true,
-                                                text: 'Votos por día'
-                                            }
-                                        },
-                                        y1: {
-                                            beginAtZero: true,
-                                            position: 'right',
-                                            grid: {
-                                                drawOnChartArea: false
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Votos acumulados'
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                        } else {
-                            // Actualizar gráficas existentes
-                            chartAvanceReferidos.data.labels = response.avanceVotosReferidos.map(item => item.fecha);
-                            chartAvanceReferidos.data.datasets[0].data = response.avanceVotosReferidos.map(item => item.votos_dia);
-                            chartAvanceReferidos.data.datasets[1].data = response.avanceVotosReferidos.map(item => item.votos_acumulados);
-                            chartAvanceReferidos.update();
-                            
-                            chartAvancePregoneros.data.labels = response.avanceVotosPregoneros.map(item => item.fecha);
-                            chartAvancePregoneros.data.datasets[0].data = response.avanceVotosPregoneros.map(item => item.votos_dia);
-                            chartAvancePregoneros.data.datasets[1].data = response.avanceVotosPregoneros.map(item => item.votos_acumulados);
-                            chartAvancePregoneros.update();
+                            }
                         }
-                    }
-                },
-                error: function(error) {
-                    console.error('Error al cargar gráficas generales:', error);
+                    });
+                    
+                    // Crear gráfica de pregoneros
+                    const ctx4 = document.getElementById('chartAvancePregoneros').getContext('2d');
+                    chartAvancePregoneros = new Chart(ctx4, {
+                        type: 'bar',
+                        data: {
+                            labels: response.horas,
+                            datasets: [{
+                                label: 'Acumulado de votos pregoneros',
+                                data: response.acumuladoPregoneros,
+                                backgroundColor: 'rgba(243, 156, 18, 0.7)',
+                                borderColor: 'rgba(243, 156, 18, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1,
+                                        callback: function(value) {
+                                            if (Number.isInteger(value)) return value;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Actualizar gráficas existentes
+                    chartAvanceReferidos.data.labels = response.horas;
+                    chartAvanceReferidos.data.datasets[0].data = response.acumuladoReferidos;
+                    chartAvanceReferidos.update();
+                    
+                    chartAvancePregoneros.data.labels = response.horas;
+                    chartAvancePregoneros.data.datasets[0].data = response.acumuladoPregoneros;
+                    chartAvancePregoneros.update();
                 }
-            });
+            }
+        },
+        error: function(error) {
+            console.error('Error al cargar gráficas generales:', error);
         }
+    });
+}
         
         function aplicarFiltroReferenciador() {
             const idReferenciador = $('#selectReferenciadorGraficas').val();

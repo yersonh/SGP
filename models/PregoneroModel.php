@@ -280,53 +280,57 @@ class PregoneroModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    /**
-     * Actualiza los datos de un pregonero (ACTUALIZADO con certificado_electoral)
-     * 
-     * @param int $id_pregonero ID del pregonero
-     * @param array $datos Nuevos datos
-     * @return bool True si se actualizó correctamente
-     */
-    public function actualizar($id_pregonero, $datos) {
-        try {
-            $sql = "UPDATE public.pregonero SET
-                        nombres = :nombres,
-                        apellidos = :apellidos,
-                        identificacion = :identificacion,
-                        telefono = :telefono,
-                        id_barrio = :id_barrio,
-                        corregimiento = :corregimiento,
-                        comuna = :comuna,
-                        id_puesto = :id_puesto,
-                        mesa = :mesa,
-                        quien_reporta = :quien_reporta,
-                        id_referenciador = :id_referenciador,
-                        certificado_electoral = :certificado_electoral
-                    WHERE id_pregonero = :id_pregonero AND activo = TRUE";
-            
-            $stmt = $this->pdo->prepare($sql);
-            
-            $stmt->bindParam(':nombres', $datos['nombres'], PDO::PARAM_STR);
-            $stmt->bindParam(':apellidos', $datos['apellidos'], PDO::PARAM_STR);
-            $stmt->bindParam(':identificacion', $datos['identificacion'], PDO::PARAM_STR);
-            $stmt->bindParam(':telefono', $datos['telefono'], PDO::PARAM_STR);
-            $stmt->bindParam(':id_barrio', $datos['id_barrio'], PDO::PARAM_INT);
-            $stmt->bindParam(':corregimiento', $datos['corregimiento'], PDO::PARAM_STR);
-            $stmt->bindParam(':comuna', $datos['comuna'], PDO::PARAM_STR);
-            $stmt->bindParam(':id_puesto', $datos['id_puesto'], PDO::PARAM_INT);
-            $stmt->bindParam(':mesa', $datos['mesa'], PDO::PARAM_INT);
-            $stmt->bindParam(':quien_reporta', $datos['quien_reporta'], PDO::PARAM_STR);
-            $stmt->bindParam(':id_referenciador', $datos['id_referenciador'], PDO::PARAM_INT);
-            $stmt->bindParam(':certificado_electoral', $datos['certificado_electoral'] ?? null, PDO::PARAM_STR);
-            $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
-            
-            return $stmt->execute();
-            
-        } catch (PDOException $e) {
-            error_log("Error al actualizar pregonero: " . $e->getMessage());
-            throw new Exception("Error al actualizar el pregonero");
-        }
+   /**
+ * Actualiza los datos de un pregonero (ACTUALIZADO con certificado_electoral)
+ * 
+ * @param int $id_pregonero ID del pregonero
+ * @param array $datos Nuevos datos
+ * @return bool True si se actualizó correctamente
+ */
+public function actualizar($id_pregonero, $datos) {
+    try {
+        $sql = "UPDATE public.pregonero SET
+                    nombres = :nombres,
+                    apellidos = :apellidos,
+                    identificacion = :identificacion,
+                    telefono = :telefono,
+                    id_barrio = :id_barrio,
+                    corregimiento = :corregimiento,
+                    comuna = :comuna,
+                    id_puesto = :id_puesto,
+                    mesa = :mesa,
+                    quien_reporta = :quien_reporta,
+                    id_referenciador = :id_referenciador,
+                    certificado_electoral = :certificado_electoral
+                WHERE id_pregonero = :id_pregonero AND activo = TRUE";
+        
+        $stmt = $this->pdo->prepare($sql);
+        
+        $stmt->bindParam(':nombres', $datos['nombres'], PDO::PARAM_STR);
+        $stmt->bindParam(':apellidos', $datos['apellidos'], PDO::PARAM_STR);
+        $stmt->bindParam(':identificacion', $datos['identificacion'], PDO::PARAM_STR);
+        $stmt->bindParam(':telefono', $datos['telefono'], PDO::PARAM_STR);
+        $stmt->bindParam(':id_barrio', $datos['id_barrio'], PDO::PARAM_INT);
+        $stmt->bindParam(':corregimiento', $datos['corregimiento'], PDO::PARAM_STR);
+        $stmt->bindParam(':comuna', $datos['comuna'], PDO::PARAM_STR);
+        $stmt->bindParam(':id_puesto', $datos['id_puesto'], PDO::PARAM_INT);
+        $stmt->bindParam(':mesa', $datos['mesa'], PDO::PARAM_INT);
+        $stmt->bindParam(':quien_reporta', $datos['quien_reporta'], PDO::PARAM_STR);
+        $stmt->bindParam(':id_referenciador', $datos['id_referenciador'], PDO::PARAM_INT);
+        
+        // Usar bindValue en lugar de bindParam para el campo con valor por defecto
+        $certificado = $datos['certificado_electoral'] ?? null;
+        $stmt->bindValue(':certificado_electoral', $certificado, PDO::PARAM_STR);
+        
+        $stmt->bindParam(':id_pregonero', $id_pregonero, PDO::PARAM_INT);
+        
+        return $stmt->execute();
+        
+    } catch (PDOException $e) {
+        error_log("Error al actualizar pregonero: " . $e->getMessage());
+        throw new Exception("Error al actualizar el pregonero");
     }
+}
     
     /**
      * Elimina lógicamente un pregonero (cambia activo a FALSE)
